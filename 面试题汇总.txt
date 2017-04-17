@@ -1,0 +1,687 @@
+
+study
+面试题
+
+13、同步和异步有和异同，在什么情况下分别使用他们？举例说明。
+同步：上一段代码没的完成，下一段必须等到上一段代码完成后才可以执行。如买票排队
+异步：上一段代码没的完成，下一段不必等到上一段代码完成就可以执行。如手机发送短信。
+17、输入输出流的理解:
+在java使用流的机制进行数据的传送，从文件到内存是输入流，从内存到文件是输出流，输入流可以通过 read读取，输出流以write或print写入，对于流可以是分为高层流和低层流，低层以一个字节或字符为单位进行处理，高层流以一批数据为单位进行处理。
+ FileInputStream（System.in）至InputSteamReader至BufferReader
+ OutputSteam(System.out)至printStream
+ FileReader至BufferedReader
+ FileWriter 至 PrintWriter或bufferWriter
+分类:
+字节(二进制)
+FileInputStream(低层输入流)
+FileOutputStream(低层输出流)
+PrintStream(高层流)  System.out.println() 
+字符(一个char)
+FileReader
+FileWriter
+20、用socket通讯写出客户端和服务器端的通讯，要求客户发送数据后能够回显相同的数据？
+public class ServerSocket_1
+{
+    public static void main(String[] args)
+            throws Exception
+    {
+        ServerSocket ss = new ServerSocket(4001);
+        Socket s = ss.accept();
+        BufferedReader br = new BufferedReader(new InputStreamReader(s.
+                getInputStream()));
+        PrintStream ps=new PrintStream(s.getOutputStream());
+        String temp = br.readLine();
+        while (true)
+        {
+            System.out.println("客户端:"+temp);
+            ps.println(temp);
+            if (temp.equals("stop"))
+            {
+                break;
+            }
+            temp = br.readLine();
+        }
+        br.close();
+        ps.close();
+        ss.close();
+    }
+}
+public class ClientSocket
+{
+  public static void main(String[] args) throws Exception
+  {
+      Socket s = new Socket("localhost", 4001);
+      PrintStream ps = new PrintStream(s.getOutputStream());
+      BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+      BufferedReader br_server = new BufferedReader(new InputStreamReader(s.
+              getInputStream()));
+      String temp = br.readLine();
+      while (true)
+      {
+          ps.println(temp);
+          temp = br_server.readLine();
+          System.out.println("服务器的信息:" + temp);
+          if (temp.equals("stop"))
+          {
+              break;
+          }
+          temp = br.readLine();
+      }
+      s.close();
+      br.close();
+      br_server.close();
+  }
+}
+Web编程Jsp&Servlet技术
+1、简单说说tomcat的配置？
+JAVA_HOME=JDK的根目录
+CATALINA_HOME=tomcat的根目录
+CATALINA-HOME\conf\server.xml:可以配置tomcat的端口，可以配置tomcat中下连接池。
+CATALINA-HOME\common\lib:存放公用的类包
+在My eclipse中如何配置tomcat
+在eclipse中,选择windows->preference->MyEclipse->ApplicationServer->Tomcat
+选择Tomcat 的安装目录，并选择TomCat所需的jdk，选择enable,确定即可。
+8、请罗列jsp中的脚本、指令及动作? 
+脚本
+<%%>  <%=%>  <%!%> <%----%>
+指令
+<%@page contentType=”text/html;charset=utf-8” language=”java” import=””%>
+<%@include file=””%>
+<%@taglib uri=”” prefix=””%>
+动作:
+<jsp:useBean class=”” id=”” scope=””>  在scope中如果没有实例化一个对象，如果有直接用以前的。
+<jsp:getProperty name=”” property=””>  向一个bean中设置属性值
+<jsp:forward >  jsp页的转发
+<jsp:include page=””>  导入一个jsp页面
+28、我们在web应用开发过程中经常遇到输出某种编码的字符，如iso8859-1等，如何输出一个某种编码的字符串？
+      tempStr = new String(str.getBytes("ISO-8859-1"), "GBK");
+      tempStr = tempStr.trim();
+5 Hibernate持久层技术
+1、在myeclipse加入hibernate环境的全过程是什么?
+Db-browers加入配置连接
+新建工程
+加入hibernate环境，指定*.hbm.xml及HibernateSessionFactory文件所在的位置
+2、hibernate的核心配置文件是什么及其作用?
+Hibernate.cfg.xml:数据库连接、指定相关的映射文件
+*.hbm.xml:具体的o/r mapping说明
+3、hibernate的核心类是什么，它们的相互关系是什么?重要的方法是什么?
+Configuration
+SessionFactory
+Session如下方法
+Save
+load
+Update
+Delete
+    Query q=CreateQuery(“from Customer where customerName=:customerName”)
+beginTransaction
+close
+Transaction
+Commit()
+4、关联:
+one-to-many
+inverse:主控方，外键的关系有谁控制
+inverse=false 是主控方，外键是由它控制的
+inverse=true 是被控方，外键与它没关系
+要想实现主控方的控制必须将被控方作为主控方的属性
+cascade:级联
+主表增从表增
+主表修从表修
+主表删从表删
+lazy:延迟
+lazy=false：一下将所有的内容取出，不延时(常用)
+lazy=true：取出部分内容，其余内容动态去取
+通过get可以取出对方的所有内容
+7、DetachedCriteria的作用？
+产生时不需要session
+DetachedCriteria dc= DetachedCriteria.forClass(Customer.class)
+Criteria c=Dc.getExecutableCriteria(session)
+8、Query
+1 个或多个属性查询:
+Query query=session.createQuery(”select customername,customerid from Customer”)
+List l=query.list();
+For(int i=0;i<l.size();i++)
+{
+Obejct[] object=(Object[])l.get(i);
+Object[0]  object[1]
+}
+}
+分组: "select count(*),productname from Product group by productname order by productname"
+取值与属性一样
+配置的查询,在*.hbm.xml中
+<query name="sql">
+    <![CDATA[
+     from Product where productid=:productid
+    ]]>
+</query>
+Query query=session.getNamedQuery(sql);
+联接1
+"from Customer as customer join fetch customer.buySet"：将多的放到buySet属性中，得出的结是Customer有一个，Buy有多个
+联接2 
+"from Customer as customer join customer.buySet":得出的对象,customer与buy是1对1
+子查询:
+"from Customer as customer where (select count(*) from customer.buySet)>1"
+9、继承关系的实现
+1、两个表，子类重复父类的属性。
+2、一个表，子类父类共用一个表
+  <class name="Users" table="users" discriminator-value="Users">
+<discriminator column="DISCRIMINATOR_USERTYPE" type="string"/>
+<subclass name="admin" discriminator-value="admin">
+         <property name="adminRemark" column="admin_remark" type="string" />
+      </subclass>
+  </class>
+3、两个表，子类引用父类的主键，享用公共的字段或属性。
+    <class name="Users" table="users">
+        <id name="userid" column="USERID" type="string">
+            <generator class="assigned"/>
+        </id>
+        <property name="pwd" column="pwd" type="string" />
+  <joined-subclass name="Guest" table="guest">
+  <key column="USERID"/> 
+        <property name="guestRemark" column="guest_remark" type="string" />
+        </joined-subclass>
+</class>
+批量删除
+Query query=session.createQuery("update"或"delete");
+query.executeUpdate();
+10、tomcat连接池:在容器中预先产生了n个连接实例,客户端不用重新实例化，可以直接取。
+6.1、在tomcat-5.0\conf\server.xml中</host>前面加入如下内容
+<Context path="/app1" docBase="app1" debug="0"    reloadable="true" crossContext="true">   
+<Resource name="jdbc/sa" auth="Container" type="javax.sql.DataSource"/>   
+            <ResourceParams name="jdbc/sa">
+      <parameter>
+      <name>factory</name>
+      <value>org.apache.commons.dbcp.BasicDataSourceFactory</value>
+      </parameter>   
+<parameter>
+               <name>driverClassName</name>
+         <value>com.microsoft.jdbc.sqlserver.SQLServerDriver</value>
+      </parameter>  
+<parameter>
+         <name>url</name>
+         <value>jdbc:microsoft:sqlserver://127.0.0.1:1433;DatabaseName=jspdev;SelectMethod=cursor</value>   
+  </parameter>
+      <parameter>     
+<name>username</name>
+                 <value>sa</value>   
+</parameter>
+      <parameter>     
+<name>password</name>     
+<value></value>
+      </parameter>
+      <parameter>     
+<name>maxActive</name>     
+        <value>20</value>   
+</parameter>
+      <parameter>
+         <name>maxIdle</name>     
+<value>10</value>   
+</parameter>   
+<parameter>
+         <name>maxWait</name>     
+<value>-1</value>   
+</parameter>
+      </ResourceParams>     
+</Context>
+6.2、将sql-server包拷贝到C:\tomcat-5\common\lib
+6.3、jdbc测试代码
+Context initCtx = new InitialContext();
+    Context envCtx = (Context)initCtx.lookup("java:comp/env");
+ds = (DataSource)envCtx.lookup("jdbc/sa");
+Connection conn = ds.getConnection();
+6.4、hibernate通过连接池实现连接
+<session-factory name="foo">
+<property name="connection.datasource">java:comp/env/jdbc/sa</property>  <!--指定tomcat连接池-->
+<property name="show_sql">true</property> <!--是否显示sql-->
+<property name="dialect">org.hibernate.dialect.SQLServerDialect</property> <!--hibernate的驱动管理器-->
+<mapping resource="com/accp/t15/Customer.hbm.xml"/>
+</session-factory>
+12、hibernate常见优化策略
+用最新版本的hibernate
+制定合理的缓存策略
+采用合理的session管理机制
+尽量使用延迟加载
+many
+大文本、大文件
+设定合理的批处理参数(batch-size)
+如有可能，选用uuid作为主键生成器
+如有可能，选用基于version的乐观锁替代悲观锁
+开发过程中，打开hibernate的SQl日志输出(hibernate.show_sql=true)，通过观察hibernate生成的sql语句进一步了解其实现原理，从而指事实上更好的实现策略。
+6. iBatis持久层技术
+用ibatis的原因:
+只对开发团队提供几条Select SQL（或存储过程）以获取所需数据，具体的表结构不予公开。
+开发规范中要求，所有牵涉到业务逻辑部分的数据库操作，必须在数据库层由存储过程实现
+系统数据处理量巨大，性能要求极为苛刻，这往往意味着我们必须通过经过高度优化的SQL语句
+（或存储过程）才能达到系统性能设计指标。
+jdbc、hibernate、ibatis的区别
+jdbc:手动
+手动写sql
+delete、insert、update要将对象的值一个一个取出传到sql中,不能直接传入一个对象。
+select:返回的是一个resultset，要从ResultSet中一行一行、一个字段一个字段的取出，然后封装到一个对象中，不直接返回一个对象。
+ibatis的特点:半自动化
+sql要手动写
+delete、insert、update:直接传入一个对象
+select:直接返回一个对象
+hibernate:全自动
+不写sql,自动封装
+delete、insert、update:直接传入一个对象
+select:直接返回一个对象
+ibatis的核心配置文件:
+sqlmapclient.xml：数据库连接及相关o/rMapping的映射文件(hibernate.cfg.xml)
+sqlmapBuy.xml:具体的o/rmapping映射(*.hbm.xml)
+四大标记:
+select
+update
+delete
+insert
+procedure
+ibatis的核心类:
+SqlMapClientBuilder:加载配置文件，返回一个会话。
+SqlMapClient:具体的会话
+List list=queryForList("标签名",object);
+Object obj=queryForObject("标签名",object);
+delete("标签名",object)
+update("标签名",object)
+insert("标签名",object)
+工程的使用:
+将ibatisfactory拷贝到工程目录下
+将ms的3个包及ibatis的三个包拷贝到/WEB-INF/lib下
+修改ibatisfactory中的abatorConfig.xml文件
+进入ibatisfactory目录运行java -jar  abator.jar abatorConfig.xml true
+将sql标记、select、update、insert、delete的副本删除
+spring&ibatis:
+dataSource
+sqlMapClient:SqlMapClientFactoryBean
+configLocation
+classpath:sqlMapClient.xml
+/WEB-INF/sqlMapClient.xml
+dataSource
+transactionManager:DataSourceTransactionManager
+dataSource
+customerDao extends SqlMapClientDaoSupport
+sqlMapClient
+buyDao
+sqlMapClient
+Facade
+buyDao
+customerDao
+abstractProxy:TransactionProxyFactoryBean
+transactionManager
+transactionAttributes
+facadeProxy
+target:façade
+7 Structs界面控制层技术
+1、请说出struts框架的几大组件？
+1、MVC
+2、标签库
+3、校验框架
+4、国际化
+5、tiles
+3、struts的核心类有那些，在MVC模式中其对应的关系是什么？
+C
+ActionServlet
+RequestProcessor
+Action
+actionMapping(struts-config.xml)
+actionFormard
+V
+ActionForm
+Jsp
+M
+Dao
+Manager(facade)
+4、Struts的处理请求的全过程是什么?
+url-> ActionServlet(process)-> RequestProcessor(process)->实例化form ->填充form值->进行校验->实例化action->调用execute
+5、在struts中如何通过一个url找到一个action，它的核心配置文件是什么?
+配置文件是struts-config.xml
+6、为什么使用MVC，其主要目的是什么? 
+让v与M强制解耦，提高可重用性（旅馆的服务员(C)）
+7、对于MVC在action中对应有类有几种，各有什么作用?
+ Action:
+1) 基本的
+ DispatchAction:
+2) 存在多个方法，根据页面传入的表单域的值调用不同的方法，表单域的名称在<action param=””/>标记中进行配置
+ LookupDispatchAction
+3) 多个按钮用同一个action的不同方法。实现getMap方法,说明每一个按钮在*.properties中的键名及键值，在struts-config.xml通过parameter说明按钮的名称，按钮的值对应*.properties的值，通过值找键名，通过键名找Map中的键名找到值就是相应的方法。
+ MappingDispatchAction:未知
+ forwordAction:直接跳转到不同页面不执行逻辑(???)
+n 类所在的包:org.apache.struts.actions.ForwardAction
+8、struts的标记有几类，请列举并说明其作用?
+Bean:
+<bean:define scope=”” name=”” property=”” id=””/>
+<bean:write  name=”customer” property=”customerName”/>
+<bean:message key=””/>国际化
+Logic:
+<logic:iteator>  //将集合的内容取出
+<logic:present> //
+<logic:equals> //
+Html:
+<html:file>上传文件
+<html:select property=”sex”>
+<html:options collection=”” property=”” labelProperty=””/>
+</html:select>
+9、如何在struts中配置数据源在,什么文件?用什么标签?如何取出DataSource?
+Struts-config.xml
+<data-sources>
+   <data-source key="data" type="org.apache.commons.dbcp.BasicDataSource">
+   <set-property property="driverClassName"   value="com.microsoft.jdbc.sqlserver.SQLServerDriver" />
+    <set-property property="url"     value="jdbc:microsoft:sqlserver://localhost:1433;databaseName=t23" />
+    <set-property property="username" value="sa" />
+     <set-property property="password" value="" />  
+  </data-source>
+</data-sources>
+DataSource ds=(DataSource)this.getServlet().getServletContext().getAttribute("data");
+Connection con=ds.getConnection();
+10、如何在jbuilder中开发struts?
+ 工程
+ Web模型(选中struts1.2.8，会自加在web –inf中生成tld及struts-config.xml，并加载相关的类包)
+ 建一个ActionForm
+ 建一个Action
+ 修改struts-config.xml文件
+11、如何实现struts的validator框架？
+ 手动:
+ public class myForm extends ActionForm
+ {
+ public ActionErrors validate()
+ {
+actionErrors.add(ActionErrors.GLOBAL_MESSAGE,new ActionMessage("properties中的键名"));
+ }
+ }
+ struts-config.xml中修改action的标签validate=true
+ input="错误页面"
+ 如果validate方法中的ActionErrors不为空且size>0时
+ 会回到input页面。
+ 自动
+ public class myForm extends ValidateForm
+ {
+ 不能覆盖validate方法。
+ //public void validate()
+ //{
+ 
+ //}
+ }
+ 在struts-config.xml文件中加入插件
+  <plug-in className="org.apache.struts.validator.ValidatorPlugIn">
+      <set-property property="pathnames" value="/WEB-INF/validator-rules.xml,/WEB-INF/validation.xml" />
+    </plug-in>
+ 修改validation.xml中的内容
+ errors.required={0} is required.
+ errors.minlength={0} can not be less than {1} characters.
+ <formset>
+ <form name="loginForm">
+ <field property="userName" depends="required">
+ <arg0 key="userName" />
+ </field>
+ <field property="pwd" depends="required,minlength">
+ <arg0 key="pwd" />
+ <arg1 key="${var:minlength}" resource="false"/>
+ <var>
+ <var-name>minlength</var-name>
+ <var-value>6</var-value>
+ </var>
+ </field>
+ </form>
+ </formset>
+ struts-config.xml中修改action的标签validate=true
+ input="/错误页面"
+13、如何实现国际化?
+国际化:不用修改代码，就适用于不同的语言国家
+本地化:如果要适应一个国家，要修改源代码
+实现过程:
+在struts-config.xml中用如下标签说明资源文件名，注意其只是文件名，没有语言_国家
+ <message-resources parameter="struts.ApplicationResources" />
+在资源文件对应的目录struts中加入适应不同语言、国家的properties文件
+ApplicationResources_zh_CN.properties 中国
+ApplicationResources_en_US.properties us
+如果不是英语要转码
+native2ascii -encoding gb2312 源 ApplicationResources_zh_CN.properties
+在jsp页面中用
+<bean:message key=""/>取出信息
+8 JSF界面控制层技术
+1、Jsf中的核心类用那些?有什么作用?    
+核心类
+FacesServlet 
+LiftCycle    FacesContext  
+        
+2、Jsf中的LiftCycle六大生命周期是什么? 
+恢复视图->应用请求值->校验->更新模型->调用应用程序->呈现响应
+3、如何管量web层中的Bean，用什么标签。如何通过jsp页面与Bean绑定在一起进行处理?
+<managed-bean>
+     <managed-bean-name>checkNumber</managed-bean-name>
+      <managed-bean-class>jsf1.CheckNumber</managed-bean-class>
+     <managed-bean-scope>session</managed-bean-scope>
+</managed-bean>
+4、Jsf中导航的标签是什么?
+<navigation-rule>
+     <from-view-id>/main.jsp</from-view-id>
+     <navigation-case>
+       <from-outcome>success</from-outcome>
+         <to-view-id>/result.jsp</to-view-id>
+     </navigation-case>
+</navigation-rule>
+5、jsf中用户界面组件模型有几类，各代表什么?
+UI组件、事件监听、显示、类型转换、验证
+6、表格处理及取值
+import javax.faces.model.DataModel;
+import javax.faces.model.ListDataModel;
+DataModel:代表一个表格，其可以从客户端传上来。
+实例化:
+DataModel dm=new ListDataModel();
+将一个list值放入到DataModel中.
+dm.setWrappedData(list)
+将客户端当前行取出
+(LogsVO) dm.getRowData()
+对于多条的查询及增删改在模型中加入了如下属性:
+模型的名称是bean，其下的属性是
+DataModel dm:代表返有的行数据
+VO vo:代表一行数据。
+取一行:
+vo=(VO) dm.getRowData();
+通#{bean.vo.属性名}，如果修改对应信息自动修改。
+增加一行:
+this.vo=new VO();
+通#{bean.vo.属性名}，显示肯定无值，但客户输入值提交后会将值勤写入
+7、jsf的标签库有哪些？
+核心:f
+校验
+<f:validateDoubleRange>
+<f:validateLength>
+转化
+<f:convertDateTime pattern="yyyy-MM-dd"/>
+<f:convertNumber type="currency"/>
+选择框:
+<f:selectItem/>
+<f:selectItems/>
+html:h
+选择控件:
+<h:selectOneRadio>:一个string
+<h:selectManyCheckBox>:一个String数组
+<h:selectOneMenu>:组合框架选择一个
+<h:selectManyMenu>:组合框架选择多个
+<h:selectOneList>:下拉列表选择一个
+<h:selectManyList>:下拉列表选择多个
+表格:
+<h:dataTable value="集合" var="集合中的一个">
+<h:column>
+<!--头-->
+<f:facet name=”header”>
+<h:outputText >
+</f:facet>
+<!--具体的行值-->
+<h:outputText value=""/>
+<h:column>
+</h:dataTable>
+9 Spring 应用框架技术
+1、Spring和Struts的区别？
+strusts：是一种基于MVC模式的一个web层的处理。
+Spring:提供了通用的服务，ioc/di aop,关心的不仅仅web层，应当j2ee整体的一个服务，可以很容易融合不同的技术struts hibernate ibatis ejb remote springJDBC springMVC
+2、什么是aop，aop的作用是什么?
+Oop：纵向的业务
+Aop：oop的一个横向的服务，是对oop进一步的补充，提供安全、事务、日志等的集中式处理，相关的装备before、around、after exception
+3、aop中的关键名词有些那些，相互关系是什么? 
+拦截器: 代理
+装备(advice)
+目标对象
+关切点:条件
+连接点:方法、属性
+4、依赖注入的方式有几种，各是什么?
+Setter
+Interface
+constructor
+5、spring中的核心类有那些，各有什么作用?
+BeanFactory：产生一个新的实例，可以实现单例模式
+BeanWrapper：提供统一的get及set方法
+ApplicationContext:提供框架的实现，包括BeanFactory的所有功能
+6、ApplicationContext的作用
+beanFactory
+国际化(getMesage)
+资源管理:可以直接读取一个文件的内容(getResource)
+加入web框架中(加入一个servlet或监听器)
+事件处理
+7、如何实现资源管理
+使用
+applicationContext.getResource(“classpath:文件名”):在src根目录下，在类路径下
+applicationContext.getResource(“classpath:/chap01/文件名”): 以src根目录下的基准往下走。
+applicationContext.getResource(“file:c:/a.properties”)：在系统文件目录下。
+8、如何实现加入web框架中
+在web.xml中加入如下同容,在启动web服务器时加载/WEB-INF/applicationContext.xml中的内容。
+<servlet>
+<servlet-name>context</servlet-name>
+<servlet-class>
+org.springframework.web.context.ContextLoaderServlet
+</servlet-class>
+<load-on-startup>1</load-on-startup>
+</servlet>
+通过如下类得到ApplicationContext实例
+WebApplicationContextUtils.getWebApplicationContext
+9、如何实现事件处理
+事件
+Extends ApplicationEvent
+监听器
+Implements ApplicationListener
+事件源
+Implements ApplicationContextAware
+在applicationContext.xml中配置事件源、监听器
+先得到事件源，调用事件源的方法，通知监听器。
+10、spring的ioc及di代表什么意思? 
+Ioc:程序在运行过程中，根据配置文件动态加载所依赖的配置类
+、如何在spring中实现国际化?
+Ø 在applicationContext.xml加载一个bean
+<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+<property name="basename">
+<value>message</value>
+</property>
+</bean>
+ 在src目录下建多个properties文件
+ 对于非英文的要用native2ascii -encoding gb2312 源  目转化文件相关内容 
+ 其命名格式是message_语言_国家。
+ 页面中的中显示提示信息，键名取键值。
+ 当给定国家，系统会自动加载对应的国家的properties信息。
+ 通过applictionContext.getMessage(“键名”,”参数”,”区域”)取出相关的信息。
+12、spring的配置的主要标签是什么?有什么作用?
+<beans>
+<bean id=”” class=”” init=”” destroy=”” singleton=””>
+<property name=””>
+<value></value>
+</property>
+<property name=””>
+<ref local></ref>
+</property>
+</bean>
+</beans>
+13、spring与ejb2.0的事务管理比较的优缺点?
+测试:
+Spring:pojo
+Ejb:二个接口一个类,一堆配置文件
+事务类型
+Spring:jdbc jta  hibernate
+Ejb:jta
+成本
+   Spring:普通容器(tomcat jboss)
+   Ejb:weblogic jboss
+开发的周期:
+Spring远比ejb快.
+14、spring的jdbc与传统的jdbc有什么区别，其核心类有那些?
+Spring的jdbc:节省代码，不管连接(Connection)，不管事务、不管异常、不管关闭(con.close() ps.close )
+JdbcTemplate(dataSource):增、删、改、查
+TransactionTemplate(transactionManager):进行事务处理
+15、在spring中有几种事务管理，分别是什么? 
+代码管理的事务处理
+TransactonTemplate的execute方法中的内部类TransactionCallback中的doInTransaction方法中使用。
+public void make()
+{
+TransactionTemplate jtm=new TransactionTemplate(this.getTransactionManager());
+jtm.execute(new myClass1());
+}
+public class myClass1 implements TransactionCallback
+{
+public Object doInTransaction(TransactionStatus trans) 
+{
+JdbcTemplate jdbc=new JdbcTemplate(dataSource);
+jdbc.execute("insert into customer(customerName) values('b')");
+jdbc.execute("insert into customer(customerName) values('b')");
+return null;
+}
+}
+容器管理的事务处理
+16、在spring中如何配代码的事务管理?
+Datasouce
+transactionManager
+userDao要注入
+Datasouce
+transactionManager
+通过如下类实现
+TransactionTemplate
+JdbcTemplate
+17、在spring中如何配容器的事务管理，相关的类有那些? 
+Datasouce
+transactionManager
+userDao要注入
+Datasouce
+Proxy代理
+Target:userDao：代理对象(目标对象)
+transactionAttributes(那些方法需要事务处理)
+transactionManager(事务处理服务)
+18、如果spring与hibernate结合在一起可以不需要hibernate.cfg.xml文件是否正确?
+不需要
+19、spring+hibernate的配置文件中的主要类有那些?如何配置?
+在myeclipse中先加入spring环境再加入hibernate环境。
+如果spring与hibernate结合在一起可以不需要hibernate.cfg.xml文件是否正确?
+spring+hibernate的配置文件中的主要类有那些?如何配置?
+dataSource
+sessionFactory:hibernate.cfg.xml
+transactionManager
+userDao (extends HibernateDaoSupport)  
+sessionFactory
+facade
+proxy
+sessionFactory
+transactionManager
+facade
+20、spring+hibernate的代码实现中，对于实现类一定继承于一个类是那一个，它有什么作用。
+extends HibernateDaoSupport，可以节省代码。
+21、如何配置spring+struts?
+ 在struts-config.xml加入一个插件，通过它加载applicationContext.xml
+ 在struts-config.xml修改action-mapping标记，具体action交给了DelegateActionProxy
+ 通过DelegateActionProxy进入一spring的环境。
+ 在spring的applicationContext.xml加入<bean name="/login" class="" singleton="false"/>
+22、如何在web环境中配置applicationContext.xml文件?
+<listener>
+<listener-class>
+org.springframework.web.context.ContextLoaderListener
+</listener-class>
+</listener>
+或：
+<servlet>
+<servlet-name>context</servlet-name>
+<servlet-class>
+org.springframework.web.context.ContextLoaderServlet
+</servlet-class>
+<load-on-startup>1</load-on-startup>
+</servlet>
+通过如下方法取出applicationContext实例:
+ApplicationContext ac=WebApplicationContextUtils.getWebApplicationContext(this.getServletContext);
+8、标准建模语言UML中的各种图?
+静态图
+用例图、类图、对象图、构件、部署,
+动态图(行为图)
+活动图,协作图,状态、时序 

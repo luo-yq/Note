@@ -1,0 +1,6 @@
+		
+并发包中有Executors类提供了四种线程池
+		Executors.newCachedThreadPool()
+		Executors.newFixedThreadPool(nThreads);
+		Executors.newScheduledThreadPool(corePoolSize, threadFactory);
+		Executors.newSingleThreadExecutor() 

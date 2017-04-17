@@ -1,0 +1,43 @@
+
+项目地址
+https://github.com/Activiti/Activiti
+建议版本：  5.16.3 流程图画图工具使用的ext，界面操作方便一点，调整起来也方便
+（5.17之后画图工具使用的angular界面使用不友好）
+
+5.16中文使用教程
+http://www.mossle.com/docs/activiti/index.html
+其中有一段----快速起步：10分钟教程 是activiti自己开发的一个引导性的应用，可以引导大家简单了解工作流的思路
+
+
+
+
+
+
+
+咖啡兔的空间，入门级
+http://www.kafeitu.me/activiti.html
+
+
+咖啡兔经典一点的博客（
+整合流程图设计器 http://www.kafeitu.me/activiti/2013/03/10/integrate-activiti-modeler.html
+activiti 实战， 咖啡兔参与过activiti流程设计器的开发，但是他对activiti工作流的理解似乎不深） 书的可使用价值不高，但可以作为入门  这本书我买了，学会之后就不再看了，下周可以带过来
+
+
+
+
+疯狂Workflow讲义：基于Activiti的工作流应用开发   这本书不错，对activiti有一些经验后，这本书作为进阶最合适，可惜我手里没有
+
+
+
+
+
+maven  
+易佰教程还是一个不错的学习网站，有不少有价值的东西
+http://www.yiibai.com/maven/
+
+
+
+{"totalCount":1,"items":[{"assignment_type":"candidateGroups","resourceassignmentexpr":"1"}]}
+
+
+{"totalCount":1,"items":[{"assignment_type":"candidateGroups","resourceassignmentexpr":"2"}]}

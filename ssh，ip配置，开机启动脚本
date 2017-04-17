@@ -1,0 +1,274 @@
+
+安装软件包
+RPM redhat packedge manager //Linux行业标准  需要手动安装依赖
+YUM centos //可自动安装依赖
+
+rpm -i <.rpm file name> 安装指定的 .rpm 文件
+rpm -U <.rpm file name> 用指定的 .rpm 文件升级同名包
+rpm -e <package-name>  删除指定的软件包 
+rpm -q <package-name> 查询指定的软件包在系统中是否安装 
+rpm -qa  查询系统中安装的所有RPM软件包
+rpm -qf </path/to/file>  查询系统中指定文件所属的软件包 
+rpm -qi <package-name> 查询一个已安装软件包的描述信息  
+rpm -ql <package-name> 查询一个已安装软件包里所包含的文件 
+rpm -qc <package-name> 查看一个已安装软件包的配置文件位置 
+rpm -qd <package-name> 查看一个已安装软件包的文档安装位置
+rpm -qR <package-name> 查询一个已安装软件包的最低依赖要求
+￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼
+使用 RPM 管理包 http://www.proxyserve.net/index.php?q=aHR0cDovL3NtYXJ0cmFp...
+￼￼￼rpm -qpi <.rpm file name>
+rpm -qpl <.rpm file name>
+查询一个未安装的 RPM文件的描述信息
+￼￼￼rpm -qpc <.rpm file name>
+rpm -qpd <.rpm file name>
+￼在安装/升级时,还可以使用 -vh 参数,其中:v表示在安装过程中将显示较详细的信息;h表示显示水平进度条 在使用 rpm -qa 命令时,还可以使用 |more 或 |grep 进行过滤
+所有的 <.rpm file name> 既可以是本地文件,也可以是远程文件 校验软件包将检查软件包中的所有文件是否与系统中所安装的一致性。包括校验码文件大小,存取权限和属主属性都 将根据数据库进行校验。该操作可在用户安装了新程序以后怀疑某些文件遭到破坏时使用。
+rpm 命令使用举例 安装软件包
+1、安装本地软件包
+ #  rpm -ivh /media/cdrom/CentOS/elinks-0.11.1-5.1.el5.i386.rpm
+ Preparing...                #
+1:elinks # 2、安装远程软件包
+ #  rpm -ivh http://centos.candishosting.com.cn/5/os/i386/CentOS/elinks-0.11.1-5.1.el5.i386.rpm
+ Preparing...                #
+1:elinks # 3、安装不在 CentOS 软件库中的软件包
+下面以安装 Fedora Extras 中的软件包为例。
+ #  rpm --import http://download.fedora.redhat.com/pub/fedora/linux/extras/RPM-GPG-KEY-Fedora-Extras
+ #  wget http://download.fedora.redhat.com/pub/fedora/linux/extras/6/i386/darcs-1.0.9-3.fc6.i386.rpm
+ #  rpm -ivh darcs-1.0.9-3.fc6.i386.rpm
+ Preparing...                #
+1:darcs #
+￼￼￼￼升级软件包
+查询一个未安装的 RPM文件里所包含的文件
+￼查看一个未安装的 RPM文件的配置文件位置
+￼查看一个未安装的 RPM文件的文档安装位置
+￼￼rpm -qpR <.rpm file name>
+查询一个未安装的 RPM文件的最低依赖要求
+￼￼rpm -V <package-name>
+校验指定的软件包
+￼￼rpm -V </path/to/file>
+校验包含指定文件的软件包
+￼￼rpm -Vp <.rpm file name>
+校验指定的未安装的 RPM文件
+￼￼rpm -Va
+校验所有已安装的软件包
+￼￼rpm --rebuilddb
+重新创建系统的 RPM 数据库,用于不能安装和查询的情况
+￼￼rpm --import <key file>
+导入指定的签名文件
+￼￼rpm -Kv --nosignature <.rpm file name>
+检查指定的RPM文件是否已损坏或被恶意篡改(验证包的MD5校验和)
+￼￼rpm -K <.rpm file name>
+检查指定RPM文件的GnuPG签名
+
+
+
+ 
+yum check-update  检查可更新的所有软件包
+yum update  下载更新系统已安装的所有软件包
+yum upgrade  大规模的版本升级,与yum update不同的是,连旧的淘汰的包也升级
+yum install <packages>  安装新软件包
+yum update <packages>  更新指定的软件包
+yum remove <packages>  卸载指定的软件包
+yum groupinstall <groupnames>  安装指定软件组中的软件包
+yum groupupdate <groupnames>   更新指定软件组中的软件包
+yum groupremove <groupnames>   卸载指定软件组中的软件包
+yum grouplist  查看系统中已经安装的和可用的软件组 
+yum list 列出资源库中所有可以安装或更新以及已经安装的rpm包
+yum list <regex> 列出资源库中与正则表达式匹配的可以安装或更新以及已经安装的rpm包
+yum list available 列出资源库中所有可以安装的rpm包
+yum list available <regex>  列出资源库中与正则表达式匹配的所有可以安装的rpm包
+yum list updates 列出资源库中所有可以更新的rpm包 
+yum list updates <regex> 列出资源库中与正则表达式匹配的所有可以更新的rpm包 
+yum list installed 列出资源库中所有已经安装的rpm包 
+yum list installed <regex>  列出资源库中与正则表达式匹配的所有已经安装的rpm包
+yum list extras 列出已经安装的但是不包含在资源库中的rpm包
+yum list extras <regex>  列出与正则表达式匹配的已经安装的但是不包含在资源库中的rpm包
+yum list recent 列出最近被添加到资源库中的软件包
+yum search <regex> 检测所有可用的软件的名称、描述、概述和已列出的维护者,查找与正则表达式匹配的值
+yum provides <regex> 检测软件包中包含的文件以及软件提供的功能,查找与正则表达式匹配的值 
+yum clean headers 清除缓存中的rpm头文件
+yum clean packages 清除缓存中rpm包文件
+yum clean all 清除缓存中的rpm头文件和包文件
+yum deplist <packages> 显示软件包的依赖信息
+
+当第一次使用yum或yum资源库有更新时,yum会自动下载所有所需的headers放置于 /var/cache/yum 目录下,所需时间可能较长。 
+
+
+
+
+
+ 1．命令格式：
+lsof [参数][文件]
+2．命令功能：
+用于查看你进程开打的文件，打开文件的进程，进程打开的端口(TCP、UDP)。找回/恢复删除的文件。是十分方便的系统监视工具，因为 lsof 需要访问核心内存和各种文件，所以需要root用户执行。
+lsof打开的文件可以是：
+1.普通文件
+2.目录
+3.网络文件系统的文件
+4.字符或设备文件
+5.(函数)共享库
+6.管道，命名管道
+7.符号链接
+8.网络文件（例如：NFS file、网络socket，unix域名socket）
+9.还有其它类型的文件，等等
+3．命令参数：
+-a 列出打开文件存在的进程
+-c<进程名> 列出指定进程所打开的文件
+-g  列出GID号进程详情
+-d<文件号> 列出占用该文件号的进程
++d<目录>  列出目录下被打开的文件
++D<目录>  递归列出目录下被打开的文件
+-n<目录>  列出使用NFS的文件
+-i<条件>  列出符合条件的进程。（4、6、协议、:端口、 @ip ）
+-p<进程号> 列出指定进程号所打开的文件
+-u  列出UID号进程详情
+-h 显示帮助信息
+-v 显示版本信息
+
+
+lsof abc.txt 显示开启文件abc.txt的进程
+lsof -c abc 显示abc进程现在打开的文件
+lsof -c -p 1234 列出进程号为1234的进程所打开的文件
+lsof -g gid 显示归属gid的进程情况
+lsof +d /usr/local/ 显示目录下被进程开启的文件
+lsof +D /usr/local/ 同上，但是会搜索目录下的目录，时间较长
+lsof -d 4 显示使用fd为4的进程
+lsof -i 用以显示符合条件的进程情况
+lsof -i[46] [protocol][@hostname|hostaddr][:service|port]
+  46 --> IPv4 or IPv6
+  protocol --> TCP or UDP
+  hostname --> Internet host name
+  hostaddr --> IPv4地址
+  service --> /etc/service中的 service name (可以不止一个)
+  port --> 端口号 (可以不止一个)
+
+
+
+
+
+普通文件( - ) 目录 ( d ) 符号链接( l ) 字符设备文件 ( c ) 块设备文件 ( b ) 套接字 ( s ) 命名管道( p )
+
+bash file
+chmod u+x file
+source file
+. file
+./file
+
+
+
+客户端安装 openssh-clients
+服务器安装 openssh-clients
+
+
+1、从服务器上下载文件
+scp username@servername:/path/filename /var/www/local_dir（本地目录）
+
+ 例如scp root@192.168.0.101:/var/www/test.txt  把192.168.0.101上的/var/www/test.txt 的文件下载到/var/www/local_dir（本地目录）
+
+2、上传本地文件到服务器
+scp /path/filename username@servername:/path   
+
+例如scp /var/www/test.php  root@192.168.0.101:/var/www/  把本机/var/www/目录下的test.php文件上传到192.168.0.101这台服务器上的/var/www/目录中
+
+ 
+
+3、从服务器下载整个目录
+scp -r username@servername:/var/www/remote_dir/（远程目录） /var/www/local_dir（本地目录）
+
+例如:scp -r root@192.168.0.101:/var/www/test  /var/www/  
+
+4、上传目录到服务器
+scp  -r local_dir username@servername:remote_dir
+例如：scp -r test  root@192.168.0.101:/var/www/   把当前目录下的test目录上传到服务器的/var/www/ 目录
+
+
+
+
+
+
+
+
+1、自动获取IP地址
+虚拟机使用桥接模式，相当于连接到物理机的网络里，物理机网络有DHCP服务器自动分配IP地址。
+#dhclient 自动获取ip地址命令
+#ifconfig 查询系统里网卡信息，ip地址、MAC地址
+ 
+分配到ip地址后，用物理机进行ping ip地址，检测是否ping通。
+ 
+2、手动设置ip地址
+如果虚拟机不能自动获取IP，只能手动配置，配置方法如下：
+输入命令
+#vi /etc/sysconfig/network-scripts/ifcfg-eth0 [编辑网卡的配置文件]
+输入上述命令后回车，打开配置文件，使用方向键移动光标到最后一行，按字母键“O”，进入编辑模式，输入以下内容：
+IPADDR=192.168.4.10
+NETMASK=255.255.255.0
+GATEWAY=192.168.4.1
+另外光标移动到”ONBOOT=no”这一行，更改为ONBOOT=yes
+“BOOTPROTO=dhcp”，更改为BOOTPROTO=none
+完成后，按一下键盘左上角ESC键，输入:wq 在屏幕的左下方可以看到，输入回车保存配置文件。
+ 
+之后需要重启一下网络服务，命令为
+#service network restart
+网络重启后，eth0的ip就生效了，使用命令#ifconfigeth0 查看
+接下来检测配置的IP是否可以ping通，在物理机使用快捷键WINDOWS+R 打开运行框，输入命令cmd，输入ping 192.168.4.10 进行检测，ping通说明IP配置正确。
+ 
+备注：我所在的物理机网段为192.168.4.0 网段。大家做实验的时候根据自己的环境进行设定，保持虚拟机和物理机在同一网段即可。
+ 
+3、使用NAT模式
+虚拟机网络连接使用NAT模式，物理机网络连接使用Vmnet8。
+ 
+虚拟机设置里面——网络适配器，网络连接选择NAT模式。
+虚拟机菜单栏—编辑—虚拟网络编辑器，选择Vmnet8 NAT模式，
+1．在最下面子网设置ip为192.168.20.0 子网掩码255.255.255.0
+2．NAT设置里面网关IP为192.168.20.2
+3．使用本地DHCP服务将IP地址分配给虚拟机不勾选
+设置完成后点击应用退出。
+wKiom1RggrzBd5TtAAQn4YGAcIE553.jpg
+ 
+物理机网络连接VMNet8 手动设置ip地址 192.168.20.1 子网掩码255.255.255.0
+网关和DNS地址为192.168.20.2（即虚拟机NAT的网关地址）
+ 
+编辑linux网卡eth0的配置文件
+#vi /etc/sysconfig/network-scripts/ifcfg-eth0
+输入上述命令后回车，打开配置文件，使用方向键移动光标到最后一行，按字母键“O”，进入编辑模式，输入以下内容：
+IPADDR=192.168.20.3
+NETMASK=255.255.255.0
+GATEWAY=192.168.20.2
+另外光标移动到”ONBOOT=no”这一行，更改为ONBOOT=yes
+“BOOTPROTO=dhcp”，更改为BOOTPROTO=none
+完成后，按一下键盘左上角ESC键，输入:wq 在屏幕的左下方可以看到，输入回车保存配置文件。
+ 
+设置DNS地址,运行命令#vi /etc/resolv.conf
+光标移动到空行，按“O”键，输入 nameserver 192.168.20.2 退出按ESC键，输入:wq 回车保存配置文件。
+重启网络服务 #service network restart
+重启之后#ifconfig 查看配置的ip地址，物理机ping这个地址测试是否能通。
+
+
+
+
+
+
+
+start.sh
+
+export JAVA_HOME=/usr/java/j2sdk1.4.2_08
+export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar:.
+export PATH=$PATH:$JAVA_HOME/bin
+export CATALINA_HOME=/usr/local/tomcat
+/usr/local/tomcat/bin/catalina.sh start
+
+
+开机启动脚本(无法获取用户级的环境变量，需要在启动脚本中exportip)
+/etc/rc.d/rc.local
+
+...
+
+sh start.sh
+
+
+
+
+kill -9 `lsof -t -i:8080`  根据端口号杀进程 
+
+
+

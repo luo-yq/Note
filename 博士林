@@ -1,0 +1,376 @@
+192.168.1.213
+21
+root
+yuexiang1
+
+
+
+
+192.168.1.48
+110.249.155.61
+3389
+Administator
+bril_2015
+
+
+下面是第三步，让IE支持CSS3。在cv选择器的最后，增加一句话
+behavior: url(/public/ie-css3.htc);
+复制代码
+#cv {
+    width: 600px; height: 400px;
+    background: #000;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px auto;
+    box-shadow: 0 0 40px #222;
+    behavior: url(/public/ie-css3.htc);
+}
+复制代码
+其中，ie-css3.htc去 http://fetchak.com/ie-css3/ 下载，具体它能够支持多少CSS3特性，网站说的很清楚，我就不费口舌了。
+ 
+
+
+
+
+/usr/local/mysql/bin
+localhost:bin lyt1987$ ./mysqldump -u root -p archive > ~/Downloads/new.sql 
+
+
+
+
+
+
+
+
+				    	
+ 
+				    	var canvasList = document.getElementById('bImg'); 
+				    	var canvas = document.createElement('canvas');
+				    	canvasList.appendChild(canvas);
+				    	canvas.style.position="absolute";
+				    	canvas.style.top = "0px"; 
+				    	canvas.style.left = "0px"; 
+				    	canvas.id="canvas2";
+				    	canvas.height = 1000;
+				    	canvas.width = 1000;
+ 
+					    	var canvas2=document.getElementById("canvas2");
+					    	if (!canvas2.getContext) {
+					    		G_vmlCanvasManager.initElement(canvas2);
+					    	}
+					        var context = canvas2.getContext("2d");    
+					        context.lineWidth = 1;   
+					        context.strokeStyle = "red";  
+					        context.moveTo(50,50);  
+					        context.lineTo(1000,100);  
+					        context.stroke(); 
+					    	//canvas.style.backgroundColor = '#FF0000';
+					    	var browser=navigator.appName ; 
+if(browser=="Microsoft Internet Explorer" ) 
+{ 
+    var canvasImg=$('#bImg').find("img");
+    canvasImg.mousedown(function(e){ 
+        var context = canvas2.getContext("2d");    
+        context.lineWidth = 1;   
+        context.strokeStyle = "red";  
+        context.moveTo(e.offsetX,e.offsetY); 
+        $(this).mousemove(function(e){ 
+	        context.lineTo(e.offsetX,e.offsetY); 
+	        context.moveTo(e.offsetX,e.offsetY);  
+	        context.stroke(); 
+        })
+        $(this).mouseup(function(){
+            canvasImg.unbind('mousemove');
+        }) 
+    })
+} else{
+
+    $('#canvas2').mousedown(function(e){ 
+        var context = canvas2.getContext("2d");    
+        context.lineWidth = 1;   
+        context.strokeStyle = "red";  
+        context.moveTo(e.offsetX,e.offsetY); 
+        $(this).mousemove(function(e){ 
+	        context.lineTo(e.offsetX,e.offsetY); 
+	        context.moveTo(e.offsetX,e.offsetY);  
+	        context.stroke(); 
+        })
+        $(this).mouseup(function(){
+            $(this).unbind('mousemove');
+        })
+    })
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+用RSA非对称加密方式实现。后台生成rsa密钥对，然后在页面设置rsa公钥，提交时用公钥加密密码，生成的密文传到后台，后台再用私钥解密，获取密码明文。
+这样客户端只需要知道rsa加密方式和公钥，前台不知道私钥是无法解密的，此解决方案还是相对比较安全的。
+需要到http://www.bouncycastle.org下载bcprov-jdk16-140.jar文件。
+缺陷：由于进行的都是大数计算，使得RSA最快的情况也比DES慢上100倍，无论 是软件还是硬件实现。所以一般来说只用于少 量数据 加密。
+下面我们就来一个实际的例子：
+
+1、前端加密需要引入Barrett.js、BigInt.js和RSA.js。
+<script src="/rsa/RSA.js" type="text/javascript"></script>
+<script src="/rsa/BigInt.js" type="text/javascript"></script>
+<script src="/rsa/Barrett.js" type="text/javascript"></script> 复制代码 2、前端加密代码：
+encryptedString : (function(paramStr, rsaKey){
+setMaxDigits(130);
+//第一个参数为加密指数、第二个参数为解密参数、第三个参数为加密系数
+key = new RSAKeyPair("10001", "", rsaKey); 
+//返回加密后的字符串
+return encryptedString(key, encodeURIComponent(paramStr));
+}) 复制代码 其中的加密系数可以自定义，这里为：8246a46f44fc4d961e139fd70f4787d272d374532f4d2d9b7cbaad6a15a8c1301319aa6b3f30413b859351c71938aec516fa7147b69168b195e81df46b6bed7950cf3a1c719d42175f73d7c97a85d7d20a9e83688b92f05b3059bb2ff75cd7190a042cd2db97ebc2ab4da366f2a7085556ed613b5a39c9fdd2bb2595d1dc23b5
+3、后台RSA加密解密方法如下：
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
+
+import javax.crypto.Cipher;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.jd.uwp.common.Constants;
+
+/**
+* RSA 工具类。提供加密，解密，生成密钥对等方法。
+* 需要bcprov-jdk16-140.jar包。
+* 
+*/
+public class RSAUtil {
+
+private static String RSAKeyStore = "RSAKey.txt";
+
+/**
+* * 生成密钥对 *
+* @return KeyPair *
+* @throws EncryptException
+*/
+public static KeyPair generateKeyPair(String basePath) throws Exception {
+try {
+KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA",
+new org.bouncycastle.jce.provider.BouncyCastleProvider());
+//大小
+final int KEY_SIZE = 1024;
+keyPairGen.initialize(KEY_SIZE, new SecureRandom());
+KeyPair keyPair = keyPairGen.generateKeyPair();
+saveKeyPair(keyPair, basePath);
+return keyPair;
+} catch (Exception e) {
+throw new Exception(e.getMessage());
+}
+}
+
+/**
+* 获取密钥对
+* @return
+* @throws Exception
+*/
+public static KeyPair getKeyPair(String basePath) throws Exception {
+FileInputStream fis = new FileInputStream(StringUtils.isNotBlank(basePath) ? (basePath + RSAKeyStore) : RSAKeyStore);
+ObjectInputStream oos = new ObjectInputStream(fis);
+KeyPair kp = (KeyPair) oos.readObject();
+oos.close();
+fis.close();
+return kp;
+}
+
+/**
+* 保存密钥
+* @param kp
+* @throws Exception
+*/
+public static void saveKeyPair(KeyPair kp, String basePath) throws Exception {
+FileOutputStream fos = new FileOutputStream(StringUtils.isNotBlank(basePath) ? (basePath + RSAKeyStore) : RSAKeyStore);
+ObjectOutputStream oos = new ObjectOutputStream(fos);
+// 生成密钥
+oos.writeObject(kp);
+oos.close();
+fos.close();
+}
+
+/**
+* * 生成公钥 *
+* @param modulus *
+* @param publicExponent *
+* @return RSAPublicKey *
+* @throws Exception
+*/
+public static RSAPublicKey generateRSAPublicKey(byte[] modulus,
+byte[] publicExponent) throws Exception {
+KeyFactory keyFac = null;
+try {
+keyFac = KeyFactory.getInstance("RSA",
+new org.bouncycastle.jce.provider.BouncyCastleProvider());
+} catch (NoSuchAlgorithmException ex) {
+throw new Exception(ex.getMessage());
+}
+RSAPublicKeySpec pubKeySpec = new RSAPublicKeySpec(new BigInteger(
+modulus), new BigInteger(publicExponent));
+try {
+return (RSAPublicKey) keyFac.generatePublic(pubKeySpec);
+} catch (InvalidKeySpecException ex) {
+throw new Exception(ex.getMessage());
+}
+}
+
+/**
+* * 生成私钥 *
+* @param modulus *
+* @param privateExponent *
+* @return RSAPrivateKey *
+* @throws Exception
+*/
+public static RSAPrivateKey generateRSAPrivateKey(byte[] modulus,
+byte[] privateExponent) throws Exception {
+KeyFactory keyFac = null;
+try {
+keyFac = KeyFactory.getInstance("RSA",
+new org.bouncycastle.jce.provider.BouncyCastleProvider());
+} catch (NoSuchAlgorithmException ex) {
+throw new Exception(ex.getMessage());
+}
+RSAPrivateKeySpec priKeySpec = new RSAPrivateKeySpec(new BigInteger(
+modulus), new BigInteger(privateExponent));
+try {
+return (RSAPrivateKey) keyFac.generatePrivate(priKeySpec);
+} catch (InvalidKeySpecException ex) {
+throw new Exception(ex.getMessage());
+}
+}
+
+/**
+* * 加密 *
+* @param key
+* 加密的密钥 *
+* @param data
+* 待加密的明文数据 *
+* @return 加密后的数据 *
+* @throws Exception
+*/
+public static byte[] encrypt(PublicKey pk, byte[] data) throws Exception {
+try {
+Cipher cipher = Cipher.getInstance("RSA",
+new org.bouncycastle.jce.provider.BouncyCastleProvider());
+cipher.init(Cipher.ENCRYPT_MODE, pk);
+// 获得加密块大小，如：加密前数据为128个byte，而key_size=1024
+int blockSize = cipher.getBlockSize();
+// 加密块大小为127
+// byte,加密后为128个byte;因此共有2个加密块，第一个127
+// byte第二个为1个byte
+int outputSize = cipher.getOutputSize(data.length);// 获得加密块加密后块大小
+int leavedSize = data.length % blockSize;
+int blocksSize = leavedSize != 0 ? data.length / blockSize + 1 : data.length / blockSize;
+byte[] raw = new byte[outputSize * blocksSize];
+int i = 0;
+while (data.length - i * blockSize > 0) {
+if (data.length - i * blockSize > blockSize) {
+cipher.doFinal(data, i * blockSize, blockSize, raw, i * outputSize);
+} else {
+cipher.doFinal(data, i * blockSize, data.length - i * blockSize, raw, i * outputSize);
+}
+i++;
+}
+return raw;
+} catch (Exception e) {
+throw new Exception(e.getMessage());
+}
+}
+
+/**
+* * 解密 *
+* 
+* @param key
+* 解密的密钥 *
+* @param raw
+* 已经加密的数据 *
+* @return 解密后的明文 *
+* @throws Exception
+*/
+@SuppressWarnings("static-access")
+public static byte[] decrypt(PrivateKey pk, byte[] raw) throws Exception {
+try {
+Cipher cipher = Cipher.getInstance("RSA", new org.bouncycastle.jce.provider.BouncyCastleProvider());
+cipher.init(cipher.DECRYPT_MODE, pk);
+int blockSize = cipher.getBlockSize();
+ByteArrayOutputStream bout = new ByteArrayOutputStream(64);
+int j = 0;
+while (raw.length - j * blockSize > 0) {
+bout.write(cipher.doFinal(raw, j * blockSize, blockSize));
+j++;
+}
+return bout.toByteArray();
+} catch (Exception e) {
+throw new Exception(e.getMessage());
+}
+}
+
+/**
+* 解密方法
+* paramStr ->密文
+* basePath ->RSAKey.txt所在的文件夹路径
+**/
+public static String decryptStr(String paramStr, String basePath) throws Exception{
+byte[] en_result = new BigInteger(paramStr, 16).toByteArray();
+byte[] de_result = decrypt(getKeyPair(basePath).getPrivate(), en_result);
+StringBuffer sb = new StringBuffer();
+sb.append(new String(de_result));
+//返回解密的字符串
+return sb.reverse().toString();
+}
+}
+复制代码 4、前端提交到后端解密调用:
+//前端 表单提交
+$.ajax({
+url : contextPath + "test.action",
+//加密传输
+data : {pwd:encryptedString ($("#pwd").val(), "adasdasdasdasdadsasdasdasdasd")},
+type : "post",
+datatype : "json",
+success : function(retData){
+}
+});
+
+//后端解密代码
+RSAUtil.decryptStr(paramMap.getString("pwd"), request.getSession().getServletContext().getRealPath("/")); 复制代码
+
+
+
+
+
+
+
+
+
+自适应去边白
+scrollbarSize :0 ,  
+fitColumns : true,
+
