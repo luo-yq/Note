@@ -1,0 +1,4 @@
+eclipse tomcat内存溢出
+
+run配置
+-Xms256m -Xmx512m -XX:PermSize=256m -XX:MaxPermSize=256M 
