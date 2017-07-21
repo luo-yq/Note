@@ -1,0 +1,1 @@
+windows : netstat -an|find "61616" 

@@ -1,0 +1,16 @@
+
+
+执行命令
+
+sudo firewall-cmd --zone=public --permanent --add-service=mysql
+返回success。然后继续执行
+
+sudo systemctl restart firewalld
+我的重启防火墙之后就能正常访问了。
+
+
+
+
+
+
+

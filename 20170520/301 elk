@@ -1,0 +1,113 @@
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.0.rpm
+sha1sum elasticsearch-5.4.0.rpm 
+sudo rpm --install elasticsearch-5.4.0.rpm
+
+
+
+ps -p 1  查看系统支持哪种启动方式和自启动
+
+
+启动方式一
+sudo chkconfig --add elasticsearch
+
+sudo -i service elasticsearch start
+sudo -i service elasticsearch stop
+
+启动方式二
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable elasticsearch.service
+
+sudo systemctl start elasticsearch.service
+sudo systemctl stop elasticsearch.service
+
+方式三
+bin/elasticsearch
+
+
+curl http://localhost:9200/
+
+
+
+查看日志
+sudo journalctl -f
+sudo journalctl --unit elasticsearch
+sudo journalctl --unit elasticsearch --since  "2016-10-30 18:17:16"
+
+
+
+
+
+
+
+
+
+
+wget https://artifacts.elastic.co/downloads/kibana/kibana-5.4.0-x86_64.rpm
+sha1sum kibana-5.4.0-x86_64.rpm 
+sudo rpm --install kibana-5.4.0-x86_64.rpm
+
+
+
+
+
+启动方式一
+
+sudo chkconfig --add kibana
+ 
+sudo -i service kibana start
+sudo -i service kibana stop
+
+启动方式二
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable kibana.service
+Kibana can be started and stopped as follows:
+
+sudo systemctl start kibana.service
+sudo systemctl stop kibana.service
+
+
+
+
+
+
+
+
+logstash   jdk 1.8+
+
+We use the PGP key D88E42B4, Elastic’s Signing Key, with fingerprint
+
+4609 5ACC 8548 582C 1A26 99A9 D27D 666C D88E 42B4
+
+to sign all our packages.
+
+
+使用apt-get下载logstash
+
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+sudo apt-get install apt-transport-https
+
+echo "deb https://artifacts.elastic.co/packages/5.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-5.x.list
+
+sudo apt-get update && sudo apt-get install logstash
+
+
+
+wget https://artifacts.elastic.co/downloads/logstash/logstash-5.4.0.rpm
+sha1sum logstash-5.4.0-x86_64.rpm 
+sudo rpm --install logstash-5.4.0-x86_64.rpm
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,110 @@
+centos6
+
+yum install mysql
+yum install mysql-server
+yum install mysql-devel
+
+systemctl start mysqld
+
+
+
+
+
+
+
+centos7
+
+yum install mariadb
+yum install mariadb-server
+yum install mariadb-devel
+
+
+systemctl start mariadb  #启动MariaDB
+systemctl stop mariadb  #停止MariaDB
+systemctl restart mariadb  #重启MariaDB
+systemctl enable mariadb  #设置开机启动
+
+
+
+
+
+centos7 
+
+wget http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+rpm -ivh mysql-community-release-el7-5.noarch.rpm
+yum install mysql-community-server
+
+
+
+设置密码不需要重启
+set password for 'root'@'localhost' =password('password');
+flush privileges;
+
+
+方法1： 用SET PASSWORD命令
+　　mysql -u root
+　　mysql> SET PASSWORD FOR 'root'@'localhost' = PASSWORD('newpass');
+方法2：用mysqladmin
+　　mysqladmin -u root password "newpass"
+　　如果root已经设置过密码，采用如下方法
+　　mysqladmin -u root password oldpass "newpass"
+方法3： 用UPDATE直接编辑user表
+　　mysql -u root
+　　mysql> use mysql;
+　　mysql> UPDATE user SET Password = PASSWORD('newpass') WHERE user = 'root';
+　　mysql> FLUSH PRIVILEGES;
+在丢失root密码的时候，可以这样
+　　mysqld_safe --skip-grant-tables&
+　　mysql -u root mysql
+　　mysql> UPDATE user SET password=PASSWORD("new password") WHERE user='root';
+　　mysql> FLUSH PRIVILEGES;
+
+
+
+
+
+配置mysql
+1、编码
+mysql配置文件为/etc/my.cnf
+
+最后加上编码配置
+
+[mysql]
+default-character-set =utf8
+这里的字符编码必须和/usr/share/mysql/charsets/Index.xml中一致。
+
+
+
+2、远程连接设置
+把在所有数据库的所有表的所有权限赋值给位于所有IP地址的root用户。
+
+mysql> grant all privileges on *.* to root@'%'identified by 'password';
+如果是新用户而不是root，则要先新建用户
+
+mysql>create user 'username'@'%' identified by 'password';  
+
+
+查看 MySQL Server 是不是监听了 3306 端口
+执行命令netstat -tulpen
+这里如果没有监听3306端口或者只监听了localhost（0.0.0.0表示监听所有），则在my.cnf添加下面这一行
+
+bind-address = 0.0.0.0
+
+
+
+3、如果服务器是 CentOS7，将 MySQL 服务加入防火墙
+
+===
+
+执行命令
+
+sudo firewall-cmd --zone=public --permanent --add-service=mysql
+返回success。然后继续执行
+
+sudo systemctl restart firewalld
+我的重启防火墙之后就能正常访问了。
+
+
+
+
+
