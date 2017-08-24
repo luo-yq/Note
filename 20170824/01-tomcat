@@ -1,0 +1,10 @@
+cd /usr/local
+wget http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.81/bin/apache-tomcat-7.0.81.tar.gz
+#wget http://apache.fayea.com/tomcat/tomcat-7/v7.0.81/bin/apache-tomcat-7.0.81.tar.gz
+tar -zxv -f apache-tomcat-7.0.81.tar.gz // 解压压缩包
+rm -rf apache-tomcat-7.0.81.tar.gz // 删除压缩包
+mv apache-tomcat-7.0.81 tomcat
+
+#开放端口
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --reload

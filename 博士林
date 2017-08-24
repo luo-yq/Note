@@ -13,23 +13,6 @@ Administator
 bril_2015
 
 
-下面是第三步，让IE支持CSS3。在cv选择器的最后，增加一句话
-behavior: url(/public/ie-css3.htc);
-复制代码
-#cv {
-    width: 600px; height: 400px;
-    background: #000;
-    border-radius: 20px;
-    padding: 20px;
-    margin: 20px auto;
-    box-shadow: 0 0 40px #222;
-    behavior: url(/public/ie-css3.htc);
-}
-复制代码
-其中，ie-css3.htc去 http://fetchak.com/ie-css3/ 下载，具体它能够支持多少CSS3特性，网站说的很清楚，我就不费口舌了。
- 
-
-
 
 
 /usr/local/mysql/bin

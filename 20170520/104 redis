@@ -1,21 +1,4 @@
-wget http://download.redis.io/releases/redis-3.2.9.tar.gz
-tar xzf redis-3.2.9.tar.gz
-
-mv redis-3.2.9 /opt
-
-cd /opt/redis-3.2.9
-#yum -y install gcc
-make
-#如果报找不到jmalloc
-#make MALLOC=libc
-
-
-
-The binaries that are now compiled are available in the src directory. Run Redis with:
-
-src/redis-server
-
-
+ 
 
 启动过程有报错和警告，按照提示进行处理
 vi /etc/sysctl.conf 
@@ -24,28 +7,12 @@ sysctl vm.overcommit_memory=1
 echo '' >> /etc/rc.locl
 echo 1000 >/proc/sys/net/core/somaxconn
 
-
-
-You can interact with Redis using the built-in client:
-src/redis-cli
-redis> set foo bar
-OK
-redis> get foo
-"bar"
-
-
-
-
-
-
+ 
 注意点：
 ctrl+z 会把服务挂起来，导致客户端无法访问，应将服务启动方式改为后台启动
 redis.conf文件将daemonize改成yes
 
 redis-server & 启动
-
-
-
 
 
 

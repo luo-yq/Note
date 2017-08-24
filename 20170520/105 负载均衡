@@ -1,0 +1,8 @@
+1.  haproxy :  会话保持，mysql，目前没有nagios和cacti的性能监控模板
+2.  nginx: session不能保持，请求头支持较小，健康检查较弱
+3.  lvs: 可配置项少，四层
+5.  硬件F5
+
+
+
+wget http://www.haproxy.org/download/1.7/src/haproxy-1.7.2.tar.gz
