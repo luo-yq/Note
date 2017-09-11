@@ -14,6 +14,7 @@ cp /usr/local/redis-3.2.8/src/redis-server /usr/sbin
 cp /usr/local/redis-3.2.8/src/redis-benchmark /usr/sbin
 cp /usr/local/redis-3.2.8/src/redis-cli /usr/sbin
 
+#启动默认端口6379
 redis-server &
 
 
