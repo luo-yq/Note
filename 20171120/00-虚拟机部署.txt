@@ -1,0 +1,27 @@
+VMware 使用vmneto8 进行 nat 连接
+网关 192.168.195.2
+主机 192.168.195.1
+
+虚拟机网段分配   
+
+11--19 基础配置，用于克隆，节省空间
+11：tomcat,weblogic,was,jboss,nginx,haproxy等
+12: mysql,mongodb,redis,zookeeper,memcache等
+14: oracle
+15: cloudra
+
+100--109  tomcat
+110--119  weblogic
+120--129  jboss
+130--139  was
+140--149  其他web容器预留
+150--159  mysql
+160--169  oracle
+170--179   nginx
+180--189   zookeeper
+190--199   redis
+
+200--209   大数据
+
+
+220--229   邮箱
