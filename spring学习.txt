@@ -125,8 +125,19 @@ request.getHeader("User-Agent")
 
 
 
+@Configuration
+@ComponentScan(basePackages = { }, basePackageClasses = {   })
+@Import
 
+@EnableAutoConfiguration
+@EnableScheduling
 
+@Component
+@Controller
+@Service
 
+@Repository
+@Autowired
+@Qualifier
 
 

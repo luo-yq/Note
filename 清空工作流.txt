@@ -9,6 +9,7 @@ delete FROM act_ru_identitylink ;
 delete FROM act_ru_job ;
 delete FROM act_ru_task ;
 delete FROM act_ru_variable ;
+update act_ru_execution set parent_id_ = null; 
 delete FROM act_ru_execution ;
 delete FROM act_hi_actinst ;
 delete FROM act_hi_comment ;
