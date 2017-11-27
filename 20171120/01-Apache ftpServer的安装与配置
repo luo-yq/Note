@@ -1,0 +1,150 @@
+01-Apache ftpServer的安装与配置  
+
+1 下载ftpServer，目前最新版本是1.0.6，地址http://mina.apache.org/ftpserver-project/downloads.html 
+
+2 解压缩：tar -zvxf  ftpserver-1.0.6.tar.gz 
+
+3 进入配置文件目录：cd apache-ftpserver-1.0.6/res/conf 
+
+4 配置用户登录信息 
+
+（1）使用文件进行用户登录验证 
+
+修改文件 users.properties 
+ftpserver.user.admin.userpassword=admin 
+ftpserver.user.admin.homedirectory=./res/home 
+ftpserver.user.admin.enableflag=true 
+ftpserver.user.admin.writepermission=true 
+ftpserver.user.admin.maxloginnumber=0 
+ftpserver.user.admin.maxloginperip=0 
+ftpserver.user.admin.idletime=0 
+ftpserver.user.admin.uploadrate=0 
+ftpserver.user.admin.downloadrate=0 
+
+ftpserver.user.anonymous.userpassword= 
+ftpserver.user.anonymous.homedirectory=./res/home 
+ftpserver.user.anonymous.enableflag=true 
+ftpserver.user.anonymous.writepermission=false 
+ftpserver.user.anonymous.maxloginnumber=20 
+ftpserver.user.anonymous.maxloginperip=2 
+ftpserver.user.anonymous.idletime=300 
+ftpserver.user.anonymous.uploadrate=4800 
+
+执行命令：cp ftpd-typical.xml ftpd-file.xml 
+
+修改文件文件ftpd-file.xml，其中红色字体为修改部分，密码加密方式修改为clear 
+
+<server xmlns="http://mina.apache.org/ftpserver/spring/v1" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xsi:schemaLocation=" 
+           http://mina.apache.org/ftpserver/spring/v1 http://mina.apache.org/ftpserver/ftpserver-1.0.xsd 
+           " 
+        id="myServer"> 
+        <listeners> 
+                <nio-listener name="default" port="2121"> 
+                    <ssl> 
+                <keystore file="./res/ftpserver.jks" password="password" /> 
+            </ssl> 
+                </nio-listener> 
+        </listeners> 
+        <file-user-manager file="./res/conf/users.properties"  encrypt-passwords = "clear" /> 
+</server> 
+
+退回目录apache-ftpserver-1.0.6/，启动ftp服务 sh bin/ftpd.sh res/conf/ftpd-file.xml 
+
+执行：ftp 127.0.0.1 2121     输入用户和密码：admin    admin 
+
+（2）使用数据库进行验证，这里数据库选用mysql 
+
+选定一个数据库（这里使用ftpserver），根据文件apache-ftpserver-1.0.6/res/ftp-db.sql中的命令创建数据库 
+
+在数据库中增加一条记录：insert into FTP_USER values("user1","123456","./res/home/user1",1,0,0,0,0,0,0); 
+
+创建配置文件： 
+
+cd apache-ftpserver-1.0.6/res/conf 
+
+cp ftpd-typical.xml ftpd-db.xml 
+
+修改配置文件ftpd-db.xml 
+
+<?xml version="1.0" encoding="UTF-8"?> 
+        <!-- 
+                Licensed to the Apache Software Foundation (ASF) under one or more 
+                contributor license agreements. See the NOTICE file distributed with 
+                this work for additional information regarding copyright ownership. 
+                The ASF licenses this file to you under the Apache License, Version 
+                2.0 (the "License"); you may not use this file except in compliance 
+                with the License. You may obtain a copy of the License at 
+                http://www.apache.org/licenses/LICENSE-2.0 Unless required by 
+                applicable law or agreed to in writing, software distributed under the 
+                License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
+                CONDITIONS OF ANY KIND, either express or implied. See the License for 
+                the specific language governing permissions and limitations under the 
+                License. 
+        --> 
+<server xmlns="http://mina.apache.org/ftpserver/spring/v1" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xmlns:beans="http://www.springframework.org/schema/beans" 
+        xsi:schemaLocation=" 
+           http://www.springframework.org/schema/beans 
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd 
+           http://mina.apache.org/ftpserver/spring/v1 
+           http://mina.apache.org/ftpserver/ftpserver-1.0.xsd 
+           " 
+        id="myServer"> 
+        <listeners> 
+                <nio-listener name="default" port="2121"> 
+                    <ssl> 
+                <keystore file="./res/ftpserver.jks" password="password" /> 
+            </ssl> 
+                </nio-listener> 
+        </listeners> 
+        <!-- 
+        <file-user-manager file="./res/conf/users.properties" /> 
+        --> 
+        <db-user-manager encrypt-passwords = "clear"> 
+                <data-source> 
+                    <beans:bean class="org.apache.commons.dbcp.BasicDataSource"> 
+                        <beans:property name="driverClassName" value="com.mysql.jdbc.Driver" /> 
+                        <beans:property name="url" value="jdbc:mysql://localhost/ftpserver" /> 
+                        <beans:property name="username" value="root" /> 
+                        <beans:property name="password" value="123456" /> 
+                    </beans:bean> 
+                </data-source> 
+                <insert-user>INSERT INTO FTP_USER (userid, userpassword, 
+                        homedirectory, enableflag, writepermission, idletime, uploadrate, 
+                        downloadrate) VALUES ('{userid}', '{userpassword}', 
+                        '{homedirectory}', 
+                        {enableflag}, {writepermission}, {idletime}, 
+                        {uploadrate}, 
+                        {downloadrate}) 
+                </insert-user> 
+                        <update-user>UPDATE FTP_USER SET 
+                                userpassword='{userpassword}',homedirectory='{homedirectory}',enableflag={enableflag},writepermission={writepermission},idletime={idletime},uploadrate={uploadrate},downloadrate={downloadrate} 
+                                WHERE userid='{userid}' 
+                </update-user> 
+                        <delete-user>DELETE FROM FTP_USER WHERE userid = '{userid}' 
+                </delete-user> 
+                        <select-user>SELECT userid, userpassword, homedirectory, 
+                                enableflag, writepermission, idletime, uploadrate, downloadrate, 
+                                maxloginnumber, maxloginperip FROM 
+                                FTP_USER WHERE userid = '{userid}' 
+                </select-user> 
+                        <select-all-users>SELECT userid FROM FTP_USER ORDER BY userid 
+                </select-all-users> 
+                        <is-admin>SELECT userid FROM FTP_USER WHERE userid='{userid}' 
+                                AND 
+                                userid='admin' 
+                </is-admin> 
+                        <authenticate>SELECT userpassword from FTP_USER WHERE 
+                                userid='{userid}'</authenticate> 
+        </db-user-manager> 
+</server> 
+说明：server属性部分的红色字体一定要写，否则就会找不到beans，报错：The prefix "beans" for element "beans:bean" is not bound；db-user-manager 的属性部分的红色字体一定要写，这里的密码加密方式为clear，否则会登录不成功；下面的红色字体分别表示localhost（数据库所在的ip地址），ftpserver（数据库名称），root（连接数据库的用户名），123456（连接数据库密码）；绿色字体表示使用文件登录，需要注释掉。 
+
+增加数据库连接需要使用的jar，下载3个jar包到目录apache-ftpserver-1.0.6/common/lib： commons-dbcp-1.2.2.jar、commons-pool-1.3.jar、mysql-connector-java-3.1.13-bin.jar 
+
+进入目录apache-ftpserver-1.0.6，启动服务：sh bin/ftpd.sh res/conf/ftpd-db.xml 
+
+执行：ftp 127.0.0.1 2121     输入用户和密码：user1  123456 

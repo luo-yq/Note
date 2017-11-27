@@ -1,0 +1,23 @@
+jdk 安装配置 ，tar包
+
+linux下安装jdk，步骤如下
+
+   1：下载jdk包
+   2：把jdk文件保存至Linux下目录opt/java 
+   4：配置环境变量： $ sudo vi /etc/profile                               
+
+JAVA_HOME=/home/gcs/user/java/jdk1.7.0_67
+PATH=$JAVA_HOME/bin:$PATH
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export JAVA_HOME
+export PATH
+export CLASSPATH
+   5：运行$ source /etc/profile，使配置环境生效
+
+   6：运行$ java -version 看是否生效。若出现jdk版本号，则安装并配置环境变量成功
+
+
+
+tomcat:
+   /sbin/iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
+   /sbin/iptables -I INPUT -p tcp --dport 2121 -j ACCEPT
