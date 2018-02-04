@@ -55,7 +55,7 @@
 	NETWORKING=yes
 	HOSTNAME=master.hadoop
 	NETWORKING_IPV6=no
-	GATEWAY=192.168.2.1
+	GATEWAY=192.168.195.2
 
 
 	#映射 /etc/hosts

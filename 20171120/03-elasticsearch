@@ -1,0 +1,19 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   systemctl start firewalld 
+   sudo firewall-cmd --zone=public --add-port=9200/tcp --permanent  
+   sudo service firewalld restart

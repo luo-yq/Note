@@ -1,0 +1,34 @@
+
+yum update
+yum -y install vim java* wget*
+
+vim /etc/profile
+
+export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.151-2.6.11.1.el7_4.x86_64/
+export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export PATH=$PATH:$JAVA_HOME/bin
+
+wget http://www.igniterealtime.org/downloadServlet?filename=openfire/openfire-4.1.6-1.noarch.rpm
+mv downloadServlet\?filename\=openfire%2Fopenfire-4.1.6-1.noarch.rpm openfire-4.1.6-1.noarch.rpm
+rpm -ivh openfire-4.1.6-1.noarch.rpm
+#默认安装到/opt/openfire目录下
+#如果下载的是tar包，上传到/opt
+#tar –xzvf openfire-4.1.6-1.noarch.tar.gz
+#cp openfire/bin/openfire /etc/init.d
+
+
+/etc/init.d/openfire start
+chkconfig openfire on
+chkconfig --list openfire
+
+firewall-cmd --zone=public --add-port=9090/tcp --permanent 
+firewall-cmd --zone=public --add-port=5222/tcp --permanent 
+firewall-cmd --reload
+
+ 
+
+
+create user openfire@localhost identified by 'openfire';
+grant all on *.* to openfire@localhost indentified by 'openfire';
+grant all privileges on *.* to openfire@'%' identified by 'openfire';
+grant all privileges on *.* to openfire@'192.168.195.240' identified by 'openfire' with grant option;

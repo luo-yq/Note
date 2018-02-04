@@ -15,8 +15,14 @@ vi /opt/elasticsearch/config/elasticsearch.yml
 
 #修改network.host: ip
 
-export ES_HOME=/opt/elasticsearch
+vi ~/.bashrc
 
+export ES_HOME=/opt/elasticsearch
+export JAVA_HOME=/opt/jdk1.8
+export PATH=$PATH:$JAVA_HOME/bin
+export CLASSPATH=.:$CLASSPATH:$JAVA_HOME/lib
+
+source ~/.bashrc
 
 
 ./elasticsearch
@@ -41,9 +47,6 @@ unzip elasticsearch-analysis-ik-6.1.1.zip
 
 
 
-export JAVA_HOME=/opt/jdk1.8
-export PATH=$PATH:$JAVA_HOME/bin
-export CLASSPATH=.:$CLASSPATH:$JAVA_HOME/lib
 
 
 
@@ -52,31 +55,38 @@ http.cors.allow-origin: "*"
 http.cors.allow-headers: Authorization
 
 
-sudo /opt/elasticsearch/bin/plugin install mobz/elasticsearch-head  
+sudo /opt/elasticsearch/bin/elasticsearch-plugin install mobz/elasticsearch-head  
 
-
-
+ 
 cd /opt
 wget https://codeload.github.com/mobz/elasticsearch-head/zip/master
-unzip master.zip  
-rm -rf master.zip
-mv -r elasticsearch-head-master $ES_HOME/plugins/head
+cd elasticsearch-head
+npm install
+npm run start
 
-http://192.168.253.13:9200/_plugin/head  
+cd /opt
+wget https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.1.1/elasticsearch-analysis-ik-6.1.1.zip
+unzip elasticsearch-analysis-ik-6.1.1.zip
+mv elasticsearch-analysis-ik-6.1.1 $ES_HOME/plugins/analysis-ik
 
-
-
-
-
+ 
+./bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.1.1/elasticsearch-analysis-ik-6.1.1.zip
 
 
 sysctl -w vm.max_map_count=262144
 
-
+su
 echo "vm.max_map_count=262144" > /etc/sysctl.conf
 sysctl -p
 
 
+\cp -f /etc/security/limits.conf /etc/security/limits.conf.bak
+cat /etc/security/limits.conf | grep -v "es" > /tmp/system_limits.conf
+echo "es hard nofile 65536" >> /tmp/system_limits.conf 
+echo "es soft nofile 65536" >> /tmp/system_limits.conf 
+mv -f /tmp/system_limits.conf /etc/security/limits.conf
+su es
+ulimit -Hn
  
 
 cp build/distributions/elasticsearch-jieba-plugin-5.1.2.zip ${path.home}/plugins
@@ -86,5 +96,9 @@ cp build/distributions/elasticsearch-jieba-plugin-5.1.2.zip ${path.home}/plugins
 
 
 
+firewall-cmd --zone=public --add-port=9100/tcp --permanent
+firewall-cmd --zone=public --add-port=9200/tcp --permanent
+firewall-cmd --reload
 
 
+yum -y install java-1.8.0-openjdk*

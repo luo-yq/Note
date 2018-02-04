@@ -1,0 +1,248 @@
+
+Apache Ambari是一种基于Web的工具，支持Apache Hadoop集群的供应、管理和监控。Ambari已支持大多数Hadoop组件，包括HDFS、MapReduce、Hive、Pig、 Hbase、Zookeper、Sqoop和Hcatalog等。
+Apache Ambari 支持HDFS、MapReduce、Hive、Pig、Hbase、Zookeper、Sqoop和Hcatalog等的集中管理。也是5个顶级hadoop管理工具之一
+
+依赖mysql,jdk8
+
+
+
+
+
+安装完成后创建ambari数据库及用户：
+
+create database ambari character set utf8;
+CREATE USER 'ambari'@'%' IDENTIFIED BY 'ambari-1234';
+GRANT ALL PRIVILEGES ON *.* TO 'ambari'@'%';
+FLUSH PRIVILEGES;
+如果要安装Hive，再创建Hive数据库和用户 再执行下面的语句：
+
+create database hive character set utf8;
+CREATE USER 'hive'@'%' IDENTIFIED BY 'hive-1234';
+GRANT ALL PRIVILEGES ON *.* TO 'hive'@'%';
+FLUSH PRIVILEGES;
+如果要安装Oozie，再创建Oozie数据库和用户 再执行下面的语句：
+
+create database oozie character set utf8;
+CREATE USER 'oozie'@'%' IDENTIFIED BY 'oozie-1234';
+GRANT ALL PRIVILEGES ON *.* TO 'oozie'@'%';
+FLUSH PRIVILEGES; 
+
+#需要安装mysql驱动
+yum install -y mysql-connector-java
+
+#安装ambari
+mkdir /var/www/html/ambari-hdp
+mkdir /var/www/html/ambari-hdp/HDP-UTILS
+
+
+wget http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.1.0/ambari-2.2.1.0-centos7.tar.gz
+wget http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.4.0.0/HDP-2.4.0.0-centos7-rpm.tar.gz
+wget http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.20/repos/centos7/HDP-UTILS-1.1.0.20-centos7.tar.gz
+
+tar -xvf ambari-2.2.1.0-centos7.tar.gz -C /var/www/html/ambari-hdp/
+tar -xvf HDP-2.4.0.0-centos7-rpm.tar.gz -C /var/www/html/ambari-hdp/
+tar -xvf HDP-UTILS-1.1.0.20-centos7.tar.gz -C /var/www/html/ambari-hdp/
+
+systemctl restart httpd
+
+
+http://192.168.195.230/ambari-hdp
+
+
+
+
+
+# 配置Yum本地Repos资源池
+
+# 在ambari.server上执行：
+
+yum install -y yum-plugin-priorities
+# 修改Yum安装源的校验
+
+vi /etc/yum/pluginconf.d/priorities.conf
+#设置为以下内容
+
+[main]
+enabled=1
+gpgcheck=0
+
+
+
+
+
+
+# 制作本地资源文件
+# 创建Ambari、HDP、HDP-UTIL资源文件：
+http://192.168.195.230/ambari-hdp/AMBARI-2.2.1.0/centos7/2.2.1.0-161/
+# - ambari.repo:
+echo '[ambari-2.2.1.0]
+name=ambari-2.2.1.0
+baseurl=http://192.168.195.230/ambari-hdp/AMBARI-2.2.1.0/centos7/2.2.1.0-161
+gpgcheck=0
+gpgkey=http://192.168.195.230/ambari-hdp/AMBARI-2.2.1.0/centos7/2.2.1.0-161/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+enabled=1
+priority=1
+' | sudo tee /etc/yum.repos.d/ambari.repo
+
+# - hdp.repo
+echo '[HDP-2.4.0.0]
+name=Hortonworks Data Platform Version - HDP-2.4.0.0
+baseurl=http://192.168.195.230/ambari-hdp/HDP/centos7/2.x/updates/2.4.0.0
+gpgcheck=0
+gpgkey=http://192.168.195.230/ambari-hdp/HDP/centos7/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+enabled=1
+priority=1
+' | sudo tee /etc/yum.repos.d/hdp.repo
+
+# - hdp-util.repo
+echo '[HDP-UTILS-1.1.0.20]
+name=Hortonworks Data Platform Version - HDP-UTILS-1.1.0.20
+baseurl= http://192.168.195.230/ambari-hdp/HDP-UTILS-1.1.0.20/repos/centos7
+gpgcheck=0
+enabled=1
+priority=1
+' | sudo tee /etc/yum.repos.d/hdp-util.repo
+
+# 制作完成后，移动到/etc/yum.repos.d/；依次执行以下命令，更新本地资源池：
+
+yum clean list
+yum update list
+yum makecache
+
+# 等待更新完毕后，查看资源池：
+
+yum repolist
+
+8. 安装Ambari-Server
+
+# 执行安装命令：
+
+yum install -y ambari-server
+# 安装过程无需互动
+
+# 如果提示找不到KEY，则执行如下命令：
+
+rpm --import /var/www/html/ambari-hdp/AMBARI-2.2.1.0/centos7/2.2.1.0-161/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+#     将Ambari数据库脚本导入到数据库。
+
+# Ambari安装会将安装等信息写入数据库，建议使用自己安装的MySQL数据库，也可以不安装而使用默认数据库PostgreSQL。如果使用自己定义的数据库，必须在启动Ambari服务之前导入Ambari的sql脚本。
+
+# 用root用户登录mysql
+
+# mysql -uroot -p
+
+use ambari;
+source /var/lib/ambari-server/resources/Ambari-DDL-MySQL-CREATE.sql;
+ 
+
+# 配置Ambari-Server
+
+# 执行配置命令：
+
+ambari-server setup
+提示是否自定义设置？输入：y
+
+Customize user account for ambari-server daemon [y/n] (n)? y
+ambari-server 账号。输入：root。
+
+Enter user account for ambari-server daemon (root): root
+
+Adjusting ambari-server permissions and ownership...
+检查防火墙，如果关闭则不用操作。
+
+Checking firewall status...
+
+Redirecting to /bin/systemctl status iptables.service
+设置JDK。输入：3。
+
+Checking JDK...Do you want to change Oracle JDK [y/n] (n)? y
+
+[1] Oracle JDK 1.8 + Java Cryptography Extension (JCE) Policy Files 8
+[2] Oracle JDK 1.7 + Java Cryptography Extension (JCE) Policy Files 7
+[3] Custom JDK
+
+==========================================
+
+Enter choice (1): 3
+如果上面选择3自定义JDK,则需要设置JAVA_HOME。输入：
+ls -lrt /usr/bin/java
+ls -lrt /etc/alternatives/java
+
+/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.151-1.b12.el7_4.x86_64/jre/bin/java
+/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.151-1.b12.el7_4.x86_64 下没有bin ？？？？ 导致设置失败？？？？
+
+WARNING: JDK must be installed on all hosts and JAVA_HOME must be valid on all hosts.
+WARNING: JCE Policy files are required for configuring Kerberos security. If you plan to use Kerberos, please make sure JCE Unlimited Strength Jurisdiction Policy Files are valid on all hosts.
+Path to JAVA_HOME: /usr/local/jdk/jdk1.8.0_131
+
+Validating JDK on Ambari Server...done.
+Completing setup...
+数据库配置。选择：y。
+
+Configuring database...Enter advanced database configuration [y/n] (n)? y
+选择数据库类型。输入：3。
+
+Configuring database...
+========================================
+
+Choose one of the following options:
+
+[1] - PostgreSQL (Embedded)
+[2] - Oracle
+[3] - MySQL
+[4] - PostgreSQL
+[5] - Microsoft SQL Server (Tech Preview)
+[6] - SQL Anywhere
+
+==========================================
+
+Enter choice (1): 3
+设置数据库的具体配置信息，根据实际情况输入，如果和括号内相同，则可以直接回车。
+
+Hostname (localhost): 192.168.195.230
+Port (3306):
+Database name (ambari):
+Username (ambari):
+Enter Database Password (ambari-1234):
+提示必须安装MySQL JDBC，已安装则直接通过。
+
+WARNING: Before starting Ambari Server, you must copy the MySQL JDBC driver JAR file to /usr/share/java.
+ yum install -y mysql-connector-java
+
+
+Press <enter> to continue.
+# 启动ambari-server服务
+
+ambari-server start
+# 启动后在浏览器输入Ambari地址：
+firewall-cmd --zone=public --add-port=8080/tcp --permanent 
+firewall-cmd --reload
+http://192.168.195.230:8080/#/login
+
+进入Ambari配置管理页面：
+
+用户名：admin
+
+密码：   admin
+
+登录成功进入以下页面
+
+
+10. 安装Hadoop集群
+
+a) 在集群节点上安装JDK
+
+在3台作为Hadoop集群的机器上安装JDK，要与ambari.server上安装的完全一致
+
+ 
+
+b) 安装ambari-agent
+
+将ambari.server上的3个.repo文件复制到hadoop集群的三台服务器上；并完成yum源更新的命令。
+
+ 　　安装ambari-agent：在集群的3台电脑上执行添加，并添加成开机自启动服务：　　
+
+yum install -y ambari-agent
+chkconfig --add ambari-agent
+c) 通过安装向导，配置Hadoop集群
+

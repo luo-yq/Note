@@ -1,0 +1,49 @@
+
+
+cd /opt
+curl -O https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.4.tgz
+tar -zxvf mongodb-linux-x86_64-3.2.4.tgz                                   
+
+mv  mongodb-linux-x86_64-3.2.4/ mongodb     
+
+vi ~/.bashrc
+
+export MongoDB_ROOT=/opt/mongodb
+export PATH=$MongoDB_ROOT/bin:$PATH
+
+source ~/.bashrc
+
+mkdir -p /data/db
+
+mongod --dbpath=/data/db --rest
+
+
+27017
+
+
+sudo /opt/mongodb/bin/mongod --config /db/conf/mongodb/mongodb.conf
+
+
+chkconfig mongod on
+systemctl start mongod
+
+
+
+
+
+vi /usr/lib/systemd/system/mongod.service
+  
+[Unit]
+Description=The Rocket.Chat server
+After=network.target remote-fs.target nss-lookup.target nginx.target mongod.target
+[Service]
+ExecStart=/usr/local/bin/node /opt/Rocket.Chat/main.js
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mongod
+User=root
+Environment=MONGO_URL=mongodb://localhost:27017/mongod ROOT_URL=http://192.168.195.241:3000/ PORT=3000
+[Install]
+WantedBy=multi-user.target
+
+
