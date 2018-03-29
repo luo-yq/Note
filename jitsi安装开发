@@ -1,0 +1,103 @@
+
+需要注意：
+apt-get自带的jitsi-meet版本比较低，本身不带中文，且api与新版本差距较大，新版本的中文翻译也不充足，需要完善
+需要了解的技术，nginx，nodejs，react
+
+1.在线安装,系统采用Ubuntu
+
+echo 'deb https://download.jitsi.org stable/' >> /etc/apt/sources.list.d/jitsi-stable.list
+wget -qO -  https://download.jitsi.org/jitsi-key.gpg.key | apt-key add -
+apt-get update
+apt-get -y install nginx
+apt-get -y install jitsi-meet
+
+2.二次开发
+nodejs
+node>8.0
+sudo npm -g install --save node-sass
+
+
+下载jitsi-meet源码
+工具栏----interfaceConfig.js
+中文----lang/main-zhCN.js
+中文----interfaceConfig.js
+
+
+Makefile all 命令添加 source-package
+使用make 命令 生成 jitsi-meet.tar.bz2
+替换目录 /var/share/jitsi-meet
+
+3.配置
+
+
+修改 /etc/jitsi/meet/*.-config.js
+ 	
+ 	设置默认语言为中文
+ 	defaultLanguage: 'zhCN',
+
+
+nginx上配置应用和视频都使用视频的https地址，目的是解决嵌套https页面时，web的不安全链接跳转问题
+修改 /etc/nginx/site-enable/*.conf
+
+	允许跨域访问
+	add_header 'Access-Control-Allow-Origin' '*';
+	add_header 'Access-Control-Allow-Methods' 'GET,POST,PUT,DELETE,OPTIONS';
+
+	设置项目地址跳转，如
+	location /oa {
+		proxy_pass http://ip:port;
+	}
+
+	根目录指向视频
+
+4.启动项目
+service nginx start
+
+
+5.web客户端，此处使用最新版本对应的API
+
+var domain = "192.168.1.42";
+var options = {
+    roomName: "room-series-number",
+    width: 700,
+    height: 700,
+    parentNode: document.querySelector('#meet')
+}
+var api = new JitsiMeetExternalAPI(domain, options);
+
+
+api.executeCommand 用代码执行部分界面操作
+api.addEventListeners 用代码添加部分事件监听器 
+
+
+6.扩展方向
+房间自动密码，外部链接需要密码进入
+头像
+API---- 相关（如，添加密码设置，密码登录的API）
+modules/API/external/external_api.js
+modules/API/API.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
