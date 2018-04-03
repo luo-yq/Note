@@ -1,0 +1,258 @@
+
+1. 测试工具
+目前使用两种测试工具进行压力测试 
+1. Jmeter 测试单客户端收发多主题，测试高并发，大数据量时的接收效率 
+2. emqtt_benchmark测试多客户端收发主题，测试高吞吐量下服务器性能
+
+1.1 安装Erlang
+emqtt_benchmark测试工具使用Erlang语言开发，必须在Linux的环境下运行，因此需要先安装Erlang语言环境。
+
+1.1.1 安装Erlang 
+可以参考这篇帖子，使安装别的特别简单。
+
+1.1.2 安装问题
+
+没有安装git，比如出现以下错误： 
+ERROR: Rebar requires version {1,5} or higher of git to process {git,"git://github.com/talentdeficit/jsx.git",{tag,"v0.9.0"}}
+ 
+解决办法： 
+下载安装git工具
+
+yum install git
+make clean
+make
+ 
+不能下载Erlang，错误： 
+[root@localhost mqtt-test]# ./kerl build 18.3 18.3
+Verifying archive checksum...
+Checksum error, check the files in /root/.kerl/archives
+ 
+解决办法： 
+删除archives文件夹
+
+[root@localhost mqtt-test]# rm -rf /root/.kerl/archives
+1
+1.2 emqtt_benchmark安装使用
+这是一个简单的MQTT基准工具用Erlang编写的。该工具的主要目的是基准测试MQTT服务器可以支持的并发连接数。官网下载
+
+1.2.1 下载安装 
+将下载下来的emqtt_benchmark-master.zip放置一个目录下，并解压缩, 使用make进行编译安装 
+
+unzip emqtt_benchmark-master 
+cd emqtt_benchmark-master 
+ls 
+make 
+1.2.2 订阅命令 
+在目录emqtt_benchmark-master下执行命令：./emqtt_bench_sub --help，结果如下：
+
+[root@localhost emqtt_benchmark-master]# ./emqtt_bench_sub --help
+Usage: emqtt_bench_sub [--help <help>] [-h [<host>]] [-p [<port>]]
+                   [-c [<count>]] [-i [<interval>]] [-t <topic>]
+                   [-q [<qos>]] [-u <username>] [-P <password>]
+                   [-k [<keepalive>]] [-C [<clean>]]
+                   [--ifaddr <ifaddr>]
+
+--help           help information
+//服务器ip地址
+-h, --host       mqtt server hostname or IP address [default: localhost]
+//服务器端口号
+-p, --port       mqtt server port number [default: 1883]
+//最大连接客户端数量 默认200
+-c, --count      max count of clients [default: 200]
+//客户端连接间隔时间，默认10毫秒
+-i, --interval   interval of connecting to the broker [default: 10]
+//订阅的主题 %i=自增长序号
+-t, --topic      topic subscribe, support %u, %c, %i variables
+//消息服务qos等级，
+//0=最多一次 服务器与 客户端 交互1次
+//1=至少一次 服务器与 客户端 交互2次
+//2=仅有一次 服务器与 客户端 交互4次
+-q, --qos        subscribe qos [default: 0]
+//客户端用户名
+-u, --username   username for connecting to server
+//用户端密码
+-P, --password   password for connecting to server
+//维持客户端活跃的时间 默认300秒
+-k, --keepalive  keep alive in seconds [default: 300]
+//客户端断开后是否清除session 默认true
+-C, --clean      clean session [default: true]
+//代理ip接口
+--ifaddr         local ipaddress or interface address
+ 
+举例：创建1000个并发客户端，并每秒接收100条消息频率
+
+./emqtt_bench_sub -c 1000 -i 10 -t bench/%i -q 2
+ 
+1.2.3 发布命令 
+执行命令：./emqtt_bench_pub --help，结果如下：
+
+[root@localhost emqtt_benchmark-master]# ./emqtt_bench_pub --help
+Usage: emqtt_bench_pub [--help <help>] [-h [<host>]] [-p [<port>]]
+                   [-c [<count>]] [-i [<interval>]]
+                   [-I [<interval_of_msg>]] [-u <username>]
+                   [-P <password>] [-t <topic>] [-s [<size>]]
+                   [-q [<qos>]] [-r [<retain>]] [-k [<keepalive>]]
+                   [-C [<clean>]] [--ifaddr <ifaddr>]
+
+--help                 help information
+-h, --host             mqtt server hostname or IP address [default: 
+                     localhost]
+-p, --port             mqtt server port number [default: 1883]
+-c, --count            max count of clients [default: 200]
+-i, --interval         interval of connecting to the broker [default: 10]
+//客户端发布消息的时间间隔 默认1000毫秒
+-I, --interval_of_msg  interval of publishing message(ms) [default: 1000]
+-u, --username         username for connecting to server
+-P, --password         password for connecting to server
+-t, --topic            topic subscribe, support %u, %c, %i variables
+//消息字节大小 默认256字节
+-s, --size             payload size [default: 256]
+-q, --qos              subscribe qos [default: 0]
+-r, --retain           retain message [default: false]
+-k, --keepalive        keep alive in seconds [default: 300]
+-C, --clean            clean session [default: true]
+--ifaddr               local ipaddress or interface address
+ 
+举例：创造10个客户,每个客户端发布消息的速度每秒100条，吞吐量1000条/秒
+
+./emqtt_bench_pub -c 10 -I 10 -t bench/%i -s 256
+ 
+1.3 Jmeter安装使用
+Apache JMeter是Apache组织开发的基于Java的压力测试工具。下载 
+用于对软件做压力测试，它最初被设计用于Web应用测试，但后来扩展到其他测试领域。
+
+可以参考我的另一片帖子
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+activemq.xml配置文件详解
+
+<beans 
+  xmlns="http://www.springframework.org/schema/beans" 
+  xmlns:amq="http://activemq.apache.org/schema/core" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd 
+  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"> 
+ 
+    <!-- Allows us to use system properties as variables in this configuration file --> 
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"> 
+        <property name="locations"> 
+            <value>file:${activemq.base}/conf/credentials.properties</value> 
+        </property>       
+    </bean> 
+ 
+    <!-- The <broker> element is used to configure the ActiveMQ broker. --> 
+     
+    <!-- brokerName：必须定义一个名称 --> 
+    <!-- 不使用持久化存储：persistent="false"，注意：内存要足够大 --> 
+    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="testBroker" dataDirectory="${activemq.base}/data" destroyApplicationContextOnStop="true" persistent="true"> 
+  
+               
+        <destinationPolicy> 
+            <policyMap> 
+              <policyEntries> 
+              <!-- 如果设定了<systemUsage>，则全局按照<systemUsage>，这里精细控制每一个q --> 
+              <!-- 设定了flowcontrol以后，会根据memorylimit的缓冲区设定的大小，决定producer的流速，即：可能拖慢producer --> 
+              <!-- 设定flowcontrol false后(同时不设定systemUsage)，虽然不会拖慢producer，但是可能会占用大量activemq的内存，如果处理仍然不及时，可能最终导致amq outofmemory --> 
+              <!-- 参考下面<systemUsage>的说明 --> 
+              <!-- 设定了false以后，表示producer直接都给，直到撑死systemUsage，才报客户端Exception --> 
+                <policyEntry topic=">" producerFlowControl="false" topicPrefetch="1000" useCache="true"> 
+                  <pendingSubscriberPolicy> 
+                    <vmCursor /> 
+                  </pendingSubscriberPolicy> 
+                </policyEntry> 
+                 
+                <!-- 设定true，表示超过memoryLimit以后，就等，等到systemUsage设定的超时时间报Exception --> 
+                <!-- 尽管可以让systemUsage统一管理全部的，但也就失去了精细管理每一个队列的能力，如果队列有重要和不重要之分，即：有的允许丢数据的，就设定true和memoryLimit；有的不允许的，就单独设定 --> 
+                <!-- 关于amq的特殊检测参数也在这里设定，参见http://activemq.apache.org/advisory-message.html --> 
+                <!-- queuePrefetch：一次分配给consumer多少数量的消息 --> 
+                <policyEntry queue=">" producerFlowControl="true" memoryLimit="4mb" queuePrefetch="1000" useCache="true"> 
+                  <!-- Use VM cursor for better latency 
+                       For more information, see: 
+                        
+                       http://activemq.apache.org/message-cursors.html 
+                        
+                  <pendingQueuePolicy> 
+                    <vmQueueCursor/> 
+                  </pendingQueuePolicy> 
+                  --> 
+                </policyEntry> 
+              </policyEntries> 
+            </policyMap> 
+        </destinationPolicy>  
+  
+         
+        <!-- 设定jmx管理端口 --> 
+        <managementContext> 
+            <managementContext connectorPort="62222" jmxDomainName="testDomain" createConnector="true"/> 
+        </managementContext> 
+ 
+        <!-- 设定持久化方案 --> 
+        <persistenceAdapter> 
+            <!-- 稳定性最强的一个 --> 
+            <!-- <amqPersistenceAdapter useNIO="true" directory="target/Broker2-data/activemq-data" syncOnWrite="true" indexPageSize="16kb" persistentIndex="true" indexMaxBinSize="100" maxFileLength="10mb" maxCheckpointMessageAddSize="32kb" cleanupInterval="3000" checkpointInterval="20000" /> --> 
+            <!-- 对于恢复来说，这个存储不能保证完全不丢数据。它比一般存储的快50% --> 
+            <kahaDB directory="${activemq.base}/data/kahadb" /> 
+        </persistenceAdapter> 
+         
+         
+          <!-- System Usage 对整个的broker做全局设定--> 
+          <!-- 使用systemUsage，以后，如果参数值设定不当，可能导致整个的q停止相应 --> 
+          <!-- 好的办法是：设定systemUsage，同时设定sendFailIfNoSpaceAfterTimeout（多长时间后超时），这个超时信息会返回给producer。这样即不会让amq被撑死，有能够保证producer不被拖死 --> 
+          <systemUsage> 
+            <systemUsage sendFailIfNoSpaceAfterTimeout="1000"> 
+                <memoryUsage> 
+                    <memoryUsage limit="32 mb"/> 
+                </memoryUsage> 
+                <storeUsage> 
+                    <storeUsage limit="5 gb"/> 
+                </storeUsage> 
+                <tempUsage> 
+                    <tempUsage limit="100 mb"/> 
+                </tempUsage> 
+            </systemUsage> 
+        </systemUsage> 
+         
+        <!-- 定义连接方式，注意如果只监听内网ip，需要指定IP地址 --> 
+        <!-- 可以指定热备等，使用failover --> 
+        <transportConnectors> 
+            <transportConnector name="manzuoopenwire" uri="tcp://0.0.0.0:63333"/> 
+        </transportConnectors> 
+ 
+        <!-- 对于broker，可以设定认证 --> 
+        <!-- 
+        <plugins> 
+            <simpleAuthenticationPlugin> 
+                <users> 
+                    <authenticationUser username="admin" password="password" groups="admins,publishers,consumers"/> 
+                    <authenticationUser username="publisher" password="password" groups="publishers,consumers"/> 
+                    <authenticationUser username="consumer" password="password" groups="consumers"/> 
+                    <authenticationUser username="guest" password="password" groups="guests"/> 
+                </users> 
+            </simpleAuthenticationPlugin> 
+        </plugins> 
+        --> 
+    </broker> 
+     
+     
+    <!-- 可以设定web 管理界面 --> 
+    <import resource="jetty.xml"/> 
+</beans> 
