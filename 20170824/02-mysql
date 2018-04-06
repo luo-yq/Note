@@ -17,9 +17,19 @@ server-id=1
 
 
 
+设置本机外的访问地址
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'192.168.195.%' IDENTIFIED BY 'my-new-password' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+内网穿透
+stream{
+    server {
+        listen 51306; 
+        proxy_pass 192.168.195.151:3306;
+    }
+}
 
-
-
+清空链接
+mysqladmin flush-hosts -uroot -proot
 
 
   mysql主从配置。鄙人是在如下环境测试的：
