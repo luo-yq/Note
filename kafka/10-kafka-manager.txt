@@ -1,0 +1,78 @@
+
+
+安装要求
+
+Kafka 0.8.. or 0.9.. or 0.10.. or 0.11..
+Java 8+
+sbt 0.13.x
+配置
+
+系统至少需要配置zookeeper集群的地址，可以在kafka-manager安装包的conf目录下面的application.conf文件中进行配置。例如：
+
+kafka-manager.zkhosts="my.zookeeper.host.com:2181"
+你可以指定多个zookeeper地址，用逗号分隔：
+
+kafka-manager.zkhosts="my.zookeeper.host.com:2181,other.zookeeper.host.com:2181"
+另外, 如果你不想硬编码，可以使用环境变量ZK_HOSTS。
+
+ZK_HOSTS="my.zookeeper.host.com:2181"
+你可以启用/禁止以下的功能，通过修改application.config:
+
+application.features=["KMClusterManagerFeature","KMTopicManagerFeature","KMPreferredReplicaElectionFeature","KMReassignPartitionsFeature"]
+KMClusterManagerFeature - 允许从Kafka Manager添加，更新，删除集群。
+KMTopicManagerFeature - 允许从Kafka集群中增加，更新，删除topic
+KMPreferredReplicaElectionFeature - 允许为Kafka集群运行首选副本
+KMReassignPartitionsFeature - 允许生成分区分配和重新分配分区
+考虑为启用了jmx的大群集设置这些参数：
+
+kafka-manager.broker-view-thread-pool-size=< 3 * number_of_brokers>
+kafka-manager.broker-view-max-queue-size=< 3 * total # of partitions across all topics>
+kafka-manager.broker-view-update-seconds=< kafka-manager.broker-view-max-queue-size / (10 * number_of_brokers) >
+下面是一个包含10个broker，100个topic的kafka集群示例，每个topic有10个分区，相当于1000个总分区，并启用JMX：
+
+kafka-manager.broker-view-thread-pool-size=30
+kafka-manager.broker-view-max-queue-size=3000
+kafka-manager.broker-view-update-seconds=30
+控制消费者偏offset缓存的线程池和队列：
+
+kafka-manager.offset-cache-thread-pool-size=< default is # of processors>
+kafka-manager.offset-cache-max-queue-size=< default is 1000>
+kafka-manager.kafka-admin-client-thread-pool-size=< default is # of processors>
+kafka-manager.kafka-admin-client-max-queue-size=< default is 1000>
+您应该在启用了消费者轮询的情况下为大量#消费者增加以上内容。虽然它主要影响基于ZK的消费者轮询。
+
+Kafka管理的消费者offset现在由“__consumer_offsets”topic中的KafkaManagedOffsetCache消费。请注意，这尚未经过跟踪大量offset的测试。每个集群都有一个单独的线程消费这个topic，所以它可能无法跟上被推送到topic的大量offset。
+
+部署
+
+下面的命令创建一个可部署应用的zip文件。
+
+sbt clean dist
+如果你不想拉源码，在编译，我已经编译好，放在百度云盘上了。
+
+https://pan.baidu.com/s/1geEB1rt
+
+启动服务
+
+解压刚刚的zip文件,然后启动它:
+
+$ bin/kafka-manager
+默认情况下，端口为9000。可覆盖，例如：
+
+$ bin/kafka-manager -Dconfig.file=/path/to/application.conf -Dhttp.port=8080
+再如果java不在你的路径中，或你需要针对不同的版本，增加-java-home选项：
+
+$ bin/kafka-manager -java-home /usr/local/oracle-java-8
+用安全启动服务
+
+为SASL添加JAAS配置，添加配置文件位置：
+
+$ bin/kafka-manager -Djava.security.auth.login.config=/path/to/my-jaas.conf
+注意：确保运行kafka manager的用户有读取jaas配置文件的权限。
+
+打包
+
+如果你想创建一个Debian或者RPM包，你可以使用下面命令打包：
+
+sbt debian:packageBin
+sbt rpm:packageBin
