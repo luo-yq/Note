@@ -1,0 +1,154 @@
+brew install erlang 安装erlang shell环境
+
+启动erlang shell: erl
+停止erlang shell: q(). 实际执行的是init:stop    halt(). 强制立即结束
+
+在erlang里所有的表达式，语句和语句块都必须有值，否则会报错导致程序崩溃。所有if语句一定要编写所有的条件防止意外。
+
+% 注释内容 可以放在语句后面
+常量名必须以大写字母开头,且只能赋值一次，不能修改，=是模式匹配符，第一次运行时相当于赋值，第二次则是进行匹配，匹配不成功则抛出异常，
+erlang里没有可变的量
+
+/ 浮点数除法  div  整数除法，求模数   rem  整数除法，求余数
+{test,1,a,A,...} 表示元组,元组中可包含原子和常量,一般第一个值用一个原子表示元组的用处
+也可以这样赋值{aafa,X,X,Y}={aafa,1,1,2} 但要保证常量的唯一性
+列表[{},{},{}],带表头和表尾的列表[H|T] 
+
+,用来分割函数调用、数据构造和模式中的参数
+;用来分割字句，常用子句的位置有同名函数定义、case、if、try...catch和receive表达式
+.用来分割函数整体以及shell里的表达式
+
+f()清除所有常量
+
+test()->
+	正好利用=作为模式匹配符
+
+匿名函数：定义 Double=fun(X)->2*X end.  然后用Double调用匿名函数
+多个匿名函数：定义 Double=fun({c,C})->{f,C*2};
+						   ({f,F})->{c,F/2}
+						end.
+
+
+fun可以作为参数，也可以作为返回值
+逻辑判断符：=< 小于等于   =:=等于
+
+||列表条件删选表达式
+getListByWhere(N)->
+[{A，B,C}||
+	A<-lists:seq(1,N),
+	B<-lists:seq(1,N),
+	C<-lists:seq(1,N),
+	A+B=<C,
+	A*A+B*B=:=C*C
+]
+也可以将删选出的结果遍历执行一个方法，甚至更复杂
+[somefun({A，B,C})||
+	A<-lists:seq(1,N),
+	B<-lists:seq(1,N),
+	C<-lists:seq(1,N),
+	A+B=<C,
+	A*A+B*B=:=C*C
+]
+
+关卡定义举例,and 和 andalso  ，or和orelse 有区别
+f(X) when X>0 -> 
+	....
+
+case 语法，
+case Expression of
+	Pattern1 [when Guard1] -> Expr_sql1;
+	Pattern2 [when Guard2] -> Expr_sql2;
+	...
+end
+
+if语法
+if
+	Guard1->Expressions;
+	Guard2->Expressions;
+	...
+	true->Expressions
+end
+
+
+record.hrl
+
+-record(记录类型名,{属性名=属性值,...,属性名,...}).
+
+
+shell中读入记录文件后即可使用记录类型   rr(record.hrl).
+使用记录方式   常量1=#记录类型名{属性名=属性值,...}
+修改记录方式   常量2=常量1#记录类型名{属性名=属性值,...}
+shell中使用rf(record.hrl)忘记记录类型
+忘记记录类型后  对应的常量就是一个元组
+
+
+map类型 可以使用操作符 => 或 :>
+#{属性名=>属性值,...}
+常量2=常量1#{属性名:>属性值,...}
+
+
+抛出异常的三种方式： throw/exit/error(一个值作为异常内容)
+异常捕获语法
+try 表达式 of
+	Guard -> 表达式
+catch
+	throw:X -> 表达式;
+	exit:X -> 表达式;
+	error:X -> 表达式
+	异常类型:异常内容->
+end
+
+try Expr
+catch
+	_:_->... 处理所有的异常错误代码
+end
+
+一般没有结果的函数返回{ok,Value}或{error,Reason}
+
+
+二进制 
+位值 8的倍数位   一列整数或字符串   <<5,10,20>>    <<"ABC">>    书写时<<必须与=保持间隔
+位串 不是8的倍数位<<....,8:5>>  最后一位包含:表示最后一个值所占位数
+三原色M进行操作  <<Red:5,Green:6,Blue:5>>   =  <<转换后的前8位,...,8位一个值, 剩余不足8位一个值:剩余位数>>  就可以分解
+
+
+常用库
+lists
+maps
+init
+io
+
+
+
+
+
+erlang 已.作为语句结束符
+-module(模块名).模块名与文件同名
+-export([方法名/参数个数,...]).配置外部可访问的方法
+
+
+方法名(参数,..)->
+	方法体
+	spawn(afile_server,loop,[dir]).
+	begin
+		代码块
+		接收主机!消息  （向接收主机发送消息，消息结构{}，接收方用receive接收消息）
+	end
+
+	receive
+		{Client,Content}->
+			Content
+	end
+
+
+cd到要运行的程序文件夹
+erl运行erlang shell
+	c(模块名). 编译模块名.erl文件
+	模块名:方法名(). 运行程序
+	halt(). 退出erlang shell
+
+erlc 模块名.erl  在erlang shell 外部编译erl文件
+
+erl -noshell -s 模块名 方法名 -s init stop   （一次执行多个脚本：-s 模块名1 方法名1  -s 模块名2 方法名2，...）
+
+

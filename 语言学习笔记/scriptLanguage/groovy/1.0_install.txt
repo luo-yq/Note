@@ -1,0 +1,23 @@
+安装方式一
+brew install groovy
+
+方式二
+下载
+http://groovy.codehaus.org/Download
+
+解压
+cd bin
+groovy -e "println 'hello world'"
+
+控制台:groovyConsole
+shell脚本:groovysh
+
+创建项目，创建文件
+GroovyEnvDemo.groovy
+ 
+编译和运行groovy，未编译也可运行
+groovyc –d classes Fibonacci.groovy
+两种运行方式
+groovy  Fibonacci
+java -cp %GROOVY_HOME%/embeddable/groovy-all-1.0.jar;classes Fibonacci
+

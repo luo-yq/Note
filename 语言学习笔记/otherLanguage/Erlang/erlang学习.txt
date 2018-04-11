@@ -1,0 +1,2366 @@
+Erlang Shell
+
+绝大多数操作系统都有命令解释器或者外壳 (shell)，Unix 与 Linux 系统中有很多不同的 shell， windows 系统上也有命令行提示。 Erlang 自己的 shell 中可以直接编写 Erlang 代码，并被执行输出执行后的效果（可以参考 STDLIB 中 shell 手册)。
+
+在 Linux 或 Unix 操作系统中先启动一个 shell 或者命令解释器，再输入 erl 命令即可启动 erlang 的 shell。启动 Erlang 的 shell 之后，你可以看到如下的输出效果:
+
+% erl
+Erlang R15B (erts-5.9.1) [source] [smp:8:8] [rq:8] [async-threads:0] [hipe] [kernel-poll:false]
+
+Eshell V5.9.1  (abort with ^G)
+1>
+在 shell 中输入 "2+5." 后，再输入回车符。请注意，输入字符 "." 与回车符的目的是告诉 shell 你已经完成代码输入。
+
+1> 2 + 5.
+7
+2>
+如上所示，Erlang 给所有可以输入的行标上了编号（例如，>1，>2），上面的例子的意思就是 2+5 结果为 7。如果你在 shell 中输入错误的内容，则可以使用回退键将其删除，这一点与绝大多数 shell 是一样的。在 shell 下有许多编辑命令（ 参考 ERTS 用户指南中的 tty - A command line interface 文档）。
+
+（请注意，下面的这些示例中所给出的 shell 行号很多都是乱序的。这是因为这篇教程中的示例都是单独的测试过程，而非连续的测试过程，所以会出现编号乱序的情况）。
+
+下面是一个更加复杂的计算：
+
+2> (42 + 77) * 66 / 3.
+2618.0
+请注意其中括号的使用，乘法操作符 “*” 与除法操作符 “/” 与一般算术运算中的含义与用法完全相同。(参见 表达式)。
+
+输入 Ctrl 与 C 键可以停止 Erlang 系统与交互式命令行（shell）。
+
+下面给出输入 Ctrl-C 后的输出结果：
+
+BREAK: (a)bort (c)ontinue (p)roc info (i)nfo (l)oaded
+       (v)ersion (k)ill (D)b-tables (d)istribution
+a
+%
+输入 “a” 可以结束 Erlang 系统。
+
+关闭 Erlang 系统的另一种途径则是通过输入 halt() :
+
+3> halt().
+%
+
+
+模块与函数
+
+如果一种编程语言只能通过 shell 来运行代码，那么这种语言基本上没什么太大的用处，Erlang 同样可以通过脚本来运行程序。这里有一小段 Erlang 程序。使用合适的文本编辑器将其输入到文件 tut.erl 中。文件名称必须为 tut.erl 不能任意修改，并且需要将其放置于你启动 erl 命令时所在的目录下。如果恰巧你的编辑器有 Erlang 模式的话，那么编辑器会帮助你优雅地组织和格式化你的代码 （参考 Emacs 的 Erlang 模式），不过即使你没有这样的编辑器你也可以很好地管理你自己的代码。下面是待输入的代码：
+
+-module(tut).
+-export([double/1]).
+
+double(X) ->
+    2 * X.
+很容易就可以看出来这个程序将数值翻倍。开始两行的代码稍后会解释。让我们来编译一下这段代码。我们可以在 Erlang shell 下来完成这个任务，其中 c 代表编译（compile）的意思：
+
+3> c(tut).
+{ok,tut}
+{ok,tut} 说明编译成功。如果返回 “error” 则表示输入的代码中存在错误。其它相关的错误信息可以帮助你弄清楚错误的位置和原因，然后你可以根据错误提示修改并重新编译代码。
+
+下面运行这个程序：
+
+4> tut:double(10).
+20
+和预期结果一样，10 乘以 2 后就是 20。
+
+让我们先回到代码最开始的这两行。每个的 Erlang 程序的文件都包含一个 Erlang 模块。模块中代码的第一个行就是该模块的名字（参见 模块）。
+
+-module(tut).
+因此，这个模块名为 tut。请注意该行代码结束后的句号 “.”。存储模块的文件必须与模块同名，并且以 “.erl” 作为扩展。在这个例子中，文件名为 tut.erl。如果使用到另外一个模块中的一个函数，可以使用如下的语法 ：module_name:function_name(arguments)。因此，下面的代码的含义也就是调用模块 tut 中的函数 double，并且传递的实参为 10。
+
+4> tut:double(10).
+第二行声明 tut 模块中包含一个 double 函数，此函数接受一个参数 （在本例中为 x）:
+
+-export([double/1]).
+同时，第二行声明也说明了这个函数可以在 tut 模块外被其它模块调用。后面会详细说明这一点。请再次注意这一行末尾的句号。
+
+接下来给出一个更加复杂的例子，计算一个数的阶乘。比如，4 的阶乘即为 432*1，等于 24。
+
+在 tut1.erl 文件中输入如下的一段代码：
+
+-module(tut1).
+-export([fac/1]).
+
+fac(1) ->
+    1;
+fac(N) ->
+    N * fac(N - 1).
+所以在模块 tut1 中存在一个函数 fac，此函数接受一个输入参数 N。
+
+第一部分说明的是 1 的阶乘即为 1：
+
+fac(1) ->
+    1;
+需要注意的是，这一部分是以分号结束的，这也就表示后面还有 fac 函数的更多内容。
+
+第二部分表示 N 的阶乘为 N 乘以 N-1 的阶乘：
+
+fac(N) ->
+    N * fac(N - 1).
+与前面不同，这部分是以句号结尾的。这也就是说，后面没有这个函数更多的内容了。
+
+编译这个文件：
+
+5> c(tut1).
+{ok,tut1}
+下面计算 4 的阶乘：
+
+6> tut1:fac(4).
+24
+调用 tut1 模块中的 fac 函数，传入的参数为 4。
+
+与其它语言一样，Erlang 函数也可以有多个参数，让我们扩展 tut1 模块，实现一个函数完成两个数相乘：
+
+-module(tut1).
+-export([fac/1, mult/2]).
+
+fac(1) ->
+    1;
+fac(N) ->
+    N * fac(N - 1).
+
+mult(X, Y) ->
+    X * Y.
+需要注意，扩展模块时，需要修改 -export 这一行。在这一行中添加另外一个接受两个参数的函数 mult。
+
+编译：
+
+7> c(tut1).
+{ok,tut1}
+使用一下新函数：
+
+8> tut1:mult(3,4).
+12
+在这个例子中，数字是整数值，代码中函数的参数 N、X 与 Y 被称之为变量。变量必须以大写字母开始 （参考变量）。诸如，Number、ShoeSize 和 Age 都是变量。
+
+
+
+原子类型
+
+原子类型是 Erlang 语言中另一种数据类型。所有原子类型都以小写字母开头 （参见 原子类型）。例如，charles，centimeter，inch 等。原子类型就是名字而已，没有其它含义。它们与变量不同，变量拥有值，而原子类型没有。
+
+将下面的这段程序输入到文件 tut2.erl 中。这段程序完成英寸与厘米之间的相互转换：
+
+-module(tut2).
+-export([convert/2]).
+
+convert(M, inch) ->
+    M / 2.54;
+
+convert(N, centimeter) ->
+    N * 2.54.
+编译：
+
+9> c(tut2).
+{ok,tut2}
+测试：
+
+10> tut2:convert(3, inch).
+1.1811023622047243
+11> tut2:convert(7, centimeter).
+17.78
+注意，到目前为止我们都没有介绍小数（符点数）的相关内容。希望你暂时先了解一下。
+
+让我们看一下，如果输入的参数既不是 centimeter 也不是 inch 时会发生什么情况：
+
+12> tut2:convert(3, miles).
+** exception error: no function clause matching tut2:convert(3,miles) (tut2.erl, line 4)
+convert 函数的两部分被称之为函数的两个子句。正如你所看到的那样，miles 并不是子句的一部分。Erlang 系统找不到匹配的子句，所以返回了错误消息 function_clause。shell 负责被错误信息友好地输出，同时错误元组会被存储到 shell 的历史列表中，可以使用 v/1 命令将该列表输出：
+
+13> v(12).
+{'EXIT',{function_clause,[{tut2,convert,
+                                [3,miles],
+                                [{file,"tut2.erl"},{line,4}]},
+                          {erl_eval,do_apply,5,[{file,"erl_eval.erl"},{line,482}]},
+                          {shell,exprs,7,[{file,"shell.erl"},{line,666}]},
+                          {shell,eval_exprs,7,[{file,"shell.erl"},{line,621}]},
+                          {shell,eval_loop,3,[{file,"shell.erl"},{line,606}]}]}}
+元组
+前面的 tut2 的程序的风格不是一好的编程风格。例如：
+
+tut2.convert(3,inch)  
+这是意味着 3 本身已经是英寸表示了呢？还是指将 3 厘米转换成英寸呢？ Erlang 提供了将某些元素分成组并用以更易于理解的方式表示的机制。它就是元组。一个元组由花括号括起来的。
+
+所以，{inch,3} 指的就是 3 英寸，而 {centimeter, 5} 指的就是 5 厘米。接下来，我们将重写厘米与英寸之间的转换程序。将下面的代码输入到文件 tut3.erl 文件中：
+
+-module(tut3).
+-export([convert_length/1]).
+
+convert_length({centimeter, X}) ->
+    {inch, X / 2.54};
+convert_length({inch, Y}) ->
+    {centimeter, Y * 2.54}.
+编译并测试：
+
+14> c(tut3).
+{ok,tut3}
+15> tut3:convert_length({inch, 5}).
+{centimeter,12.7}
+16> tut3:convert_length(tut3:convert_length({inch, 5})).
+{inch,5.0}
+请注意，第 16 行代码将 5 英寸转换成厘米后，再转换为就英寸，所以它得到原来的值。这也表明，一个函数实参可以是另一个函数的返回结果。仔细看一下，第 16 行的代码是怎么工作的。将参数 {inch,5} 传递给函数后，convert_length 函数的首语句的头首先被匹配，也就是 convert_length({inch,5}) 被匹配。也可以看作，{centimeter, X} 没有与 {inch,5} 匹配成功 ("->" 前面的内容即被称之为头部)。第一个匹配失败后，程序会尝试第二个语句，即 convert_length({inch,5})。 第二个语句匹配成功，所以 Y 值也就为 5。
+
+元组中可以有更多的元素，而不仅仅像上面描述的那样只有两部分。事实上，你可以在元组中，使用任意多的部分，只要每个部分都是合法的 Erlang 的项。例如，表示世界上不同城市的温度值：
+
+{moscow, {c, -10}}
+{cape_town, {f, 70}}
+{paris, {f, 28}}
+这些元组中每个都有固定数目的项。元组中的每个项都被称之为一个元素。在元组 {moscow,{c,-10}} 中，第一个元素为 moscow 而第二个元素为 {c,-10}。其中，c 表示摄氏度，f 表示华氏度。
+
+
+
+列表
+
+虽然元组可以将数据组成一组，但是我们也需要表示数据列表。 Erlang 中的列表由方括号括起来表示。例如，世界上不同城市的温度列表就可以表示为：
+
+[{moscow, {c, -10}}, {cape_town, {f, 70}}, {stockholm, {c, -4}},
+ {paris, {f, 28}}, {london, {f, 36}}]
+请注意，这个列表太长而不能放在一行中，但是这并没有什么关系。Erlang 允许在 “合理的地方” 换行，但是并不允许在一些 “不合理的方”，比如原子类型、整数、或者其它数据类型的中间。
+
+可以使用 “|” 查看部分列表。将在下面的的例子来说明这种用法：
+
+17> [First |TheRest] = [1,2,3,4,5].
+[1,2,3,4,5]
+18> First.
+1
+19> TheRest.
+[2,3,4,5]
+可以用 | 将列表中的第一个元素与列表中其它元素分离开。First 值为 1，TheRest 的值为 [2,3,4,5]。
+
+下一个例子：
+
+20> [E1, E2 | R] = [1,2,3,4,5,6,7].
+[1,2,3,4,5,6,7]
+21> E1.
+1
+22> E2.
+2
+23> R.
+[3,4,5,6,7]
+这个例子中，我们用 | 取得了列表中的前两个元素。如果你要取得的元素的数量超过了列表中元素的总数，将返回错误。请注意列表中特殊情况，空列表（没有元素），即 []：
+
+24> [A, B | C] = [1, 2].
+[1,2]
+25> A.
+1
+26> B.
+2
+27> C.
+[]
+在前面的例子中，我们用的是新的变量名而没有重复使用已有的变量名: First，TheRest，E1，R，A，B 或者 C。这是因为：在同一上下文环境下一个变量只能被赋值一次。稍后会介绍会详细介绍。
+
+下面的例子中演示了如何获得一个列表的长度。将下面的代码保存在文件 tut4.erl 中：
+
+-module(tut4).
+
+-export([list_length/1]).
+
+list_length([]) ->
+    0;    
+list_length([First | Rest]) ->
+    1 + list_length(Rest).
+编译并运行：
+
+28> c(tut4).
+{ok,tut4}
+29> tut4:list_length([1,2,3,4,5,6,7]).
+7
+代码含义如下：
+
+list_length([]) ->
+    0;
+空列表的长度显然为 0。
+
+list_length([First | Rest]) ->
+    1 + list_length(Rest).
+一个列表中包含第一个元素 First 与剩余元素列表 Rest, 所以列表长度为 Rest 列表的长度加上 1。
+
+（高级话题：这并不是尾递归，还有更好地实现该函数的方法。）
+
+一般地，Erlang 中元组类型承担其它语言中记录或者结构体类型的功能。列表是一个可变长容器，与其它语言中的链表功能相同。
+
+Erlang 中没有字符串类型。因为，在 Erlang 中字符串可以用 Unicode 字符的列表表示。这也隐含地说明了列表 [97,98,99] 等价于字符串 “abc”。 Erlang 的 shell 是非常 “聪明" 的，它可以猜测出来列表所表示的内容，以将其按最合适的方式输出，例如：
+
+30> [97,98,99]
+"abc"
+
+
+
+映射 (Map)
+
+映射用于表示键和值的关联关系。这种关联方式是由 “#{” 与 “}” 括起来。创建一个字符串 "key" 到值 42 的映射的方法如下：
+
+1>#{ "key"=>42}.
+  #{"key" => 42}
+让我们直接通过示例来看一些有意思的特性。
+
+下面的例子展示了使用映射来关联颜色与 alpha 通道，从而计算 alpha 混合（译注：一种让 3D 物件产生透明感的技术）的方法。将下面的代码输入到 color.erl 文件中：
+
+-module(color).
+
+-export([new/4, blend/2]).
+
+-define(is_channel(V), (is_float(V) andalso V >= 0.0 andalso V =< 1.0)).
+
+new(R,G,B,A) when ?is_channel(R), ?is_channel(G),
+                  ?is_channel(B), ?is_channel(A) ->
+    #{red => R, green => G, blue => B, alpha => A}.
+
+blend(Src,Dst) ->
+    blend(Src,Dst,alpha(Src,Dst)).
+
+blend(Src,Dst,Alpha) when Alpha > 0.0 ->
+    Dst#{
+        red   := red(Src,Dst) / Alpha,
+        green := green(Src,Dst) / Alpha,
+        blue  := blue(Src,Dst) / Alpha,
+        alpha := Alpha
+    };
+blend(_,Dst,_) ->
+    Dst#{
+        red   := 0.0,
+        green := 0.0,
+        blue  := 0.0,
+        alpha := 0.0
+    }.
+
+alpha(#{alpha := SA}, #{alpha := DA}) ->
+    SA + DA*(1.0 - SA).
+
+red(#{red := SV, alpha := SA}, #{red := DV, alpha := DA}) ->
+    SV*SA + DV*DA*(1.0 - SA).
+green(#{green := SV, alpha := SA}, #{green := DV, alpha := DA}) ->
+    SV*SA + DV*DA*(1.0 - SA).
+blue(#{blue := SV, alpha := SA}, #{blue := DV, alpha := DA}) ->
+    SV*SA + DV*DA*(1.0 - SA).
+编译并测试：
+
+1> c(color).
+{ok,color}
+2> C1 = color:new(0.3,0.4,0.5,1.0).
+ #{alpha => 1.0,blue => 0.5,green => 0.4,red => 0.3}
+3> C2 = color:new(1.0,0.8,0.1,0.3).
+ #{alpha => 0.3,blue => 0.1,green => 0.8,red => 1.0}
+4> color:blend(C1,C2).
+ #{alpha => 1.0,blue => 0.5,green => 0.4,red => 0.3}
+5> color:blend(C2,C1).
+ #{alpha => 1.0,blue => 0.38,green => 0.52,red => 0.51}
+关于上面的例子的解释如下：
+
+-define(is_channel(V), (is_float(V) andalso V >= 0.0 andalso V =< 1.0)).
+首先，上面的例子中定义了一个宏 is_channel，这个宏用的作用主要是方便检查。大多数情况下，使用宏目的都是为了方便使用或者简化语法。更多关于宏的内容可以参考预处理。
+
+new(R,G,B,A) when ?is_channel(R), ?is_channel(G),
+                  ?is_channel(B), ?is_channel(A) ->
+    #{red => R, green => G, blue => B, alpha => A}.
+函数 new/4 创建了一个新的映射，此映射将 red，green，blue 以及 alpha 这些健与初始值关联起来。其中，is_channel 保证了只有 0.0 与 1.0 之间的浮点数是合法数值 （其中包括 0.0 与 1.0 两个端点值）。注意，在创建新映射的时候只能使用 => 运算符。
+
+使用由 new/4 函数生成的任何颜色作为参数调用函数 blend/2，就可以得到该颜色的 alpha 混合结果。显然，这个结果是由两个映射来决定的。
+
+blend/2 函数所做的第一件事就是计算 alpha 通道：
+
+alpha(#{alpha := SA}, #{alpha := DA}) ->
+    SA + DA*(1.0 - SA).
+使用 := 操作符取得键 alpha 相关联的值作为参数的值。映射中的其它键被直接忽略。因为只需要键 alpha 与其值，所以也只会检查映射中的该键值对。
+
+对于函数 red/2，blue/2 和 green/2 也是一样的：
+
+red(#{red := SV, alpha := SA}, #{red := DV, alpha := DA}) ->
+    SV*SA + DV*DA*(1.0 - SA).
+唯一不同的是，每个映射参数中都有两个键会被检查，而其它键会被忽略。
+
+最后，让我们回到 blend/3 返回的颜色：
+
+blend(Src,Dst,Alpha) when Alpha > 0.0 ->
+    Dst#{
+        red   := red(Src,Dst) / Alpha,
+        green := green(Src,Dst) / Alpha,
+        blue  := blue(Src,Dst) / Alpha,
+        alpha := Alpha
+    };
+Dst 映射会被更新为一个新的通道值。更新已存在的映射键值对可以用 := 操作符。
+
+
+
+
+标准模块与使用手册
+
+Erlang 有大量的标准模块可供使用。例如，IO 模块中包含大量处理格式化输入与输出的函数。如果你需要查看标准模块的详细信息，可以在操作系统的 shell 或者命令行（即开始 erl 的地方）使用 erl -man 命令来查看。示例如下：
+
+% erl -man io
+ERLANG MODULE DEFINITION                                    io(3)
+
+MODULE
+     io - Standard I/O Server Interface Functions
+
+DESCRIPTION
+     This module provides an  interface  to  standard  Erlang  IO
+     servers. The output functions all return ok if they are suc-
+     ...
+如果在系统上执行命令不成功，你也可以使用 Erlang/OTP 的在线文档。 在线文件也支持以 PDF 格式下载。在线文档位置在 www.erlang.se (commercial Erlang) 或 www.erlang.org (open source)。例如，Erlang/OTP R9B 文档位于：
+
+http://www.erlang.org/doc/r9b/doc/index.html
+
+
+
+输出至终端
+
+用例子来说明如何格式化输出到终端再好不过了，因此下面就用一个简单的示例程序来说明如何使用 io:format 函数。与其它导出的函数一样，你可以在 shell 中测试 io:format 函数：
+
+31> io:format("hello world~n", []).
+hello world
+ok
+32> io:format("this outputs one Erlang term: ~w~n", [hello]).
+this outputs one Erlang term: hello
+ok
+33> io:format("this outputs two Erlang terms: ~w~w~n", [hello, world]).
+this outputs two Erlang terms: helloworld
+ok
+34> io:format("this outputs two Erlang terms: ~w ~w~n", [hello, world]).
+this outputs two Erlang terms: hello world
+ok
+format/2 （2 表示两个参数）接受两个列表作为参数。一般情况下，第一个参数是一个字符串（前面已经说明，字符串也是列表）。除了 ~w 会按顺序被替换为第二个列表中的的项以外，第一个参数会被直接输出。每个 ~n 都会导致输出换行。如果正常输出，io:formate/2 函数会返回个原子值 ok。与其它 Erlang 函数一样，如果发生错误会直接导致函数崩溃。这并 Erlang 系统中的错误，而是经过深思熟虑后的一种策略。稍后会看到，Erlang 有着非常完善的错误处理机制来处理这些错误。如果要练习，想让 io:format 崩溃并不是什么难事儿。不过，请注意，io:format 函数崩溃并不是说 Erlang shell 本身崩溃了。
+
+
+
+
+完整示例
+
+接下来，我们会用一个更加完整的例子来巩固前面学到的内容。假设你有一个世界上各个城市的温度值的列表。其中，一部分是以摄氏度表示，另一部分是华氏温度表示的。首先，我们将所有的温度都转换为用摄氏度表示，再将温度数据输出。
+
+%% This module is in file tut5.erl
+
+-module(tut5).
+-export([format_temps/1]).
+
+%% Only this function is exported
+format_temps([])->                        % No output for an empty list
+    ok;
+format_temps([City | Rest]) ->
+    print_temp(convert_to_celsius(City)),
+    format_temps(Rest).
+
+convert_to_celsius({Name, {c, Temp}}) ->  % No conversion needed
+    {Name, {c, Temp}};
+convert_to_celsius({Name, {f, Temp}}) ->  % Do the conversion
+    {Name, {c, (Temp - 32) * 5 / 9}}.
+
+print_temp({Name, {c, Temp}}) ->
+    io:format("~-15w ~w c~n", [Name, Temp]).
+35> c(tut5).
+{ok,tut5}
+36> tut5:format_temps([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+moscow          -10 c
+cape_town       21.11111111111111 c
+stockholm       -4 c
+paris           -2.2222222222222223 c
+london          2.2222222222222223 c
+ok
+在分析这段程序前，请先注意我们在代码中加入了一部分的注释。从 % 开始，一直到一行的结束都是注释的内容。另外，-export([format_temps/1]) 只导出了函数 format_temp/1，其它函数都是局部函数，或者称之为本地函数。也就是说，这些函数在 tut5 外部是不见的，自然不能被其它模块所调用。
+
+在 shell 测试程序时，输出被分割到了两行中，这是因为输入太长，在一行中不能被全部显示。
+
+第一次调用 format_temps 函数时，City 被赋予值 {moscow,{c,-10}}, Rest 表示剩余的列表。所以调用函数 print_temp(convert_to_celsius({moscow,{c,-10}}))。
+
+这里，convert_to_celsius({moscow,{c,-10}}) 调用的结果作为另一个函数 print_temp 的参数。当以这样嵌套的方式调用函数时，它们会从内到外计算。也就是说，先计算 convert_to_celsius({moscow,{c,-10}}) 得到以摄氏度表示的值 {moscow,{c,-10}}。接下来，执行函数 convert_to_celsius 与前面例子中的 convert_length 函数类似。
+
+print_temp 函数调用 io:format 函数，~-15w 表示以宽度值 15 输出后面的项 (参见STDLIB 的 IO 手册。)
+
+接下来，用列表剩余的元素作参数调用 format_temps(Rest)。这与其它语言中循环构造很类似 （是的，虽然这是规递的形式，但是我们并不需要担心）。再调用 format_temps 函数时，City 的值为 {cape_town,{f,70}}，然后同样的处理过程再重复一次。上面的过程一直重复到列表为空为止。因为当列表为空时，会匹配 format_temps([]) 语句。此语句会简单的返回原子值 ok，最后程序结束。
+
+
+
+
+匹配、Guards 与变量的作用域
+
+在某些场景下，我们可能需要找到最高温度或最低温度。所以查找温度值列表中最大值或最小值是非常有用的。在扩展程序实现该功能之前，让我们先看一下寻找列表中的最大值的方法：
+
+-module(tut6).
+-export([list_max/1]).
+
+list_max([Head|Rest]) ->
+   list_max(Rest, Head).
+
+list_max([], Res) ->
+    Res;
+list_max([Head|Rest], Result_so_far) when Head > Result_so_far ->
+    list_max(Rest, Head);
+list_max([Head|Rest], Result_so_far)  ->
+    list_max(Rest, Result_so_far).
+37> c(tut6).
+{ok,tut6}
+38> tut6:list_max([1,2,3,4,5,7,4,3,2,1]).
+7
+首先注意这两个函数的名称是完全相同的。但是，由于它们接受不同数目的参数，所以在 Erlang 中它们被当作两个完全不相同的函数。在你需要使用它们的时候，你使用名称/参数数量的方式就可以了，这里名称就是函数的名称，参数数量是指函数的参数的个数。这个例子中为 list_max/1 与 list_max/2。
+
+在本例中，遍历列表的中元素过程中 “携带” 了一个值（最大值），即 Result_so_far。 list_max/1 函数把列表中的第一个元素当作最大值元素，然后使用剩余的元素作参数调用函数 list_max/2。在上面的例子中为 list_max([2，3，4，5，6，7，4，3，2，1]，1)。如果你使用空列表或者非列表类型的数据作为实参调用 list_max/1，则会产生一个错误。注意，Erlang 的哲学是不要在错误产生的地方处理错误，而应该在专门处理错误的地方来处理错误。稍后会详细说明。
+
+在 list_max/2 中，当 Head > Result_so_far 时，则使用 Head 代替 Result_so_far 并继续调用函数。 when 用在函数的 -> 前时是一个特别的的单词，它表示只有测试条件为真时才会用到函数的这一部分。这种类型的测试被称这为 guard。如果 guard 为假 （即 guard 测试失败），则跳过此部分而尝试使用函数的后面一部分。这个例子中，如果 Head 不大于 Result_so_far 则必小于或等于。所以在函数的下一部分中不需要 guard 测试。
+
+可以用在 guard 中的操作符还包括：
+
+<小于
+> 大于
+== 等于
+>= 大于或等于
+=< 小于或等于
+/= 不等于
+（详见 Guard Sequences）
+
+要将上面找最大值的程序修改为查找最小值元素非常容易，只需要将 > 变成 < 就可以了。（但是，最好将函数名同时也修改为 list_min）
+
+前面我们提到过，每个变量在其作用域内只能被赋值一次。从上面的例子中也可以看到，Result_so_far 却被赋值多次。这是因为，每次调用一次 list_max/2 函数都会创建一个新的作用域。在每个不同的作用域中，Result_so_far 都被当作完全不同的变量。
+
+另外，我们可以使用匹配操作符 = 创建一个变量并给这个变量赋值。因此，M = 5 创建了一个变量 M，并给其赋值为 5。如果在相同的作用域中，你再写 M = 6, 则会导致错误。可以在 shell 中尝试一下：
+
+39> M = 5.
+5
+40> M = 6.
+** exception error: no match of right hand side value 6
+41> M = M + 1.
+** exception error: no match of right hand side value 6
+42> N = M + 1.
+6
+除了创建新变量外，匹配操作符另一个用处就是将 Erlang 项分开。
+
+43> {X, Y} = {paris, {f, 28}}.
+{paris,{f,28}}
+44> X.
+paris
+45> Y.
+{f,28}
+如上，X 值为 paris，而 Y 的值为 {f,28}。
+
+如果同样用 X 和 Y 再使用一次，则会产生一个错误：
+
+46> {X, Y} = {london, {f, 36}}.
+** exception error: no match of right hand side value {london,{f,36}}
+变量用来提高程序的可读性。例如，在 list_max/2 函数中，你可以这样写：
+
+list_max([Head|Rest], Result_so_far) when Head > Result_so_far ->
+    New_result_far = Head,
+    list_max(Rest, New_result_far);
+这样写可以让程序更加清晰。
+
+
+
+
+
+更多关于列表的内容
+
+| 操作符可以用于取列表中的首元素:
+
+47> [M1|T1] = [paris, london, rome].
+[paris,london,rome]
+48> M1.
+paris
+49> T1.
+[london,rome]
+同时，| 操作符也可以用于在列表首部添加元素:
+
+50> L1 = [madrid | T1].
+[madrid,london,rome]
+51> L1.
+[madrid,london,rome]
+使用 | 操作符操作列表的例子如下 -- 翻转列表中的元素:
+
+-module(tut8).
+
+-export([reverse/1]).
+
+reverse(List) ->
+    reverse(List, []).
+
+reverse([Head | Rest], Reversed_List) ->
+    reverse(Rest, [Head | Reversed_List]);
+reverse([], Reversed_List) ->
+    Reversed_List.
+52> c(tut8).
+{ok,tut8}
+53> tut8:reverse([1,2,3]).
+[3,2,1]
+仔细捉摸一下，Reversed_List 是如何被创建的。初始时，其为 []。随后，待翻转的列表的首元素被取出来再添加到 Reversed_List 列表中，如下所示：
+
+reverse([1|2,3], []) =>
+    reverse([2,3], [1|[]])
+
+reverse([2|3], [1]) =>
+    reverse([3], [2|[1])
+
+reverse([3|[]], [2,1]) =>
+    reverse([], [3|[2,1]])
+
+reverse([], [3,2,1]) =>
+    [3,2,1]
+lists 模块中包括许多操作列表的函数，例如，列表翻转。所以，在自己动手写操作列表的函数之前是可以先检查是否在模块中已经有了（参考 STDLIB 中 lists(3) 手册）。
+
+下面让我们回到城市与温度的话题上，但是这一次我们会使用更加结构化的方法。首先，我们将整个列表中的温度都使用摄氏度表示：
+
+-module(tut7).
+-export([format_temps/1]).
+
+format_temps(List_of_cities) ->
+    convert_list_to_c(List_of_cities).
+
+convert_list_to_c([{Name, {f, F}} | Rest]) ->
+    Converted_City = {Name, {c, (F -32)* 5 / 9}},
+    [Converted_City | convert_list_to_c(Rest)];
+
+convert_list_to_c([City | Rest]) ->
+    [City | convert_list_to_c(Rest)];
+
+convert_list_to_c([]) ->
+测试一下上面的函数：
+
+54> c(tut7).
+{ok, tut7}.
+55> tut7:format_temps([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+[{moscow,{c,-10}},
+ {cape_town,{c,21.11111111111111}},
+ {stockholm,{c,-4}},
+ {paris,{c,-2.2222222222222223}},
+ {london,{c,2.2222222222222223}}]
+含义如下：
+
+format_temps(List_of_cities) ->
+    convert_list_to_c(List_of_cities).
+format_temps/1 调用 convert_list_to_c/1 函数。covert_list_to_c/1 函数移除 List_of_cities 的首元素，并将其转换为摄氏单位表示 （如果需要）。| 操作符用来将被转换后的元素添加到转换后的剩余列表中：
+
+[Converted_City | convert_list_to_c(Rest)];
+或者：
+
+[City | convert_list_to_c(Rest)];
+一直重复上述过程直到列表空为止。当列表为空时，则执行：
+
+convert_list_to_c([]) ->
+    [].
+当列表被转换后，用新增的打印输出函数将其输出：
+
+-module(tut7).
+-export([format_temps/1]).
+
+format_temps(List_of_cities) ->
+    Converted_List = convert_list_to_c(List_of_cities),
+    print_temp(Converted_List).
+
+convert_list_to_c([{Name, {f, F}} | Rest]) ->
+    Converted_City = {Name, {c, (F -32)* 5 / 9}},
+    [Converted_City | convert_list_to_c(Rest)];
+
+convert_list_to_c([City | Rest]) ->
+    [City | convert_list_to_c(Rest)];
+
+convert_list_to_c([]) ->
+    [].
+
+print_temp([{Name, {c, Temp}} | Rest]) ->
+    io:format("~-15w ~w c~n", [Name, Temp]),
+    print_temp(Rest);
+print_temp([]) ->
+    ok.
+56> c(tut7).
+{ok,tut7}
+57> tut7:format_temps([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+moscow          -10 c
+cape_town       21.11111111111111 c
+stockholm       -4 c
+paris           -2.2222222222222223 c
+london          2.2222222222222223 c
+ok
+接下来，添加一个函数来搜索拥有最高温度与最低温度值的城市。下面的方法并不是最高效的方式，因为它遍历了四次列表。但是首先应当保证程序的清晰性和正确性，然后才是想办法提高程序的效率：
+
+-module(tut7).
+-export([format_temps/1]).
+
+format_temps(List_of_cities) ->
+    Converted_List = convert_list_to_c(List_of_cities),
+    print_temp(Converted_List),
+    {Max_city, Min_city} = find_max_and_min(Converted_List),
+    print_max_and_min(Max_city, Min_city).
+
+convert_list_to_c([{Name, {f, Temp}} | Rest]) ->
+    Converted_City = {Name, {c, (Temp -32)* 5 / 9}},
+    [Converted_City | convert_list_to_c(Rest)];
+
+convert_list_to_c([City | Rest]) ->
+    [City | convert_list_to_c(Rest)];
+
+convert_list_to_c([]) ->
+    [].
+
+print_temp([{Name, {c, Temp}} | Rest]) ->
+    io:format("~-15w ~w c~n", [Name, Temp]),
+    print_temp(Rest);
+print_temp([]) ->
+    ok.
+
+find_max_and_min([City | Rest]) ->
+    find_max_and_min(Rest, City, City).
+
+find_max_and_min([{Name, {c, Temp}} | Rest], 
+         {Max_Name, {c, Max_Temp}}, 
+         {Min_Name, {c, Min_Temp}}) ->
+    if 
+        Temp > Max_Temp ->
+            Max_City = {Name, {c, Temp}};           % Change
+        true -> 
+            Max_City = {Max_Name, {c, Max_Temp}} % Unchanged
+    end,
+    if
+         Temp < Min_Temp ->
+            Min_City = {Name, {c, Temp}};           % Change
+        true -> 
+            Min_City = {Min_Name, {c, Min_Temp}} % Unchanged
+    end,
+    find_max_and_min(Rest, Max_City, Min_City);
+
+find_max_and_min([], Max_City, Min_City) ->
+    {Max_City, Min_City}.
+
+print_max_and_min({Max_name, {c, Max_temp}}, {Min_name, {c, Min_temp}}) ->
+    io:format("Max temperature was ~w c in ~w~n", [Max_temp, Max_name]),
+    io:format("Min temperature was ~w c in ~w~n", [Min_temp, Min_name]).
+58> c(tut7).
+{ok, tut7}
+59> tut7:format_temps([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+moscow          -10 c
+cape_town       21.11111111111111 c
+stockholm       -4 c
+paris           -2.2222222222222223 c
+london          2.2222222222222223 c
+Max temperature was 21.11111111111111 c in cape_town
+Min temperature was -10 c in moscow
+ok  
+
+
+
+
+if 与 case
+
+上面的 find_max_and_min 函数可以找到温度的最大值与最小值。这儿介绍一个新的结构 if。If 的语法格式如下：
+
+if
+    Condition 1 ->
+        Action 1;
+    Condition 2 ->
+        Action 2;
+    Condition 3 ->
+        Action 3;
+    Condition 4 ->
+        Action 4
+end
+注意，在 end 之前没有 “;”。条件（Condidtion）的工作方式与 guard 一样，即测试并返回成功或者失败。Erlang 从第一个条件开始测试一直到找到一个测试为真的分支。随后，执行该条件后的动作，且忽略其它在 end 前的条件与动作。如果所有条件都测试失败，则会产生运行时错误。一个测试恒为真的条件就是 true。它常用作 if 的最后一个条件，即当所有条件都测试失败时，则执行 true 后面的动作。
+
+下面这个例子说明了 if 的工作方式：
+
+-module(tut9).
+-export([test_if/2]).
+
+test_if(A, B) ->
+    if 
+        A == 5 ->
+            io:format("A == 5~n", []),
+            a_equals_5;
+        B == 6 ->
+            io:format("B == 6~n", []),
+            b_equals_6;
+        A == 2, B == 3 ->                      %That is A equals 2 and B equals 3
+            io:format("A == 2, B == 3~n", []),
+            a_equals_2_b_equals_3;
+        A == 1 ; B == 7 ->                     %That is A equals 1 or B equals 7
+            io:format("A == 1 ; B == 7~n", []),
+            a_equals_1_or_b_equals_7
+    end.
+测试该程序：
+
+60> c(tut9).
+{ok,tut9}
+61> tut9:test_if(5,33).
+A == 5
+a_equals_5
+62> tut9:test_if(33,6).
+B == 6
+b_equals_6
+63> tut9:test_if(2, 3).
+A == 2, B == 3
+a_equals_2_b_equals_3
+64> tut9:test_if(1, 33).
+A == 1 ; B == 7
+a_equals_1_or_b_equals_7
+65> tut9:test_if(33, 7).
+A == 1 ; B == 7
+a_equals_1_or_b_equals_7
+66> tut9:test_if(33, 33).
+** exception error: no true branch found when evaluating an if expression
+     in function  tut9:test_if/2 (tut9.erl, line 5)
+注意，tut9:test_if(33,33) 使得所有测试条件都失败，这将导致产生一个 if_clause 运行时错误。参考 Guard 序列 可以得到更多关于 guard 测试的内容。
+
+Erlang 中还有一种 case 结构。回想一下前面的 convert_length 函数：
+
+convert_length({centimeter, X}) ->
+    {inch, X / 2.54};
+convert_length({inch, Y}) ->
+    {centimeter, Y * 2.54}.
+该函数也可以用 case 实现，如下所示：
+
+-module(tut10).
+-export([convert_length/1]).
+
+convert_length(Length) ->
+    case Length of
+        {centimeter, X} ->
+            {inch, X / 2.54};
+        {inch, Y} ->
+            {centimeter, Y * 2.54}
+    end.
+无论是 case 还是 if 都有返回值。这也就是说，上面的例子中，case 语句要么返回 {inch,X/2.54} 要么返回 {centimeter,Y*2.54}。case 语句也可以用 guard 子句来实现。下面的例子可以帮助你分清二者。这个例子中，输入年份得到指定某月的天数。年份必须是已知的，因为闰年的二月有 29 天，所以必须根据年份才能判断二月的天数。
+
+-module(tut11).
+-export([month_length/2]).
+
+month_length(Year, Month) ->
+    %% 被 400 整除的为闰年。
+    %% 被 100 整除但不能被 400 整除的不是闰年。
+    %% 被 4 整除但不能被 100 整除的为闰年。
+    Leap = if
+        trunc(Year / 400) * 400 == Year ->
+            leap;
+        trunc(Year / 100) * 100 == Year ->
+            not_leap;
+        trunc(Year / 4) * 4 == Year ->
+            leap;
+        true ->
+            not_leap
+    end,  
+    case Month of
+        sep -> 30;
+        apr -> 30;
+        jun -> 30;
+        nov -> 30;
+        feb when Leap == leap -> 29;
+        feb -> 28;
+        jan -> 31;
+        mar -> 31;
+        may -> 31;
+        jul -> 31;
+        aug -> 31;
+        oct -> 31;
+        dec -> 31
+    end
+70> c(tut11).
+{ok,tut11}
+71> tut11:month_length(2004, feb).
+29
+72> tut11:month_length(2003, feb).
+28
+73> tut11:month_length(1947, aug).
+31
+
+
+
+
+内置函数 (BIF)
+
+内置函数是指那些出于某种需求而内置到 Erlang 虚拟机中的函数。内置函数常常实现那些在 Erlang 中不容易实现或者在 Erlang 中实现效率不高的函数。某些内置函数也可以只用函数名就调用，因为这些函数是由于默认属于 erlang 模块。例如，下面调用内置函数 trunc 等价于调用 erlang:trunc。
+
+如下所示，判断一个是否为闰年。如果可以被 400 整除，则为闰年。为了判断，先将年份除以 400，再用 trunc 函数移去小数部分。然后，再将结果乘以 400 判断是否得到最初的值。例如，以 2004 年为例：
+
+2004 / 400 = 5.01
+trunc(5.01) = 5
+5 * 400 = 2000
+2000 年与 2004 年不同，2004 不能被 400 整除。而对于 2000 来说，
+
+2000 / 400 = 5.0
+trunc(5.0) = 5
+5 * 400 = 2000
+所以，2000 年为闰年。接下来两个 trunc 测试例子判断年份是否可以被 100 或者 4 整除。 首先第一个 if 语句返回 leap 或者 not_leap，该值存储在变量 Leap 中的。这个变量会被用到后面 feb 的条件测试中，用于计算二月份有多少天。
+
+这个例子演示了 trunc 的使用方法。其实，在 Erlang 中可以使用内置函数 rem 来求得余数，这样会简单很多。示例如下：
+
+74> 2004 rem 400.
+4
+所以下面的这段代码也可以改写：
+
+trunc(Year / 400) * 400 == Year ->
+    leap;
+可以被改写成：
+
+Year rem 400 == 0 ->
+    leap;
+Erlang 中除了 trunc 之外，还有很多的内置函数。其中只有一部分可以用在 guard 中，并且你不可以在 guard 中使用自定义的函数 ( 参考 guard 序列 )。（高级话题：这不能保证 guard 没有副作用）。让我们在 shell 中测试一些内置函数：
+
+75> trunc(5.6).
+5
+76> round(5.6).
+6
+77> length([a,b,c,d]).
+4
+78> float(5).
+5.0
+79> is_atom(hello).
+true
+80> is_atom("hello").
+false
+81> is_tuple({paris, {c, 30}}).
+true
+82> is_tuple([paris, {c, 30}]).
+false
+所有的这些函数都可以用到 guard 条件测试中。下现这些函数不可以用在 guard 条件测试中：
+
+83> atom_to_list(hello).
+"hello"
+84> list_to_atom("goodbye").
+goodbye
+85> integer_to_list(22).
+"22"
+这三个内置函数可以完成类型的转换。要想在 Erlang 系统中（非 Erlang 虚拟机中）实现这样的转换几乎是不可能的。
+
+
+
+
+
+
+高阶函数 (Fun)
+
+Erlang 作为函数式编程语言自然拥有高阶函数。在 shell 中，我们可以这样使用：
+
+86> Xf = fun(X) -> X * 2 end.
+ #Fun<erl_eval.5.123085357>
+87> Xf(5).
+10
+这里定义了一个数值翻倍的函数，并将这个函数赋给了一个变量。所以，Xf(5) 返回值为 10。Erlang 有两个非常有用的操作列表的函数 foreach 与 map， 定义如下：
+
+foreach(Fun, [First|Rest]) ->
+    Fun(First),
+    foreach(Fun, Rest);
+foreach(Fun, []) ->
+    ok.
+
+map(Fun, [First|Rest]) -> 
+    [Fun(First)|map(Fun,Rest)];
+map(Fun, []) -> 
+    [].
+这两个函数是由标准模块 lists 提供的。foreach 将一个函数作用于列表中的每一个元素。 map 通过将一个函数作用于列表中的每个元素生成一个新的列表。下面，在 shell 中使用 map 的 Add_3 函数生成一个新的列表：
+
+88> Add_3 = fun(X) -> X + 3 end.
+ #Fun<erl_eval.5.123085357>
+89> lists:map(Add_3, [1,2,3]).
+[4,5,6]
+让我们再次输出一组城市的温度值：
+
+90> Print_City = fun({City, {X, Temp}}) -> io:format("~-15w ~w ~w~n",
+[City, X, Temp]) end.
+ #Fun<erl_eval.5.123085357>
+91> lists:foreach(Print_City, [{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+moscow          c -10
+cape_town       f 70
+stockholm       c -4
+paris           f 28
+london          f 36
+ok
+下面，让我们定义一个函数，这个函数用于遍历城市温度列表并将每个温度值都转换为摄氏温度表示。如下所示：
+
+-module(tut13).
+
+-export([convert_list_to_c/1]).
+
+convert_to_c({Name, {f, Temp}}) ->
+    {Name, {c, trunc((Temp - 32) * 5 / 9)}};
+convert_to_c({Name, {c, Temp}}) ->
+    {Name, {c, Temp}}.
+
+convert_list_to_c(List) ->
+    lists:map(fun convert_to_c/1, List).
+92> tut13:convert_list_to_c([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+[{moscow,{c,-10}},
+ {cape_town,{c,21}},
+ {stockholm,{c,-4}},
+ {paris,{c,-2}},
+ {london,{c,2}}]
+convert_to_c 函数和之前的一样，但是它现在被用作高阶函数：
+
+lists:map(fun convert_to_c/1, List)
+当一个在别处定义的函数被用作高阶函数时，我们可以通过 Function/Arity 的方式来引用它（注意，Function 为函数名，Arity 为函数的参数个数）。所以在调用 map 函数时，才会是 lists:map(fun convert_to_c/1, List) 这样的形式。如上所示，convert_list_to_c 变得更加的简洁易懂。
+
+lists 标准库中还包括排序函数 sort(Fun,List)，其中 Fun 接受两个输入参数，如果第一个元素比第二个元素小则函数返回真，否则返回假。把排序添加到 convert_list_to_c 中：
+
+-module(tut13).
+
+-export([convert_list_to_c/1]).
+
+convert_to_c({Name, {f, Temp}}) ->
+    {Name, {c, trunc((Temp - 32) * 5 / 9)}};
+convert_to_c({Name, {c, Temp}}) ->
+    {Name, {c, Temp}}.
+
+convert_list_to_c(List) ->
+    New_list = lists:map(fun convert_to_c/1, List),
+    lists:sort(fun({_, {c, Temp1}}, {_, {c, Temp2}}) ->
+                       Temp1 < Temp2 end, New_list).
+93> c(tut13).
+{ok,tut13}
+94> tut13:convert_list_to_c([{moscow, {c, -10}}, {cape_town, {f, 70}},
+{stockholm, {c, -4}}, {paris, {f, 28}}, {london, {f, 36}}]).
+[{moscow,{c,-10}},
+ {stockholm,{c,-4}},
+ {paris,{c,-2}},
+ {london,{c,2}},
+ {cape_town,{c,21}}]
+在 sort 中用到了下面这个函数：
+
+fun({_, {c, Temp1}}, {_, {c, Temp2}}) -> Temp1 < Temp2 end,
+这儿用到了匿名变量 "_" 的概念。匿名变量常用于忽略一个获得的变量值的场景下。当然，它也可以用到其它的场景中，而不仅仅是在高阶函数这儿。Temp1 < Temp2 说明如果 Temp1 比 Temp2 小，则返回 true。
+
+
+
+
+进程
+
+相比于其它函数式编程语言，Erlang 的优势在于它的并发程序设计与分布式程序设计。并发是指一个程序中同时有多个线程在执行。例如，现代操作系统允许你同时使用文字处理、电子制表软件、邮件终端和打印任务。在任意一个时刻，系统中每个处理单元（CPU）都只有一个线程（任务）在执行，但是可以通过以一定速率交替执行这些线程使得这些它们看上去像是在同时运行一样。Erlang 中创建多线程非常简单，而且很容易就可以实现这些线程之间的通信。Erlang 中，每个执行的线程都称之为一个 process（即进程，注意与操作系统中的进程概念不太一样）。
+
+（注意：进程被用于没有共享数据的执行线程的场景。而线程（thread）则被用于共享数据的场景下。由于 Erlang 各执行线程之间不共享数据，所以我们一般将其称之为进程。)
+
+Erlang 的内置函数 spawn 可以用来创建一个新的进程： spawn(Module, Exported_Function, List of Arguments)。假设有如下这样一个模块：
+
+-module(tut14).
+
+-export([start/0, say_something/2]).
+
+say_something(What, 0) ->
+    done;
+say_something(What, Times) ->
+    io:format("~p~n", [What]),
+    say_something(What, Times - 1).
+
+start() ->
+    spawn(tut14, say_something, [hello, 3]),
+    spawn(tut14, say_something, [goodbye, 3]).
+5> c(tut14).
+{ok,tut14}
+6> tut14:say_something(hello, 3).
+hello
+hello
+hello
+done
+如上所示，say_something 函数根据第二个参数指定的次数将第一个参数的值输出多次。函数 start 启动两个 Erlang 进程，其中一个将 “hello” 输出 3 次，另一个进程将 “goodbye” 输出三次。所有的进程中都调用了 say_something 函数。不过需要注意的是，要想使用一个函数启动一个进程，这个函数就必须导出此模块，同时必须使用 spawn 启动。
+
+9> tut14:start().
+hello
+goodbye
+<0.63.0>
+hello
+goodbye
+hello
+goodbye
+请注意，这里并不是先输出 “goodbye” 三次后再输出 “goodbye” 三次。而是，第一个进程先输出一个 "hello"，然后第二个进程再输出一次 "goodbye"。接下来，第一个进程再输出第二个 "hello"。但是奇怪的是 <0.63.0> 到底是哪儿来的呢？在 Erlang 系统中，一个函数的返回值是函数最后一个表达式的值，而 start 函数的第后一个表达式是：
+
+spawn(tut14, say_something, [goodbye, 3]).
+spawn 返回的是进程的标识符，简记为 pid。进程标识符是用来唯一标识 Erlang 进程的标记。所以说，<0.63.0> 也就是 spawn 返回的一个进程标识符。下面一个例子就可会讲解如何使用进程标识符。
+
+另外，这个例子中 io:format 输出用的不是 ~w 而变成了 ~p。引用用户手册的说法：“~p 与 ~w 一样都是将数据按标准语法的格式输出，但是当输出的内容需要占用多行时，~p 在分行处可以表现得更加智能。此外，它还会尝试检测出列表中的可输出字符串并将按字符串输出”。
+
+
+
+
+消息传递
+
+下面的例子中创建了两个进程，它们相互之间会发送多个消息。
+
+-module(tut15).
+
+-export([start/0, ping/2, pong/0]).
+
+ping(0, Pong_PID) ->
+    Pong_PID ! finished,
+    io:format("ping finished~n", []);
+
+ping(N, Pong_PID) ->
+    Pong_PID ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping(N - 1, Pong_PID).
+
+pong() ->
+    receive
+        finished ->
+            io:format("Pong finished~n", []);
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    end.
+
+start() ->
+    Pong_PID = spawn(tut15, pong, []),
+    spawn(tut15, ping, [3, Pong_PID]).
+1> c(tut15).
+{ok,tut15}
+2> tut15: start().
+<0.36.0>
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+ping finished
+Pong finished
+start 函数先创建了一个进程，我们称之为 “pong”：
+
+Pong_PID = spawn(tut15, pong, [])
+这个进程会执行 tut15:pong 函数。Pong_PID 是 “pong” 进程的进程标识符。接下来，start 函数又创建了另外一个进程 ”ping“：
+
+spawn(tut15,ping,[3,Pong_PID]),
+这个进程执行：
+
+tut15:ping(3, Pong_PID)
+<0.36.0> 为是 start 函数的返回值。
+
+”pong“ 进程完成下面的工作：
+
+receive
+    finished ->
+        io:format("Pong finished~n", []);
+    {ping, Ping_PID} ->
+        io:format("Pong received ping~n", []),
+        Ping_PID ! pong,
+        pong()
+end.
+receive 关键字被进程用来接收从其它进程发送的的消息。它的使用语法如下：
+
+receive
+   pattern1 ->
+       actions1;
+   pattern2 ->
+       actions2;
+   ....
+   patternN
+       actionsN
+end.
+请注意，在 end 前的最后一个 actions 并没有 ";"。
+
+Erlang 进程之间的消息可以是任何简单的 Erlang 项。比如说，可以是列表、元组、整数、原子、进程标识等等。
+
+每个进程都有独立的消息接收队列。新接收的消息被放置在接收队列的尾部。当进程执行 receive 时，消息中第一个消息与与 receive 后的第一个模块进行匹配。如果匹配成功，则将该消息从消息队列中删除，并执行该模式后面的代码。
+
+然而，如果第一个模式匹配失败，则测试第二个匹配。如果第二个匹配成功，则将该消息从消息队列中删除，并执行第二个匹配后的代码。如果第二个匹配也失败，则匹配第三个，依次类推，直到所有模式都匹配结束。如果所有匹配都失败，则将第一个消息留在消息队列中，使用第二个消息重复前面的过程。第二个消息匹配成功时，则执行匹配成功后的程序并将消息从消息队列中取出（将第一个消息与其余的消息继续留在消息队列中）。如果第二个消息也匹配失败，则尝试第三个消息，依次类推，直到尝试完消息队列所有的消息为止。如果所有消息都处理结束（匹配失败或者匹配成功被移除），则进程阻塞，等待新的消息的到来。上面的过程将会一直重复下去。
+
+Erlang 实现是非常 “聪明” 的，它会尽量减少 receive 的每个消息与模式匹配测试的次数。
+
+让我们回到 ping pong 示例程序。
+
+“Pong” 一直等待接收消息。 如果收到原子值 finished，“Pong” 会输出 “Pong finished”，然后结束进程。如果收到如下形式的消息：
+
+{ping, Ping_PID}
+则输出 “Pong received ping”，并向进程 “ping” 发送一个原子值消息 pong：
+
+Ping_PID ! pong
+请注意这里是如何使用 “!” 操作符发送消息的。 “!” 操作符的语法如下所示：
+
+Pid ! Message
+这表示将消息（任何 Erlang 数据）发送到进程标识符为 Pid 的进程的消息队列中。
+
+将消息 pong 发送给进程 “ping” 后，“pong” 进程再次调用 pong 函数，这会使得再次回到 receive 等待下一个消息的到来。
+
+下面，让我们一起去看看进程 “ping”，回忆一下它是从下面的地方开始执行的：
+
+tut15:ping(3, Pong_PID)
+可以看一下 ping/2 函数，由于第一个参数的值是 3 而不是 0， 所以 ping/2 函数的第二个子句被执行（第一个子句的头为 ping(0,Pong_PID)，第二个子句的头部为 ping(N,Pong_PID)，因此 N 为 3 。
+
+第二个子句将发送消息给 “pong” 进程：
+
+Pong_PID ! {ping, self()},
+self() 函数返回当前进程（执行 self() 的进程）的进程标识符，在这儿为 “ping” 进程的进程标识符。（回想一下 “pong” 的代码，这个进程标识符值被存储在变量 Ping_PID 当中）
+
+发送完消息后，“Ping” 接下来等待回复消息 “pong”：
+
+receive
+    pong ->
+        io:format("Ping received pong~n", [])
+end,
+收到回复消息后，则输出 “Ping received pong”。之后 “ping” 也再次调用 ping 函数：
+
+ping(N - 1, Pong_PID)
+N-1 使得第一个参数逐渐减小到 0。当其值变为 0 后，ping/2 函数的第一个子句会被执行。
+
+ping(0, Pong_PID) ->
+    Pong_PID !  finished,
+    io:format("ping finished~n", []);
+此时，原子值 finished 被发送至 “pong” 进程（会导致进程结束），同时将“ping finished” 输出。随后，“Ping” 进程结束。
+
+
+
+
+
+注册进程名称
+
+上面的例子中，因为 “Pong” 在 “ping” 进程开始前已经创建完成，所以才能将 “pong” 进程的进程标识符作为参数传递给进程 “ping”。这也就说，“ping” 进程必须通过某种途径获得 “pong” 进程的进程标识符后才能将消息发送 “pong” 进程。然而，某些情况下，进程需要相互独立地启动，而这些进程之间又要求知道彼此的进程标识符，前面提到的这种方式就不能满足要求了。因此，Erlang 提供了为每个进程提供一个名称绑定的机制，这样进程间通信就可以通过进程名来实现，而不需要知道进程的进程标识符了。为每个进程注册一个名称需要用到内置函数 register：
+
+register(some_atom, Pid)
+接下来，让我们一起上面的 ping pong 示例程序。这一次，我们为 “pong” 进程赋予了一名进程名称 pong：
+
+-module(tut16).
+
+-export([start/0, ping/1, pong/0]).
+
+ping(0) ->
+    pong ! finished,
+    io:format("ping finished~n", []);
+
+ping(N) ->
+    pong ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping(N - 1).
+
+pong() ->
+    receive
+        finished ->
+            io:format("Pong finished~n", []);
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    end.
+
+start() ->
+    register(pong, spawn(tut16, pong, [])),
+    spawn(tut16, ping, [3]).
+2> c(tut16).
+{ok, tut16}
+3> tut16:start().
+<0.38.0>
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+ping finished
+Pong finished
+start/0 函数如下：
+
+register(pong, spawn(tut16, pong, [])),
+创建 “pong” 进程的同时还赋予了它一个名称 pong。在 “ping” 进程中，通过如下的形式发送消息：
+
+pong ! {ping, self()},
+ping/2 变成了 ping/1。这是因为不再需要参数 Pong_PID 了。
+
+
+
+
+
+分布式编程
+
+下面我们进一步对 ping pong 示例程序进行改进。 这一次，我们要让 “ping”、“pong” 进程分别位于不同的计算机上。要想让这个程序工作，你首先的搭建一下分布式的系统环境。分布式 Erlang 系统的实现提供了基本的安全机制，它阻止未授权的外部设备访问本机的 Erlang 系统。同一个系统中的 Erlang 要想相互通信需要设置相同的 magic cookie。设置 magic cookie 最便捷地实现方式就是在你打算运行分布式 Erlang 系统的所有计算机的 home 目录下创建一个 .erlang.cookie 文件：
+
+在 windows 系统中，home 目录为环境变量 $HOME 指定的目录--这个变量的值可能需要你手动设置
+在 Linux 或者 UNIX 系统中简单很多，你只需要在执行 cd 命令后所进入的目录下创建一个 .erlang.cookie 文件就可以了。
+.erlang.cookie 文件只有一行内容，这一行包含一个原子值。例如，在 Linux 或 UNIX 系统的 shell 执行如下命令：
+
+$ cd
+$ cat > .erlang.cookie
+this_is_very_secret
+$ chmod 400 .erlang.cookie
+使用 chmod 命令让 .erlang.cookie 文件只有文件拥者可以访问。这个是必须设置的。
+
+当你想要启动 erlang 系统与其它 erlang 系统通信时，你需要给 erlang 系统一个名称，例如：
+
+$erl -sname my_name
+在后面你还会看到更加详细的内容。如果你想尝试一下分布式 Erlang 系统，而又只有一台计算机，你可以在同一台计算机上分别启动两个 Erlang 系统，并分别赋予不同的名称即可。运行在每个计算机上的 Erlang 被称为一个 Erang 结点（Erlang Node）。
+
+（注意：erl -sname 要求所有的结点在同一个 IP 域内。如果我们的 Erlang 结点位于不同的 IP 域中，则我们需要使用 -name，而且需要指定所有的 IP 地址。）
+
+下面这个修改后的 ping pong 示例程序可以分别运行在两个结点之上：
+
+-module(tut17).
+
+-export([start_ping/1, start_pong/0,  ping/2, pong/0]).
+
+ping(0, Pong_Node) ->
+    {pong, Pong_Node} ! finished,
+    io:format("ping finished~n", []);
+
+ping(N, Pong_Node) ->
+    {pong, Pong_Node} ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping(N - 1, Pong_Node).
+
+pong() ->
+    receive
+        finished ->
+            io:format("Pong finished~n", []);
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    end.
+
+start_pong() ->
+    register(pong, spawn(tut17, pong, [])).
+
+start_ping(Pong_Node) ->
+    spawn(tut17, ping, [3, Pong_Node]).
+我们假设这两台计算分别称之为 gollum 与 kosken。在 kosken 上启动结点 ping。在 gollum 上启动结点 pong。
+
+在 kosken 系统上（Linux/Unix 系统）：
+
+kosken> erl -sname ping
+Erlang (BEAM) emulator version 5.2.3.7 [hipe] [threads:0]
+
+Eshell V5.2.3.7  (abort with ^G)
+(ping@kosken)1>
+在 gollum 上：
+
+gollum> erl -sname pong
+Erlang (BEAM) emulator version 5.2.3.7 [hipe] [threads:0]
+
+Eshell V5.2.3.7  (abort with ^G)
+(pong@gollum)1>
+下面，在 gollum 上启动 "pong" 进程：
+
+(pong@gollum)1> tut17:start_pong().
+true
+然后在 kosken 上启动 “ping” 进程（从上面的代码中可以看出，start_ping 的函数的其中一个参数为 “pong” 进程所在结点的名称）：
+
+(ping@kosken)1> tut17:start_ping(pong@gollum).
+<0.37.0>
+Ping received pong
+Ping received pong 
+Ping received pong
+ping finished
+如上所示，ping pong 程序已经开始运行了。在 “pong” 的这一端：
+
+(pong@gollum)2>
+Pong received ping                 
+Pong received ping                 
+Pong received ping                 
+Pong finished                      
+(pong@gollum)2>
+再看一下 tut17 的代码，你可以看到 pong 函数根本就没有发生任何改变，无论 “ping” 进程运行在哪个结点下，下面这一行代码都可以正确的工作：
+
+{ping, Ping_PID} ->
+    io:format("Pong received ping~n", []),
+    Ping_PID ! pong,
+因此，Erlang 的进程标识符中包含了程序运行在哪个结点上的位置信息。所以，如果你知道了进程的进程标识符，无论进程是运行在本地结点上还是其它结点上面，"!" 操作符都可以将消息发送到该进程。
+
+要想通过进程注册的名称向其它结点上的进程发送消息，这时候就有一些不同之处了：
+
+{pong, Pong_Node} ! {ping, self()},
+这个时候，我们就不能再只用 registered_name 作为参数了，而需要使用元组 {registered_name,node_name} 作为注册进程的名称参数。
+
+在之前的代码中了，“ping”、“pong” 进程是在两个独立的 Erlang 结点上通过 shell 启动的。 spawn 也可以在其它结点（非本地结点）启动新的进程。
+
+下面这段示例代码也是一个 ping pong 程序，但是这一次 “ping” 是在异地结点上启动的：
+
+-module(tut18).
+
+-export([start/1,  ping/2, pong/0]).
+
+ping(0, Pong_Node) ->
+    {pong, Pong_Node} ! finished,
+    io:format("ping finished~n", []);
+
+ping(N, Pong_Node) ->
+    {pong, Pong_Node} ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping(N - 1, Pong_Node).
+
+pong() ->
+    receive
+        finished ->
+            io:format("Pong finished~n", []);
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    end.
+
+start(Ping_Node) ->
+    register(pong, spawn(tut18, pong, [])),
+    spawn(Ping_Node, tut18, ping, [3, node()]).
+假设在 Erlang 系统 ping 结点（注意不是进程 “ping”）已经在 kosken 中启动（译注：可以理解 Erlang 结点已经启动），则在 gollum 会有如下的输出：
+
+<3934.39.0>
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+Pong finished
+ping finished
+注意所有的内容都输出到了 gollum 结点上。这是因为 I/O 系统发现进程是由其它结点启动的时候，会自将输出内容输出到启动进程所在的结点。
+
+
+
+
+
+完整示例
+
+接下来这个示例是一个简单的消息传递者（messager）示例。Messager 是一个允许用登录到不同的结点并向彼此发送消息的应用程序。
+
+开始之前，请注意以下几点：
+
+这个示例只演示了消息传递的逻辑---没有提供用户友好的界面（虽然这在 Erlang 是可以做到的）。
+这类的问题使用 OTP 的工具可以非常方便的实现，还能同时提供线上更新的方法等。（参考 OTP 设计原则）
+这个示例程序并不完整，它没有考虑到结点离开等情况。这个问题在后面的版本会得到修复。
+Messager 允许 “客户端” 连接到集中的服务器并表明其身份。也就是说，用户并不需要知道另外一个用户所在 Erlang 结点的名称就可以发送消息。
+
+messager.erl 文件内容如下：
+
+%%% Message passing utility.  
+%%% User interface:
+%%% logon(Name)
+%%%     One user at a time can log in from each Erlang node in the
+%%%     system messenger: and choose a suitable Name. If the Name
+%%%     is already logged in at another node or if someone else is
+%%%     already logged in at the same node, login will be rejected
+%%%     with a suitable error message.
+%%% logoff()
+%%%     Logs off anybody at that node
+%%% message(ToName, Message)
+%%%     sends Message to ToName. Error messages if the user of this 
+%%%     function is not logged on or if ToName is not logged on at
+%%%     any node.
+%%%
+%%% One node in the network of Erlang nodes runs a server which maintains
+%%% data about the logged on users. The server is registered as "messenger"
+%%% Each node where there is a user logged on runs a client process registered
+%%% as "mess_client" 
+%%%
+%%% Protocol between the client processes and the server
+%%% ----------------------------------------------------
+%%% 
+%%% To server: {ClientPid, logon, UserName}
+%%% Reply {messenger, stop, user_exists_at_other_node} stops the client
+%%% Reply {messenger, logged_on} logon was successful
+%%%
+%%% To server: {ClientPid, logoff}
+%%% Reply: {messenger, logged_off}
+%%%
+%%% To server: {ClientPid, logoff}
+%%% Reply: no reply
+%%%
+%%% To server: {ClientPid, message_to, ToName, Message} send a message
+%%% Reply: {messenger, stop, you_are_not_logged_on} stops the client
+%%% Reply: {messenger, receiver_not_found} no user with this name logged on
+%%% Reply: {messenger, sent} Message has been sent (but no guarantee)
+%%%
+%%% To client: {message_from, Name, Message},
+%%%
+%%% Protocol between the "commands" and the client
+%%% ----------------------------------------------
+%%%
+%%% Started: messenger:client(Server_Node, Name)
+%%% To client: logoff
+%%% To client: {message_to, ToName, Message}
+%%%
+%%% Configuration: change the server_node() function to return the
+%%% name of the node where the messenger server runs
+
+-module(messenger).
+-export([start_server/0, server/1, logon/1, logoff/0, message/2, client/2]).
+
+%%% Change the function below to return the name of the node where the
+%%% messenger server runs
+server_node() ->
+    messenger@bill.
+
+%%% This is the server process for the "messenger"
+%%% the user list has the format [{ClientPid1, Name1},{ClientPid22, Name2},...]
+server(User_List) ->
+    receive
+        {From, logon, Name} ->
+            New_User_List = server_logon(From, Name, User_List),
+            server(New_User_List);
+        {From, logoff} ->
+            New_User_List = server_logoff(From, User_List),
+            server(New_User_List);
+        {From, message_to, To, Message} ->
+            server_transfer(From, To, Message, User_List),
+            io:format("list is now: ~p~n", [User_List]),
+            server(User_List)
+    end.
+
+%%% Start the server
+start_server() ->
+    register(messenger, spawn(messenger, server, [[]])).
+
+%%% Server adds a new user to the user list
+server_logon(From, Name, User_List) ->
+    %% check if logged on anywhere else
+    case lists:keymember(Name, 2, User_List) of
+        true ->
+            From ! {messenger, stop, user_exists_at_other_node},  %reject logon
+            User_List;
+        false ->
+            From ! {messenger, logged_on},
+            [{From, Name} | User_List]        %add user to the list
+    end.
+
+%%% Server deletes a user from the user list
+server_logoff(From, User_List) ->
+    lists:keydelete(From, 1, User_List).
+
+%%% Server transfers a message between user
+server_transfer(From, To, Message, User_List) ->
+    %% check that the user is logged on and who he is
+    case lists:keysearch(From, 1, User_List) of
+        false ->
+            From ! {messenger, stop, you_are_not_logged_on};
+        {value, {From, Name}} ->
+            server_transfer(From, Name, To, Message, User_List)
+    end.
+%%% If the user exists, send the message
+server_transfer(From, Name, To, Message, User_List) ->
+    %% Find the receiver and send the message
+    case lists:keysearch(To, 2, User_List) of
+        false ->
+            From ! {messenger, receiver_not_found};
+        {value, {ToPid, To}} ->
+            ToPid ! {message_from, Name, Message}, 
+            From ! {messenger, sent} 
+    end.
+
+%%% User Commands
+logon(Name) ->
+    case whereis(mess_client) of 
+        undefined ->
+            register(mess_client, 
+                     spawn(messenger, client, [server_node(), Name]));
+        _ -> already_logged_on
+    end.
+
+logoff() ->
+    mess_client ! logoff.
+
+message(ToName, Message) ->
+    case whereis(mess_client) of % Test if the client is running
+        undefined ->
+            not_logged_on;
+        _ -> mess_client ! {message_to, ToName, Message},
+             ok
+end.
+
+%%% The client process which runs on each server node
+client(Server_Node, Name) ->
+    {messenger, Server_Node} ! {self(), logon, Name},
+    await_result(),
+    client(Server_Node).
+
+client(Server_Node) ->
+    receive
+        logoff ->
+            {messenger, Server_Node} ! {self(), logoff},
+            exit(normal);
+        {message_to, ToName, Message} ->
+            {messenger, Server_Node} ! {self(), message_to, ToName, Message},
+            await_result();
+        {message_from, FromName, Message} ->
+            io:format("Message from ~p: ~p~n", [FromName, Message])
+    end,
+    client(Server_Node).
+
+%%% wait for a response from the server
+await_result() ->
+    receive
+        {messenger, stop, Why} -> % Stop the client 
+            io:format("~p~n", [Why]),
+            exit(normal);
+        {messenger, What} ->  % Normal response
+            io:format("~p~n", [What])
+    end.
+在使用本示例程序之前，你需要：
+
+配置 server_node() 函数。
+将编译后的代码（messager.beam）拷贝到每一个你启动了 Erlang 的计算机上。
+这接下来的例子中，我们在四台不同的计算上启动了 Erlang 结点。如果你的网络没有那么多的计算机，你也可以在同一台计算机上启动多个结点。
+
+启动的四个结点分别为：messager@super，c1@bilo，c2@kosken，c3@gollum。
+
+首先在 meesager@super 上启动服务器程序：
+
+(messenger@super)1> messenger:start_server().
+true
+接下来用 peter 是在 c1@bibo 登录：
+
+(c1@bilbo)1> messenger:logon(peter).
+true
+logged_on
+然后 James 在 c2@kosken 上登录：
+
+(c2@kosken)1> messenger:logon(james).
+true
+logged_on
+最后，用 Fred 在 c3@gollum 上登录：
+
+(c3@gollum)1> messenger:logon(fred).
+true
+logged_on
+现在，Peter 就可以向 Fred 发送消息了：
+
+(c1@bilbo)2> messenger:message(fred, "hello").
+ok
+sent
+Fred 收到消息后，回复一个消息给 Peter 然后登出：
+
+Message from peter: "hello"
+(c3@gollum)2> messenger:message(peter, "go away, I'm busy").
+ok
+sent
+(c3@gollum)3> messenger:logoff().
+logoff
+随后，James 再向 Fred 发送消息时，则出现下面的情况：
+
+(c2@kosken)2> messenger:message(fred, "peter doesn't like you").
+ok
+receiver_not_found
+因为 Fred 已经离开，所以发送消息失败。
+
+让我们先来看看这个例子引入的一些新的概念。
+
+这里有两个版本的 server_transfer 函数：其中一个有四个参数（server_transfer/4）另外一个有五个参数（server_transfer/5）。Erlang 将它们看作两个完全不一样的函数。
+
+请注意这里是如何让 server_transfer 函数通过 server(User_List) 调用其自身的，这里形成了一个循环。 Erlang 编译器非常的聪明，它会将上面的代码优化为一个循环而不是一个非法的递规函数调用。但是它只能是在函数调用后面没有别的代码的情况下才能工作（注：即尾递规）。
+
+示例中用到了lists 模块中的函数。lists 模块是一个非常有用的模块，推荐你通过用户手册仔细研究一下（erl -man lists）。
+
+lists:keymemeber(Key,Position,Lists) 函数遍历列表中的元组，查看每个元组的指定位置 （Position）处的数据并判断元组该位置是否与 Key 相等。元组中的第一个元素的位置为 1，依次类推。如果发现某个元组的 Position 位置处的元素与 Key 相同，则返回 true，否则返回 false。
+
+3> lists:keymember(a, 2, [{x,y,z},{b,b,b},{b,a,c},{q,r,s}]).
+true
+4> lists:keymember(p, 2, [{x,y,z},{b,b,b},{b,a,c},{q,r,s}]).
+false
+lists:keydelete 与 lists:keymember 非常相似，只不过它将删除列表中找到的第一个元组（如果存在），并返回剩余的列表：
+
+5> lists:keydelete(a, 2, [{x,y,z},{b,b,b},{b,a,c},{q,r,s}]).
+[{x,y,z},{b,b,b},{q,r,s}]
+lists:keysearch 与 lists:keymember 类似，但是它将返回 {value,Tuple_Found} 或者原子值 false。
+
+lists 模块中还有许多非常有用的函数。
+
+Erlang 进程（概念上地）会一直运行直到它执行 receive 命令，而此时消息队列中又没有它想接收的消息为止。
+这儿，“概念上地” 是因为 Erlang 系统活跃的进程实际上是共享 CPU 处理时间的。
+
+当进程无事可做时，即一个函数调用 return 返回而没有调用另外一个函数时，进程就结束。另外一种终止进程的方式是调用 exit/1 函数。exit/1 函数的参数是有特殊含义的，我们稍后会讨论到。在这个例子中使用 exit(normal) 结束进程，它与程序因没有再调用函数而终止的效果是一样的。
+
+内置函数 whereis(RegisteredName) 用于检查是否已有一个进程注册了进程名称 RegisteredName。如果已经存在，则返回进程 的进程标识符。如果不存在，则返回原子值 undefined。
+
+到这儿，你应该已经可以看懂 messager 模块的大部分代码了。让我们来深入研究将一个消息从一个用户发送到另外一个的详细过程。
+
+当第一个用户调用 “sends” 发送消息时：
+
+messenger:message(fred, "hello")
+首先检查用户自身是否在系统中运行（是否可以查找到 mess_client 进程）：
+
+whereis(mess_client) 
+如果用户存在则将消息发送给 mess_client：
+
+mess_client ! {message_to, fred, "hello"}
+客户端通过下面的代码将消息发送到服务器：
+
+{messenger, messenger@super} ! {self(), message_to, fred, "hello"},
+然后等待服务器的回复。 服务器收到消息后将调用：
+
+{messenger, messenger@super} ! {self(), message_to, fred, "hello"},
+接下来，用下面的代码检查进程标识符 From 是否在 User_Lists 列表中：
+
+lists:keysearch(From, 1, User_List)
+如果 keysearch 返回原子值 false，则出现的某种错误，服务将返回如下消息：
+
+From ! {messenger, stop, you_are_not_logged_on}
+client 收到这个消息后，则执行 exit(normal) 然后终止程序。如果 keysearch 返回的是 {value,{From,Nmae}} ，则可以确定该用户已经登录，并其名字（peter）存储在变量 Name 中。
+
+接下来调用：
+
+server_transfer(From, peter, fred, "hello", User_List)
+注意这里是函数 server_transfer/5，与其它的 server_transfer/4 不是同一个函数。还会再次调用 keysearch 函数用于在 User_List 中查找与 fred 对应的进程标识符：
+
+lists:keysearch(fred, 2, User_List)
+这一次用到了参数 2，这表示是元组中的第二个元素。如果返回的是原子值 false，则说明 fred 已经登出，服务器将向发送消息的进程发送如下消息：
+
+From ! {messenger, receiver_not_found};
+client 就会收到该消息。
+
+如果 keysearch 返回值为：
+
+{value, {ToPid, fred}}
+则会将下面的消息发送给 fred 客户端：
+
+ToPid ! {message_from, peter, "hello"}, 
+而如下的消息会发送给 peter 的客户端：
+
+From ! {messenger, sent} 
+Fred 客户端收到消息后将其输出：
+
+{message_from, peter, "hello"} ->
+    io:format("Message from ~p: ~p~n", [peter, "hello"])
+peter 客户端在 await_result 函数中收到回复的消息。
+
+
+
+
+
+健壮性
+
+上一节中的完整示例还存在一些问题。当用户所登录的结点崩溃时，用户没有从系统中登出，因此该用户仍然在服务器的 User_List 中，但事实是用户已经不在系统中了。这会导致这用户不能再次登录，因为系统认为它已经在系统中了。
+
+或者，如果服务器发送消息出现故障了，那么这时候会导致客户端在 await_result 函数中一直等待，那又该怎么处理这个问题呢？
+
+
+
+
+超时
+
+在改进 messager 程序之前，让我们一起学习一些基本的原则。回忆一下，当 “ping” 结束的时候，它向 “pong” 发送一个原子值 finished 的消息以通知 “pong” 结束程序。另一种让 “pong” 结束的办法是当 “pong” 有一定时间没有收到来自 “ping” 的消息时则退出程序。我们可在 pong 中添加一个 time-out 来实现它：
+
+-module(tut19).
+
+-export([start_ping/1, start_pong/0,  ping/2, pong/0]).
+
+ping(0, Pong_Node) ->
+    io:format("ping finished~n", []);
+
+ping(N, Pong_Node) ->
+    {pong, Pong_Node} ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping(N - 1, Pong_Node).
+
+pong() ->
+    receive
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    after 5000 ->
+            io:format("Pong timed out~n", [])
+    end.
+
+start_pong() ->
+    register(pong, spawn(tut19, pong, [])).
+
+start_ping(Pong_Node) ->
+    spawn(tut19, ping, [3, Pong_Node]).
+编译上面的代码并将生成的 tut19.beam 文件拷贝到某个目录下，下面是在结点 pong@kosken 上的输出：
+
+true
+Pong received ping
+Pong received ping
+Pong received ping
+Pong timed out
+在结点 ping@gollum 上的输出结果为：
+
+(ping@gollum)1> tut19:start_ping(pong@kosken).
+<0.36.0>
+Ping received pong
+Ping received pong
+Ping received pong
+ping finished 
+time-out 被设置在：
+
+pong() ->
+    receive
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    after 5000 ->
+            io:format("Pong timed out~n", [])
+    end.
+执行 recieve 时，超时定时器 （5000 ms）启动；一旦收到 {ping,Ping_PID} 消息，则取消该超时定时器。如果没有收到 {ping,Ping_PID} 消息，那么 5000 毫秒后 time-out 后面的程序就会被执行。after 必须是 recieve 中的最后一个，也就是说，recieve 中其它所有消息的接收处理都优先于超时消息。如果有一个返回值为整数值的函数，我们可以在 after 后调用该函数以将其返回值设为超时时间值，如下所示：
+
+after pong_timeout() ->
+一般地，除了使用超时来监测分布式 Erlang 系统的各分部外，还有许多更好的办法来实现监测功能。超时适用于监测来自于系统外部的事件，比如说，当你希望在指定时间内收到来自外部系统的消息的时候。举个例子，我们可以用超时来发现用户离开了messager 系统，比如说当用户 10 分钟没有访问系统时，则认为其已离开了系统。
+
+
+
+
+
+错误处理
+
+在讨论监督与错误处理细节之前，让我们先一起来看一下 Erlang 进程的终止过程，或者说 Erlang 的术语 exit。
+
+进程执行 exit(normal) 结束或者运行完所有的代码而结束都被认为是进程的正常（normal）终止。
+
+进程因为触发运行时错误（例如，除零、错误匹配、调用不存在了函数等）而终止被称之为异常终止。进程执行 exit(Reason) （注意此处的 Reason 是除 normal 以外的值）终止也被称之为异常终止。
+
+一个 Erlang 进程可以与其它 Erlang 进程建立连接。如果一个进程调用 link(Other_Pid)，那么它就在其自己与 Othre_Pid 进程之间创建了一个双向连接。当一个进程结束时，它会发送信号至所有与之有连接的进程。
+
+这个信号携带着进程的进程标识符以及进程结束的原因信息。
+
+进程收到进程正常退出的信号时默认情况下是直接忽略它。
+
+但是，如果进程收到的是异常终止的信号，则默认动作为：
+
+接收到异常终止信号的进程忽略消息队列中的所有消息
+杀死自己
+将相同的错误消息传递给连接到它的所有进程。
+所以，你可以使用连接的方式把同一事务的所有进程连接起来。如果其中一个进程异常终止，事务中所有进程都会被杀死。正是因为在实际生产过程中，常常有创建进程同时与之建立连接的需求，所以存在这样一个内置函数 spawn_link，与 spawn 不同之处在于，它创建一个新进程同时在新进程与创建者之间建立连接。
+
+下面给出了 ping pong 示例子另外一种实现方法，它通过连接终止 "pong" 进程：
+
+-module(tut20).
+
+-export([start/1,  ping/2, pong/0]).
+
+ping(N, Pong_Pid) ->
+    link(Pong_Pid),
+    ping1(N, Pong_Pid).
+
+ping1(0, _) ->
+    exit(ping);
+
+ping1(N, Pong_Pid) ->
+    Pong_Pid ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping1(N - 1, Pong_Pid).
+
+pong() ->
+    receive
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong()
+    end.
+
+start(Ping_Node) ->
+    PongPID = spawn(tut20, pong, []),
+    spawn(Ping_Node, tut20, ping, [3, PongPID]).
+(s1@bill)3> tut20:start(s2@kosken).
+Pong received ping
+<3820.41.0>
+Ping received pong
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+与前面的代码一样，ping pong 程序的两个进程仍然都是在 start/1 函数中创建的，“ping”进程在单独的结点上建立的。但是这里做了一些小的改动，用到了内置函数 link。“Ping” 结束时调用 exit(ping) ，使得一个终止信号传递给 “pong” 进程，从而导致 “pong” 进程终止。
+
+也可以修改进程收到异常终止信号时的默认行为，避免进程被杀死。即，把所有的信号都转变为一般的消息添加到信号接收进程的消息队列中，消息的格式为 {'EXIT',FromPID,Reason}。我们可以通过如下的代码来设置：
+
+process_flag(trap_exit, true)
+还有其它可以用的进程标志，可参阅 erlang (3)。标准用户程序一般不需要改变进程对于信号的默认处理行为，但是对于 OTP 中的管理程序这个接口还是很有必要的。下面修改了 ping pong 程序来打印输出进程退出时的信息：
+
+-module(tut21).
+
+-export([start/1,  ping/2, pong/0]).
+
+ping(N, Pong_Pid) ->
+    link(Pong_Pid), 
+    ping1(N, Pong_Pid).
+
+ping1(0, _) ->
+    exit(ping);
+
+ping1(N, Pong_Pid) ->
+    Pong_Pid ! {ping, self()},
+    receive
+        pong ->
+            io:format("Ping received pong~n", [])
+    end,
+    ping1(N - 1, Pong_Pid).
+
+pong() ->
+    process_flag(trap_exit, true), 
+    pong1().
+
+pong1() ->
+    receive
+        {ping, Ping_PID} ->
+            io:format("Pong received ping~n", []),
+            Ping_PID ! pong,
+            pong1();
+        {'EXIT', From, Reason} ->
+            io:format("pong exiting, got ~p~n", [{'EXIT', From, Reason}])
+    end.
+
+start(Ping_Node) ->
+    PongPID = spawn(tut21, pong, []),
+    spawn(Ping_Node, tut21, ping, [3, PongPID]).
+(s1@bill)1> tut21:start(s2@gollum).
+<3820.39.0>
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+Pong received ping
+Ping received pong
+pong exiting, got {'EXIT',<3820.39.0>,ping}
+
+
+
+
+
+增加健壮性后的完整示例
+
+让我们改进 Messager 程序以增加该程序的健壮性：
+
+%%% Message passing utility.  
+%%% User interface:
+%%% login(Name)
+%%%     One user at a time can log in from each Erlang node in the
+%%%     system messenger: and choose a suitable Name. If the Name
+%%%     is already logged in at another node or if someone else is
+%%%     already logged in at the same node, login will be rejected
+%%%     with a suitable error message.
+%%% logoff()
+%%%     Logs off anybody at that node
+%%% message(ToName, Message)
+%%%     sends Message to ToName. Error messages if the user of this 
+%%%     function is not logged on or if ToName is not logged on at
+%%%     any node.
+%%%
+%%% One node in the network of Erlang nodes runs a server which maintains
+%%% data about the logged on users. The server is registered as "messenger"
+%%% Each node where there is a user logged on runs a client process registered
+%%% as "mess_client" 
+%%%
+%%% Protocol between the client processes and the server
+%%% ----------------------------------------------------
+%%% 
+%%% To server: {ClientPid, logon, UserName}
+%%% Reply {messenger, stop, user_exists_at_other_node} stops the client
+%%% Reply {messenger, logged_on} logon was successful
+%%%
+%%% When the client terminates for some reason
+%%% To server: {'EXIT', ClientPid, Reason}
+%%%
+%%% To server: {ClientPid, message_to, ToName, Message} send a message
+%%% Reply: {messenger, stop, you_are_not_logged_on} stops the client
+%%% Reply: {messenger, receiver_not_found} no user with this name logged on
+%%% Reply: {messenger, sent} Message has been sent (but no guarantee)
+%%%
+%%% To client: {message_from, Name, Message},
+%%%
+%%% Protocol between the "commands" and the client
+%%% ---------------------------------------------- 
+%%%
+%%% Started: messenger:client(Server_Node, Name)
+%%% To client: logoff
+%%% To client: {message_to, ToName, Message}
+%%%
+%%% Configuration: change the server_node() function to return the
+%%% name of the node where the messenger server runs
+
+-module(messenger).
+-export([start_server/0, server/0, 
+         logon/1, logoff/0, message/2, client/2]).
+
+%%% Change the function below to return the name of the node where the
+%%% messenger server runs
+server_node() ->
+    messenger@super.
+
+%%% This is the server process for the "messenger"
+%%% the user list has the format [{ClientPid1, Name1},{ClientPid22, Name2},...]
+server() ->
+    process_flag(trap_exit, true),
+    server([]).
+
+server(User_List) ->
+    receive
+        {From, logon, Name} ->
+            New_User_List = server_logon(From, Name, User_List),
+            server(New_User_List);
+        {'EXIT', From, _} ->
+            New_User_List = server_logoff(From, User_List),
+            server(New_User_List);
+        {From, message_to, To, Message} ->
+            server_transfer(From, To, Message, User_List),
+            io:format("list is now: ~p~n", [User_List]),
+            server(User_List)
+    end.
+
+%%% Start the server
+start_server() ->
+    register(messenger, spawn(messenger, server, [])).
+
+%%% Server adds a new user to the user list
+server_logon(From, Name, User_List) ->
+    %% check if logged on anywhere else
+    case lists:keymember(Name, 2, User_List) of
+        true ->
+            From ! {messenger, stop, user_exists_at_other_node},  %reject logon
+            User_List;
+        false ->
+            From ! {messenger, logged_on},
+            link(From),
+            [{From, Name} | User_List]        %add user to the list
+    end.
+
+%%% Server deletes a user from the user list
+server_logoff(From, User_List) ->
+    lists:keydelete(From, 1, User_List).
+
+%%% Server transfers a message between user
+server_transfer(From, To, Message, User_List) ->
+    %% check that the user is logged on and who he is
+    case lists:keysearch(From, 1, User_List) of
+        false ->
+            From ! {messenger, stop, you_are_not_logged_on};
+        {value, {_, Name}} ->
+            server_transfer(From, Name, To, Message, User_List)
+    end.
+
+%%% If the user exists, send the message
+server_transfer(From, Name, To, Message, User_List) ->
+    %% Find the receiver and send the message
+    case lists:keysearch(To, 2, User_List) of
+        false ->
+            From ! {messenger, receiver_not_found};
+        {value, {ToPid, To}} ->
+            ToPid ! {message_from, Name, Message}, 
+            From ! {messenger, sent} 
+    end.
+
+%%% User Commands
+logon(Name) ->
+    case whereis(mess_client) of 
+        undefined ->
+            register(mess_client, 
+                     spawn(messenger, client, [server_node(), Name]));
+        _ -> already_logged_on
+    end.
+
+logoff() ->
+    mess_client ! logoff.
+
+message(ToName, Message) ->
+    case whereis(mess_client) of % Test if the client is running
+        undefined ->
+            not_logged_on;
+        _ -> mess_client ! {message_to, ToName, Message},
+             ok
+end.
+
+%%% The client process which runs on each user node
+client(Server_Node, Name) ->
+    {messenger, Server_Node} ! {self(), logon, Name},
+    await_result(),
+    client(Server_Node).
+
+client(Server_Node) ->
+    receive
+        logoff ->
+            exit(normal);
+        {message_to, ToName, Message} ->
+            {messenger, Server_Node} ! {self(), message_to, ToName, Message},
+            await_result();
+        {message_from, FromName, Message} ->
+            io:format("Message from ~p: ~p~n", [FromName, Message])
+    end,
+    client(Server_Node).
+
+%%% wait for a response from the server
+await_result() ->
+    receive
+        {messenger, stop, Why} -> % Stop the client 
+            io:format("~p~n", [Why]),
+            exit(normal);
+        {messenger, What} ->  % Normal response
+            io:format("~p~n", [What])
+    after 5000 ->
+            io:format("No response from server~n", []),
+            exit(timeout)
+    end.
+主要有如下几处改动:
+
+Messager 服务器捕捉进程退出。如果它收到进程终止信号，{'EXIT',From,Reason}，则说明客户端进程已经终止或者由于下面的原因变得不可达：
+
+用户主动退出登录（取消了 “logoff” 消息）。
+与客户端连接的网络已经断开。
+客户进程所处的结点崩溃。
+客户进程执行了某些非法操作。
+如果收到上面所述的退出信号，服务器调用 server_logoff 函数将 {From, Name} 元组从 User_Lists 列表中删除。如果服务端所在的结点崩溃了，那么系统将将自动产生进程终止信号，并将其发送给所有的客户端进程：'EXIT',MessengerPID,noconnection} ，客户端进程收到该消息后会终止自身。
+
+同样，在 await_result 函数中引入了一个 5 秒钟的定时器。也就是说，如果服务器 5 秒钟之类没有回复客户端，则客户端终止执行。这个只是在服务端与客户端建立连接前的登录阶段需要。
+
+一个非常有意思的例子是如果客户端在服务端建立连接前终止会发生什么情况呢？需要特别注意，如果一个进程与另一个不存在的进程建立连接，则会收到一个终止信号 {'EXIT',From, noproc}。这就好像连接建立后进程立马就结束了一样。
+
+
+
+
+将大程序分在多个文件中
+
+为了演示需要，我们将前面几节中 messager 程序分布到五个文件中：
+
+mess_config.hrl
+
+配置所需数据头文件
+
+mess_interface.hrl
+
+客户端与 messager 之间的接口定义
+
+user_interface.erl
+
+用户接口函数
+
+mess_client.erl
+
+messager 系统客户端的函数
+
+mess_server.erl
+
+messager 服务端的函数
+
+除了完成上述工作外，我们使用记录重新定义了 shell 、客户端以及服务端的消息格式。此外，我们还引入了下面这些宏：
+
+%%%----FILE mess_config.hrl----
+
+%%% Configure the location of the server node,
+-define(server_node, messenger@super).
+
+%%%----END FILE----
+%%%----FILE mess_interface.hrl----
+
+%%%Message interface between client and server and client shell for
+%%% messenger program 
+
+%%%Messages from Client to server received in server/1 function.
+-record(logon,{client_pid, username}).
+-record(message,{client_pid, to_name, message}).
+%%% {'EXIT', ClientPid, Reason}  (client terminated or unreachable.
+
+%%% Messages from Server to Client, received in await_result/0 function 
+-record(abort_client,{message}).
+%%% Messages are: user_exists_at_other_node, 
+%%%               you_are_not_logged_on
+-record(server_reply,{message}).
+%%% Messages are: logged_on
+%%%               receiver_not_found
+%%%               sent  (Message has been sent (no guarantee)
+%%% Messages from Server to Client received in client/1 function
+-record(message_from,{from_name, message}).
+
+%%% Messages from shell to Client received in client/1 function
+%%% spawn(mess_client, client, [server_node(), Name])
+-record(message_to,{to_name, message}).
+%%% logoff
+
+%%%----END FILE----
+%%%----FILE mess_interface.hrl----
+
+%%% Message interface between client and server and client shell for
+%%% messenger program 
+
+%%%Messages from Client to server received in server/1 function.
+-record(logon,{client_pid, username}).
+-record(message,{client_pid, to_name, message}).
+%%% {'EXIT', ClientPid, Reason}  (client terminated or unreachable.
+
+%%% Messages from Server to Client, received in await_result/0 function 
+-record(abort_client,{message}).
+%%% Messages are: user_exists_at_other_node, 
+%%%               you_are_not_logged_on
+-record(server_reply,{message}).
+%%% Messages are: logged_on
+%%%               receiver_not_found
+%%%               sent  (Message has been sent (no guarantee)
+%%% Messages from Server to Client received in client/1 function
+-record(message_from,{from_name, message}).
+
+%%% Messages from shell to Client received in client/1 function
+%%% spawn(mess_client, client, [server_node(), Name])
+-record(message_to,{to_name, message}).
+%%% logoff
+
+%%%----END FILE----
+%%%----FILE mess_client.erl----
+
+%%% The client process which runs on each user node
+
+-module(mess_client).
+-export([client/2]).
+-include("mess_interface.hrl").
+
+client(Server_Node, Name) ->
+    {messenger, Server_Node} ! #logon{client_pid=self(), username=Name},
+    await_result(),
+    client(Server_Node).
+
+client(Server_Node) ->
+    receive
+        logoff ->
+            exit(normal);
+        #message_to{to_name=ToName, message=Message} ->
+            {messenger, Server_Node} ! 
+                #message{client_pid=self(), to_name=ToName, message=Message},
+            await_result();
+        {message_from, FromName, Message} ->
+            io:format("Message from ~p: ~p~n", [FromName, Message])
+    end,
+    client(Server_Node).
+
+%%% wait for a response from the server
+await_result() ->
+    receive
+        #abort_client{message=Why} ->
+            io:format("~p~n", [Why]),
+            exit(normal);
+        #server_reply{message=What} ->
+            io:format("~p~n", [What])
+    after 5000 ->
+            io:format("No response from server~n", []),
+            exit(timeout)
+    end.
+
+%%%----END FILE---
+%%%----FILE mess_server.erl----
+
+%%% This is the server process of the messenger service
+
+-module(mess_server).
+-export([start_server/0, server/0]).
+-include("mess_interface.hrl").
+
+server() ->
+    process_flag(trap_exit, true),
+    server([]).
+
+%%% the user list has the format [{ClientPid1, Name1},{ClientPid22, Name2},...]
+server(User_List) ->
+    io:format("User list = ~p~n", [User_List]),
+    receive
+        #logon{client_pid=From, username=Name} ->
+            New_User_List = server_logon(From, Name, User_List),
+            server(New_User_List);
+        {'EXIT', From, _} ->
+            New_User_List = server_logoff(From, User_List),
+            server(New_User_List);
+        #message{client_pid=From, to_name=To, message=Message} ->
+            server_transfer(From, To, Message, User_List),
+            server(User_List)
+    end.
+
+%%% Start the server
+start_server() ->
+    register(messenger, spawn(?MODULE, server, [])).
+
+%%% Server adds a new user to the user list
+server_logon(From, Name, User_List) ->
+    %% check if logged on anywhere else
+    case lists:keymember(Name, 2, User_List) of
+        true ->
+            From ! #abort_client{message=user_exists_at_other_node},
+            User_List;
+        false ->
+            From ! #server_reply{message=logged_on},
+            link(From),
+            [{From, Name} | User_List]        %add user to the list
+    end.
+
+%%% Server deletes a user from the user list
+server_logoff(From, User_List) ->
+    lists:keydelete(From, 1, User_List).
+
+%%% Server transfers a message between user
+server_transfer(From, To, Message, User_List) ->
+    %% check that the user is logged on and who he is
+    case lists:keysearch(From, 1, User_List) of
+        false ->
+            From ! #abort_client{message=you_are_not_logged_on};
+        {value, {_, Name}} ->
+            server_transfer(From, Name, To, Message, User_List)
+    end.
+%%% If the user exists, send the message
+server_transfer(From, Name, To, Message, User_List) ->
+    %% Find the receiver and send the message
+    case lists:keysearch(To, 2, User_List) of
+        false ->
+            From ! #server_reply{message=receiver_not_found};
+        {value, {ToPid, To}} ->
+            ToPid ! #message_from{from_name=Name, message=Message}, 
+            From !  #server_reply{message=sent} 
+    end.
+
+%%%----END FILE---
+
+
+
+头文件
+
+如上所示，某些文件的扩展名为 .hrl。这些是在 .erl 文件中会用到的头文件，使用方法如下：
+
+-include("File_Name").
+例如：
+
+-include("mess_interface.hrl").
+在本例中，上面所有的文件与 messager 系统的其它文件在同一个目录下。
+
+.hrl 文件中可以包含任何合法的 Erlang 代码，但是通常里面只包含一些记录和宏的定义。
+
+
+
+
+记录
+
+记录的定义如下：
+
+-record(name_of_record,{field_name1, field_name2, field_name3, ......}).
+例如，
+
+-record(message_to,{to_name, message}).
+这等价于：
+
+{message_to, To_Name, Message}
+用一个例子来说明怎样创建一个记录：
+
+#message_to{message="hello", to_name=fred)
+上面的代码创建了如下的记录：
+
+{message_to, fred, "hello"}
+注意，使用这种方式创建记录时，你不需要考虑给每个部分赋值时的顺序问题。这样做的另外一个优势在于你可以把接口一并定义在头文件中，这样修改接口会变得非常容易。例如，如果你想在记录中添加一个新的域，你只需要在使用该新域的地方进行修改就可以了，而不需要在每个使用记录的地方都进行修改。如果你在创建记录时漏掉了其中的某些域，则这些域会得到一个默认的原子值 undefined。
+
+使用记录进行模式匹配与创建记录是一样。例如，在 receive 的 case 中：
+
+#message_to{to_name=ToName, message=Message} ->
+这与下面的代码是一样的：
+
+{message_to, ToName, Message}
+
+
+
+
+
+宏
+
+在 messager 系统添加的另外一种东西是宏。在 mess_config.hrl 文件中包含如下的定义：
+
+%%% Configure the location of the server node,
+-define(server_node, messenger@super).
+这个头文件被包括到了 mess_server.erl 文件中：
+
+-include("mess_config.hrl").
+这样，在 mess_server.erl 中出现的每个 server_node 都被替换为 messenger@super。
+
+宏还被用于生成服务端进程：
+
+spawn(?MODULE, server, [])
+这是一个标准宏（也就是说，这是一个系统定义的宏而不是用户自定义的宏）。?MODULE 宏总是被替换为当前模块名（也就是在文件开始的部分的 -module 定义的名称）。宏有许多的高级用法，作为参数只是其中之一。
+
+Messager 系统中的三个 Erlang（.erl）文件被分布编译成三个独立的目标代码文件（.beam）中。当执行过程中引用到这些代码时，Erlang 系统会将它们加载并链接到系统中。在本例中，我们把它们全部放到当前工作目录下（即你执行 "cd" 命令后所在的目录）。我们也可以将这些文件放到其它目录下。
+
+在这个 messager 例子中，我们没有对发送消息的内容做出任何假设和限制。这些消息可以是任何合法的 Erlang 项。
+

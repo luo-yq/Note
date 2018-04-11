@@ -1,0 +1,23 @@
+﻿xml = new groovy.xml.MarkupBuilder() 
+
+
+/**
+
+
+xml.标签名(属性名:属性值,....){
+	子标签名(子标签值)
+	.....
+}
+
+
+**/
+
+
+
+book = xml.book(isbn: "1234-5678", category: "A-123") {
+   author("Paul Jones") 
+   title("The zen and the art of the scripting")
+   publisher("XYZ Pub. Co.")
+   year("2004")
+}
+println book #to see the result

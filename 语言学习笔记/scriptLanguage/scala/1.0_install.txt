@@ -1,0 +1,21 @@
+
+下载sdk
+wget http://downloads.typesafe.com/scala/2.11.6/scala-2.11.6.tgz?_ga=1.266727886.1594027332.1432723613
+
+安装
+tar -zxvf scala-2.11.6.tgz?_ga=1.266727886.1594027332.1432723613
+
+cd scala-2.11.6
+
+sudo vim ~/.profile
+~/.profile的配置如下：
+
+SCALA_HOME="/usr/local/scala-2.11.6"
+export PATH=$PATH:$SCALA_HOME/bin
+
+
+
+scala 进入交互平台
+:quit 退出交互平台 
+
+

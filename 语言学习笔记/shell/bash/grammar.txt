@@ -1,0 +1,93 @@
+
+If [条件判断式 ] ;then
+待执行的 shell 命令
+elif[ 条件判断式 ] ;then
+待执行的 shell 命令
+else
+待执行的 shell 命令
+fi
+
+
+
+case$变量 in
+“第一个变量内容”)
+待执行的 shell 命令
+;;
+“第 n 个变量内容”)
+待执行的 shell 命令
+;;
+) è 最后一个变量内容. 代表所有
+待执行的 shell 命令
+;;
+esac
+
+
+
+while[ 条件表达式 ] =>只要条件满足就执行
+do
+程序段
+done
+
+
+function fname()
+{
+程序段
+}
+
+for var in con1 con2….
+for var in conarr
+for (初始值;限制值;执行步长)
+
+
+
+
+条件表达式
+
+//不易阅读的语法
+cmd1 && {
+    cmd2
+    cmd3
+    ;
+} || {
+    cmd4
+    cmd5
+}
+意思是说： 若 cmd1的return value为true的话， 然后执行cmd2与cmd3， 否则执行cmd4与cmd5.
+
+// 易于阅读的语法
+if cmd1
+then
+    cmd2
+    cmd3
+else
+    cmd4
+    cmd5
+fi
+
+//更多写法如下，比较清晰
+if cmd1; then
+    cmd2;
+elif cmd3; then
+    cmd4
+else
+    cmd5
+fi
+
+
+
+function 的定义方式有两种：
+
+方式一：
+function function_name {
+    command1
+    command2
+    command3
+    .....
+}
+方式二：
+function_name () {
+    command1
+    command2
+    command3
+    ......
+}

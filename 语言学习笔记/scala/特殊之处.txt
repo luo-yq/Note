@@ -1,0 +1,92 @@
+只允许在类中声明变量而不赋值,只允许抽象类声明变量而不赋值。
+val name:type=value 常量
+var name:type=value 变量
+
+定长数组两种初始化方式
+val name:Array[type]=new Array[type](length) 数组 name(index)=value
+val name:Array[type]= Array(values...) 数组
+var x1,x2...:type=value 给几个变量同时赋值
+类中定义的无参函数不加()时，调用时不能加()
+函数定义方式[ovrride/private/final]def fName(pName:pType,...):rettype{}
+
+变长数组ArrayBuffer（list)
+val c=new ArrayBuffer[type]()
+c+=e1   追加1各元素
+c+=(e2.e3)  追加一个元素
+c++=Array(e2,e3)  追加一组元素
+c.trimEnd(1) 移除最后一个元素
+c.insert(index,values...)
+c.remove(index,length)
+c.toArray 对应的c=A.toBuffer
+
+不可变映射
+Map(k1->v1,k2->v2,...)
+Map((k1,v1),(k2,v2)...)
+可变映射
+var m=scala.collection.mutable.Map((k1,v1),(k2,v2)...)
+new scala.collection.mutable.Map[ktype,vtype]
+m(k1)或m.get(k1) 获取值
+常用方法
+contains(k)  getOrElse(k,defaultv)
+keySet values
++=(k1->v1,k2->v2,...) 增加键值对
+-=k1 删除键值对
+
+
+元组（不同类型值的集合，默认坐标_1,_2,_3...）
+val yz=(1,2,"third")
+println(yz._1)
+
+位运算符 &|^~
+
+调用保留字声明的方法 用反引号声明，用反引号调用 Person.`return`
+
+调用无参构造创建对象时()可以省略，(new Person).add  与 new Person().add 都可以但不可以写成 new Person.add 
+
+val 声明的常量只能 读取
+var 声明的常量可以 读取 和 赋值
+private 声明私有变量
+
+
+控制语句
+if(A)B[;]else C 
+while(A)B
+do B while(A)
+for(i <- e)E(i)   e表达式 （可以是数组）： 1 to 4 (包括1，4) 1 util 4 （包括1，不包括4）
+
+a match{
+	case e1 => E1
+	case e2 => E2
+	......
+}
+
+try{}catch{case ...,case ....}finally{}
+throw new ***Exception(msg)
+
+
+类声明(声明的同时定义了构造器)
+类构造器与父类构造器可以不一致
+重新方法必须加override
+如果父类构造里是val定义的常量，则子类构造需要使用override覆盖构造常量参数
+final类不能被继承，final方法不能被重写
+private只允许类本身访问protected允许类本身和子类访问
+[abstract] class [private] [([[override]val/var] name:type,....)] [extends parentClass[]]{
+	def this([name:type,...]){
+		this([values])//第一步必须先调用主构造器
+		...
+	}
+	override def...
+}
+
+伴生对象（静态方法/属性）
+object className{
+	val/var name:type=value
+	def fName(){
+
+	}
+}
+
+
+import scala.collection._  用_不是用*
+import scala.collection.{A,B} 导入同一个包下多个类
+import scala.collection.{A=>B,C=>_}  重命名或隐藏

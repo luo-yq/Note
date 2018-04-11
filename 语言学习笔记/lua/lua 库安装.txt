@@ -1,0 +1,67 @@
+redis  mysql sqlite3
+
+
+
+
+--[[
+git clone https://github.com/keplerproject/luasql.git
+安装mysql  sqlite3
+--]]
+
+mysql = require "luasql.mysql"
+
+local env  = mysql.mysql()
+local conn = env:connect('test','root','123456')
+print(env,conn)
+
+status,errorString = conn:execute([[CREATE TABLE sample3 (id INTEGER, name TEXT)]])
+print(status,errorString )
+
+status,errorString = conn:execute([[INSERT INTO sample3 values('12','Raj')]])
+print(status,errorString )
+
+cursor,errorString = conn:execute([[select * from sample3]])
+print(cursor,errorString)
+
+row = cursor:fetch ({}, "a")
+while row do
+  print(string.format("Id: %s, Name: %s", row.id, row.name))
+  row = cursor:fetch (row, "a")
+end
+-- close everything
+cursor:close()
+conn:close()
+
+
+--事务开始 conn:execute([[START TRANSACTION;]])
+--事务回滚 conn:execute([[ROLLBACK;]])
+--提交事务 conn:execute([[COMMIT;]])
+
+
+
+
+
+sqlite3 = require "luasql.sqlite3"
+
+local env  = sqlite3.sqlite3()
+local conn = env:connect('mydb.sqlite')
+print(env,conn)
+
+status,errorString = conn:execute([[CREATE TABLE sample ('id' INTEGER, 'name' TEXT)]])
+print(status,errorString )
+
+status,errorString = conn:execute([[INSERT INTO sample values('1','Raj')]])
+print(status,errorString )
+
+cursor,errorString = conn:execute([[select * from sample]])
+print(cursor,errorString)
+
+row = cursor:fetch ({}, "a")
+while row do
+  print(string.format("Id: %s, Name: %s", row.id, row.name))
+  row = cursor:fetch (row, "a")
+end
+-- close everything
+cursor:close()
+conn:close()
+env:close()

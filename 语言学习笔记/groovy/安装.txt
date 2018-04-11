@@ -1,0 +1,65 @@
+﻿ant编译运行groovy脚本 
+
+在ant中使用groovy脚本
+<taskdef name="groovy"  classname="org.codehaus.groovy.ant.Groovy"/>
+
+<target name="init">
+  <property name="version" value="2"/>
+  <groovy>
+     myversion = properties['version']
+     ant.echo myversion
+     properties['isGreater']= myversion>1
+  </groovy>
+  <echo message="${isGreater}"/>
+</target>
+
+<target name="replace-android-resources" depends="resolve">
+  <groovy src="${basedir}/env-process.groovy"></groovy>
+</target>
+
+maven中使用groovy：重定义test目标 maven test
+  <dependency>
+    <groupId>groovy</groupId>
+    <id>groovy</id>
+    <version>1.0-beta-6</version>
+  </dependency>
+  <dependency>
+    <groupId>asm</groupId>
+    <id>asm</id>
+    <version>1.4.1</version>
+  </dependency>
+  
+   <goal name="test">
+    <attainGoal name="run-groovyc"/>
+    <attainGoal name="test:test"/>    	
+  </goal>
+  
+<goal name="run-groovyc" prereqs="java:compile,test:compile">
+	<path id="groovy.classpath">
+		<pathelement path="${maven.build.dest}"/>
+		<pathelement path="target/classes"/>
+		<pathelement path="target/test-classes"/>
+		<path refid="maven.dependency.classpath"/>
+	</path>
+	<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc">
+		<classpath refid="groovy.classpath"/>
+	</taskdef>
+	<groovyc destdir="${basedir}/target/test-classes" srcdir="${basedir}/test/groovy" listfiles="true">
+		<classpath refid="groovy.classpath"/>
+	</groovyc>
+</goal>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

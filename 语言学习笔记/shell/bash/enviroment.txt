@@ -1,0 +1,55 @@
+echo $PPID # 该bash的呼叫者process ID.
+echo $PWD # 目前的工作目录。
+echo $OLDPWD # 上一个工作目录。
+echo $REPLY # 当read命令没有参数时，直接设在REPLY上。
+echo $UID # User ID。
+echo $EUID # Effective User ID。
+echo $BASH # Bash的完整路径。
+echo $BASH_VERSION # Bash版本。
+echo $SHLVL # 每次有Bash执行时，数字加一。
+echo $RANDOM # 每次这个参数被用到时，就会产生一个乱数在RANDOM上。
+echo $SECONDS # 从这个Shell一开始启动後的时间。
+echo $LINENO # Script的行数。
+echo $HISTCMD # 历史记录数。
+echo $OPTARG # getopts处理的最後一个选项参数。
+echo $OPTIND # 下一个要由getopts所处理的参数号码。
+echo $HOSTTYPE # 机器种类。
+echo $OSTYPE # 作业系统名称。
+echo $IFS # Internal Field Separator。
+echo $PATH # 命令搜寻路径。
+echo $HOME # 目前使用者的home directory;
+echo $CDPATH # cd命令的搜寻路径。
+echo $ENV # 如果这个参数被设定，每次有shell script被执行时，将会执行它所设定的档名做为环境设定。
+echo $MAIL # 如果这个参数被设定，而且MAILPATH没有被设定，那麽有信件进来时，bash会通知使用者。
+echo $MAILCHECK # 设定多久时间检查邮件一次。
+echo $MAILPATH # 一串的邮件检查路径。
+echo $MAIL_WARNING # 如果有设定的话，邮件被读取後，将会显示讯息。
+echo $PS1 # 提示讯息设定，内定为"bash$ "。(请详见提示讯息一节。)
+echo $PS2 # 第二提示讯息设定，内定为"> "。
+echo $PS3 # select命令所使用的提示讯息。
+echo $PS4 # 执行追踪时用的提示讯息设定，内定为"+ "。
+echo $HISTSIZE # 命令历史记录量，内定为500。
+echo $HISTFILE # 历史记录档，内定~/.bash_history。
+echo $HISTFILESIZE # 历史记录档行数最大值，内定500。
+echo $OPTERR # 如果设为1，bash会显示getopts的错误。
+echo $PROMPT_COMMAND # 如果设定的话，该值会在每次执行命令前都显示。
+echo $IGNOREEOF # 将EOF值当成输入，内定为10。
+echo $TMOUT # 如果设为大於零，该值被解译为输入等待秒数。若无输入，当成没有输入。
+echo $FCEDIT # fc命令的内定编辑器。
+echo $FIGNORE # 请详见READLINE。
+echo $INPUTRC # readline的startup file，内定~/.inputrc
+echo $notify # 如果设定了，bash立即报告被终结的背景程式。
+echo $history_control, HISTCONTROL # history使用。
+echo $command_oriented_history # 存入多行指令。
+echo $glob_dot_filenames # 如果设定了，bash将会把"."包含入档案路径中。
+echo $allow_null_glob_expansion # 如果设定了，bash允许路径明称为null string。
+echo $histchars # history使用。
+echo $nolinks # 如果设定了，执行指令时，不会跟随symbolic links。
+echo $hostname_completion_file, HOSTFILE # 包含与/etc/hosts相同格式的档名。
+echo $noclobber # 如果设定了，Bash不会覆写任何由">"、">&"及"<>"所操作的档案。
+echo $auto_resume # 请见任务控制一节。
+echo $no_exit_on_failed_exec # 如果该值存在，非互动的shell不会因为exec失败而跳出。
+echo $cdable_vars # 如果启动，而cd命令找不到目录，可切换到参数形态指定的目录下。
+
+
+echo pre${IFS}last #查看过滤的字符串首字符，默认我“ ”，所以，若设置$IFS=";",则 s=";;;;afa" echo s会输出"    afa"

@@ -1,0 +1,150 @@
+ls -aFl    查看文件列表   a:所有   F:文件类型  /结尾为文件夹   l:详细信息
+cat -nb file1 file2 file3 ... 浏览文件内容   n:显示行号  b:略过空行
+wc  -lwm/c  file1 file2 file3 ...  统计文件   依次为行数、单词数、字符数、各文件名/总和  Solaris统计字符用m，Linux统计字符用c
+cp -i file1 file2 file3 ... dir   （ cp -i srcFile destFile ） 复制文件到指定位置，-i 交互模式，覆盖提示
+mv -i srcFile destFile/dir 移动文件（可改名）
+rm -i file1 file2 file3 ... 删除文件
+cd 切换目录
+pwd 显示当前目录
+mkdir -p dir1 dir2 dir3 ...  创建目录 p:级联创建目录
+cp -r src1 src2 src3 ... dest 拷贝文件 r:拷贝目录
+
+
+chmod 设置修改权限
+chown 修改所有者
+chgro 修改所属组
+
+
+ps -f 进程状态  f:所有信息（cmd含参数）
+
+kill 发出杀进程的信号
+
+echo 输出
+
+grep word file 查找行   ‘^a’ 以a开头的行  d*  以d开头的文件
+
+awk
+sed
+find
+tar
+gzip
+bzip2
+
+file 测试文件类型
+file -L   测试Link类型
+file -F
+
+
+-t测试压缩文件是否正确
+
+
+压缩tar -cvf  to.tar dir
+解压tar -xvf  from.tar
+
+
+压缩gzip -cv  f1 f2 ..  > to.gz     
+查看gzip -l from.gz
+解压gzip -d from.gz
+
+
+压缩bzip2 -cv  f1 f2 ..  > to.bz
+解压bzip2 -d from.gz
+
+
+head 显示前几行
+tail 显示后几行
+
+
+source 执行文件
+export 将变量导出到当前进程
+
+
+
+script
+中间的命令会保存到文件中
+exit
+
+
+
+
+
+whereis  
+which 
+cal 日历
+date 时间
+
+du 磁盘用量
+df 磁盘剩余量
+top  内存使用情况
+free 内存剩余
+
+
+
+
+> 输出重定向（重写）
+>> 输出重定向（追加）
+
+<  输入重定向，一般用于循环
+<<
+
+read var < /dev/tty  从控制台读取数据到变量
+
+stty -echo 关闭回显  用于输入密码
+stty echo 重新打开回显
+
+
+/dev/null  一个黑洞文件，只能写入，写入即丢弃
+
+test 等价于 []
+
+: 空操作，但有返回值，返回值为真   如while : 为永久循环
+
+
+if 
+then
+elif
+then
+else
+fi
+
+
+case word in
+    p1)
+    	list1
+    	;;
+    p2)
+        list2
+        ;;
+esac
+;;表示跳到最后
+
+
+while command
+do
+   list
+done
+
+until command
+do
+   list
+done
+
+for mane in n1 n2 ... nn
+do
+   list
+done
+
+
+
+
+name(){
+	list
+}
+
+
+
+
+
+
+
+

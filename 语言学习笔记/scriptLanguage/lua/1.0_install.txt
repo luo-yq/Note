@@ -1,0 +1,7 @@
+wget http://www.lua.org/ftp/lua-5.2.3.tar.gz
+curl -R -O http://www.lua.org/ftp/lua-5.2.3.tar.gz
+tar zxf lua-5.2.3.tar.gz
+cd lua-5.2.3
+make linux test
+make macosx test
+在其它系统上安装 Lua 时，比如 aix，ansi，bsd，generic，linux，mingw，posix，solaris，你需要将 make linux test 命令中的 linux 替换为相应的系统平台名称。

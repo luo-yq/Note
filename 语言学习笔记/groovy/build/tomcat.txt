@@ -1,0 +1,37 @@
+class Tomcat
+{
+   ant = null;
+   url = "http://localhost:8080/manager"
+   username = "tomcat"
+   password = "tomcat"
+   path = "/tomcat-docs"
+   start() {
+    ant.taskdef(name: "start", classname: "org.apache.catalina.ant.StartTask")
+    ant.start(url: "${url}", username: "${username}", password: "${password}", path: "${path}")   
+   }
+   stop() {
+    ant.taskdef(name: "stop", classname: "org.apache.catalina.ant.StopTask")
+    ant.stop(url: "${url}", username: "${username}", password: "${password}", path: "${path}")      
+   }
+}
+
+
+
+server_script = base_dir+"/tomcat.groovy"
+server = initServer()
+initServer()
+{
+   Class clazz = new GroovyClassLoader().parseClass(new java.io.File(server_script))
+   GroovyObject obj = (GroovyObject) clazz.newInstance()
+   obj.ant = ant
+   return obj   
+}
+start()
+{           
+   server.start()
+}
+stop()
+{   
+   server.stop()
+}
+...

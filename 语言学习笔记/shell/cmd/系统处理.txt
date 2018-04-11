@@ -1,0 +1,2477 @@
+
+study
+不显示输入密码
+
+: by Herbert Kleebauer
+:: 用途：输入密码时不在屏幕上显示出来
+:: electronixtar 转发 2007-1-16
+:: 来源：http://www.cn-dos.net/forum/viewthread.php?tid=26795
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 
+@echo off
+echo hP1X500P[PZBBBfh#b##fXf-V@`$fPf]f3/f1/5++u5x>in.com
+set  /p password=Enter password:<nul
+for /f "tokens=*" %%i in ('in.com') do set password=%%i
+pause
+del in.com
+echo.
+echo The Password is:"%password:~0,-1%"
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+当前目录及子目录大小
+
+for /r %%i in (.) do @echo %%i&@dir "%%i"|find "字节"
+pause
+ 
+ @echo off
+for /f "tokens=*" %%b in ('dir') do echo "%%b"|find "个文件">nul&&for /f "tokens=3*" %%c in ("%%b") do echo 当前目录 %%c %%d
+for /f %%a in ('dir/ad/s/b') do for /f "tokens=*" %%b in ('"dir %%a\"') do echo "%%b"|find "个文件">nul&&for /f "tokens=3*" %%c in ("%%b") do echo %%a %%c %%d
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+查找最新的文件
+
+rem  文件更新列表批处理
+cls
+title         YIPINGSOFT CopyRight2006            
+rem "=================================================="
+For /r  %%i in (.) DO   del %%i\最新文件目录.txt 
+del 备查目录.txt
+del 完整目录.txt
+set homes=%date%    
+date/t >>完整目录.txt      
+for /F %%A in (完整目录.txt) do  set homes=%%A     
+md  %homes%& 
+dir  /t:c /s>完整目录.txt  
+for /f "tokens=1,4* delims= " %%1 in (完整目录.txt) do for /r  %%a in (%%2*) do if %%1==%homes% echo %%~fa >>最新文件目录.txt
+For /r  %%i in (*.*) DO  echo %%~fi >>备查目录.txt
+copy 最新文件目录.txt   %homes%&\ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+文件数目分类统计
+
+@echo off
+:: 可以扩展到某个分区、全盘的情况
+:: Code by JM 2007-2-11 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=27628
+for /f "delims=" %%i in ('dir /a-d /b e:\ 2^>nul') do (
+    set /a num%%~xi+=1
+)
+echo.&echo.
+echo             E盘根目录下文件分类统计情况：
+echo.&echo.
+for /f "tokens=2,3 delims==." %%i in ('set num. 2^>nul') do echo   %%i 文件有 %%j 个
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+变量的多级嵌套
+
+set num=Redtek
+set a=12345
+set b=654321
+echo ●　变量测试：
+echo.
+echo ●　想取 ^%num:~5,1^% ，即：从偏移量5开始取变量num的值，取1个字符，结果：k 
+echo 　　根据上面原理，在不使用延时变量的情况下测试变量嵌套变量取值。
+echo.
+echo ●　现在我们设^%num:~5,1^%这里面的~5要求间接来自另一个变量b。
+echo 　　所以，^%num:~5,1^%应（伪代码）表示为：^%num:~b,1^%，但变量b内有多个值，
+echo 　　我们只想取变量b内的从偏移量0起的第1个元素，就是5。已经开始嵌套变量了。
+echo 　　所以我们还要在num的变量取值计算语句中再嵌套进取变量b（^%b:~1,1^%）的语句。
+echo.
+echo 　　即：取变量num中的某个字符要由另一个变量b来决定从哪里开始取。
+echo 　　　　但是，我们还要让它再嵌套变量，即：
+echo 　　　　决定取num变量中的哪一个字符由变量b中某个字符值决定，所以还要再分解b，
+echo 　　　　这样，就是三层嵌套变量的关系，它们层层相互影响并嵌套变量着，哈哈……
+echo.
+echo ●　所以，我们使用了多级测试显示取值的整个过程的演化～：）
+echo.
+echo 　　下面结果是四条“渐近”求值的过程，最后连Call了3次才求出这些被嵌套的变量：）
+echo.
+echo 　　%%%%%%%%num:~%%%%b:~%a:~0,1%,1%%%%,1%%%%%%%%
+call echo 　　%%%%%%%%num:~%%%%b:~%a:~0,1%,1%%%%,1%%%%%%%%
+call call echo 　　%%%%%%%%num:~%%%%b:~%a:~0,1%,1%%%%,1%%%%%%%%
+call call call echo 　　最后值为：%%%%%%%%num:~%%%%b:~%a:~0,1%,1%%%%,1%%%%%%%%
+
+rem  理论上，我们可以Call它ｎ多次，这样我们可以随便在变量中再嵌套变量：）
+rem  以上是一个对嵌套变量实现更深了解的“晕晕”的实验过程～：）
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+显示当面目录树
+
+@rem 此BAT文件名一定不能是"tree.bat",否则tree命令会实效,不知道为什么
+@rem 可能是因为系统目录有"tree.com",系统会混淆吧.
+@rem 用"dir.bat"作文件名却可以.
+@echo off
+rem 在当前目录生成很漂亮的结构树
+tree /f > 1.TXT
+rem 象DIR命令一样,不过每个下级目录文件也列出
+DIR /S > 2.txt
+rem 简洁地列出目录当前目录文件
+DIR /d > 3.txt
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+交换两个变量的值而不使用临时变量
+
+@echo off
+:: 目的：交换两个变量的值，但是不使用临时变量
+:: Code by JM 2007-1-24 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=27078
+set var1=abc
+set var2=123
+echo 交换前： var1=%var1% var2=%var2%
+set var1=%var2%& set var2=%var1%
+:: & 换成 && 也可以
+echo 交换后： var1=%var1% var2=%var2%
+pause
+:: 如果变量的值是数值，进行交换还有另外的方法：
+:: 第一种方法：
+set /a num1=123,num2=456
+echo 交换前： num1=%num1% num2=%num2%
+set /a num1=%num2%,num2=%num1%
+:: set num1=%num2%& set num2=%num1% 也是可以的
+echo 交换后： num1=%num1% num2=%num2%
+pause
+:: 第二种方法：
+:: 会有数值范围的限制，即 num_a 与 num_b 的和必须在2^-31~2^31-1这个范围内
+set /a num_a=123,num_b=456
+echo 交换前： num_a=%num_a% num_b=%num_b%
+set /a num_a=%num_a%+%num_b%-%num_a%,num_b=%num_a%+%num_b%-%num_b%
+echo 交换后： num_a=%num_a% num_b=%num_b%
+pause
+:: 以上代码均利用了同一语句中的变量值在以后的语句中才会发生变化的特点(除了变量延迟的情况)
+@echo off
+:: 利用异或运算来操作
+:: Code by pengfei 2007-1-24 CMD@XP
+set a=2
+set b=3
+echo a=%a%  b=%b%
+set /a "a=b^a"
+set /a "b=b^a"
+set /a "a=b^a"
+echo a=%a%  b=%b%
+:: 利用算术方法来改变
+set /a a=a+b
+set /a b=a-b
+set /a a=a-b
+echo a=%a%  b=%b%
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+运行bat时隐藏cmd窗口的方法
+
+可以编辑一个vbs脚本，在其中以隐藏窗口运行批处理程序。  
+------------------------------------------------------------   
+Set ws = CreateObject("Wscript.Shell")   
+ws.run "cmd /c 批处理程序名",vbhide   
+------------------------------------------------------------  
+将水平线中代码拷贝到记事本中，保存为"runbat.vbs"或者其它的名字（扩展名必须是.vbs），然后点击运行生成的脚本runbat.vbs，即可隐藏运行指定的批处理程序。
+这个vbs脚本也可以在bat环境中直接调用，达到隐藏bat自身的目的。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+全盘搜索指定的文件
+
+@echo off
+:: 全盘搜索指定的文件
+:: 注意文件夹的跳转，要在盘符后加\,或者先回到根目录之后再用cd /d来跳
+:: 否则，在桌面上的时候无法直接用cd /d来跳转到系统盘根目录
+:: code by jm 2006-8-30
+setlocal enabledelayedexpansion
+for %%i in (C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+  if exist %%i:\nul (
+    for /f "tokens=3" %%z in ('dir /-c %%i:\') do set freesize=%%z
+    if not "!freesize!"=="0" (
+      pushd %%i:\
+      for /r %%k in (.) do (
+        if exist %%k\icon.ico echo %%k
+      )
+    )
+  )
+)
+popd
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+全盘删除所有文件夹下的_desktop.ini
+
+@echo off
+setlocal enabledelayedexpansion
+for /f "delims=\" %%i in ('fsutil fsinfo drives^|find /v ""') do (
+    set var=%%i
+    set drive=!var:~-2!
+    fsutil fsinfo drivetype !drive!|find "固定">nul && del /a /f /s !drive!\_desktop2.ini
+)
+pause
+ 
+ @echo off
+:: 全盘删除存在于所有文件夹下的a.ini
+:: a.ini可能带有 系统+隐藏+只读 属性
+:: fsutil命令必须在管理员权限下运行
+:: code by jm 2006-9-12 CMD@XP
+setlocal enabledelayedexpansion
+for /f "delims=\" %%i in ('fsutil fsinfo drives^|find   ""') do (
+    set drive_=%%i
+    fsutil fsinfo drivetype !drive_:~0,2!|find "固定">nul && del /a /f /q /s !drive_:~0,2!\a.ini
+)
+echo        已经把所有分区里的a.ini删除完毕，按任意键退出...
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+生成指定大小空文件
+
+fsutil file Createnew a.txt 2048
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+按扩展名分文件夹
+
+for %%i in (*) do (md %%~xi
+move *%%~xi %%~xi)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+判断是文件还是文件夹
+
+@echo off
+if exist test\nul (echo 是文件夹) else echo 是文件
+pause
+goto :eof
+@echo off
+pushd test 2>nul&&echo 是文件夹||echo 是文件
+popd
+pause
+goto :eof
+@echo off
+set "cur_dir=%cd%"
+cd /d test 2>nul&&echo 是文件夹||echo 是文件
+cd /d "%cur_dir%"
+pause
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+以文件夹名为名建立文本文件
+
+@echo off
+:: 遍历文件夹，在每个文件夹下以文件夹的名为名建立文本文件
+:: code by jm 2006-9-8
+for /r %%i in (.) do (
+   cd.>"%%i\%%~ni.txt"
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+删除所有以数字命名的文件夹
+
+@echo off
+:: 本代码没有什么特别之处，只是为了和后面比较另类的代码做比较而提供一个比较完美的方案
+:: Code by JM 2007-1-26 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=27090
+for /f %%i in ('dir /ad /b^|findstr "^[0-9]*$"') do echo rd /s /q %%i
+pause
+@echo off
+:: 比较另类的代码
+:: 充分利用了非纯数字不能用 set /a 来赋值的特点
+:: 当数字在1～2^31且不以08和09打头的时候会非常有效
+:: Code by NaturalJ0 2007-1-25 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=27090
+setlocal enabledelayedexpansion
+for /f %%i in ('dir/ad/b') do (
+        set /a folder=0
+        set /a folder=%%i 2>nul
+        if not "!folder!"=="0" echo rd /s /q %%i
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+删除当前目录下及其子文件夹中所有的空文件夹
+
+@echo off
+:: 最简洁的方案：先列出所有的目录之后，然后按照降序排列，删除。
+:: 关键在于要从最深层目录倒着删
+:: code by bagpipe 2006-12-29 CMD@XP
+for /f "tokens=*" %%a in ('dir /b /ad /s "目标路径"^|sort /r') do rd "%%a" 2>nul
+pause
+goto :eof
+@echo off
+:: 思路：列举所有目录(包括子目录)路径，然后，删除第一个路径最后一节上的文件夹；
+:: 　　如果能删除这个文件夹，则删除上一层文件夹；如果还能删除，则继续上一步……
+:: 　　直到当前目录为止；如果其中某一节不能删除，立即跳出，开始删除下一条路径中
+:: 　　最后一节上的文件夹……如此反复。
+::
+:: code by JM 2006-12-25 bbs.cn-dos.net CMD@XP
+for /f "delims=" %%i in ('dir /ad /b /s') do call :rd_dir_empty "%%i"
+goto :eof
+
+rem ======= 删除空目录 =========
+:rd_dir_empty
+rd %1 2>nul||goto :eof
+set dir_route=%1
+for /f "delims=" %%i in (%dir_route%) do (
+    set dir_route="%%~dpi"
+    for /f "delims=" %%j in ('dir /ad /b "%%~dpi"')do rd "%%~dpi%%j" 2>nul||goto :eof
+)
+:: 把路径最后的\去掉，以便set route_deepest="%%~dpi"能取到上一层路径
+if "%dir_route:~-2,1%"=="\" set dir_route="%dir_route:~1,-2%"
+if /i not "%cd%"==%dir_route% call :rd_dir_empty %dir_route%
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+删除大小和类型一样的文件
+
+@ECHO OFF
+SETLOCAL ENABLEDELAYEDEXPANSION
+for /f "tokens=*" %%a in ('dir/a-d/b/oe') do set/a c+=1&set a!c!=%%a&set b!c!=%%~za&set c!c!=%%~xa
+for /l %%a in (1,1,%c%) do set/a d=%%a+1&for /l %%b in (!d!,1,%c%) do if not !b%%a!.==. call :1 %%a %%b
+goto :eof
+:1
+if !b%1!==!b%2! if !c%1!==!c%2! set b%2=&del "!a%2!"
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+删除N天之前的文件
+
+:: DateDel2.bat - 删除指定路径下指定日数以前修改的文件
+:: Will Sort - 2005-9-2 - CMD@WinXP
+:: 注意事项：参数%1指定日数，昨天为1，前天为2，依次类推
+::           参数%1指定文件路径，省略时将处理当前路径
+:: 核心算法：Ritchie Lawrence, updated 2002-08-13. Version 1.1
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=16676
+@echo off & setlocal ENABLEEXTENSIONS 
+call :Date2Day %date:~0,10% sdays
+set /a sdays-=%1
+call :Day2Date %sdays% difdate
+echo 将删除 %cd% 下 %difdate% 前的修改的以下文件：
+for /r %2 %%f in (*.*) do if "%%~tf" LEQ "%difdate%" echo "%%f"
+goto :EOF
+:Date2Day
+setlocal ENABLEEXTENSIONS 
+for /f "tokens=1-3 delims=/-, " %%a in ('echo/%1') do ( 
+  set yy=%%a & set mm=%%b & set dd=%%c 
+)
+set /a dd=100%dd%%%100,mm=100%mm%%%100 
+set /a z=14-mm,z/=12,y=yy+4800-z,m=mm+12*z-3,j=153*m+2 
+set /a j=j/5+dd+y*365+y/4-y/100+y/400-2472633
+endlocal&set %2=%j%&goto :EOF
+:Day2Date
+setlocal ENABLEEXTENSIONS 
+set /a i=%1,a=i+2472632,b=4*a+3,b/=146097,c=-b*146097,c/=4,c+=a 
+set /a d=4*c+3,d/=1461,e=-1461*d,e/=4,e+=c,m=5*e+2,m/=153,dd=153*m+2,dd/=5 
+set /a dd=-dd+e+1,mm=-m/10,mm*=12,mm+=m+3,yy=b*100+d-4800+m/10 
+(if %mm% LSS 10 set mm=0%mm%)&(if %dd% LSS 10 set dd=0%dd%) 
+endlocal&set %2=%yy%-%mm%-%dd%&goto :EOF
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+删除指定文件夹之外的其他文件夹和文件
+
+@echo off
+:: 删除E盘根目录下指定文件夹之外的其他文件夹和文件
+:: test.txt里保存有不带路径的指定文件夹名，一行一条记录
+:: 代码和test.txt必须放在E盘之外的分区
+:: code by jm 2006-12-25 CMD@XP
+for /f "delims=" %%i in ('dir /a /b e:\') do (
+    set flag=
+    for /f "delims=" %%j in (test.txt) do if  /i "%%i"=="%%j" set flag=1
+    if not defined flag del /a /f "e:\%%i" 2>nul||rd /s "e:\%%i" 2>nul
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+删除某些文件夹之外的目录
+
+@echo off
+:: 排除指定的文件夹，删除其余的目录
+:: config.ini 里的文件夹格式为：,+要排除的文件夹名+,
+:: code by jm 2006-12-19
+for /f "delims=" %%i in ('dir /ad /b') do findstr /i /c:",%%i," config.ini>nul||echo "%%i"
+pause
+goto :eof
+@echo off
+:: echo之后再管道再find的方案比较慢
+set dir_=,program files,Documents and Settings,
+for /f "delims=" %%i in ('dir /ad /b') do (
+    echo "%dir_%"|find /i ",%%i,">nul||echo "%%i"
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+清空指定大小的文件夹
+
+@echo off
+:: 如果某个文件夹大于500M就清空
+:: code by jm 2006-9-9 CMD@XP zxcv精简
+set size=0
+setlocal enabledelayedexpansion
+for /f "tokens=3" %%i in ('dir /a /s /-c "文件夹"^|findstr "个文件"') do set size_=%%i
+set /a size=%size:~0,-3%/1049
+if %size% gtr 500 rd "文件夹" && md "文件夹"
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+乱序重列某类文件
+
+@echo off
+:: 随机获取文件名
+:: 没有考虑到特殊字符的问题
+:: Code by 无奈何 2006-7-27 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=22128
+@echo off
+if "%1" NEQ "$" (
+        for /f "tokens=1,2 delims=:" %%a in ('"%~0" $^|sort') do @echo %%b
+) else for /f "delims=" %%i in ('dir /b /a-d') do @call :sub %%i
+goto :EOF
+:sub
+echo %random%:%*
+goto :EOF
+@echo off & setlocal
+:: Code by willsort 2006-7-8 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=22128
+dir %1 /a/s/w/-c | findstr "个文件">temp.txt
+for /f %%i in (temp.txt) do set filenum=%%i
+echo.FileNum:%filenum%
+if exist temp.txt del temp.txt
+goto :eof
+@echo off
+:: Code by zh159 2006-12-10 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=22128
+for /f "delims=" %%i in ('dir/a-d/b *.mp3') do call set $%%random%%$%%i=$
+for /f "tokens=1,2* delims=$=" %%i in ('set $') do echo %%j
+pause
+goto :eof
+@echo off
+:: 随机获取文件名
+:: 效率低下
+:: dir 中加入/-c能将数字中的逗号去掉
+:: 注意delims=后面有空格
+::   code by jm CMD@XP 2006-7-27
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=22128
+if exist list.txt del /q list.txt
+if exist num.txt del /q num.txt
+echo 已经列表的曲目编号：>num.txt
+set _time=1
+for /f "tokens=1 delims= " %%i in ('dir "要操作的文件夹\*.mp3"^|find "个文件"') do set max=%%i
+:loop
+set num=%random:~-3%
+set /a num=1%num%-1000
+if %num% leq 0 goto loop
+if %num% gtr %max% goto loop
+for /f %%i in (num.txt) do if %%i equ %num% goto loop
+for /f "tokens=1,2* delims=:" %%i in ('dir /a-d /b "要操作的文件夹\*.mp3"^|findstr /n .') do (
+  if %%i equ %num% (
+    echo %%i>>num.txt & echo %%j>>list.txt && set /a _time+=1 && if %_time% lss %max% goto loop
+  )
+)
+del /q num.txt
+start list.txt
+goto :eof
+@echo off
+:: Code by 3742668 2006-12-10 CMD@XP 要求文件名相似度不能太高
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=22128
+    set /a num=%random% %% 4 + 1
+    dir /b /a-d | sort /+%num%
+pause
+exit /b 0
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+探测空文件夹
+
+@echo off
+:: Code by JM 2006-7-21 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=21989
+dir /a /b "目标文件夹"|findstr .>nul&& echo 有文件 || echo 没有文件
+pause
+goto :eof
+@echo off
+:: 探测空文件夹
+:: Code by jm 2007-1-5 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=25398
+set flag=
+for /f %%i in ('dir /a /b "目标文件夹"') do set flag=1
+if defined flag (echo 文件夹非空) else echo 这是个空文件夹
+pause
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+在所有文件夹下建立随机文件
+
+@echo off
+:: 在每个文件夹下建立一个 随机数-fly-随机数.txt 的文本
+:: code by jm 2006-9-17 CMD@XP
+cd.>list.txt
+set current_dir=%cd%
+setlocal enabledelayedexpansion
+for /f "delims=\" %%i in ('fsutil fsinfo drives^|find /v ""') do (
+    set var=%%i
+    set drive=!var:~-2!
+    fsutil fsinfo drivetype !drive!|find "固定">nul && call :creat !drive!
+)
+pause
+goto :eof
+:creat
+cd /d %1\
+for /r %%i in (.) do (
+    set root=%%i
+    set root=!root:~0,-2!
+    call :random_
+    echo !root!\!num1!-fly-!num2!.txt>>"%current_dir%\list.txt"
+)
+endlocal
+goto :eof
+:random_
+set num1=%random%
+set num2=%random%
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+对当前目录下所有以ca开头的含有数字的文件进行改名
+
+@echo off
+:: 对当前目录下所有以ca开头的含有数字的文件进行改名
+:: code by NaturalJ0 2006-9-27
+setlocal ENABLEDELAYEDEXPANSION
+for /f %%i in ('dir/b cb*.rmvb') do (
+        call :GETNUM %%i
+        if not !number!==# (
+                ren %%i cb_!number!.rmvb 2>nul || echo cb_!number!.rmvb 已存在，%%i 不能再改名为 cb_!number!.rmvb ，请自己手动处理。
+        )
+)
+echo.
+echo 处理完毕，按任意键结束。
+pause>nul
+GOTO END
+:GETNUM
+set varstr=%1#
+set number=#
+:LOOP
+if !varstr!==# GOTO ENDLOOP
+set firstchar=!varstr:~0,1!
+if !firstchar! GEQ 0 (
+        if !firstchar! LEQ 9 (
+                set number=!number!!firstchar!
+        )
+)
+set varstr=!varstr:~1!
+GOTO LOOP
+:ENDLOOP
+if not !number!==# set number=!number:~1!
+:END
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+重命名administrator账号
+
+wmic useraccount where name='Administrator' call Rename admin
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+查看用户是否存在
+@echo off
+echo 所有用户帐号ID为：
+echo.
+for /f "skip=4 tokens=1-3" %%i in ('net user') do (
+    if not "%%i"=="命令成功完成。" echo %%i
+    if not "%%j"=="" echo %%j
+    if not "%%k"=="" echo %%k
+)
+echo.
+echo 当前用户帐号ID为：%username%
+pause>nul 
+@echo off
+set a=
+set/p a=请输入要查找的用户名
+net user %a% >nul 2>nul && echo 存在该用户 || echo 用户不存在.
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+获取CPU信息
+
+::使用WMI别名获取PC主要信息.bat
+::使用WMI别名获取主要信息,输出为网页格式
+::--------by MOBO[墨伯] at 2006-09-16:
+wmic baseboard list brief /format:hform >MyPC.htm
+wmic cpu list full /format:hform >>MyPC.htm
+wmic bios list brief /format:hform >>MyPC.htm
+MyPC.htm
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+扩展名
+
+::显示
+ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t reg_dword /d 00000000 /f
+ ::隐藏
+ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t reg_dword /d 00000001 /f
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+计算机名
+
+@echo off 
+set /p name=请输您的计算机名：
+reg add "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ComputerName\ActiveComputerName" /v ComputerName /t reg_sz /d %name% /f
+reg add "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\Parameters" /v "NV Hostname" /t reg_sz /d %name% /f 
+reg add "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\Parameters" /v Hostname /t reg_sz /d %name% /f
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+控制面板
+
+@echo off
+goto _run
+XP下的控制面板扩展程序
+access.cpl  辅助功能选项/键盘
+appwiz.cpl  添加或删除程序
+bthprops.cpl
+desk.cpl 显示属性/主题
+firewall.cpl Windows防火墙
+hdwwiz.cpl 添加硬件向导
+igfxcpl.cpl 显卡控制面板/设备
+inetcpl.cpl Internet属性/常规
+intl.cpl 区域和语言选项/区域选项
+irprops.cpl
+joy.cpl 游戏控制器
+main.cpl 鼠标属性/按钮
+mmsys.cpl 声音和音频设备属性/音量
+ncpa.cpl 网络连接
+netsetup.cpl 网络安装向导
+nusrmgr.cpl 用户帐户
+nwc.cpl
+odbccp32.cpl ODBC数据源管理器/用户DSN
+powercfg.cpl 电源选项属性/电源使用方案
+QuickTime.cpl QuickTime设置/注册
+sticpl.cpl 扫描仪和照相机
+sysdm.cpl 系统属性/常规
+telephon.cpl 信息位置
+timedate.cpl 日期和时间属性/日期和时间
+wscui.cpl Windows安全中心
+wuaucpl.cpl 自动更新
+可以用start control *.cpl的格式打开，例如：
+:_run
+start control sysdm.cpl
+pause
+                 Rundll.exe高级应用
+首先，请你做个小实验（请事先保存好你正在执行的程式的结果）∶
+点击“开始－程式－Ms－Dos方式”，进入Dos视窗，然後键入“rundll32.exe
+user.exe,restartwindows”，再按下回车键，这时你将看到，机器被重启了！
+当然，Rundll的功能绝不仅仅是重启你的机器。其实，Rundll者，顾名思义，执行Dll也，它的功
+能就是以命令列的方式呼叫Windows的动态链结库，Rundll32.exe与Rundll.exe的区别就在於前者
+是呼叫32位的链结库，而後者是运用於16位的链结库，它们的命令格式是∶
+RUNDLL.EXE ，，
+这里要注意三点∶
+1.Dll档案名中不能含有空格，比如该档案位於c:\Program Files目录，你要把这个路径改成
+c:\Progra～1；
+2.Dll档案名与Dll入口点间的逗号不能少，否则程式将出错并且不会给出任何资讯！
+3.这是最重要的一点∶Rundll不能用来呼叫含返回值参数的Dll，例如Win32API中的GetUserName
+(), GetTextFace()等。
+在Visual Basic中，提供了一条执行外部程式的指令Shell,格式为∶
+Shell “命令列”
+如果能配合Rundll32.exe用好Shell指令，会使您的VB程式拥有用其他方法难以甚至无法实现的效
+果∶仍以重启为例，传统的方法需要你在VB工程中先建立一个模组，然後写入WinAPI的声明，最
+後才能在程式中呼叫。而现在只需一句:
+Shell “rundll32.exe user.exe,restartwindows”就搞定了！
+实际上，Rundll32.exe在呼叫各种Windows控制面板和系统选项方面有著独特的优势。
+命令列: rundll32.exe shell32.dll,Control_RunDLL
+功能: 显示控制面板
+命令列: rundll32.exe shell32.dll,Control_RunDLL access.cpl,,1
+功能: 显示“控制面板－辅助选项－键盘”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL access.cpl,,2
+功能: 显示“控制面板－辅助选项－声音”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL access.cpl,,3
+功能: 显示“控制面板－辅助选项－显示”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL access.cpl,,4
+功能: 显示“控制面板－辅助选项－滑鼠”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL access.cpl,,5
+功能: 显示“控制面板－辅助选项－传统”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL sysdm.cpl @1
+功能: 执行“控制面板－添加新硬体”向导。
+命令列: rundll32.exe shell32.dll,SHHelpShortcuts_RunDLL AddPrinter
+功能: 执行“控制面板－添加新印表机”向导。
+命令列: rundll32.exe shell32.dll,Control_RunDLL appwiz.cpl,,1
+功能: 显示 “控制面板－添加/删除程式－安装/卸载” 面板。
+命令列: rundll32.exe shell32.dll,Control_RunDLL appwiz.cpl,,2
+功能: 显示 “控制面板－添加/删除程式－安装Windows” 面板。
+命令列: rundll32.exe shell32.dll,Control_RunDLL appwiz.cpl,,3
+功能: 显示 “控制面板－添加/删除程式－启动盘” 面板。
+命令列: rundll32.exe syncui.dll,Briefcase_Create
+功能: 在桌面上建立一个新的“我的公文包”。
+命令列: rundll32.exe diskcopy.dll,DiskCopyRunDll
+功能: 显示复制软碟视窗
+命令列: rundll32.exe apwiz.cpl,NewLinkHere %1
+功能: 显示“建立快捷方式”的对话框，所建立的快捷方式的位置由%1参数决定。
+命令列: rundll32.exe shell32.dll,Control_RunDLL timedate.cpl,,0
+功能: 显示“日期与时间”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL timedate.cpl,,1
+功能: 显示“时区”选项视窗。
+命令列: rundll32.exe rnaui.dll,RnaDial [某个拨号连接的名称]
+功能: 显示某个拨号连接的拨号视窗。如果已经拨号连接，则显示目前的连接状态的视窗。
+命令列: rundll32.exe rnaui.dll,RnaWizard
+功能: 显示“新建拨号连接”向导的视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,0
+功能: 显示“显示属性－背景”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,1
+功能: 显示“显示属性－萤屏保护”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,2
+功能: 显示“显示属性－外观”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,3
+功能: 显示显示“显示属性－属性”选项视窗。
+命令列: rundll32.exe shell32.dll,SHHelpShortcuts_RunDLL FontsFolder
+功能: 显示Windows的“字体”档案夹。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @3
+功能: 同样是显示Windows的“字体”档案夹。
+命令列: rundll32.exe shell32.dll,SHformatDrive
+功能: 显示格式化软碟对话框。
+命令列: rundll32.exe shell32.dll,Control_RunDLL joy.cpl,,0
+功能: 显示“控制面板－游戏控制器－一般”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL joy.cpl,,1
+功能: 显示“控制面板－游戏控制器－进阶”选项视窗。
+命令列: rundll32.exe mshtml.dll,PrintHTML (HTML文档)
+功能: 列印HTML文档。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mlcfg32.cpl
+功能: 显示Microsoft Exchange一般选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @0
+功能: 显示“控制面板－滑鼠” 选项 。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @1
+功能: 显示 “控制面板－键盘属性－速度”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @1,,1
+功能: 显示 “控制面板－键盘属性－语言”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @2
+功能: 显示Windows“印表机”档案夹。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @3
+功能: 显示Windows“字体”档案夹。
+命令列: rundll32.exe shell32.dll,Control_RunDLL main.cpl @4
+功能: 显示“控制面板－输入法属性－输入法”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL modem.cpl,,add
+功能: 执行“添加新调制解调器”向导。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl,,0
+功能: 显示“控制面板－多媒体属性－音频”属性页。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl,,1
+功能: 显示“控制面板－多媒体属性－视频”属性页。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl,,2
+功能: 显示“控制面板－多媒体属性－MIDI”属性页。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl,,3
+功能: 显示“控制面板－多媒体属性－CD音乐”属性页。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl,,4
+功能: 显示“控制面板－多媒体属性－设备”属性页。
+命令列: rundll32.exe shell32.dll,Control_RunDLL mmsys.cpl @1
+功能: 显示“控制面板－声音”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL netcpl.cpl
+功能: 显示“控制面板－网路”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL odbccp32.cpl
+功能: 显示ODBC32资料管理选项视窗。
+命令列: rundll32.exe shell32.dll,OpenAs_RunDLL
+功能: 显示指定档案(driveath ilename)的“打开方式”对话框。
+命令列: rundll32.exe shell32.dll,Control_RunDLL password.cpl
+功能: 显示“控制面板－密码”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL powercfg.cpl
+功能: 显示“控制面板－电源管理属性”选项视窗。
+命令列: rundll32.exe shell32.dll,SHHelpShortcuts_RunDLL 
+PrintersFolder
+功能: 显示Windows“印表机”档案夹。(同rundll32.exe shell32.dll,Control_RunDLLmain.cpl
+@2)
+命令列: rundll32.exe shell32.dll,Control_RunDLL intl.cpl,,0
+功能: 显示“控制面板－区域设置属性－区域设置”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL intl.cpl,,1
+功能: 显示“控制面板－区域设置属性－数字”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL intl.cpl,,2
+功能: 显示“控制面板－区域设置属性－货币”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL intl.cpl,,3
+功能: 显示“控制面板－区域设置属性－时间”选项视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL intl.cpl,,4
+功能: 显示“控制面板－区域设置属性－日期”选项视窗。
+命令列: rundll32.exe desk.cpl,InstallScreenSaver [萤屏保护档案名]
+功能: 将指定的萤屏保护档案设置为Windows的屏保，并显示萤屏保护属性视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL sysdm.cpl,,0
+功能: 显示“控制面板－系统属性－传统”属性视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL sysdm.cpl,,1
+功能: 显示“控制面板－系统属性－设备管理器”属性视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL sysdm.cpl,,2
+功能: 显示“控制面板－系统属性－硬体配置档案”属性视窗。
+命令列: rundll32.exe shell32.dll,Control_RunDLL sysdm.cpl,,3
+功能: 显示“控制面板－系统属性－性能”属性视窗。
+命令列: rundll32.exe user.exe,restartwindows
+功能: 强行关闭所有程式并重启机器。
+命令列: rundll32.exe user.exe,exitwindows
+功能: 强行关闭所有程式并关机。
+命令列: rundll32.exe shell32.dll,Control_RunDLL telephon.cpl
+功能: 显示“拨号属性”选项视窗
+命令列: rundll32.exe shell32.dll,Control_RunDLL themes.cpl
+功能: 显示“桌面主旨”选项面板
+当然，不止是VisualBasic，象Delphi.VisualC++等其他程式设计语言也可以通过呼叫外部命令的
+方法来使用Rundll的这些功能，具体方法这里就不再详细叙述了。灵活的使用Rundll,一定会使你
+的程式设计轻轻松松，达到事半功倍的效果！
+<关机快捷方式>
+(1). 在桌面空白位置按鼠标右键 -> <新建> -> 选<快捷方式>
+(2). 在<指令行>键入 rundll.exe user.exe,exitwindows
+(3). 在<选择快捷方式 的名称>键入<关闭Window>或你想要的名称 -> 按<完成>
+<重新启动快捷方式>
+(1). 重复以上 (1)
+(2). 在<指令行>键入 rundll.exe user.exe,restartwindowsexec
+(3). 在<选择快捷方式的名称>键入<重新启动Restart>或你想要的名称 -> 按<完成> RUN - >
+cmd 或者command
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+查看物理内存
+
+@echo off
+color f2
+echo.
+systeminfo|find "物理内存总量"
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+查看驱动器
+
+@echo off
+setlocal enabledelayedexpansion
+for /f "skip=1 tokens=1,2 delims=\" %%a in ('fsutil fsinfo drives^|find /v ""') do (
+    set aa=%%a
+    set aa=!aa:~-2!
+    for %%i in (!aa!) do fsutil fsinfo drivetype %%i
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+判断光驱中是否有光盘
+
+@echo off
+if exist G:\nul.ext (echo 有光盘) else (echo 无光盘) 
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+查看进程使用的端口
+
+@echo off 
+color a 
+Title XP端口-进程查询 
+setlocal enabledelayedexpansion 
+echo ╔-                              -╗ 
+echo   本机开放的端口及使用该端口的进程 
+echo ╚-                              -╝ 
+echo ------------------------------------ 
+echo          端口号           进程名称       
+ECHO TCP协议: 
+::利用netstat命令找出使用TCP协议通信的端口，并将结果分割； 
+::将第二个参数(IP加端口)传给%%i，第五个参数(PID号)传给%%j; 
+for /F "usebackq skip=4 tokens=2,5" %%i in (`"netstat -ano -p TCP"`) do ( 
+  call :Assoc %%i TCP %%j 
+  echo           !TCP_Port!           !TCP_Proc_Name!  
+)
+ECHO UDP协议: 
+for /F "usebackq skip=4 tokens=2,4" %%i in (`"netstat -ano -p UDP"`) do (  
+  call :Assoc %%i UDP %%j 
+  echo           !UDP_Port!           !UDP_Proc_Name! 
+) 
+echo 按任意键退出 
+pause>nul
+:Assoc 
+::对%1(第一个参数）进行分割，将第二个参数传给%%e。在本程序中，%1即为上面的%%i(形式为：IP:端口号) 
+for /F "tokens=2 delims=:" %%e in ("%1") do ( 
+    set  %2_Port=%%e 
+  ) 
+:: 查询PID等于%3(第三个参数)的进程，并将结果传给变量?_Proc_Name,?代表UDP或者TCP； 
+for /F "skip=2 usebackq delims=, tokens=1" %%a in (`"Tasklist /FI "PID eq %3" /FO CSV"`) do ( 
+   ::%%~a表示去掉%%a外面的引号，因为上述命令的结果是用括号括起来的。  
+   set %2_Proc_Name=%%~a 
+  )
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+IP设置
+
+echo 我们再进行设置IP吧。
+@echo off
+set slection1=
+set/p slection1=请输入IP地址：
+netsh interface ip set address name="本地连接" source=static addr=%slection1% mask=255.255.255.0
+set slection2=
+set/p slection2=请输入网关地址：
+netsh interface ip set address name="本地连接" gateway=%slection2% gwmetric=0
+set slection3=
+set/p slection3=请输入主dns地址
+netsh interface ip set dns name="本地连接" source=static addr=%slection3% register=PRIMARY
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+全盘禁止运行某些程序
+list.ini文件
+0Sy.exe
+1Sy.exe
+::全盘禁止运行有待检验
+for /f %%i in (list.ini) do (
+    reg add "%route%\%%i" /v Debugger /t REG_SZ /d 全盘禁止运行%%i /f >nul 2>nul
+)
+ ::解除限制
+ for /f %%i in (list.ini) do reg delete "%route%\%%i" /f >nul 2>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+系统个人设置注册表.reg文件
+
+REGEDIT4
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders]
+"Cache"="D:\\Personal\\Temporary Internet Files"
+"Desktop"="D:\\Personal\\Desktop"
+"Favorites"="D:\\Personal\\Favorites"
+"Personal"="D:\\Personal\\My Documents"
+"My Music"="D:\\Personal\\My Documents\\My Pictures"
+"My Pictures"="D:\\Personal\\My Documents\\My Pictures"
+"Recent"="D:\\Personal\\Recent"
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders]
+"Cache"="D:\\Personal\\Temporary Internet Files"
+"Desktop"="D:\\Personal\\Desktop"
+"My Music"="D:\\Personal\\My Documents\\My Pictures"
+"My Pictures"="D:\\Personal\\My Documents\\My Pictures"
+"Favorites"="D:\\Personal\\Favorites"
+"Personal"="D:\\Personal\\My Documents"
+"Recent"="D:\\Personal\\Recent"
+[HKEY_CURRENT_USER\Identities\{F4E98C86-4D9A-463F-920C-1DF555C3B434}\Software\Microsoft\Outlook Express\5.0]
+"Store Root"="D:\\Personal\\Outlook Express"
+[HKEY_USERS\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders]
+"Desktop"="D:\\Personal\\Desktop"
+"Cache"="D:\\Personal\\My Documents"
+"Download Directory"="D:\\Personal\\My Documents"
+[HKEY_CURRENT_USER\Environment]
+"TEMP"="D:\\Personal\\Temp"
+"TMP"="D:\\Personal\\Temp"
+ 编写批处理文件将源文件备份到新目录，运行注册表，注销计算机即可
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+屏蔽垃圾网站
+
+find /i "www.3721.net" %windir%\system32\drivers\etc\hosts > nul
+if errorlevel 1 goto _AddHosts
+goto _SkipAddHosts
+:_AddHosts
+echo 127.0.0.1 http://www.3721.net/ >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 3721.com  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 3721.net  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 cnsmin.3721.com  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 cnsmin.3721.net  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 download.3721.com  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 download.3721.net  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 www.3721.com  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 www.3721.net  >> %windir%\system32\drivers\etc\hosts
+echo 127.0.0.1 bar.baidu.com  >> %windir%\system32\drivers\etc\hosts
+:_SkipAddHosts
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+服务启动方式设置
+
+sc config   服务名 start= DISABLED ，AUTO，DMAND
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+删除历史记录
+
+@echo off
+:: 删除"运行"、"查找"等处的历史记录
+reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer /v ClearRecentDocsonExit /t REG_DWORD /d 00000001
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+删除默认共享
+
+@echo off
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::     先列举存在的分区，然后再逐个删除以分区名命名的共享；
+::     通过修改注册表防止admin$共享在下次开机时重新加载； 
+::     IPC$共享需要administritor权限才能成功删除
+::
+::                             jm 改动于 2006-5-12
+::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+title 默认共享删除器
+color 1f
+echo. 
+echo ------------------------------------------------------ 
+echo. 
+echo 开始删除每个分区下的默认共享. 
+echo. 
+for %%a in (C D E F G H I J K L M N O P Q R S T U V W X Y Z) do @(
+    if exist %%a:\nul (
+        net share %%a$ /delete>nul 2>nul && echo 成功删除名为 %%a$ 的默认共享 || echo 名为 %%a$ 的默认共享不存在
+    ) 
+)
+net share admin$ /delete>nul 2>nul && echo 成功删除名为 admin$ 的默认共享 || echo 名为 admin$ 的默认共享不存在
+echo.
+echo ------------------------------------------------------ 
+echo.
+net stop Server /y>nul 2>nul && echo Server服务已停止.
+net start Server>nul 2>nul && echo Server服务已启动.
+echo. 
+echo ------------------------------------------------------ 
+echo. 
+echo 修改注册表以更改系统默认设置. 
+echo. 
+echo 正在创建注册表文件. 
+echo Windows Registry Editor Version 5.00> c:\delshare.reg 
+:: 通过注册表禁止Admin$共享，以防重启后再次加载
+echo [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\lanmanserver\parameters]>> c:\delshare.reg
+echo "AutoShareWks"=dword:00000000>> c:\delshare.reg 
+echo "AutoShareServer"=dword:00000000>> c:\delshare.reg 
+:: 删除IPC$共享，本功能需要administritor权限才能成功删除
+echo [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]>> c:\delshare.reg
+echo "restrictanonymous"=dword:00000001>> c:\delshare.reg
+echo 正在导入注册表文件以更改系统默认设置. 
+regedit /s c:\delshare.reg 
+del c:\delshare.reg && echo 临时文件已经删除. 
+echo. 
+echo ------------------------------------------------------ 
+echo. 
+echo 程序已经成功删除所有的默认共享. 
+echo. 
+echo 按任意键退出...
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+显示自己的IP
+
+@echo off
+for /f "tokens=15" %%i in ('ipconfig ^| find /i "ip address"') do set ip=%%i
+echo %ip%
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+显示网络配置
+
+@echo off
+:: 代码编写：3742668 代码修订：namejm www.cn-dos.net
+::调用格式：
+call :select "ip address" "ip"
+call :select "Physical Address" "mac"
+call :select "Default Gateway" "gateway"
+call :select "DNS Servers" "dns"
+call :select "Description" "netcard"
+:: 演示效果
+echo IP:%ip%
+echo MAC:%mac%
+echo DNS:%dns%
+echo GATEWAY:%gateway%
+echo NETCARD:%netcard%
+pause>nul
+goto :eof
+::**************************************************************
+::              解析ipconfig命令输出通用函数
+::**************************************************************
+:select
+    for /f "tokens=2 delims=:" %%i in ('ipconfig /all ^| findstr /i /c:%1') do if not "!%~2!" == "" set "%~2=%%i"
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+检查网络信息
+
+@echo off
+netsh -c interface dump >网络信息.txt
+:loop
+cls
+set a=
+set/p a=1……查看网络信息，2……重新设置，Q……退出
+if "%a%"=="1" start 网络信息.txt
+if "%a%"=="2" netsh -f c:\gongsi.txt
+if "%a%"=="q" exit
+goto loop
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+查看进程使用的端口
+
+@echo off 
+color 1f 
+Title XP端口-进程查询 
+setlocal enabledelayedexpansion 
+echo ╔-                              -╗ 
+echo   本机开放的端口及使用该端口的进程 
+echo ╚-                              -╝ 
+echo ------------------------------------ 
+echo          端口号           进程名称       
+ECHO TCP协议: 
+::利用netstat命令找出使用TCP协议通信的端口，并将结果分割； 
+::将第二个参数(IP加端口)传给%%i，第五个参数(PID号)传给%%j; 
+for /F "usebackq skip=4 tokens=2,5" %%i in (`"netstat -ano -p TCP"`) do ( 
+  call :Assoc %%i TCP %%j 
+  echo           !TCP_Port!           !TCP_Proc_Name!  
+)
+ECHO UDP协议: 
+for /F "usebackq skip=4 tokens=2,4" %%i in (`"netstat -ano -p UDP"`) do (  
+  call :Assoc %%i UDP %%j 
+  echo           !UDP_Port!           !UDP_Proc_Name! 
+) 
+echo 按任意键退出 
+pause>nul
+:Assoc 
+::对%1(第一个参数）进行分割，将第二个参数传给%%e。在本程序中，%1即为上面的%%i(形式为：IP:端口号) 
+for /F "tokens=2 delims=:" %%e in ("%1") do ( 
+    set  %2_Port=%%e 
+  ) 
+:: 查询PID等于%3(第三个参数)的进程，并将结果传给变量?_Proc_Name,?代表UDP或者TCP； 
+for /F "skip=2 usebackq delims=, tokens=1" %%a in (`"Tasklist /FI "PID eq %3" /FO CSV"`) do ( 
+   ::%%~a表示去掉%%a外面的引号，因为上述命令的结果是用括号括起来的。  
+   set %2_Proc_Name=%%~a 
+  ) 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+自定义配置网络ip、网关、dns
+
+@echo off
+set slection1=
+set/p slection1=请输入IP地址：
+netsh interface ip set address name="本地连接" source=static addr=%slection1% mask=255.255.255.0
+set slection2=
+set/p slection2=请输入网关地址：
+netsh interface ip set address name="本地连接" gateway=%slection2% gwmetric=0
+set slection3=
+set/p slection3=请输入主dns地址
+netsh interface ip set dns name="本地连接" source=static addr=%slection3% register=PRIMARY
+set slection4=
+set/p slection4=请输入备份dns地址
+netsh interface ip add dns name="本地连接" addr=%slection4%
+netsh interface ip set wins name="本地连接" source=static addr=none
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+判断光驱是否可用
+
+@echo off
+copy \\.\CdRom0\* nul >nul 2>nul  && echo OK || echo NO
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+判断分区格式
+
+@echo off
+:1
+cls
+set/p pan=请输入要测试的盘符 (不带冒号)  
+for /f "tokens=1,2" %%i in ('chkntfs %pan%:') do (
+    set var=%%j
+    goto type
+)
+goto :eof
+:type
+set var=%var:。=%
+echo %pan%的文件系统类型是 %var%
+pause>nul
+goto 1
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+改IP；网关；CDKey；网络号
+
+@echo off
+:main
+cls
+echo.
+echo.
+echo          1.生成自动配置计算机名,DNS,网关,IP脚本,IPX内部网络号
+echo.
+echo          2.网刻服务器自动配置
+echo.
+echo          3.电信网通线路切换生成器
+echo.
+echo          4.退出脚本
+echo.
+echo 请输入1,2,3或4,输入其他字符,后果自负.
+
+:restart1
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto ipdnsipx
+if %select%==2 goto netghost
+if %select%==3 goto dianxin
+if %select%==4 goto endend
+if %select% gtr 4 goto errorselect1
+:ipdnsipx
+cls
+echo              -------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以根据不同使用场合按照提示
+echo                      输入IP,DNS(最多支持两个DNS),网关,计算
+echo                      机名.生成配置相关信息的脚本功能.
+echo              -------------------------------------------------------
+:restart5
+color 0a
+echo.
+echo 请输入1或者2,输入其他字符,后果自负.
+echo.
+echo              1.生成自动配置计算机名,DNS,网关,IP脚本,IPX内部网络号
+echo.
+echo              2.返回主菜单
+echo.
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config5 
+if %select%==2 goto  main
+if %select% gtr 2 goto errorselect5
+:config5
+echo 开始生成配置计算机名,网关,DNS,IP,IPX协议内部网络号的脚本,请根据提示输入必要的参数
+echo.
+set ipaddr=192.168.0.
+set mask1=254
+set submask1=255.255.255.0
+set qz=pc
+set dns1=61.177.7.1
+set dns2=192.168.0.254
+echo 默认计算机名前缀为:%qz%,IP地址前三字段为:%ipaddr%,网关为:%ipaddr%%mask1%,子网掩码为%submask1%,第一DNS为%dns1%,第二DNS为%DNS2%.如需修改这里的信息,请注意下面的提示,按照提示输入即可完成相关信息的修改.否则,直接敲回车键将使用默认配置.
+echo.
+set /p ipaddr=请输入IP地址的前三个字段例如:192.168.0. 一定要按照这个格式输入:
+color 70
+set /p mask1=请输入网关最后一个字段,例如192.168.0.254中的254:
+color 71
+set /p submask1=请输入子网掩码,格式为255.255.255.0:
+color 74
+set /p qz=请输入计算机名前缀:
+color 72
+set /p dns1=请输入第一DNS地址：
+color 73
+set /p dns2=请输入第二DNS地址：
+color fc
+echo 正在生成配置脚本
+
+echo @echo off>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo echo              --------------------------------------------------------->>%systemroot%\ipconfig.bat
+echo echo                              QQ:66596854欢迎交流>>%systemroot%\ipconfig.bat
+echo echo                              Mail:fan2800@hotmail.com>>%systemroot%\ipconfig.bat
+echo echo.>>%systemroot%\ipconfig.bat
+echo echo                                      说明>>%systemroot%\ipconfig.bat
+echo echo                      本批处理可以实现根据需要自动配置IP，>>%systemroot%\ipconfig.bat
+echo echo                      DNS，网关，计算机名,最多支持两个DNS>>%systemroot%\ipconfig.bat
+echo echo                      批处理启动密码为wuliaodefei,可以根据>>%systemroot%\ipconfig.bat
+echo echo                      需要修改变量PW来改变启动密码。修改适>>%systemroot%\ipconfig.bat
+echo echo                      合自己的DNS，网关，计算机名.可以看批>>%systemroot%\ipconfig.bat
+echo echo                      处理的相关注释的地方，在批处理的结尾>>%systemroot%\ipconfig.bat
+echo echo                      还可以继续进行添加命令，实现更多功能，>>%systemroot%\ipconfig.bat
+echo echo                      例如，导入CS的CD-KEY，自动安装冰点等.>>%systemroot%\ipconfig.bat
+echo echo              ------------------------------------------------------->>%systemroot%\ipconfig.bat
+echo set sz=3 >>%systemroot%\ipconfig.bat
+echo :pw>>%systemroot%\ipconfig.bat
+echo set /p pw=请输入密码：>>%systemroot%\ipconfig.bat
+echo set /a sz=%%sz%%-1 >>%systemroot%\ipconfig.bat
+echo if %%pw%%==wuliaodefei goto config>>%systemroot%\ipconfig.bat
+echo echo 密码错误,还有%%sz%%次机会>>%systemroot%\ipconfig.bat
+echo if %%sz%%==0 exit>>%systemroot%\ipconfig.bat
+echo color ca >>%systemroot%\ipconfig.bat
+echo goto pw>>%systemroot%\ipconfig.bat
+
+echo :config>>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo color 0A>>%systemroot%\ipconfig.bat
+echo echo 欢迎使用>>%systemroot%\ipconfig.bat
+echo echo.>>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo :ipconfigstart>>%systemroot%\ipconfig.bat
+echo set ip=0 >>%systemroot%\ipconfig.bat
+echo set /p ip=请输入IP:>>%systemroot%\ipconfig.bat
+echo if %%ip%%==0 goto errorip >>%systemroot%\ipconfig.bat
+echo set /a ip=%%ip%%-0>>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 10 goto 1to9 >>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 100 goto 10to99>>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 255 goto 100to254>>%systemroot%\ipconfig.bat
+echo if %%ip%% geq 255 goto error1>>%systemroot%\ipconfig.bat
+echo :1to9>>%systemroot%\ipconfig.bat
+echo set a=00>>%systemroot%\ipconfig.bat
+echo goto ipconfig>>%systemroot%\ipconfig.bat
+
+echo :10to99>>%systemroot%\ipconfig.bat
+echo set a=00>>%systemroot%\ipconfig.bat
+echo set /a a=%%a%%-0>>%systemroot%\ipconfig.bat
+echo goto ipconfig>>%systemroot%\ipconfig.bat
+echo :100to254>>%systemroot%\ipconfig.bat
+echo set a=>>%systemroot%\ipconfig.bat
+echo :ipconfig>>%systemroot%\ipconfig.bat
+echo echo 您设置的计算机名为：%qz%%%a%%%%ip%% IP地址为：%ipaddr%%%ip%% 网关为：%ipaddr%%mask1%>>%systemroot%\ipconfig.bat
+echo echo 开始配置计算机名>>%systemroot%\ipconfig.bat
+echo color 1a >>%systemroot%\ipconfig.bat
+echo reg add HKLM\system\currentcontrolset\control\computername\computername\ /v computername /t reg_sz /d %qz%%%a%%%%ip%% /f ^>nul>>%systemroot%\ipconfig.bat
+echo reg add HKLM\system\currentcontrolset\services\tcpip\Parameters\ /v "NV Hostname" /t reg_sz /d %qz%%%a%%%%ip%% /f ^>nul>>%systemroot%\ipconfig.bat
+echo echo 计算机名配置完成>>%systemroot%\ipconfig.bat
+echo set /a ip=%%ip%%-0>>%systemroot%\ipconfig.bat
+echo echo 开始配置IP,网关>>%systemroot%\ipconfig.bat
+echo color 2a >>%systemroot%\ipconfig.bat
+echo netsh interface ip set address "本地连接" source=static %ipaddr%%%ip%% %submask1% %ipaddr%%mask1% 1 ^>nul>>%systemroot%\ipconfig.bat
+echo echo IP配置完成>>%systemroot%\ipconfig.bat
+echo echo 开始配置DNS>>%systemroot%\ipconfig.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul>>%systemroot%\ipconfig.bat
+echo netsh interface ip add dns name="本地连接" %dns2% ^>nul>>%systemroot%\ipconfig.bat
+echo echo DNS配置完成>>%systemroot%\ipconfig.bat
+echo echo 开始配置IPX协议内部网络号>>%systemroot%\ipconfig.bat
+echo color 3a >>%systemroot%\ipconfig.bat
+echo reg add HKLM\SYSTEM\CurrentControlSet\Services\NwlnkIpx\Parameters /f /v VirtualNetworkNumber /t REG_DWORD /d %%ip%%>>%systemroot%\ipconfig.bat
+echo echo IPX协议内部网络号配置完成>>%systemroot%\ipconfig.bat
+echo echo 删除注册表自启动项>>%systemroot%\ipconfig.bat
+echo reg delete HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /f /v computerconfigscript >>%systemroot%/ipconfig.bat
+echo echo 删除注册表启动项目完毕>>%systemroot%\ipconfig.bat
+
+echo echo 系统将在30秒后自动重新启动，输入N取消重起，并在稍后手动重起计算机 >>%systemroot%\ipconfig.bat
+echo start %%systemroot%%\system32\shutdown -r -t 30>>%systemroot%\ipconfig.bat
+echo set /p restart1=>>%systemroot%\ipconfig.bat
+echo if %%restart1%%==n start %%systemroot%%\system32\shutdown -a>>%systemroot%\ipconfig.bat
+echo goto end>>%systemroot%\ipconfig.bat
+echo :error1>>%systemroot%\ipconfig.bat
+echo echo 您输入的IP违反了IP地址使用规则，请根据需要务必输入1--254之间的数字>>%systemroot%\ipconfig.bat
+echo goto ipconfigstart>>%systemroot%\ipconfig.bat
+echo :errorip>>%systemroot%\ipconfig.bat
+echo echo 您没有输入IP,请重新输入>>%systemroot%\ipconfig.bat
+echo goto ipconfigstart>>%systemroot%\ipconfig.bat
+echo color fc >>%systemroot%\ipconfig.bat
+echo :end>>%systemroot%\ipconfig.bat
+echo rem 11月19日晚版>>%systemroot%\ipconfig.bat
+echo exit>>%systemroot%\ipconfig.bat
+echo 配置脚本生成完毕
+echo 正在设置注册表自启动脚本
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /f /v computerconfigscript /t REG_SZ /d %systemroot%\ipconfig.bat >nul
+echo 注册表启动项目添加完成
+echo 10秒后程序自动退出或直接关闭程序退出
+ping /n 15 127.0.0.1 >nul
+exit
+
+:errorselect5
+echo 选择错误,请重新选择
+goto restart5
+:errorselect1
+echo 选择错误,请重新选择
+goto restart1
+
+:netghost
+color 0a
+cls
+echo              --------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以按要求设置GHOST服务器的
+echo                      相关信息,并自动调用GHOSTSERVER程序
+echo                      以方便设置.本批处理只支持单网卡,网
+echo                      络属性名称为"本地连接".否则此批处理
+echo                      不适用或者达不到预期的效果.此脚本为
+echo                      现场使用版,即当前的设置只对脚本运行
+echo                      中起作用,脚本运行时非正常退出时也达
+echo                      不到预期的效果,谢谢使用
+echo              -------------------------------------------------------
+echo.
+echo          1.进入设置GHOST服务器
+echo.
+echo          2.自动还原以前设置
+echo.
+echo          3.返回主菜单
+echo.
+echo 请输入1,2或3,输入其他字符,后果自负.
+
+:restart
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config1 
+if %select%==2 goto config2
+if %select%==3 goto  main
+if %select% gtr 3 goto errorselect
+:config1
+set /p ip1=请输入当前GHOST服务器需要使用的IP地址:
+set /p mask1=请输入当前GHOST服务器需要使用的子网掩码:
+echo @echo off >%systemroot%\netghost.bat
+echo echo 备份当前的网络设置 >>%systemroot%\netghost.bat
+echo ipconfig /all ^>%systemroot%\ipconfigbackup.txt>>%systemroot%\netghost.bat
+echo echo 当前网络设置备份完成>>%systemroot%\netghost.bat
+echo echo 清除当前DNS,网关设置>>%systemroot%\netghost.bat
+echo netsh interface ip delete address "本地连接" gateway=all ^>nul >>%systemroot%\netghost.bat
+echo netsh interface ip delete dns "本地连接" all ^>nul >>%systemroot%\netghost.bat
+echo echo 配置当前网络设置 >>%systemroot%\netghost.bat
+echo netsh interface ip set address "本地连接" source=static %ip1% %mask1% ^>nul >>%systemroot%\netghost.bat
+echo echo 当前网络设置完毕 >>%systemroot%\netghost.bat
+echo echo 启动GHOST服务端程序 >>%systemroot%\netghost.bat
+echo start ghostsrv83.exe >>%systemroot%\netghost.bat
+echo del %%systemroot%%\netghost.bat >>%systemroot%\netghost.bat
+echo exit >>%systemroot%\netghost.bat
+%systemroot%\netghost.bat
+exit
+
+:config2
+find /i "IP Address" %systemroot%\ipconfigbackup.txt >ipaddr.txt
+for /f "skip=2 tokens=15" %%p in (ipaddr.txt) do set ipaddr=%%p
+find /i "Subnet Mask" %systemroot%\ipconfigbackup.txt >subnetmask.txt
+for /f "skip=2 tokens=15" %%b in (subnetmask.txt) do set sub=%%b
+find /i "Default Gateway" %systemroot%\ipconfigbackup.txt >gateway.txt
+for /f "skip=2 tokens=13" %%g in (gateway.txt) do set gate=%%g
+find /i "DNS Servers" %systemroot%\ipconfigbackup.txt >dnss.txt
+for /f "skip=2 tokens=15" %%d in (dnss.txt) do set dns1=%%d
+for /f %%n in (%systemroot%\ipconfigbackup.txt) do set dns2=%%n
+del ipaddr.txt
+del subnetmask.txt
+del gateway.txt
+del dnss.txt
+echo %ipaddr% %sub% %gate% %dns1% %dns2%
+echo @echo off >%systemroot%\restore.bat
+echo echo 恢复IP,DNS,子网掩码,网关设置 >>%systemroot%\restore.bat
+echo netsh interface ip set address "本地连接" source=static %ipaddr% %sub% %gate% 1 ^>nul >>%systemroot%\restore.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul >>%systemroot%\restore.bat
+echo netsh interface ip add dns name="本地连接" %dns2% ^>nul >>%systemroot%\restore.bat
+echo echo 恢复完成>>%systemroot%\restore.bat
+echo  del %%systemroot%%\restore.bat >>%systemroot%\restore.bat
+echo exit >>%systemroot%\restore.bat
+%systemroot%\restore.bat
+exit
+:errorselect
+echo 选择错误,请重新选择
+goto restart
+:dianxin
+color 0a
+cls
+echo              -------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以按要求设置进行电信与网
+echo                      通之间的线路切换.本批处理只支持单否
+echo                      网卡,网络属性名称为"本地连接".则此
+echo                      批处理不适用或者达不到预期的效果.
+echo                      此脚本为现场使用版,即当前的设置只
+echo                      对脚本运行中起作用,脚本运行时非正常
+echo                      退出时也达不到预期的效果,谢谢使用                     
+echo              -------------------------------------------------------
+echo.
+echo 请输入1或者2,输入其他字符,后果自负.
+echo.
+echo              1.进入电信网通线路切换生成器
+echo.
+echo              2.返回主菜单
+echo.
+:restart2
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config3 
+if %select%==2 goto  main
+if %select% gtr 2 goto errorselect3
+:config3
+echo 特别注意:使用本脚本切换网关以后,在网络属性里面看到网关地址有出入,但不影响使用,此时在网络属性里面看到的网关,不起任何作用，但不要做任何操作.
+echo.
+set /p gateway1=请输入要切换的网关:
+set /p dns1=请输入要切换的DNS地址:
+echo @echo off >gatewaychange.bat
+echo echo 切换中,请稍等.  >>gatewaychange.bat
+echo netsh interface ip delete dns "本地连接" all ^>nul >>gatewaychange.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul >>gatewaychange.bat
+echo route delete 0.0.0.0 >>gatewaychange.bat
+echo route add 0.0.0.0 mask 0.0.0.0 %gateway1% >>gatewaychange.bat
+rem 到这里本脚本以实现了,生成切换电信与网通线路的脚本文件.只是生成脚本文件不会自动运行,方便只需要脚本文件然后自己处理生成后的脚本文件的朋友使用.
+rem 把下面2行前面的rem字符删除,可以实现即时的线路切换(输入相关信息后会自动运行生成的脚本,无需要再次运行生成的脚本就可以完成线路切换)
+rem echo del gatewaychange.bat >>gatewaychange.bat
+rem gatewaychange.bat
+exit
+:errorselect3
+echo 选择错误,请重新选择
+goto restart2
+
+:endend
+exit
+
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+
+study
+计算机名DNS网关IP
+
+@echo off
+:main
+cls
+echo.
+echo.
+echo          1.生成自动配置计算机名,DNS,网关,IP脚本,IPX内部网络号
+echo.
+echo          2.网刻服务器自动配置
+echo.
+echo          3.电信网通线路切换生成器
+echo.
+echo          4.退出脚本
+echo.
+echo 请输入1,2,3或4,输入其他字符,后果自负.
+
+:restart1
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto ipdnsipx
+if %select%==2 goto netghost
+if %select%==3 goto dianxin
+if %select%==4 goto endend
+if %select% gtr 4 goto errorselect1
+:ipdnsipx
+cls
+echo              -------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以根据不同使用场合按照提示
+echo                      输入IP,DNS(最多支持两个DNS),网关,计算
+echo                      机名.生成配置相关信息的脚本功能.
+echo              -------------------------------------------------------
+:restart5
+color 0a
+echo.
+echo 请输入1或者2,输入其他字符,后果自负.
+echo.
+echo              1.生成自动配置计算机名,DNS,网关,IP脚本,IPX内部网络号
+echo.
+echo              2.返回主菜单
+echo.
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config5 
+if %select%==2 goto  main
+if %select% gtr 2 goto errorselect5
+:config5
+echo 开始生成配置计算机名,网关,DNS,IP,IPX协议内部网络号的脚本,请根据提示输入必要的参数
+echo.
+set ipaddr=192.168.0.
+set mask1=254
+set submask1=255.255.255.0
+set qz=pc
+set dns1=61.177.7.1
+set dns2=192.168.0.254
+echo 默认计算机名前缀为:%qz%,IP地址前三字段为:%ipaddr%,网关为:%ipaddr%%mask1%,子网掩码为%submask1%,第一DNS为%dns1%,第二DNS为%DNS2%.如需修改这里的信息,请注意下面的提示,按照提示输入即可完成相关信息的修改.否则,直接敲回车键将使用默认配置.
+echo.
+set /p ipaddr=请输入IP地址的前三个字段例如:192.168.0. 一定要按照这个格式输入:
+color 70
+set /p mask1=请输入网关最后一个字段,例如192.168.0.254中的254:
+color 71
+set /p submask1=请输入子网掩码,格式为255.255.255.0:
+color 74
+set /p qz=请输入计算机名前缀:
+color 72
+set /p dns1=请输入第一DNS地址：
+color 73
+set /p dns2=请输入第二DNS地址：
+color fc
+echo 正在生成配置脚本
+
+echo @echo off>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo echo              --------------------------------------------------------->>%systemroot%\ipconfig.bat
+echo echo                              QQ:66596854欢迎交流>>%systemroot%\ipconfig.bat
+echo echo                              Mail:fan2800@hotmail.com>>%systemroot%\ipconfig.bat
+echo echo.>>%systemroot%\ipconfig.bat
+echo echo                                      说明>>%systemroot%\ipconfig.bat
+echo echo                      本批处理可以实现根据需要自动配置IP，>>%systemroot%\ipconfig.bat
+echo echo                      DNS，网关，计算机名,最多支持两个DNS>>%systemroot%\ipconfig.bat
+echo echo                      批处理启动密码为wuliaodefei,可以根据>>%systemroot%\ipconfig.bat
+echo echo                      需要修改变量PW来改变启动密码。修改适>>%systemroot%\ipconfig.bat
+echo echo                      合自己的DNS，网关，计算机名.可以看批>>%systemroot%\ipconfig.bat
+echo echo                      处理的相关注释的地方，在批处理的结尾>>%systemroot%\ipconfig.bat
+echo echo                      还可以继续进行添加命令，实现更多功能，>>%systemroot%\ipconfig.bat
+echo echo                      例如，导入CS的CD-KEY，自动安装冰点等.>>%systemroot%\ipconfig.bat
+echo echo              ------------------------------------------------------->>%systemroot%\ipconfig.bat
+echo set sz=3 >>%systemroot%\ipconfig.bat
+echo :pw>>%systemroot%\ipconfig.bat
+echo set /p pw=请输入密码：>>%systemroot%\ipconfig.bat
+echo set /a sz=%%sz%%-1 >>%systemroot%\ipconfig.bat
+echo if %%pw%%==wuliaodefei goto config>>%systemroot%\ipconfig.bat
+echo echo 密码错误,还有%%sz%%次机会>>%systemroot%\ipconfig.bat
+echo if %%sz%%==0 exit>>%systemroot%\ipconfig.bat
+echo color ca >>%systemroot%\ipconfig.bat
+echo goto pw>>%systemroot%\ipconfig.bat
+
+echo :config>>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo color 0A>>%systemroot%\ipconfig.bat
+echo echo 欢迎使用>>%systemroot%\ipconfig.bat
+echo echo.>>%systemroot%\ipconfig.bat
+echo cls>>%systemroot%\ipconfig.bat
+echo :ipconfigstart>>%systemroot%\ipconfig.bat
+echo set ip=0 >>%systemroot%\ipconfig.bat
+echo set /p ip=请输入IP:>>%systemroot%\ipconfig.bat
+echo if %%ip%%==0 goto errorip >>%systemroot%\ipconfig.bat
+echo set /a ip=%%ip%%-0>>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 10 goto 1to9 >>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 100 goto 10to99>>%systemroot%\ipconfig.bat
+echo if %%ip%% lss 255 goto 100to254>>%systemroot%\ipconfig.bat
+echo if %%ip%% geq 255 goto error1>>%systemroot%\ipconfig.bat
+echo :1to9>>%systemroot%\ipconfig.bat
+echo set a=00>>%systemroot%\ipconfig.bat
+echo goto ipconfig>>%systemroot%\ipconfig.bat
+
+echo :10to99>>%systemroot%\ipconfig.bat
+echo set a=00>>%systemroot%\ipconfig.bat
+echo set /a a=%%a%%-0>>%systemroot%\ipconfig.bat
+echo goto ipconfig>>%systemroot%\ipconfig.bat
+echo :100to254>>%systemroot%\ipconfig.bat
+echo set a=>>%systemroot%\ipconfig.bat
+echo :ipconfig>>%systemroot%\ipconfig.bat
+echo echo 您设置的计算机名为：%qz%%%a%%%%ip%% IP地址为：%ipaddr%%%ip%% 网关为：%ipaddr%%mask1%>>%systemroot%\ipconfig.bat
+echo echo 开始配置计算机名>>%systemroot%\ipconfig.bat
+echo color 1a >>%systemroot%\ipconfig.bat
+echo reg add HKLM\system\currentcontrolset\control\computername\computername\ /v computername /t reg_sz /d %qz%%%a%%%%ip%% /f ^>nul>>%systemroot%\ipconfig.bat
+echo reg add HKLM\system\currentcontrolset\services\tcpip\Parameters\ /v "NV Hostname" /t reg_sz /d %qz%%%a%%%%ip%% /f ^>nul>>%systemroot%\ipconfig.bat
+echo echo 计算机名配置完成>>%systemroot%\ipconfig.bat
+echo set /a ip=%%ip%%-0>>%systemroot%\ipconfig.bat
+echo echo 开始配置IP,网关>>%systemroot%\ipconfig.bat
+echo color 2a >>%systemroot%\ipconfig.bat
+echo netsh interface ip set address "本地连接" source=static %ipaddr%%%ip%% %submask1% %ipaddr%%mask1% 1 ^>nul>>%systemroot%\ipconfig.bat
+echo echo IP配置完成>>%systemroot%\ipconfig.bat
+echo echo 开始配置DNS>>%systemroot%\ipconfig.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul>>%systemroot%\ipconfig.bat
+echo netsh interface ip add dns name="本地连接" %dns2% ^>nul>>%systemroot%\ipconfig.bat
+echo echo DNS配置完成>>%systemroot%\ipconfig.bat
+echo echo 开始配置IPX协议内部网络号>>%systemroot%\ipconfig.bat
+echo color 3a >>%systemroot%\ipconfig.bat
+echo reg add HKLM\SYSTEM\CurrentControlSet\Services\NwlnkIpx\Parameters /f /v VirtualNetworkNumber /t REG_DWORD /d %%ip%%>>%systemroot%\ipconfig.bat
+echo echo IPX协议内部网络号配置完成>>%systemroot%\ipconfig.bat
+echo echo 删除注册表自启动项>>%systemroot%\ipconfig.bat
+echo reg delete HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /f /v computerconfigscript >>%systemroot%/ipconfig.bat
+echo echo 删除注册表启动项目完毕>>%systemroot%\ipconfig.bat
+
+echo echo 系统将在30秒后自动重新启动，输入N取消重起，并在稍后手动重起计算机 >>%systemroot%\ipconfig.bat
+echo start %%systemroot%%\system32\shutdown -r -t 30>>%systemroot%\ipconfig.bat
+echo set /p restart1=>>%systemroot%\ipconfig.bat
+echo if %%restart1%%==n start %%systemroot%%\system32\shutdown -a>>%systemroot%\ipconfig.bat
+echo goto end>>%systemroot%\ipconfig.bat
+echo :error1>>%systemroot%\ipconfig.bat
+echo echo 您输入的IP违反了IP地址使用规则，请根据需要务必输入1--254之间的数字>>%systemroot%\ipconfig.bat
+echo goto ipconfigstart>>%systemroot%\ipconfig.bat
+echo :errorip>>%systemroot%\ipconfig.bat
+echo echo 您没有输入IP,请重新输入>>%systemroot%\ipconfig.bat
+echo goto ipconfigstart>>%systemroot%\ipconfig.bat
+echo color fc >>%systemroot%\ipconfig.bat
+echo :end>>%systemroot%\ipconfig.bat
+echo rem 11月19日晚版>>%systemroot%\ipconfig.bat
+echo exit>>%systemroot%\ipconfig.bat
+echo 配置脚本生成完毕
+echo 正在设置注册表自启动脚本
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /f /v computerconfigscript /t REG_SZ /d %systemroot%\ipconfig.bat >nul
+echo 注册表启动项目添加完成
+echo 10秒后程序自动退出或直接关闭程序退出
+ping /n 15 127.0.0.1 >nul
+exit
+
+:errorselect5
+echo 选择错误,请重新选择
+goto restart5
+:errorselect1
+echo 选择错误,请重新选择
+goto restart1
+
+:netghost
+color 0a
+cls
+echo              --------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以按要求设置GHOST服务器的
+echo                      相关信息,并自动调用GHOSTSERVER程序
+echo                      以方便设置.本批处理只支持单网卡,网
+echo                      络属性名称为"本地连接".否则此批处理
+echo                      不适用或者达不到预期的效果.此脚本为
+echo                      现场使用版,即当前的设置只对脚本运行
+echo                      中起作用,脚本运行时非正常退出时也达
+echo                      不到预期的效果,谢谢使用
+echo              -------------------------------------------------------
+echo.
+echo          1.进入设置GHOST服务器
+echo.
+echo          2.自动还原以前设置
+echo.
+echo          3.返回主菜单
+echo.
+echo 请输入1,2或3,输入其他字符,后果自负.
+
+:restart
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config1 
+if %select%==2 goto config2
+if %select%==3 goto  main
+if %select% gtr 3 goto errorselect
+:config1
+set /p ip1=请输入当前GHOST服务器需要使用的IP地址:
+set /p mask1=请输入当前GHOST服务器需要使用的子网掩码:
+echo @echo off >%systemroot%\netghost.bat
+echo echo 备份当前的网络设置 >>%systemroot%\netghost.bat
+echo ipconfig /all ^>%systemroot%\ipconfigbackup.txt>>%systemroot%\netghost.bat
+echo echo 当前网络设置备份完成>>%systemroot%\netghost.bat
+echo echo 清除当前DNS,网关设置>>%systemroot%\netghost.bat
+echo netsh interface ip delete address "本地连接" gateway=all ^>nul >>%systemroot%\netghost.bat
+echo netsh interface ip delete dns "本地连接" all ^>nul >>%systemroot%\netghost.bat
+echo echo 配置当前网络设置 >>%systemroot%\netghost.bat
+echo netsh interface ip set address "本地连接" source=static %ip1% %mask1% ^>nul >>%systemroot%\netghost.bat
+echo echo 当前网络设置完毕 >>%systemroot%\netghost.bat
+echo echo 启动GHOST服务端程序 >>%systemroot%\netghost.bat
+echo start ghostsrv83.exe >>%systemroot%\netghost.bat
+echo del %%systemroot%%\netghost.bat >>%systemroot%\netghost.bat
+echo exit >>%systemroot%\netghost.bat
+%systemroot%\netghost.bat
+exit
+
+:config2
+find /i "IP Address" %systemroot%\ipconfigbackup.txt >ipaddr.txt
+for /f "skip=2 tokens=15" %%p in (ipaddr.txt) do set ipaddr=%%p
+find /i "Subnet Mask" %systemroot%\ipconfigbackup.txt >subnetmask.txt
+for /f "skip=2 tokens=15" %%b in (subnetmask.txt) do set sub=%%b
+find /i "Default Gateway" %systemroot%\ipconfigbackup.txt >gateway.txt
+for /f "skip=2 tokens=13" %%g in (gateway.txt) do set gate=%%g
+find /i "DNS Servers" %systemroot%\ipconfigbackup.txt >dnss.txt
+for /f "skip=2 tokens=15" %%d in (dnss.txt) do set dns1=%%d
+for /f %%n in (%systemroot%\ipconfigbackup.txt) do set dns2=%%n
+del ipaddr.txt
+del subnetmask.txt
+del gateway.txt
+del dnss.txt
+echo %ipaddr% %sub% %gate% %dns1% %dns2%
+echo @echo off >%systemroot%\restore.bat
+echo echo 恢复IP,DNS,子网掩码,网关设置 >>%systemroot%\restore.bat
+echo netsh interface ip set address "本地连接" source=static %ipaddr% %sub% %gate% 1 ^>nul >>%systemroot%\restore.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul >>%systemroot%\restore.bat
+echo netsh interface ip add dns name="本地连接" %dns2% ^>nul >>%systemroot%\restore.bat
+echo echo 恢复完成>>%systemroot%\restore.bat
+echo  del %%systemroot%%\restore.bat >>%systemroot%\restore.bat
+echo exit >>%systemroot%\restore.bat
+%systemroot%\restore.bat
+exit
+:errorselect
+echo 选择错误,请重新选择
+goto restart
+:dianxin
+color 0a
+cls
+echo              -------------------------------------------------------
+echo.
+echo                                      说明
+echo                      本批处理可以按要求设置进行电信与网
+echo                      通之间的线路切换.本批处理只支持单否
+echo                      网卡,网络属性名称为"本地连接".则此
+echo                      批处理不适用或者达不到预期的效果.
+echo                      此脚本为现场使用版,即当前的设置只
+echo                      对脚本运行中起作用,脚本运行时非正常
+echo                      退出时也达不到预期的效果,谢谢使用                     
+echo              -------------------------------------------------------
+echo.
+echo 请输入1或者2,输入其他字符,后果自负.
+echo.
+echo              1.进入电信网通线路切换生成器
+echo.
+echo              2.返回主菜单
+echo.
+:restart2
+set /p select=请输入:
+set /a select=%select%-0
+if %select%==1 goto config3 
+if %select%==2 goto  main
+if %select% gtr 2 goto errorselect3
+:config3
+echo 特别注意:使用本脚本切换网关以后,在网络属性里面看到网关地址有出入,但不影响使用,此时在网络属性里面看到的网关,不起任何作用，但不要做任何操作.
+echo.
+set /p gateway1=请输入要切换的网关:
+set /p dns1=请输入要切换的DNS地址:
+echo @echo off >gatewaychange.bat
+echo echo 切换中,请稍等.  >>gatewaychange.bat
+echo netsh interface ip delete dns "本地连接" all ^>nul >>gatewaychange.bat
+echo netsh interface ip set dns name="本地连接" source=static %dns1% primary ^>nul >>gatewaychange.bat
+echo route delete 0.0.0.0 >>gatewaychange.bat
+echo route add 0.0.0.0 mask 0.0.0.0 %gateway1% >>gatewaychange.bat
+rem 到这里本脚本以实现了,生成切换电信与网通线路的脚本文件.只是生成脚本文件不会自动运行,方便只需要脚本文件然后自己处理生成后的脚本文件的朋友使用.
+rem 把下面2行前面的rem字符删除,可以实现即时的线路切换(输入相关信息后会自动运行生成的脚本,无需要再次运行生成的脚本就可以完成线路切换)
+rem echo del gatewaychange.bat >>gatewaychange.bat
+rem gatewaychange.bat
+exit
+:errorselect3
+echo 选择错误,请重新选择
+goto restart2
+
+:endend
+exit
+
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+判断驱动器类型
+
+@echo off
+:: 检测本地存在的驱动器并判断类型
+:: fsutil必须具备管理员权限才能够运行
+:: code by pip modified by jm 2006-9-1、9-17
+setlocal enabledelayedexpansion
+for /f "delims=\" %%i in ('fsutil fsinfo drives^|find /v ""') do (
+    set var=%%i
+    set drive=!var:~-2!
+    fsutil fsinfo drivetype !drive!|find /i "CD-ROM">nul && echo !drive!
+)
+pause
+goto :checkof
+:checkof
+@echo off
+:: code by 3742668 2006-12-6 CMD@XP
+    set /p x=输入盘符:
+    for /f "skip=1" %%i in ('wmic logicaldisk where "deviceid='%x%:'" get Description 2^>nul') do set type=%%i
+    if not defined type set type=此驱动器不存在!    
+    echo %x%:盘的类型为: %type%
+    pause>nul
+goto :checkof
+
+对以下语句产生的 info.txt 进行提取就可以判断类型了，无需管理员权限
+:: code by 3742668 2006-12-6 CMD@XP
+start msinfo32 /categories +componentsstoragedrives /report info.txt
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+收集系统信息
+
+@echo off
+:: code by 3742668 2006-9-23 CMD@XP
+setlocal ENABLEDELAYEDEXPANSION
+:start
+    call :getinfo
+    :loop
+        ping 127.1 -n 1 2>nul 1>nul
+        if "%diskfree%" == "" goto loop
+    call :write
+    start info.html
+goto :eof
+::**************************************************************
+::                         采集信息
+::**************************************************************
+:getinfo
+    echo 正在采集信息，请稍候...
+    call :select "ip address" "ip"
+    call :select "Physical Address" "mac"
+    call :select "Default Gateway" "gateway"
+    call :select "DNS Servers" "dns"
+    call :select "Description" "netcard"
+    for /f "delims=" %%i in ('ver') do set "osver=%%i"
+    for /f "delims=" %%i in ('wmic logicaldisk where "Description='本地固定磁盘'" get caption^,freespace ^| findstr /v /i "caption"') do set "diskfree=!diskfree!%%ikb^^<br^^>"
+goto :eof
+
+::**************************************************************
+::              解析ipconfig命令输出通用函数
+::**************************************************************
+:select
+    for /f "tokens=2 delims=:" %%i in ('ipconfig /all ^| findstr /i /c:%1') do if "!%~2!" == "" set "%~2=%%i"
+goto :eof
+::**************************************************************
+::                     生成网页格式文件
+::**************************************************************
+:write
+>info.html echo ^<html^>^<center^>^<font size=10^>计算机信息^</font^>
+>>info.html echo ^<p^>今天是%date%^<p^>
+>>info.html echo ^<table width="40%%" border=1 bgcolor="darkcyan"^>
+>>info.html echo ^<tr^>^<td width="25%%"^>用户名:^</td^>^<td^>%username%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>计算机名:^</td^>^<td^>%userdomain%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>IP地址:^</td^>^<td^>%ip%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>MAC地址:^</td^>^<td^>%mac%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>网关地址:^</td^>^<td^>%gateway%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>DNS:^</td^>^<td^>%dns%^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td width="25%%"^>硬盘^<br^>剩余^<br^>空间^</td^>^<td^>%diskfree%^</td^>^</tr^>
+>>info.html echo ^</table^>^<table width="40%%" border=1 bgcolor="darkcyan"^>
+>>info.html echo ^<tr^>^<td^>^<font size=5^>您的操作系统版本号为:^</font^>^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td^>^<font size=4^>%osver%^</font^>^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td^>^<font size=5^>网卡型号:^</font^>^</td^>^</tr^>
+>>info.html echo ^<tr^>^<td^>^<font size=4^>%netcard%^</font^>^</td^>^</tr^>
+>>info.html echo ^</table^>^</center^>^</html^>
+goto :eof
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+弹出光驱
+
+mshta "javascript:new ActiveXObject('WMPlayer.OCX').cdromCollection.Item(0).Eject();window.close();"
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+xp下确定最后的盘符
+
+@echo off
+for %%i in (Z Y X W V U T S R Q P O N M L K J I H G F E D C) do (
+    if exist %%i:\nul (
+        for /f "tokens=3" %%j in ('dir /-c %%i:\') do set freesize=%%j
+        set last=%%i
+        if not "!freesize!"=="0" goto last_drive
+    )
+)
+goto :eof
+:last_drive
+echo 最后一个分区是 %last%
+md %last%:\001
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+被锁定帐户
+
+@echo off
+REM This batch file can only be used on windows2000 or later OS in chinese simplified version.
+ REM And this batch file can be used on workstations or member servers in a domain.
+ REM The function of it is to get a list of all locked or disabled users of a domaim.
+ REM Making a little change, you can use this batch file on windows in other language version or on domian controller.
+ REM I marked those lines as follow.
+ REM author: beginner@yeah.net http://blog.chinaunix.net/index.php?blogId=739
+cd /d %TEMP%
+for %%i in (user2.txt lockedusers.txt) do if exist %%i del %%i 
+ REM Changing the next 4 lines can meet your special require.
+net user /domain |find /v "命令成功完成" >user.txt
+for /f "skip=6 tokens=1" %%i in (user.txt) do echo %%i >>user2.txt
+for /f "skip=6 tokens=2" %%i in (user.txt) do echo %%i >>user2.txt
+for /f "skip=6 tokens=3" %%i in (user.txt) do echo %%i >>user2.txt
+ REM Changing the next line can meet your special require.
+echo net user %%1 /domain ^|find "帐户启用               No" >user.bat
+echo goto answer%%errorlevel%% >>user.bat
+echo :answer0 >>user.bat
+echo echo %%1 ^>^> lockedusers.txt >>user.bat
+echo goto end >>user.bat
+echo :answer1 >>user.bat
+echo :end >>user.bat
+for /f %%i in (user2.txt) do call user.bat %%i
+for %%i in (user.txt user2.txt user.bat) do if exist %%i del %%i
+cls
+@if exist lockedusers.txt (
+date /t >> lockedusers.txt
+time /t >> lockedusers.txt
+notepad.exe lockedusers.txt
+) else (
+echo   There is no locked user!
+pause
+)
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+取得硬盘数
+
+@echo off
+cd.>script.txt
+>>script.txt echo list disk
+for /f %%i in ('diskpart /s script.txt^|find /c ^"联机^"') do Set HardDrivers=%%i
+del script.txt /q
+echo 您的计算机上硬盘安装数量为：%HardDrivers%
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+显示磁盘分区数
+
+@echo off
+:: 显示磁盘分区数
+:: 无奈何@cn-dos.net - 2006-06-11 - CMDWinXP
+setlocal ENABLEDELAYEDEXPANSION
+rem 获取磁盘信息
+for /f "tokens=1,2 delims= " %%a in ('echo list disk ^|diskpart ^|findstr /r /c:"磁盘 [0-9] "') do (
+        @echo select disk=%%b>%%b.script
+        @echo list partition>>%%b.script
+        @echo exit>>%%b.script
+        rem 执行脚本,获取磁盘分区信息
+        for /f "tokens=1,2 delims= " %%m in ('diskpart /s %%b.script ^|findstr /r /c:"分区 [0-9] "') do (
+                rem 减去扩展的分区数
+                set /a num=%%n-1
+        )
+        del %%b.script
+        echo 磁盘 %%b        含有 !num! 个分区
+)
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+显示各分区剩余空间情况
+
+@echo off & setlocal EnableDelayedExpansion
+:: Code by willsort 2006-6-12 CMD@XP
+:: Modified by JM 2007-1-15
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=19738
+color 2e
+title 各分区剩余空间情况
+echo.
+echo.
+echo        ╔══════════════════════════════╗
+echo        ║        磁盘分区         磁盘卷标名      剩余空间(MB)       ║
+echo        ║    _____________________________________________________   ║
+for %%d in (C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+    if exist %%d:\nul (
+        for /f "tokens=3" %%z in ('dir /-c %%d:\') do set freesize=%%z
+        set /a freesize=!freesize:~0,-3!/1049>nul
+        set freesize=         !freesize!
+        set freesize=!freesize:~-9!
+        for /f "tokens=3*" %%v in ('vol %%d:') do set volume=%%w
+        set volume=                    !volume!
+        set volume=!volume:~-20!
+        echo        ║           %%d: !volume!     !freesize!            ║
+    )
+)
+echo        ╚══════════════════════════════╝
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+校对时间
+
+@echo off
+:: 校对时间，在不禁用time服务的情况下有效
+:: Code by 不得不爱 2006-10-27 CMD@XP
+:: 出处：http://www.cn-dos.net/forum/viewthread.php?tid=24252
+net stop w32time>nul 2>nul
+net time /SETSNTP:time.windows.com>nul 
+net start w32time>nul 
+pause
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+开机启动清单
+
+@echo off
+setlocal enabledelayedexpansion
+echo -----------------------------------------------------
+echo.
+echo                开机启动清单如下：
+echo.
+echo -----------------------------------------------------
+echo.
+for /f "skip=4 tokens=1* delims=:" %%i in ('reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run') do (
+    set str=%%i
+    set var=%%j
+    set "var=!var:"=!"
+    if not "!var:~-1!"=="=" echo !str:~-1!:!var!
+)
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+遍历系统文件
+
+set tgt=%windir%
+for /F "tokens=*" %%i in ('dir %tgt% /A- /B /S') do @(cls && echo %%i && for /L %%k in (1,1,100) do @ver>nul)
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+显示隐藏文件
+
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t reg_dword /d 1 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t reg_dword /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t reg_dword /d 1 /f
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+定时关机
+
+@echo off
+mode con lines=25
+title 定时关机
+color 1f
+cls
+echo.
+echo.
+echo.
+echo.
+echo              时间使用24小时制(如2:15、12:00)，可以输入多个时间点
+echo.
+echo                           多个时间点用空格分隔
+echo.
+echo.
+echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo.
+set times=
+set /p times=                     请输入关机时间：
+:: 以下语句实现每个星期的每一天指定时间关机
+:: 如果要换成每个月的某几天，请改字母为数字，并用逗号分隔
+:: 以下代码没有错误检测语句，输入时间的时候务必按照指定格式输入
+:: 可以用在CMD窗口用at命令来查看计划任务
+if not "%times%"=="" for %%i in (%times%) do (
+    at %%i /every:M,T,W,Th,F,S,Su shutdown -s
+)
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+C盘转换为NTFS格式
+
+@ ECHO OFF
+@ ECHO.
+@ ECHO.                          说  明
+@ ECHO ---------------------------------------------------------------
+@ ECHO NTFS格式是WinXP推荐使用的格式。转换为NTFS格式能提高硬盘存储的
+@ ECHO 效率，并可设置访问权限以保护文件。但NTFS格式的分区在DOS/WIN9X
+@ ECHO 下均不能被识别，可能会给初级用户造成不便。如无必要请不要转换。
+@ ECHO ---------------------------------------------------------------
+@ ECHO.
+convert c:/fs:ntfs
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+ 
+
+
+study
+更改盘符
+
+@echo off
+color c4
+echo 特别提醒! 请不要修改C: !&PAUSE>NUL
+COLOR e7
+cls
+    set/p a= 请输入原盘符……  
+    set/p b= 请输入新盘符……  
+    set old=%a%:
+    set new=%b%:
+    pushd %new% 2>nul && echo %new%盘已经存在! && pause && goto :eof
+    for /f %%i in ('mountvol %old% /l') do set "vol=%%i"
+    mountvol %old% /d
+    mountvol %new% %vol%
+    popd
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+结束进程
+
+@echo off
+:1
+title 结束进程
+color f1
+mode con: cols=40 lines=18
+echo.
+set /p run=请输入要结束的程序名 
+::ntsd -c q -pn %run%
+taskkill /f /t /im  %run% 
+pause>nul
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+添加环境变量
+
+set regpath=HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
+::系统环境变量
+::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
+::用户环境变量
+::HKEY_CURRENT_USER\Environment
+reg add "%regpath%" /v "<name>" /d "<data>"
+:: 将上面的<>内容替成你需要定义的名称和值就可以了
+ Copyright ©2011 lyt. All Rights Reserved.
+
+

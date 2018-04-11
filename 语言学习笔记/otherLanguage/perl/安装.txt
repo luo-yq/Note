@@ -1,0 +1,24 @@
+1、在官方网站下载新版本的源码包：
+http://www.perl.org/get.html，版本自己选择，我下载的是perl-5.12.2.tar.gz
+2、解压/usr/local/src下的perl-5.12.2.tar.gz
+  # tar zxvf perl-5.12.2.tar.gz
+3、建立文件目录，以供安装时使用
+  # mkdir /usr/local/perl                                                                     
+4、设置源码                                                                      
+  进入perl-5.12.2.tar.gz的解压目录，执行：
+  # ./Configure --help的提示如下:Linux下Perl的安装
+查看过后，使用这个指令来设置源码：
+ # ./Configure -des -Dprefix=/usr/local/perl -Dusethreads -Uversiononly
+ 
+5、编译
+ # make  //这个过程会比较久，因为源码文件有那么大，我的这个有14M。
+ # make install
+等待这个命令完成后，基本安装就完成了。
+ 
+6、替换掉旧的perl命令
+ # cd /usr/bin
+ # mv perl perl.old       //把原来的perl更名为perl.old，弃用。
+ # ln ls /usr/local/perl/bin/perl /usr/bin/perl  //做一个软链接，使用新的perl
+ 
+7、完成
+ # perl -version   //使用这个命令查看perl的版本，可以看到，已经更新到5.12.2版本了：

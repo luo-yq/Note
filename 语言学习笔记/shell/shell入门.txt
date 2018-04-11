@@ -1,0 +1,327 @@
+
+
+
+shell 学习第十天----sed 查找与替换
+
+在文本文件离进行替换
+在很多 shell 脚本的工作都从通过 grep 或 egrep 去除所需的文本开始。 正则表达式查找的最初结果，往往就成了要拿来作进一步处理的” 原始数据”。 通常，文本替换至少需要做一件事，就是讲一些字以另一些字取代，或者删除匹配行的某个部分。执行文本替换的正确程序应该是 sed----流编辑器。
+
+sed 的设计就是用来批处理而不是交互的方式编辑文件。 当药做好几个变化的时候，不管是对一个还是对数个文件，比较简单的方式就是将这些变更部分写到一个编辑的脚本里，再将此脚本应用到所有必须修改的文件，sed 的存在目的就在这里。
+
+在 shell 里，sed 主要用于一些简单的文本替换，所以我们先从他开始。
+基本用法：
+我们经常在管道中间使用 sed，用来执行替换操作，做法是使用 s 命令 ---- 要求正则表达式寻找，用替换文本替换匹配的文本呢，以及可选的标志:
+
+sed ‘s’:.*//’ /etcpasswd | 删除第一个冒号之后所有的东西
+sort -u 排序列表并删除重复部分
+sed 的语法：
+
+sed [-n] ‘editing command’ [file...]
+sed [-n] -e ‘editing command’ [file...]
+sed [-n] -f script-file... [file...]
+用途：
+
+sed 可删除 (delete)、改变 (change)、添加 (append)、插入 (insert)、合、交换文件中的资料行，或读入其它档的资料到文 > 件中，也可替换 (substuite) 它们其中的字串、或转换 (tranfer) 其中的字母等等。例如将文件中的连续空白行删成一行、"local" 字串替换成 "remote"、"t" 字母转换成 "T"、将第 10 行资料与第 11 资料合等。
+
+总合上述所言，当 sed 由标准输入读入一行资料并放入 pattern space 时,sed 依照 sed script 的编辑指令逐一对 pattern space 内的资料执行编辑，之後，再由 pattern space 内的结果送到标准输出，接着再将下一行资料读入。 如此重执行上述动作，直至读完所有资料行为止。
+
+
+sed 处理的不是原文件而是原文件的拷贝
+
+-e: 执行命令行中的指令，例如：sed -e 'command' file(s)
+-f: 执行一个 sed 脚本文件中的指令，例如： sed -f scriptfile file(s)
+-i: 与 -e 的区别在于：当使用 -e 时，sed 执行指令并不会修改原输入文件的内容，只会显示在 bash 中，而使用 -i 选项时，sed 执行的指令会直接修改原输入文件。
+-n: 读取下一行到 pattern space。
+
+行为模式：
+读取输入文件的每一行。 假如没有文件的话，则是标准输入。 以每一行来说,sed 会执行每一个应用倒数入行的 esiting command。 结果会写到标准输出 (默认情况下，或是显式的使用 p 命令及 -n 选项)。 若无 -e 或 -f 选项，则 sed 会把第一个参数看做是要使用的 editing command。
+
+find /home/tolstoy -type -d -print // 寻找所有目录
+sed ‘s;/home/tolstor;/home/lt/;’ // 修改名称; 注意: 这里使用分号作为定界符
+sed ‘s/^/mkdir /’ // 插入 mkdir 命令
+sh -x // 以 shell 跟踪模式执行
+上述脚本是说将 /home/tolstoy 目录结构建立一份副本在 /home.lt 下 (可能是为备份) 而做的准备
+
+替换案例：
+Sed 可替换文件中的字串、资料行、甚至资料区。其中，表示替换字串的指令中的函数参数为 s; 表示替换资料行、或资料区 > 的指令中的函数参数为 c。上述情况以下面三个例子说明。
+
+* 行的替换
+
+sed -e '1c/#!/bin/more' file (把第一行替换成#!/bin/more)
+
+思考: 把第 n 行替换成 just do it
+sed -e 'nc/just do it' file
+sed -e '1,10c/I can do it' file (把 1 到 10 行替换成一行:I can do it)
+
+思考: 换成两行 (I can do it! Let's start)
+sed -e '1,10c/I can do it!/nLet'"/'"'s start' file
+
+* 字符的替换
+
+$ sed 's/test/mytest/g' example----- 在整行范围内把 test 替换为 mytest。如果没有 g 标记，则只有每行第一个匹配的 test 被替换成 mytest。
+$ sed -n 's/^test/mytest/p' example-----(-n) 选项和 p 标志一起使用表示只打印那些发生替换的行。也就是说，如果某一行开头的 test 被替换成 mytest，就打印它。
+$ sed 's/^192.168.0.1/&localhost/' example-----& 符号表示替换换字符串中被找到的部份。所有以 192.168.0.1 开头的行都会被替换成它自已加 localhost，变成 192.168.0.1localhost。
+$ sed -n 's/loveable/\1rs/p' example-----love 被标记为 1，所有 loveable 会被替换成 lovers，而且替换的行会被打印出来。
+$ sed 's#10#100#g' example----- 不论什么字符，紧跟着 s 命令的都被认为是新的分隔符，所以，“#” 在这里是分隔符，代替了默认的 “/” 分隔符。表示把所有 10 替换成 100。
+替换与查找
+
+在 s 命令里以 g 结尾表示的是: 全局性，意即” 替代文本取代正则表达式中每一个匹配的”。 如果没有设置 gsed 指挥取代第一个匹配的。
+
+鲜为人知的是: 可以在结尾指定数字，只是第 n 个匹配出现才要被取代:
+
+sed ‘s/Tom/Lisy/2’ < Test.txt 仅匹配第二个 Tom 通过给 sed 增加一个 -e 选项的方式能让 sed 接受多个命令。
+sed -e ‘s/foo/bar/g’ -e ‘s/chicken/cow/g’ myfile.txt 1>myfile2.txt 用 shell 命令将 test.log 文件中第 3-5 行的第 2 个“filter” 替换成“haha”
+sed -i '3，5s/filter/haha/2' test.log
+
+有多少文本会改动，在使用 sed 的时候我们来看这么两个问题: 第一个问题是有多少人文本会匹配，第二个问题是从哪里开始匹配。
+
+回答是: 正则表达式可以匹配整个表达式的输入文本中最长的，最左边的子字符串。除此之外，匹配的空 (null) 字符串，则被认为是比完全不匹配的还长。
+
+echo syx is a good body | sed 's/syx/zsf/' 使用固定字符串
+sed 可以使用完整的正则表达式。但是应该知道” 从最长的最左边” 规则的重要性。
+echo Tolstoy is worldly | sed 's/T.*y/Camus/'
+Camus
+很明显，我们只想要匹配 Tolstoy，但是由于匹配会扩展到可能的最长长度的文本量，所以出现了这样的结果。
+
+这就需要我们精确定义：
+
+echo Tolstoy is worldly | sed 's/T[[:alpha:]]*y/Camus/'
+Camus is worldly
+
+在文本查找中，有事喊可能会匹配到 null 字符串，而在执行文本替代时，也允许插入文本。
+
+ehco abc | sed 's/b*/l/'
+labc
+ehco abc | sed 's/b*/l/g'
+lalcl
+请留意，b*shi 如何匹配 abc 的前面与结尾的 null 字符串。
+
+
+
+
+以定界符分割字段最好的例子就是 /etc/passwd,在这个文件里,一行标识系统的一个用户，每个字段都是以冒号分隔。
+
+syx5:x:511:513::/home/syx5:/bin/bash
+
+该文件含有七个字段,含义分别如下：
+
+用户名称
+加密后的密码 (如账号为停用状态,此处为一个星号,或者若加密后的密码文件存储于另外的 /etc/shadow 里,则这里可能是其他字符)
+用户的 ID 编号
+用户组的 ID 编号
+用户的姓名,有时恢复其他的相关数据 (电话号,办公室号码)
+根目录
+登陆的 shell
+
+
+sed 的使用案例
+使用 sed 操作 /etc/passwd，最好复制一份 (cp /etc/passwd /tmp)，操作 tmp 下的 passwd(其实不用，因为在一般情况下 sed 只是修改了输出结果，不会改变文件本身，除非要求这么做)。
+
+以行为单位的新增/删除
+要求： 将 /etc/passwd 的内容列出并且列印行号，同时删除 2~5 行。
+做法：cat /etc/passwd | sed '2,5d'
+sed 的动作是'2,5d'(动作需要放在单引号之间)。nl 命令在 linux 系统中用来计算文件中行号。nl 可以将输出的文件内容自动的加上行号！其默认的结果与 cat -n 有点不太一样，nl 可以将行号做比较多的显示设计，包括位数与是否自动补齐 0 等等的功能。
+
+只删除第二行
+nl /etc/passwd | sed '2d'
+
+删除第 3 行到最后一行
+cat -n /etc/passwd | sed '3,$d'
+
+在第二行后 (就是在第三行) 加上"i am fine" 字样
+cat -n /etc/passwd | sed '2a i am fine'
+
+如果要在第二行前面
+nl /etc/passwd | sed '2i i am fine'
+
+如果是要增加两行以上，在第二行后面加入两行字，例如[hello]与[how are you]
+nl /etc/passwd | sed '2a hello\
+\>how are you’
+每一行之间都必须要以反斜杠 () 来进行新行的添加，所以上面的例子，我们可以发现在第一行的最后面就有 \ 存在。(再输入的是会需要注意，单引号不要一起输完)。
+
+以行为单位的替换与现实
+
+将第 2-5 行的内容替换成"hahaha" nl /etc/passwd | sed '2,5c hahaha'，通过这个方法，我们就可以替换整行数据了。
+
+仅列出 /etc/passwd 文件的 5-7 行 cat -n /etc/passwd | sed -n '5,7p'，可以透过这个 sed 的以行为单位的显示功能， 就能够将某一个文件内的某些行号选择出来显示。
+
+数据的搜寻与显示
+搜索 /etc/passwd 中有关 /root 关键字的行
+nl /etc/passwd | sed '/root/p'
+
+思考： 为什么会输出所有行的情况?
+
+使用 -n 的时候将只打印包含模板的行。
+nl /etc/passwd | sed -n '/root/p'
+
+数据的搜索与删除
+删除 /etc/passwd 所有包含 root 的行，其他行输出
+nl /etc/passwd | sed '/root/d'
+
+数据的搜索并执行命令
+搜索 /etc/passwd，找到 root 对应的行，执行后面花括号中的一组命令，每个命令之间用分号分隔，这里把 bash 替换为 blueshell，再输出这行：
+nl /etc/passwd | sed -n '/root/{s/bash/blueshell/;p}'
+
+如果只替换 /etc/passwd 的第一个 bash 关键字为 blueshell，就退出
+nl /etc/passwd | sed -n '/bash/{s/bash/blueshell/;p;q}' 1
+
+最后的 q 是退出。
+
+数据的搜索并替换
+除了整行的处理模式之外，sed 还可以用行为单位进行部分数据的搜寻并替换。 基本上 sed 的搜寻与替换与 vi 相当的类似。 sed 's/ 要被取代的字符串 / 新的字符串 /g'
+
+先通过 /sbin/ifconfig eth0 查看本机的 IP 地址，我的是 (192.168.199.5)
+
+将 IP 前面部分予以删除
+/sbin/ifconfig eth0 | grep 'inet addr'|sed 's/^.*addr：//g'
+
+将 IP 后面部分予以删除
+/sbin/ifconfig eth0 | grep 'inet addr'|sed 's/^.*addr：//g' | sed 's/Bcast.*$//g'
+
+即可得到 IP
+
+多点编辑
+一条 sed 命令，删除 /etc/passwd 第三行到末尾的数据，并把 bash 替换成 hahaha。
+
+nl /etc/passwd | sed -e '3,$d' -e 's/bash/hahaha/g'
+
+注意： 每天命令前面都加入了 -e 选项
+
+直接修改文件内容
+最好别使用，如果使用需要加入一个 -i 选项
+例如在最后一行插入 hahaha，nl /etc/passwd | sed -i '$i hahaha'
+
+
+$ A=``B > C > ' $ echo "$A" B C
+
+在上例中，由于enter被置于 hard quote 当中，因此不再作为CR字符来处理。 这里的enter单纯只是一个断行符号 (new-line) 而已， 由于command line并没得到CR字符， 因此进入第二个shell prompt(PS2，以 > 符号表示)， command line并不会结束，直到第三行， 我们输入的enter并不在 hard quote 里面， 因此没有被关闭， 此时，command line碰到CR字符，于是结束，交给 shell 来处理。
+
+上例的Enter要是被置于 soft quote 中的话，CR字符也会同样被关闭：
+
+$ A="B > C > " $ echo $A B C
+
+然而，由于 echo $A时的变量没有置于 soft quote 中， 因此，当变量替换完成后，并作命令行重组时，enter被解释为IFS， 而不是 new-line 字符。
+
+同样的，用 escape 亦可关闭 CR 字符：
+
+$ A=B\ > C\ > $ echo $A BC
+
+上例中的，第一个enter跟第二个enter均被 escape 字符关闭了， 因此也不作为CR来处理，但第三个enter由于没有被 escape， 因此，作为CR结束command line。 但由于enter键本身在 shell meta 中特殊性，在 \ escape 字符后面 仅仅取消其CR功能， 而不保留其 IFS 功能。
+
+你或许发现光是一个enter键所产生的字符，就有可能是如下这些可能：
+
+CR(command line)
+IFS
+NL(New Line)
+FF(Form Feed)
+NULL
+...
+至于，什么时候解释为什么字符，这个我就没法去挖掘了， 或者留给读者君自行慢慢摸索了...^-^
+
+
+
+要解决这些问题，关键点就是：区分出 shell meta 与 command meta
+
+前面我们提到的那些 meta，都是在 command line 中有特殊用途的， 比方说 {} 就是将一系列的 command line 置于不具名的函数中执行 (可简单视为 command block)， 但是，awk 却需要用 {} 来区分出 awk 的命令区段 (BEGIN,MAIN,END). 若你在 command line 中如此输入：
+
+$ awk {print $0} 1.txt
+
+由于 {} 在 shell 中并没有关闭，那 shell 就将 {print $0} 视为 command block， 但同时没有;符号作命令分隔，因此，就出现 awk 语法错误结果。
+
+要解决之，可用 hard quote：
+
+awk '{print $0}'
+
+上面的 hard quote 应好理解，就是将原来的 {、、$、} 这几个 shell meta 关闭， 避免掉在 shell 中遭到处理，而完整的成为 awk 的参数中 command meta。
+
+awk 中使用的 $0 是 awk 中内建的 field nubmer，而非 awk 的变量， awk 自身的变量无需使用 $。
+要是理解了 hard quote 的功能，在来理解 soft quote 与 escape 就不难：
+
+awk "{print \$0}" 1.txt awk \{print \$0\} 1.txt
+
+然而，若要你改变 awk 的 $0 的 0 值是从另一个 shell 变量中读进呢？ 比方说：已有变量 $A 的值是 0， 那如何在command line中解决 awk 的 $$A 呢？ 你可以很直接否定掉 hard quote 的方案：
+
+$ awk '{print $$A}' 1.txt
+
+那是因为 $A 的 $ 在 hard quote 中是不能替换变量的。
+
+A=0
+awk "{print \$$A}" 1.txt
+awk  \{print\ \$$A\} 1.txt
+awk '{print $'$A'}' 1.txt
+awk '{print $'"$A"'}' 1.txt
+
+
+
+() 与 {} 差在哪？
+"命令群组"(command group) ：将许多命令集中处理。
+
+在 shell command line中，一般人或许不太计较()与 {}这两对符号的差异，虽然两者都可以将多个命令当作群组处理， 但若从技术细节上，却是很不一样的：
+
+() 将command group置于sub-shell(子shell) 中去执行，也称 nested sub-shell。
+{} 则是在同一个shell内完成，也称non-named command group。
+若你对上一章的 fork 与 source 的概念还记得的话， 那就不难理解两者的差异了。
+
+要是在 command group中扯上变量及其他环境的修改， 我们可以根据不同的需求来使用()或{}。 通常而言, 若所作的修改是临时的，且不想影响原有或以后的设定， 那我们就使用nested sub-shell, 即(); 反之，则用non-named command group, 即{}。
+
+是的，光从command line来看，()与 {}差别就讲完了，够轻松吧~~~, ^_^
+
+然而，这两个meta用在其他command meta或领域中 (如 Regular Expression)， 还是有很多差别的。 只是，我不打算再去说明了，留给读者慢慢发掘好了...
+
+我这里只想补充一个概念，就是function。 所谓function，就是用一个名字去命名一个command group, 然后再调用这个名字去执行command group。
+
+从non-named command group来推断， 大概你也可以推测到我要说的是{}了吧？(yes! 你真聪明 ^_^)
+
+
+$(())与$()还有${}差在哪？
+
+我们上一章介绍了()与{}的不同，这次让我们扩展一下，看看更多的变化：$()与${}又是啥玩意儿呢？
+
+在bash shell中, $()与``(反引号)都是用来做命令替换(command substitution)的。
+
+
+
+
+那如何解决呢？所谓山不转路转，路不转人转嘛， 我们可以换一个思维： 将stderr导进stdout 或者将stdout导进到stderr, 而不是大家在抢同一份文件，不就行了。 bingo 就是这样啦：
+
+2>&1 #将stderr并进stdout输出
+1>&2 或者 >&2 #将stdout并进stderr输出。
+
+
+$ ls my.file no.such.file >/dev/null
+ls: no.such.file: No such file or directory
+那接下来，假如单纯的只跑进程，而不想看到任何输出呢？ 除了用 >/dev/null 2>&1之外，你还可以如此：
+
+$ ls my.file no.such.file &>/dev/null```
+
+>将 &> 换成 >& 也行！
+
+但是，只要你再次使用`>`来重定向输出的话， 那么，原来文件的内容被 truncated(清洗掉)。 这是，你要如何避免呢？
+$ set -o noclobber $ echo "4" > file.out 
+-bash：file: cannot overwrite existing file.
+
+那，要如何取消这个限制呢? 哦，将`set -o`换成 `set +o`就行了：
+$ set +o noclobber $ echo "5" > file.out $ cat file.out 5
+
+再问：那有办法不取消而又 “临时” 改写目标文件吗？ 
+$ set -o noclobber $ echo "6" >| file.out $ cat file.out 6
+
+留意到没有： **在`>`后面加个`|`就好， 注意： `>`与`|`之间不能有空白哦**...
+
+### I/O Redirection 的优先级
+
+$ echo "some text here" >file $ cat < file some text here $cat < file >file.bak $cat < file.bak some text here $cat < file >file
+
+嗯？注意到没有？ --- 怎么最后那个 cat 命令看到 file 是空的呢？ why？ why？ why？
+
+前面提到：`$cat < file > file`之后， 原本有内容的文件，结果却被清空了。 要理解这个现象其实不难， 这只是 priority 的问题而已： ** 在 IO Redirection 中, stdout 与 stderr 的管道先准备好， 才会从 stdin 读入数据。** 也就是说，在上例中，`>file`会将 file 清空， 然后才读入 `< file`。 但这时候文件的内容已被清空了，因此就变成了读不进任何数据。
+
+$ cat <> file $ cat < file >>file
+
+>**Tips:** 我们了解到`>file`能够快速把文件 file 清空； 或者使用`:>file`同样可以清空文件，`:>file`与`>file`的功能： 若文件 file 存在，则将 file 清空; 否则，创建空文件 file (等效于`touch file`); 二者的差别在于`>file`的方式不一定在所有的 shell 的都可用。
+>
+`exec 5<>file; echo "abcd" >&5; cat <&5` 将 file 文件的输入、输出定向到文件描述符 5，从而描述符 5 可以接管 file 的输入输出； 因此，`cat <>file`等价于`cat < file`。
+>
+>而`cat < file >>file`则使 file 内容成几何级数增长。
+
+好了， I/O Redirection 也快讲完了， sorry, 因为我也只知道这么多而已啦~ 嘻~^_^ 不过，还有一样东东是一定要讲的，各位观众 (请自行配乐~!#@$%): 就是 pipe line 也。

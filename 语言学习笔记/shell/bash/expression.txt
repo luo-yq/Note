@@ -1,0 +1,146 @@
+echo The date is `date` 
+反引号` 位于键盘的Tab键的上方、1键的左方。在Linux中起着命令替换的作用。命令替换是指shell能够将一个命令的标准输出插在一个命令行中任何位置。
+　　如下，shell会执行反引号中的date命令，把结果插入到echo命令显示的内容中。
+　　
+单引号、双引号用于用户把带有空格的字符串赋值给变量时的分界符。
+单引号和双引号的区别。单引号告诉shell忽略所有特殊字符，而双引号忽略大多数，但不包括$、\、`。
+$(cmd)与`cmd`等价 
+`cmd`比$(cmd)有更好的可移植性，$(cmd)比`cmd`有更好的可读性
+command1 `command2 \`command3\` `
+command1 $(commmand2 $(command3))
+
+
+hard quote：''(单引号)，凡在 hard quote 中的所有 meta 均被关闭；
+soft quote：""(双引号)，凡在 soft quote 中大部分 meta 都会被关闭，但某些会保留 (如 $);
+escape: \ (反斜杠)，只有在紧接在 escape(跳脱字符) 之后的单一 meta 才被关闭；
+
+
+在表达式中支持的操作符及其含义为:
+　　+,-,*,/,％ 加,减,乘,除,取模
+　　>>,<<,&,^,| 左移,右移,位与,位异或,位或
+　　?: 三元运算符.与C语言中的定义一致
+　　~ 取补码
+　　!,>=,<=,>,<,==,!=,&&,||
+　　=,+=,-=,*=,/=,％=,<<=,>>=,&=,^=,|=
+
+let expr 等价于 $((expr)) 执行数学运算表达式，如：let 1/0   失败返回1，成功返回0  计算结果被丢弃   
+let var=expr 等价于 var=$((expr)) 叫计算表达式的值保存在变量中 let s=a+b   k='a' 同 let s=$k+b
+echo $(( 16#2a )) #输出结果为：42，(16进制的2a)
+
+
+算术运算符
++	加法	`expr $a + $b` 结果为 30。
+-	减法	`expr $a - $b` 结果为 10。
+*	乘法	`expr $a \* $b` 结果为  200。
+/	除法	`expr $b / $a` 结果为 2。
+%	取余	`expr $b % $a` 结果为 0。
+=	赋值	a=$b 将把变量 b 的值赋给 a。
+==	相等。用于比较两个数字，相同则返回 true。	[ $a == $b ] 返回 false。
+!=	不相等。用于比较两个数字，不相同则返回 true。	[ $a != $b ] 返回 true。
+
+
+if的条件中，“＝”用于比较字符串；“－eq”用于比较整型数。
+逻辑运算符
+-eq	检测两个数是否相等，相等返回 true。	[ $a -eq $b ] 返回 true。
+-ne	检测两个数是否相等，不相等返回 true。	[ $a -ne $b ] 返回 true。
+-gt	检测左边的数是否大于右边的，如果是，则返回 true。	[ $a -gt $b ] 返回 false。
+-lt	检测左边的数是否小于右边的，如果是，则返回 true。	[ $a -lt $b ] 返回 true。
+-ge	检测左边的数是否大等于右边的，如果是，则返回 true。	[ $a -ge $b ] 返回 false。
+-le	检测左边的数是否小于等于右边的，如果是，则返回 true。	[ $a -le $b ] 返回 true。
+
+布尔运算符
+!	非运算，表达式为 true 则返回 false，否则返回 true。	[ ! false ] 返回 true。
+-o	或运算，有一个表达式为 true 则返回 true。	[ $a -lt 20 -o $b -gt 100 ] 返回 true。
+-a	与运算，两个表达式都为 true 才返回 true。	[ $a -lt 20 -a $b -gt 100 ] 返回 false。
+
+字符串运算符列表
+=	检测两个字符串是否相等，相等返回 true。	[ $a = $b ] 返回 false。
+!=	检测两个字符串是否相等，不相等返回 true。	[ $a != $b ] 返回 true。
+-z	检测字符串长度是否为0，为0返回 true。	[ -z $a ] 返回 false。
+-n	检测字符串长度是否为0，不为0返回 true。	[ -z $a ] 返回 true。
+str	检测字符串是否为空，不为空返回 true。	[ $a ] 返回 true。
+
+文件测试运算符列表
+-b file	检测文件是否是块设备文件，如果是，则返回 true。	[ -b $file ] 返回 false。
+-c file	检测文件是否是字符设备文件，如果是，则返回 true。	[ -c $file ] 返回 false。
+-d file	检测文件是否是目录，如果是，则返回 true。	[ -d $file ] 返回 false。
+-f file	检测文件是否是普通文件（既不是目录，也不是设备文件），如果是，则返回 true。	[ -f $file ] 返回 true。
+-g file	检测文件是否设置了 SGID 位，如果是，则返回 true。	[ -g $file ] 返回 false。
+-k file	检测文件是否设置了粘着位(Sticky Bit)，如果是，则返回 true。	[ -k $file ] 返回 false。
+-p file	检测文件是否是具名管道，如果是，则返回 true。	[ -p $file ] 返回 false。
+-u file	检测文件是否设置了 SUID 位，如果是，则返回 true。	[ -u $file ] 返回 false。
+-r file	检测文件是否可读，如果是，则返回 true。	[ -r $file ] 返回 true。
+-w file	检测文件是否可写，如果是，则返回 true。	[ -w $file ] 返回 true。
+-x file	检测文件是否可执行，如果是，则返回 true。	[ -x $file ] 返回 true。
+-s file	检测文件是否为空（文件大小是否大于0），不为空返回 true。	[ -s $file ] 返回 true。
+-e file	检测文件（包括目录）是否存在，如果是，则返回 true。	[ -e $file ] 返回 true。
+
+
+test expression 或者 [ expression ]请务必注意 [] 之间的空白键! [ "$A" = abc ] $A 加上 “” 可以避免 $A 为空时造成 [ =abc ] 语法错误
+其次，bash 的test目前支持的测试对象只有三种：
+string：字符串，也就是纯文字  integer：整数 (0 或正整数、不含负数或小数)  file: 文件
+[ "$A" = 123 ] #是字符串测试，测试 $A 是不是 1、2、3 这三个字符。
+[ "$A" -eq 123 ] #是整数测试，以测试 $A 是否等于 123。
+[ -e "$A" ] #文件测试，测试 123 这份文件是否存在。
+当 expression 测试为 “真” 时， test就返回 0(true) 的return value; 否则，返回非 0(false).
+同时，test也允许多重复合测试：
+expression1 -a expression2 #当两个 expression 都为 true，返回 0，否则，返回非 0；
+expression1 -o expression2 #当两个 expression 均为 false 时，返回非 0，否则，返回 0；
+[ -d "$file" -a -x "$file" ] 表示当 $file 是一个目录，且同时具有 x 权限时，test 才会为 true。
+
+a=5; b=7; ((a< b))   表达式组合，使用(())作为测试表达式
+ 
+条件变量替换: Bash Shell可以进行变量的条件替换,既只有某种条件发生时才进行替换,替换条件放在{}中.注意:条件变量替换中,除(2)外,其余均不影响变量本身的值
+(1) ${value:-word}　　当变量未定义或者值为空时,返回值为word的内容,否则返回变量的值.
+(2) ${value:=word}　　与前者类似,只是若变量未定义或者值为空时,在返回word的值的同时将word赋值给value
+(3) ${value:?message}　　若变量以赋值的话,正常替换.否则将消息message送到标准错误输出(若此替换出现在Shell程序中,那么该程序将终止运行)
+(4) ${value:+word}　　若变量以赋值的话,其值才用word替换,否则不进行任何替换
+(5) ${value:offset} 　${value:offset:length}　　从变量中提取子串,这里offset和length可以是算术表达式.
+(6) ${#value}　　变量的字符个数 (变量的字符个数，并不是变量个数）
+(7) ${value#pattern},${value##pattern}　去掉value中与pattern匹配的部分,条件是value的开头与pattern匹配　#与##的区别在于一个是最短匹配,一个是最长匹配.
+(8) ${value％pattern}　　${value％％pattern}　　于(7)类似,只是是从value的尾部于pattern相匹配,％与％％的区别与#与##一样 
+(9) ${value/pattern/string}　　${value//pattern/string}　　进行变量内容的替换,把与pattern匹配的部分替换为string的内容,/与//的区别与上同
+
+#是去掉左边(在键盘上#在$的左边);
+%是去掉右边(在键盘上%在$的右边);
+单个符号是最小匹配;
+两个符号是最大匹配;
+file=/dir1/dir2/dir3/my.file.txt
+shell 字符串的非贪婪(最小匹配)左删除
+${file#*/}  #其值为：dir1/dir2/dir3/my.file.txt拿掉第一个/及其左边的字符串，其结果为： dir1/dir2/dir3/my.file.txt 。
+${file#*.}  #其值为：file.txt拿掉第一个.及其左边的字符串，其结果为： file.txt 。
+
+shell 字符串的贪婪(最大匹配)左删除
+${file##*/} #其值为：my.file.txt拿掉最后一个/及其左边的字符串，其结果为： my.file.txt
+${file##*.} #其值为：txt拿掉最后一个.及其左边的字符串，其结果为： txt
+
+shell 字符串的非贪婪(最小匹配)右删除
+${file%/*}  #其值为：/dir1/dir2/dir3拿掉最后一个/及其右边的字符串，其结果为： /dir1/dir2/dir3。
+${file%.*}  #其值为：/dir1/dir2/dir3/my.file拿掉最后一个.及其右边的字符串，其结果为： /dir1/dir2/dir3/my.file。
+
+shell 字符串的贪婪(最大匹配)右删除
+${file%%/*}  #其值为：其值为空。拿掉第一个/及其右边的字符串，其结果为： 空串。
+${file%%.*}  #其值为：/dir1/dir2/dir3/my。拿掉第一个.及其右边的字符串，其结果为： /dir1/dir2/dir3/my。　
+
+shell 字符串变量值的替换
+${file/dir/path}  #将第一个dir替换为path：/path1/dir2/dir3/my.file.txt
+${file//dir/path} #将全部的dir替换为path：/path1/path2/path3/my.file.txt
+shell 字符串变量值的替换格式：
+首次替换： ${s/src_pattern/dst_pattern} 将字符串s中的第一个src_pattern替换为dst_pattern。
+全部替换： ${s//src_pattern/dst_pattern} 将字符串s中的所有出现的src_pattern替换为dst_pattern.
+
+
+
+${}还可针对变量的不同状态(没设定、空值、非空值)进行赋值
+${file-my.file.txt} #如果file没有设定，则使用 使用my.file.txt作为返回值, 否则返回${file};(空值及非空值时，不作处理。);
+${file:-my.file.txt} #如果file没有设定或者${file}为空值, 均使用my.file.txt作为其返回值，否则，返回${file}.(${file} 为非空值时，不作处理);
+${file+my.file.txt} #如果file已设定(为空值或非空值), 则使用my.file.txt作为其返回值，否则不作处理。(未设定时，不作处理);
+${file:+my.file.txt} #如果${file}为非空值, 则使用my.file.txt作为其返回值，否则，(未设定或者为空值时)不作处理。
+${file=my.file.txt} #如果file为设定，则将file赋值为my.file.txt，同时将${file}作为其返回值；否则，file已设定(为空值或非空值)，则返回${file}。
+${file:=my.file.txt} #如果file未设定或者${file}为空值, 则my.file.txt作为其返回值， 同时，将${file}赋值为my.file.txt，否则，(非空值时)不作处理。
+${file?my.file.txt} #如果file没有设定，则将my.file.txt输出至STDERR, 否侧， 已设定(空值与非空值时)，不作处理。
+${file:?my.file.txt} #若果file未设定或者为空值，则将my.file.txt输出至STDERR，否则， 非空值时，不作任何处理。
+
+以上的理解在于，你一定要分清楚，unset与null以及non-null这三种状态的赋值； 一般而言，与null有关，若不带:, null不受影响； 若带 :, 则连null值也受影响。
+计算 shell 字符串变量的长度：${#var}
+${#file}  #其值为27, 因为/dir1/dir2/dir3/my.file.txt刚好为27个字符。

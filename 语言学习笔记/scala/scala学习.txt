@@ -1,0 +1,3197 @@
+﻿
+stra.intersect(strb):  取字符串stra和字符串strb的交集
+inta.to(intb): 生成一个range序列(inta:intb)
+toInt,toDouble,toUpperCase,toLowerCase,toList
+
+var.method(param)  等价于  var method param   +-*%等运算符也可以  1.+(2)  等价于 1 + 2  
+1.to(10) 等价于 1 to 10  包含10
+1.until(10) 等价于 1 until 10  不包含10
+
+obj/Cls.(param) 等价于 obj/Cls.apply(param) 
+
+val s ={expression1;expression2;expression3;} 返回最后一个expression的值
+val s = if(i>0) 1 else 2 java在scala中的简单写法
+if(i>0) 1 else ()  空语句的占位符()
+
+ 常量：不可重写，始终不变的量如Pi
+val constvar : type = value   初始化后不变的变量
+lazy val constvar...  直到被使用时才被初始化
+def  variblevar 每次使用时重新初始化
+var variblevar : type =value  变量；final 加在var前无意义
+final修饰后不可重写
+
+???? final val w=1 ; w=2;居然不报错 ，final加在val前，不加type 会返回一个函数（特大陷阱）
+
+for中没有break但是breakable块中可以加break，  breakable{for(){break}}
+
+import scala.main._   _相当于java的*
+
+Scala没有静态方法，不过它有个类似的特性，叫做单例对象（singleton object）。
+通常，一个类对应有一个伴生对象（companion object），其方法就跟Java中的静态方法一样。
+举例来说，BigInt类的BigInt伴生对象有一个生成指定位数（二进制）的随机素数的方法probablePrime： BigInt.probablePrime(100, scala.util.Random)
+
+从控制台读取：readLine  readInt  readDouble  readByte  readShort  readLong  readFloat  readChar  readBoolean
+
+if(bool表达式){}else{}
+while(bool表达式){}  
+for(i <- 序列表达式 ; 表达式 ; ... ; j <- 序列表达式 条件 ; ){}  遍历表达式中的所有值
+
+def funName(val/var v1:type[=default],v2:type[=default],v3:type[=default],...) : retType = 表达式 ;
+
+def funName(vs:type*) ={for(v<-vs)...} 变长参数   
+funName(1 to 5 :_*)  加 :_* 后可将序列作为变长参数
+funName(1,2,...)
+
+def funName(v4:(params)=>retType) 函数参数
+
+
+ 
+1.2.     易用的数据结构
+List-Map-Tuple及其丰富特性支持让你解决数据结构问题时游刃有余。
+
+List(1,31,4,3,53,4,234) filter (10<) filter (100>)  // List(31, 53)
+val (a,b) = List(1, 31,4,3,53,4,234) partition (10>) // a=List(1,4,3,4), b=List(31,53,234)
+def info(p:Person) = (name, age, email) // info._1, info._2, info._3
+1.3.     OOP+FP
+l  适当地选用OOP或者FP，能够使表达相对另一种更加清晰准确。
+l  实际可见的生产力在于：一个应用中的部分代码尤其是高知识凝聚的代码如数学函数和设计模式，一般来说不会自己编写，而是会来自于现成的Java库，或者其他语言，或者伪代码。我们可以很容易地把过程语言、面向对象语言、函数式语言中的代码“翻译”成Scala代码。Scala的混血性给我们的实际使用提供了便利。
+l  语言特色能够塑造编程者的思维： C++也能使用抽象基类设计多重继承，但Java的接口引导你走得更远；Java也能设计类型安全的静态方法(final static)，但Scala鼓励你这样做并逐步从OOP到达FP的彼岸，而且来去自如。
+
+1.4.     动态+静态
+Scala虽然是一门彻头彻底的静态语言，但又具备了现代动态语言的很多方便和灵活：
+l  不需要冗余的类型声明
+l  可以在已有类上增加新方法（implicit转换和Dynamic trait）
+l  可以把不继承共同父类的不同类型对象传到方法中
+l  可以做静态语言的Refactoring
+l  不用象动态语言那样测试代码比业务代码还多
+l  编译静态语言的性能
+l  Read-Eval-Print Loop交互解释器（注：Linux下的用户体验远好于Windows下）
+
+1.5.     DSL
+Scala可以把xml/html处理、数学公式表达、SQL查询等包装的更优雅、更合理，为使用者提供更好的API。这也使Scala的程序也更可读，从而更易于维护。
+
+1.6.     够复杂
+不同的思考模式：Java是先写后想，Scala是先想后写（其实FP大都如此）。
+
+你不要指望把Scala作为初学者的第一门编程语言，这门语言甚至不是初级程序员能够掌控的——换句话说，能够读懂和写Scala代码，说明你是一个不折不扣的资深程序员，或者更准确一点，是资深Java程序员。
+
+1.7.     够有趣
+还看这句话：“Put productivity & creativity back in the hands of developers”。其实不仅限于Scala，对于所有的编程语言来说，一门语言是否“好玩”有趣，能否激起创作欲，才是最关键的，这比语言风格、运行速度、工具支持、社区文化都来得重要。
+
+有些人对一门语言会玩一辈子，就像Lisp、Haskell和Smalltalk的拥趸；而有些人会不断寻找下一个玩意儿，就像原来玩Java的一些人发现更好玩的Ruby和Python之后，倒戈狂喷Java，力挺后者；Groovy/Grails的玩家在很短的时间里面，写了无数的扩展和Plugin应用；学习Scala，能很多好玩的地方，能用它有激情地去写一些振奋人心的应用出来！
+
+1.8.     开发社区
+Scala开发/用户社区气氛良好，基本都是资深开发者以及有一定经验的用户，不会碰到太弱智的事（提问、争吵），除了语言和工具开源免费，最权威和最好的书也都是免费的（包括Lift社区）
+
+ 
+注：
+existential type——和Java互操作时进行对应
+Iterator<? extends Component>  -->  Iterator[T] { type T <: Component }或者Iterator[_]
+Scala调用Java的方法时，会碰到有Scala的保留字，如Thread.yield()
+这在Scala中是非法的，专门有个解决办法，写成： Thread.`yield`()
+
+注意：没有break和continue
+
+  
+Option[T]可以是任意类型或者空，但一旦声明类型就不能改变；
+Option[T]可完美替代Java中的null，可以是Some[T]或者None；
+Option实现了map, flatMap, and filter 接口，允许在 'for'循环里使用它；
+
+
+函数返回null不特殊处理会抛：NullPointerExceptions
+结论：函数永远不要返回null值，如果输入有问题或者抛异常，返回Option[T]
+
+
+def blank(s:String) = if (s==null) false else{
+  s.toList.forall(_.isWhitespace) }
+def blank(s:String) =Option(s).toList.forall(_.forall(_.isWhitespace))
+结论：尽可能地不要浪费代码去检测输入，包装成Option[T]来统一处理
+
+
+2.8.2.  使用
+Some(3).getOrElse(4) // 3
+None.getOrElse(4) // 4
+
+例如打印key=3的value：
+
+写法1：
+def p(map:Map[Int,Int]) = println(map(3))
+p(Map(1->100,2->200)) // 抛异常
+
+写法2：
+def p(map:Map[Int,Int]) = println(map get 3 getOrElse "...")
+p(Map(1->100,2->200)) // ...
+p(Map(1->100,3->300)) // 300
+
+
+2.8.3.  例子
+例子1：
+
+  def m(k:Int) = {
+    Map((1,100),(2,200),(3,300)) get(k) match {
+      case Some(v) =>
+        k + ": " + v
+      case None =>
+        "not found"
+    }
+  }
+
+  def main(args : Array[String]) : Unit = {
+    println(m(1)) // 100
+    println(m(2)) // 200
+    println(m(3)) // 300
+    println(m(4)) // "not found"
+    println(m(-1)) // "not found"
+  }
+
+
+例子2：
+val l = List(Some(100), None, Some(200), Some(120), None)
+for (Some(s) <- l) yield s // List(100, 200, 120)
+或
+l flatMap (x=>x) // List(100, 200, 120)
+
+
+例子3： Option结合flatMap
+def toint(s:String) =
+try { Some(Integer.parseInt(s)) } catch { case e:Exception => None }
+List("123", "12a", "45") flatMap toint // List(123, 45)
+List("123", "12a", "45") map toint // List(Some(123), None, Some(45))
+
+
+2.9.     区分<-,=>,->
+<-
+for (i <- 0 until 100)
+用于for循环, 符号∈的象形
+=>
+List(1,2,3).map(x=> x*x)
+((i:Int)=>i*i)(5) // 25
+用于匿名函数
+也可用在import中定义别名：import javax.swing.{JFrame=>jf}
+->
+Map(1->"a",2->"b")
+用于Map初始化, 也可以不用->而写成 Map((1,"a"),(2,"b"))
+
+
+2.10.    match..case(switch)
+2.10.1.      和switch..case的区别
+Java里面的写法：
+
+switch(n) {
+    case(1): ...; break;
+    case(2): ...; break;
+    default: ...;
+}
+
+变成Scala写法：
+
+def m(n:String) =
+
+n match {
+    case "a" | "b" => ... // 这个比较好
+    case "c" => ...
+    case _ => ...
+}
+
+匹配值 每个case..=>结束不用写break了，_相当于default
+
+
+2.10.2.      匹配数据类型
+match 可以很简单地匹配数据类型（不需要isInstanceOf[T]）：
+
+def f(v:Any) = v match {
+    case null => "null"
+    case i:Int => i*100
+    case s:String => s
+    case _ => "others"
+}
+
+注意：上面case中的i、s都叫模式变量
+
+f(null) // "null"
+f(5) // 500
+f("hello") // "hello"
+f(3.14) // "others"
+
+
+注意：自定义类型如果也要匹配，需要用case class
+
+2.10.3.      命令行参数解析例子
+/** Basic command line parsing. */
+object Main {
+  var verbose = false  // 记录标识，以便能同时对-h和-v做出响应
+ 
+  def main(args: Array[String]) {
+    for (a <- args) a match {
+      case "-h" | "-help"    =>
+        println("Usage: scala Main [-help|-verbose]")
+      case "-v" | "-verbose" =>
+        verbose = true
+      case x => // 这里x是临时变量
+        println("Unknown option: '" + x + "'")
+    }
+    if (verbose) println("How are you today?")
+  }
+}
+2.10.4.      使用case的递归函数
+写法1：
+
+def fac(n:Int):Int = n match {
+  case 0=>1
+  case _=>n*fac(n-1)
+}
+
+写法2（使用映射式函数）：
+
+def fac: Int=>Int = {
+case 0=> 1
+case n=> n*fac(n-1)
+}
+
+写法3（使用尾递归）：
+  def fac: (Int,Int)=>Int = {
+    case (0,y) => y
+    case (x,y) => fac(x-1, x*y)
+  }
+fac(5,1) // 120
+ 
+写法4（reduceLeft）：
+def fac(n:Int) = 1 to n reduceLeft(_*_)
+
+implicit def foo(n:Int) = new { def ! = fac(n) }
+5! // 120
+ 
+写法5：(最简洁高效)
+  def fac(n:Int) = (1:BigInt) to n product
+  fac(5) // 120
+2.10.5.      变量匹配
+常量匹配很简单，即case后跟的都是常量；
+变量匹配需要注意，case后跟的是match里面的临时变量，而不是其他变量名：
+3 match {
+case i => println("i=" + i) // 这里i是模式变量（临时变量），就是3
+}
+val a = 10
+20 match { case a => 1 } // 1， a是模式变量，不是10
+为了使用变量a，必须用`a`:
+        20 match { case `a` => 1; case b => -1 } // -1，`a`是变量10
+或者用大写的变量：
+        val A = 10
+        20 match { case A => 1; case b => -1 } // -1，大写A是变量10
+ 
+2.10.6.      case..if条件匹配
+写法1：
+(1 to 20) foreach {                          
+
+    case x if (x % 15 == 0) => printf("%2d:15n\n",x)     case x if (x % 3 == 0)  => printf("%2d:3n\n",x)     case x if (x % 5 == 0)  => printf("%2d:5n\n",x)     case x => printf("%2d\n",x)                          }
+写法2：
+(1 to 20) map (x=> (x%3,x%5) match {
+  case (0,0) => printf("%2d:15n\n",x)
+  case (0,_) => printf("%2d:3n\n",x)
+  case (_,0) => printf("%2d:5n\n",x)
+  case (_,_) => printf("%2d\n",x)
+})
+2.11.    try..catch..finally
+var f = openFile()
+
+try {
+
+  f = new FileReader("input.txt")
+
+} catch {
+
+  case ex: FileNotFoundException => // Handle missing file
+
+  case ex: IOException => // Handle other I/O error
+
+} finally {
+
+  f.close()
+
+}
+
+2.12.    require
+def f(n:Int) = { require(n!=0); 1.0/n }
+
+def f(n:Int) = { require(n!=0, "n can't be zero"); 1.0/n }
+
+f(0)
+
+// java.lang.IllegalArgumentException: requirement failed: n can't be zero
+
+
+
+require method takes one boolean parameter. If the passed value is true, require will return normally, otherwise, require throu an IllegalArgumentException
+
+
+ 
+
+2.13.1.      Application
+不带命令行参数的简化main方法：
+
+object app1 extends Application {
+
+    println("hello world")
+
+}
+
+2.14.    package, import
+2.14.1.      import
+Scala的import可以只在局部作用域内生效；
+
+可以格式 “import javax.swing.{JFrame=>jf}”来声明类型的别名。
+
+
+由于Scala的package可以是相对路径下定义，有可能命名冲突，可以用：
+
+import _root_.java.lang.Long
+
+2.14.2.      package
+package com.wr3 { 
+
+    // import java.nio._ // "*" 是scala的正常函数名，所以用_
+
+    class c1 {
+
+       def m1() { println("c1.m1()") }
+
+    }
+
+ 
+
+    object o1 {
+
+       def main(args: Array[String]) {
+
+          println("o1.main()")
+
+          new c1().m1()
+
+        }
+
+    }
+
+}
+
+编译：
+
+fsc package.scala
+
+运行：
+
+java com.wr3.o1 // 方式1
+
+scala com.wr3.o1 // 方式2
+
+ 2.14.3.      包对象
+
+Scala2.8+支持包对象（package object），除了和2.8之前一样可以有下级的object和class，还可以直接有下级变量和函数，例如：
+
+-------------------------------- foo.scala
+
+package p0
+
+package object p1 {
+
+    val a = 10
+
+    def b = "hello " + a
+
+    def main(args:Array[String]):Unit = printf("%s", p0.p1.b)
+
+}
+
+--------------------------------
+
+p1就是一个包对象，a和b就是包p1直属的常量和函数,
+
+$fsc foo.scala 命令产生如下class：
+
+./p0/p1/package.class
+
+调用：
+
+scala p0.p1.package
+
+2.15.    if..else
+没有java的：
+
+b = (x>y) ? 100 : -1
+
+就用：
+
+if (x>y) 100 else -1
+
+2.16.    循环操作
+map
+
+m->m
+
+flatMap
+
+m->n
+
+indices
+
+m->m
+
+foreach
+
+m->Unit
+
+for (... if ...) yield
+
+m->n
+
+collect { case ... if ... => ... }
+
+m->n
+
+filter, filterNot
+
+m->n
+
+take
+
+m->n
+
+takeWhile
+
+m->n
+
+forall
+
+m->1 (true|false)
+
+reduceLeft, foldLeft
+
+m->1
+
+scanLeft
+
+m->m+1
+
+exists
+
+m->1 (true|false)
+
+find
+
+m->1 (或者None)
+
+count
+
+m->1
+
+span, partition
+
+m->2
+
+ 
+
+2.16.1.      for
+循环中的变量不用定义，如：
+
+for(i<-1 to 10; j=i*i) println(j)
+
+for (s <- ss) foo(s)
+
+for (i <- 0 to n) foo(i) // 包含n，即Range(0,1,2,...,n,n+1)
+
+for (i <- 0 until n) foo(i)  // 不包含n，即Range(0,1,2,3,...,n)
+
+例如：
+
+for (n<-List(1,2,3,4) if n%2==1) yield n*n  // List(1, 9) 
+
+
+等价于不用for的写法：
+
+List(1,2,3,4).filter(_%2==1).map(n => n*n)
+
+for (n<-Array(1,2,3,4) if n%2==1) yield n*n  // Array(1, 9)
+
+注意：如果if后面不止一条语句，要用{..}包裹。
+
+var s = 0; for (i <- 0 until 100) { s += i } // s = 4950
+
+ 
+
+for条件语句即可用(),也可用{}
+
+如果条件是多行，不能用(),要用{}
+
+for(i<-0 to 5; j<-0 to 2) yield i+j
+
+// Vector(0, 1, 2, 1, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5 , 6, 5, 6, 7)
+
+for{i<-0 to 5
+
+j<-0 to 2} yield i+j
+
+ 
+
+例子1：
+
+// 边长21以内所有符合勾股弦的三角形：
+
+def triangle(n: Int) = for {   x <- 1 to 21   y <- x to 21   z <- y to 21   if x * x + y * y == z * z } yield (x, y, z)
+结果：
+
+// Vector((3,4,5), (5,12,13), (6,8,10), (8,15,17), (9,12,15), (12,16,20))
+
+ 
+
+2.16.1.    for .. yield
+把每次循环的结果“移”进一个集合（类型和循环内的一致）
+
+for {子句} yield {循环体}
+
+正确：
+for (e<-List(1,2,3)) yield (e*e) // List(1,4,9)
+for {e<-List(1,2,3)} yield { e*e } // List(1,4,9)
+for {e<-List(1,2,3)} yield e*e // List(1,4,9)
+
+ 
+
+错误：
+
+for (e<-List(1,2,3)) { yield e*e } // 语法错误,yield不能在任何括号内
+
+ 
+
+2.16.2.      foreach
+List(1,2,3).foreach(println)
+
+
+也可以写成：
+(1 to 3).foreach(println)
+或者
+(1 until 4) foreach println
+或者
+Range(1,3) foreach println
+
+ 
+
+注意：
+l  to包含，until不包含（最后的数）
+l  都可以写步长，如：
+1 to (11,2) // 1,3,5,7,9,11 步长为2
+== 1 to 11 by 2
+1 until (11,2) // 1,3,5,7,9
+== 1 until 11 by 2
+val r = (1 to 10 by 4) // (1,5,9), r.start=r.first=1; r.end=10, r.last=9
+l  也可以是BigInt
+(1:BigInt) to 3
+
+2.16.3.      forall
+"所有都符合"——相当于 A1 && A2 && A3 && ... && Ai && ... && An
+(1 to 3) forall (0<) // true
+(-1 to 3) forall (0<) // false
+
+又如：
+def isPrime(n:Int) = 2 until n forall (n%_!=0)
+for (i<-1 to 100 if isPrime(i)) println(i)
+(2 to 20) partition (isPrime _) // (2,3,5,7,11,13,17,19), (4,6,8,9,10,12,14,15,16,18,20)
+也可直接调用BigInt的内部方法：
+(2 to 20) partition (BigInt(_) isProbablePrime(10))
+// 注：isProbablePrime(c)中c越大，是质数的概率越高，10对应概率：1 - 1/(2**10) = 0.999
+
+ 
+
+2.16.4.      reduceLeft
+reduceLeft 方法首先应用于前两个元素，然后再应用于第一次应用的结果和接下去的一个元素，等等，直至整个列表。例如
+
+计算阶乘：
+
+def fac(n: Int) = 1 to n reduceLeft(_*_)
+fac(5) // 5*4*3*2 = 120
+相当于：
+    ((((1*2)*3)*4)*5)
+计算sum：
+    List(2,4,6).reduceLeft(_+_) // 12
+相当于：
+    ((2+4)+6)
+取max：
+List(1,4,9,6,7).reduceLeft( (x,y)=> if (x>y) x else y ) // 9
+       或者简化为：
+List(1,4,9,6,7).reduceLeft(_ max _) // 9
+相当于：
+    ((((1 max 4) max 9) max 6) max 7)
+
+2.16.5.      foldLeft scanLeft
+累加或累乘
+def sum(L: List[Int]): Int = {
+        var result = 0
+        for (item <- L)
+            result += item
+        result
+}
+更scalable的写法：
+def sum(L: Seq[Int]) = L.foldLeft(0)((a, b) => a + b)
+def sum(L: Seq[Int]) = L.foldLeft(0)(_ + _)
+def sum(L: List[Int]) = (0/:L){_ + _}//暂时还不理解的请看2.16.6的注释
+调用：
+sum(List(1,3,5,7)) // 16
+
+ 
+
+乘法：
+def multiply(L: Seq[Int]) = L.foldLeft(1)(_ * _)
+multiply(Seq(1,2,3,4,5)) // 120
+multiply(1 until 5+1) // 120
+
+ 
+
+2.16.6.      scanLeft
+List(1,2,3,4,5).scanLeft(0)(_+_) // (0,1,3,6,10,15)
+相当于：
+(0,(0+1),(0+1+2),(0+1+2+3),(0+1+2+3+4),(0+1+2+3+4+5)) 
+List(1,2,3,4,5).scanLeft(1)(_*_) // (1,2,6,24,120)
+相当于
+(1, 1*1, 1*1*2, 1*1*2*3, 1*1*2*3*4, 1*1*2*3*4*5)
+
+ 
+
+注：
+l  (z /: List(a, b, c))(op) 相当于 op(op(op(z, a), b), c)
+简单来说：加法用0，乘法用1
+l  (List(a, b, c) :\ z) (op) equals op(a, op(b, op(c, z)))
+ /:和:\的用法
+
+2.16.7.      take drop splitAt
+1 to 10 by 2 take 3 // Range(1, 3, 5)
+1 to 10 by 2 drop 3 // Range(7, 9)
+1 to 10 by 2 splitAt 2 // (Range(1, 3),Range(5, 7, 9))
+
+ 
+
+例子：前10个质数
+def prime(n:Int) = (! ((2 to math.sqrt(n).toInt) exists (i=> n%i==0)))
+2 to 100 filter prime take 10
+
+2.16.8.      takeWhile, dropWhile, span
+while语句的缩写，
+takeWhile (...)
+等价于：while (...) { take }
+dropWhile (...)
+等价于：while (...) { drop }
+span (...)
+等价于：while (...) { take; drop }
+1 to 10 takeWhile (_<5) // (1,2,3,4)
+1 to 10 takeWhile (_>5) // ()  //Takes longestprefixof elements that satisfy a predicate.
+10 to (1,-1) takeWhile(_>6) // (10,9,8,7)
+1 to 10 takeWhile (n=>n*n<25) // (1, 2, 3, 4)
+如果不想直接用集合元素做条件，可以定义var变量来判断：
+例如，从1 to 10取前几个数字，要求累加不超过30：
+var sum=0;
+val rt = (1 to 10).takeWhile(e=> {sum=sum+e;sum<30}) // Range(1, 2, 3, 4, 5, 6, 7)
+注意：takeWhile中的函数要返回Boolean，sum<30要放在最后；
+1 to 10 dropWhile (_<5) // (5,6,7,8,9,10)
+1 to 10 dropWhile (n=>n*n<25) // (5,6,7,8,9,10)
+1 to 10 span (_<5) // ((1,2,3,4),(5,6,7,8)
+List(1,0,1,0) span (_>0) // ((1), (0,1,0))
+注意，partition是和span完全不同的操作
+List(1,0,1,0) partition (_>0) // ((1,1),(0,0))
+
+2.16.9.      break、continue
+Scala中没有break和continue语法！需要break得加辅助boolean变量，或者用库（continue没有）.
+例子1：打印'a' to 'z'的前10个
+var i=0; val rt = for(e<-('a' to 'z') if {i=i+1;i<=10}) printf("%d:%s\n",i,e)
+或者：
+('a' to 'z').slice(0,10).foreach(println)
+例子2：1 to 100 和小于1000的数
+var (n,sum)=(0,0); for(i<-0 to 100 if (sum+i<1000)) { n=i; sum+=i }
+// n = 44, sum = 990
+例子3：使用库来实现break
+import scala.util.control.Breaks._
+for(e<-1 to 10) { val e2 = e*e; if (e2>10) break; println(e) }
+ 
+
+2.17.    操作符重载
+注意：其实Scala没有操作符，更谈不上操作符重载；+-/*都是方法名，如1+2其实是(1).+(2)
+
+object operator {
+    class complex(val i:Int, val j:Int) { // val 是必须的
+        def + (c2: complex) = {
+            new complex (i+c2.i, j+c2.j)
+        }
+        override def toString() = { "(" + i + "," + j + ")" }
+    }
+
+    def main(args:Array[String]) = {
+        val c1 = new complex(3, 10)
+        val c2 = new complex(5, 70)
+        printf("%s + %s = %s", c1, c2, c1+c2)
+    }
+
+}
+
+编译：fsc operator.scala
+
+运行：java operator // (3,10) + (5,70) = (8,80)
+
+ 
+
+2.18.    系统定义scala._
+scala._自动加载，只有发生类名冲突时才需要带上scala.包名。
+
+scala.AnyValue所有基本类型的根
+
+Int,Char,Boolean,Double,Unit
+
+scala.AnyRef所有引用类型的根
+
+相当于java的java.lang.Object
+
+scala.Null所有引用类型的子类
+scala.Nothing所有全部类型的子类
+
+scala.List不可变的List
+
+scala特色的不可变List
+
+scala.Int
+
+scala中可以用int作为别名Double，Float等类似
+
+ 
+
+2.19.    implicit隐式转换
+用途：
+
+l  把一种object类型安全地自动转换成另一种object类型;
+
+l  不改动已有class设计即可添加新的方法;
+
+2.19.1.      类型转换 (用法一）
+implicit def foo(s:String):Int = Integer.parseInt(s) // 需要时把String->Int
+
+def add(a:Int, b:Int) = a+b
+
+add("100",8) // 108, 先把"100"隐式转换为100
+
+2.19.2.      例子：阶乘n!
+第一步：写函数
+
+def factorial(n: Int) = 1 to n reduceLeft(_*_)
+
+ 
+
+第二步：定义 "!" 函数
+
+    class m1(n: Int) {
+
+        def ! = factorial(n)
+
+    }
+
+implicit def m2(n:Int) = new m1(n) // 隐式转换，即在需要时把n转换为new m1(n)
+
+ 
+
+注意：上面可以用匿名类简化为：
+
+    implicit def m2(n:Int) = new { def ! = factorial(n) }
+
+ 
+
+第三步：使用
+
+    val n = 100
+
+printf("%d! = %s\n", n, (n!))  // n! 相当于 new m1(n).!()
+
+println(10!)
+
+ 
+
+2.19.3.      例子：cout  //Converting the receiver
+import java.io._
+
+class C1(p:PrintStream) {
+
+  def << (a:Any) = {
+
+    p.print(a)
+
+    p.flush
+
+    p
+
+  }
+
+}
+
+implicit def anyFuncName(p:PrintStream) = new C1(p)
+
+val endl = '\n'
+
+System.out<<"hello"<<" world"<<endl
+
+System.out has no '<<' function, implicitly convert it as C1 object and call the function '<<' 
+
+2.19.4.      例子：定义?:
+implicit def elvisOperator[T](alt: T) = new {
+  def ?:[A >: T](pred: A) = if (pred == null) alt else pred
+}                  
+ 
+
+null ?: "" // ""
+
+"abc" ?: "" // "abc"
+
+10 ?: 0 // 10
+
+(null ?: 0).asInstanceOf[Int] // 0
+
+2.19.5.      已有Object加新方法（用法二 Converting the receiver)
+object NewMethod {
+
+  // 定义新方法join()
+
+  implicit def foo1[T](list: List[T]) = new {
+
+    def join(s:String) = list.mkString(s)
+
+  }
+
+  // 测试
+
+  def main(args : Array[String]) : Unit = {
+
+    Console println List(1,2,3,4,5).join(" - ") // " 1 - 2 - 3 - 4 – 5"
+
+  }
+
+}
+
+解释：
+
+编译器发现List没有join(String)方法，就发查找代码中有没有定义在implicit def xx(List)内的 join(String)方法，如果有就调用这个。
+
+ 
+
+为Int增加乘方操作：
+
+def pow(n:Int, m:Int):Int = if (m==0) 1 else n*pow(n,m-1)
+
+implicit def foo(n:Int) = new {
+
+  def **(m:Int) = pow(n,m)
+
+}
+
+2**10 // 1024
+
+ 
+
+例子2：定义如ruby的10.next
+
+implicit def foo(n:Int) = new { def next = n+1 }
+
+10.next // 11
+
+ 
+
+2.20.    type做alias
+相当于C语言的类型定义typedef，建立新的数据类型名（别名）；在一个函数中用到同名类时可以起不同的别名
+
+例如：
+type JDate = java.util.Date       
+type SDate = java.sql.Date
+val d1 = new JDate()  // 相当于 val d = new java.util.Date()
+val d2 = new SDate()  // 相当于 val d = new java.sql.Date()
+
+ 
+
+注意：type也可以做泛型
+
+ 
+
+ 用法三 Implicit parameters，缺省参数
+
+class PreferredPrompt(val preference: String)
+
+object Greeter {
+    def greet(name: String)(implicit prompt: PreferredPrompt) {
+      println("Welcome, "+ name +". The system is ready.")
+      println(prompt.preference)
+    }
+  }
+
+implicit val prompt = new PreferredPrompt("Yes, master> ")
+
+scala> Greeter.greet("Joe")
+  Welcome, Joe. The system is ready.
+  Yes, master>
+2.21.    泛型
+2.21.1.      函数中的泛型：
+def foo[T](a:T) = println("value is " + a)
+foo(10) // "value is 10"
+foo(3.14) // "value is 3.14"
+foo("hello") // "value is hello"
+
+ 
+
+2.21.2.      类中的泛型：
+class C1[T] {
+private var v:T = _   // 初始值为T类型的缺省值
+def set(v1:T) = { v = v1 }
+def get = v
+}
+
+new C1[Int].set(10).get // 10
+
+new C1[String].set("hello").get // "hello"
+
+2.21.3.      泛型定义type
+abstract class C1 {
+    type T
+    val e:T
+}
+
+abstract class C2 {
+    type T
+    val list:List[T]
+    def len = list.length
+}
+
+def m1(e1:Int) = new C1 {
+   type T = Int
+    val e = e1
+}
+
+def m2(e1:List[Int]) = new C2 {
+    type T = Int
+    val list = e1
+}
+
+Console println m1(10) // 10
+Console println m2(List(1,2,3,4,5)).len // 5
+
+
+注意：type也可以做数据类型的alias，类似C语言中的typedef
+
+2.22.    枚举Enum
+Scala没有在语言层面定义Enumeration，而是在库中实现：
+
+例子1：
+object Color extends Enumeration {
+  type Color = Value
+  val RED, GREEN, BLUE, WHITE, BLACK = Value
+}
+
+注：有点费解，特别是Enumeration defines an inner class named Value
+Color.RED // Color.Value = RED
+import Color._
+val colorful = Color.values filterNot (e=> e==WHITE || e==BLACK)
+colorful foreach println // RED\nGREEN\nBLUE
+
+ 
+
+例子2：
+
+object Color extends Enumeration {
+  val RED = Value("红色")
+  val GREEN = Value("绿色")
+  val BLUE = Value("蓝色")
+  val WHITE = Value("黑")
+  val BLASK = Value("白")
+}
+Color.RED // Color.Value = 红色
+import Color._
+val colorful = Color.values filterNot (List("黑","白") contains _.toString)
+colorful foreach println //红色\n绿色\n蓝色
+
+2
+
+ 
+  
+  
+
+  .   util包
+5.1.     架构
+http://www.scala-lang.org/docu/files/collections-api/collections.html
+
+
+The following figure shows all collections in package scala.collection. These are all high-level abstract classes or traits, which generally have mutable as well as immutable implementations.
+
+The main trait is Iterable, which is the supertrait of both mutable and immutable variations of sequences (Seqs), sets, and maps. Sequences are ordered collections, such as arrays and lists. Sets contain at most one of each object, as determined by the == method. Maps contain a collection of keys mapped to values.
+<image not found>
+
+Sequences, classes that inherit from trait Seq, let you work with groups of data lined up in order. Because the elements are ordered, you can ask for the first element, second element, 103rd element, and so on.
+
+
+scala.collection.immutable
+
+<image not found>
+
+The immutability helps you develop correct, efficient algorithms because you never need to make copies of a collection. 
+scala.collection.mutable
+
+<image not found>
+
+ 
+
+不可变（collection.immutable._）
+
+可变（collection.mutable._）
+Array
+ArrayBuffer
+List
+ListBuffer
+String
+StringBuilder
+/
+LinkedList, DoubleLinkedList
+List
+MutableList
+/
+Queue
+Array
+ArraySeq
+Stack
+Stack
+HashMap HashSet
+HashMap HashSet
+ArrayStack
+
+ 
+ 
+
+
+5.2.1.5     Range
+Range(0, 5) // (0,1,2,3,4)
+等同于：
+0 until 5
+等同于：
+0 to 4
+
+
+两个Range相加：
+('0' to '9') ++ ('A' to 'Z') // (0,1,..,9,A,B,...,Z)
+
+Range和序列转换：
+1 to 5 toList
+相当与：
+List(1 to 5:_*)
+或者：
+Vector(1 to 5: _*) // Vector(1,2,3,4,5)
+
+5.2.1.6     Stack Queue (List类的sibling)
+先进后出的堆栈：
+
+val s = collection.immutable.Stack()
+
+You push an element onto a stack with push, pop an element with pop, and peek at the top of the stack without removing it with top/head.
+
+val s2 = s.push(10,20,30) // Stack(30, 20, 10)
+
+s2.head // 30
+
+s2.pop.pop // Stack(10)
+
+对应的可变Stack：
+
+val ms = collection.mutable.Stack()
+
+ms.push(1,3,5).push(7) // Stack(7, 5, 3, 1)
+
+ms.head // 7
+
+ms.pop // 7, ms = Stack(5,3,1)
+
+
+先进先出的队列：
+
+val q = collection.immutable.Queue() // 也可指定类型 Queue[Int]()
+
+//You can append an element to an immutable queue with enqueue:
+
+val q2 = q.enqueue(0).enqueue(List(10,20,30)) // Queue(0, 10, 20, 30)
+
+//To remove an element from the head of the queue, you use dequeue:
+
+q2.dequeue._1 // 0
+q2.dequeue._2 // Queue(10, 20, 30)
+
+On immutable queues, the dequeue method returns a pair (a Tuple2) consisting of the element at the head of the queue, and the rest of the queue with the head element removed.
+
+
+
+ val qHas123 = Queue(1,2,3)
+
+
+scala> val (element, has23) = qHas123.dequeue
+  element: Int = 1
+  has23: scala.collection.immutable.Queue[Int] = Queue(2,3)
+
+对应的可变Queue：
+
+You use a mutable queue similarly to how you use an immutable one, but instead of enqueue, you use the += and++= operators to append. Also, on a mutable queue, the dequeue method will just remove the head element from the queue and return it.
+
+val mq = collection.mutable.Queue[Int]()
+mq += (1,3,5)
+mq ++= List(7,9) // Queue(1, 3, 5, 7, 9)
+mq dequeue // 1, mq= Queue(3, 5, 7, 9)
+mq clear // Queue()
+
+If you need a first-in-first-out sequence, you can use a Queue.
+If you need a last-in-first-out sequence, you can use a Stack.
+
+
+5.2.1.7     Stream
+Stream相当于lazy List，避免在中间过程中生成不必要的集合。
+
+定义生成：
+
+val st = 1 #:: 2 #:: 3 #:: Stream.empty // Stream(1, ?)
+
+ 
+
+例子：fib数列的Stream版本简单易懂
+
+def fib(a: Int, b: Int): Stream[Int] = a #:: fib(b,  a+b)
+
+val fibs = fib(1, 1).take(7).toList // List(1, 1, 2, 3, 5, 8, 13)
+
+fib数列的前后项比值趋于黄金分割：
+
+def fn(n:Int) = fib(1,1)(n)
+
+1 to 10 map (n=> 1.0*fn(n)/fn(n+1)) // Vector(0.5, 0.666, ..., 0.618)
+
+ 
+
+例子1：
+Range        (1,50000000).filter (_ % 13==0)(1) // 26, 但很慢，需要大量内存
+Stream.range(1,50000000).filter(_%13==0)(1) // 26，很快，只计算最终结果需要的内容
+
+注意：
+第一个版本在filter后生成一个中间collection，size=50000000/13;而后者不生成此中间collection，只计算到26即可。
+
+
+例子2：
+(1 to 100).map(i=> i*3+7).filter(i=> (i%10)==0).sum // map和filter生成两个中间collection
+(1 to 100).toStream.map(i=> i*3+7).filter(i=> (i%10)==0).sum
+
+
+5.2.2.15   contains startsWith endWith
+  1 to 5 contains 3 // true, 后一个参数是1个元素
+  1 to 5 containsSlice (2 to 4) // true, 后一个参数是1个集合
+(1 to 5) startsWith (1 to 3) // true 后一个参数是1个集合
+(1 to 5) endsWith (4 to 5)
+(List(1,2,3) corresponds List(4,5,6)) (_<_) // true，长度相同且每个对应项符合判断条件
+
+ 
+
+
+5.2.2.17   殊途同归
+例子：得到 (4, 16, 36, 64, 100)
+写法1：
+(1 to 10) filter (_%2==0) map (x=>x*x)
+写法2：
+for(x<-1 to 10 if x%2==0) yield x*x
+写法3：
+(1 to 10) collect { case x if x%2==0 => x*x }
+ 
+ 
+
+5.2.4.  view
+在某类型的集合对象上调用view方法，得到相同类型的集合，但所有的transform函数都是lazy的，从该view返回调用force方法。
+
+对比：
+val v = Vector(1 to 10:_*)
+v map (1+) map (2*) // Vector(4, 6, 8, 10, 12, 14, 16, 18, 20, 22)
+
+以上过程得生成2个新的Vector，而：
+val v = Vector(1 to 10:_*)
+v.view map (1+) map (2*) force
+只在过程中生成1个新的Vector，相当于：
+v map (x=>2*(1+x))
+
+
+又如：
+((1 to 1000000000) view).take(3).force // Vector(1,2,3)
+
+使用Stream：
+Stream.range(1,1000000000).take(3).force //  Stream(1, 2, 3)
+
+5.2.5.  和Java集合间的转换（scalaj）
+方案一：Java的List<T>很容易通过List.toArray转换到Array，和Scala中的Array是等价的，可使用map、filter等。
+方案二：使用第三方的scalaj扩展包（需自行下载设置classpath）
+
+例子1：
+val a1 = new java.util.ArrayList[Int]
+a1.add(100); a1.add(200); a1.add(300)
+
+// 自行转换
+val a2 = a1.toArray
+a2 map (e=>e.asInstanceOf[Int]) map(2*) filter (300>)
+
+//采用scalaj(http://github.com/scalaj/scalaj-collection)
+
+import scalaj.collection.Imports._
+val a3 = a1.asScala
+
+// scala->java
+List(1, 2, 3).asJava
+Map(1 -> "a", 2 -> "b", 3 -> "c").asJava
+Set(1, 2, 3).asJava
+
+// scalaj还可以在java的collection上使用foreach (目前除foreach外，还不支持filter、map)
+
+a1.foreach(println)
+
+ 
+
+scalaj的简易文档如下：
+
+// Java to Scala
+
+Java类型
+转换方法
+java.lang.Comparable[A] 
+#asScala: scala.math.Ordered[A]
+java.util.Comparator[A] 
+#asScala: scala.math.Ordering[A]
+java.util.Enumeration[A]
+#asScala: scala.collection.Iterator[A]
+#foreach(A => Unit): Unit
+java.util.Iterator[A] 
+#asScala: scala.collection.Iterator[A]
+#foreach(A => Unit): Unit
+java.lang.Iterable[A] 
+ 
+#asScala: scala.collection.Iterable[A]
+#foreach(A => Unit): Unit
+java.util.List[A]
+ 
+#asScala: scala.collection.Seq[A]
+#asScalaMutable: scala.collection.mutable.Seq[A]
+java.util.Set[A] 
+ 
+#asScala: scala.collection.Set[A]
+#asScalaMutable: scala.collection.mutable.Set[A]
+java.util.Map[A, B] 
+ 
+ 
+#asScala: scala.collection.Map[A, B]
+#asScalaMutable: scala.collection.mutable.Map[A, B]
+#foreach(((A, B)) => Unit): Unit
+java.util.Dictionary[A, B] 
+ 
+#asScala: scala.collection.mutable.Map[A, B]
+#foreach(((A, B)) => Unit): Unit
+// Scala to Java
+Scala类型
+转换方法
+scala.math.Ordered[A]                
+#asJava: java.util.Comparable[A]
+scala.math.Ordering[A]               
+#asJava: java.util.Comparator[A]
+scala.collection.Iterator[A]        
+ 
+#asJava: java.util.Iterator[A]
+#asJavaEnumeration: java.util.Enumeration[A]
+scala.collection.Iterable[A]      
+#asJava: java.lang.Iterable[A]
+scala.collection.Seq[A]             
+#asJava: java.util.List[A]
+scala.collection.mutable.Seq[A]    
+#asJava: java.util.List[A]
+scala.collection.mutable.Buffer[A]
+#asJava: java.util.List[A]
+scala.collection.Set[A]             
+#asJava: java.util.Set[A]
+scala.collection.mutable.Set[A]    
+#asJava: java.util.Set[A]
+scala.collection.Map[A, B]        
+#asJava: java.util.Map[A, B]
+scala.collection.mutable.Map[A, B]
+#asJava: java.util.Map[A, B]
+#asJavaDictionary: java.util.Dictionary[A, B]
+ 
+
+ io
+6.1.     文件I/O
+6.1.1.  读文件
+scala特有的是scala.io.Source，例如：
+
+import scala.io._
+
+Source.fromFile("cn.scala","utf8").mkString
+
+逐行读文件内容：
+Source.fromFile(new Java.io.File("cn.scala")).getLines().foreach(println)
+
+6.1.2.  写文件
+直接调用java的io：
+
+import java.io._, java.nio.channels._, java.nio._
+
+// 写文件
+val f = new FileOutputStream("o.txt").getChannel
+f write ByteBuffer.wrap("a little bit long ...".getBytes)
+f close
+
+或者：
+var out = new java.io.FileWriter("./out.txt") // FileWriter("./out.txt", true) 为追加模式
+out.write("hello\n")
+out close
+
+
+6.1.3.  复制文件
+直接调用java的io：
+
+val in  = new FileInputStream("in").getChannel
+val out = new FileOutputStream("out").getChannel
+in transferTo (0, in.size, out)
+
+
+6.2.     网络I/O
+import java.net.{URL, URLEncoder} import scala.io.Source.fromURL
+fromURL(new URL("http://qh.appspot.com")).mkString
+或者指定编码：
+
+fromURL(new URL("http://qh.appspot.com"))(io.Codec.UTF8).mkString
+
+Source.fromString(str)可用于测试
+
+actor
+http://www.scala-lang.org/docu/files/actors-api/actors_api_guide.html#
+
+ 
+
+Scala中处理并发，有很多选择：
+
+l  actor消息模型，类似Erlang，首选，Lift和akka也实现了自己的actor模型。
+
+l  Thread、Runnable
+
+l  Java.util.concurennt
+
+l  3rd并发框架如Netty，Mina
+
+7.1.     actor模型
+Java内置线程模型
+
+Scala actor模型
+
+“共享数据-锁”模型（share data and lock）
+
+share nothing
+
+每个object有一个monitor，监视多线程对共享数据的访问
+
+不共享数据，actor之间通过message通讯
+
+加锁的代码段用synchronized标识
+
+ 
+
+死锁问题
+
+ 
+
+每个线程内部是顺序执行的
+
+每个actor内部是顺序执行的
+
+ 
+
+
+7.2.     多核计算
+对比如下的算法：
+def perfect(n:Int) = n==(1 until n filter (n%_==0) sum)
+val n = 33550336
+// 串行计算
+n to n+10 foreach (i=>println(perfect(i)))
+def perfect(n:Int) = n==(1 until n filter (n%_==0) sum)
+val n = 33550336
+// 并行计算
+class T1(n:Int) extends Thread {
+  override def run(){println(perfect(n))}}
+n to n+10 foreach (i=>new T1(i).start)
+耗时：8297
+耗时：5134
+
+
+单线程串行计算，不能很好发挥多核优势
+多线程并行计算，平均分配到多核，更快
+上面是Java的写法，也可以用Scala的actor写法：
+
+
+Scala写法1：
+import actors.Actor,actors.Actor._
+class A1 extends Actor {
+def act { react { case n:Int=>println(perfect(n)) }}}
+n to n+10 foreach (i=>{ (new A1).start ! i})
+Scala写法2：
+val aa = Array.fill(11)(actor { react { case n:Int=>println(perfect(n)) }})
+n to n+10 foreach (i=>aa(i-n) ! i)
+或者：
+n to n+10 foreach (i=> actor { react { case n:Int=>println(perfect(n)) }} ! i)
+
+ 
+
+7.3.     Actor用法
+Scala会建立一个线程池共所有Actor来使用。receive模型是Actor从池中取一个线程一直使用；react模型是Actor从池中取一个线程用完给其他Actor用
+
+ 
+
+实现方式1：
+import scala.actors._
+object Actor1 extends Actor { // 或者class
+// 实现线程
+def act() { react { case _ =>println("ok"); exit} }
+}
+//发送消息：
+Actor1.start ! 1001 // 必须调用start
+
+
+实现方式2：
+import scala.actors.Actor._
+val a2 = actor { react { case _ =>println("ok") } } // 马上启动
+//发送消息：
+a2 ! "message" // 不必调用start
+
+
+提示：
+!  发送异步消息，没有返回值。
+!? 发送同步消息，等待返回值。（会阻塞发送消息语句所在的线程）
+!! 发送异步消息，返回值是 Future[Any]。
+? 不带参数。查看 mailbox 中的下一条消息。
+
+ 
+
+7.4.     方式1：接受receive
+特点：要反复处理消息，receive外层用while(..)
+import actors.Actor, actors.Actor._
+val a1 = Actor.actor {
+var work = true
+while(work) {
+receive { // 接受消息, 或者用receiveWith(1000)
+case msg:String => println("a1: " + msg)
+case x:Int => work = false; println("a1 stop: " + x)
+}
+}
+}
+
+a1 ! "hello" // "a1: hello"
+a1 ! "world" // "a1: world"
+a1 ! -1 // "a1 stop: -1"
+a1 ! "no response :("
+
+7.5.     方式2：接受react, loop
+特点：
+l  从不返回
+l  要反复执行消息处理，react外层用loop，不能用while(..);
+l  通过复用线程，比receive更高效，应尽可能使用react
+import actors.Actor, Actor._
+val a1 = Actor.actor {
+react {
+        case x:Int => println("a1 stop: " + x)
+        case msg:String => println("a1: " + msg); act()
+    }
+}
+
+a1 ! "hello" // "a1: hello"
+a1 ! "world" // "a1: world"
+a1 ! -1 // "a1 stop: -1"
+a1 ! "no response :("
+
+
+如果不用退出的线程，可使用loop改写如下：
+val a1 = Actor.actor {
+  loop {
+      react {
+      case x:Int => println("a1 stop: " + x); exit()
+              case msg:String => println("a1: " + msg)
+    }
+  }
+}
+
+ 
+
+7.6.     REPL接受消息
+scala> self ! "hello"
+scala> self.receive { case x => x }
+scala> self.receiveWithin(1000) { case x => x }
+
+ 
+
+7.7.     actor最佳实践
+7.7.1.  不阻塞actor
+actor不应由于处理某条消息而阻塞，可以调用helper-actor处理耗时操作(helper actor虽然是阻塞的，但由于不接受消息所以没问题)，以便actor接着处理下一条消息
+
+-----------------------------------------
+
+import actors._, actors.Actor._
+
+
+val time = 1000
+  // （1）原来阻塞的程序
+  val mainActor1 = actor {
+    loop { react {
+        case n: Int => Thread.sleep(time)
+                         println(n)
+        case s => println(s) } }
+  }
+  1 to 5 foreach { mainActor1 ! _ } // 5秒钟后打印完数字
+  // （2）改写由helper actor去阻塞的程序
+
+  val mainActor2: Actor = actor {
+    loop { react {
+        case n: Int => actor { Thread.sleep(time); mainActor2 ! "wakeup" }
+                       println(n)
+        case s => println(s) } }
+  }
+
+  1 to 5 foreach { mainActor2 ! _ } // 马上打印数字; 1秒钟后打印5个wakeup
+
+-----------------------------------------
+
+7.7.2.  actor之间用且仅用消息来通讯
+actor模型让我们写多线程程序时只用关注各个独立的单线程程序（actor），他们之间通过消息来通讯。例如，如果BadActor中有一个GoodActor的引用:
+class BadActor(a:GoodActor) extends Actor {...}
+
+那在BadActor中即可以通过该引用来直接调用GoodActor的方法，也可以通过“!”来传递消息。选择后者！因为一旦BadActor通过引用读取GoodActor实例的私有数据，而这些数据可能正被其他线程改写值，结果就避免不了“共享数据-锁”模型中的麻烦事：即必须保证BadActor线程读取GoodActor的私有数据时，GoodActor线程在这块成为“共享数据”的操作上加锁。GoodActor只要有了共享数据，就必须来加锁防范竞用冲突和死锁，你又得从actor模型退回到“共享数据-锁”模型（注：actor对消息是顺序处理的，本来不用考虑共享数据）。
+
+7.7.3.  采用不可变消息
+Scala的actor模型让每个actor的act方法内部接近于单线程环境，你不用当心act方法里面的操作是否线程安全。在act方法中你可以尽情使用非同步、可变对象，因为每个act方法被有效限制在单个线程中，这也是actor模型被称为“share-nothing” 模型（零共享模型）的原因，其数据的作用范围被限制在单个线程中。不过一旦对象内的数据被用于多个actor之间进行消息传递。这时你就必须考虑消息对象是否线程安全。
+
+保证消息对象线程安全的最好方法就是保证只使用不可变对象作为消息对象。消息类中只定义val字段，且只能指向不可变对象。定义这种不可变消息类的简单方法就是使用case class， 并保证其所有的val字段都是不可变的。Scala API中提供了很多不可变对象可用，例如基本类型、String、Tuple、List，不可变Set、不可变Map等。
+
+如果你发现确实需要把一个可变对象obj1发送给其他actor，也因该是发送一份拷贝对象obj1.clone过去，而不是把obj1直接发过去。例如，数据对象Array是可变且未做同步的，所以Array只应该由一个actor同时存取，如果需要发送数组arr，就发送arr.clone（arr中的元素也应该是不可变对象），或者直接发送一个不可变对象arr.toList更好。
+
+总结：大部分时候使用不可变对象很方便，不可变对象是并行系统的曙光，它们是易使用、低风险的线程安全对象。当你将来要设计一个和并行相关的程序时，无论是否使用actor，都应该尽量使用不可变的数据结构。
+
+7.7.4.  让消息自说明
+对每一种消息创建一个对应的case class，而不是使用上面的tuple数据结构。虽然这种包装在很多情况下并非必须，但该做法能使actor程序易于理解，例如：
+
+// 不易理解，因为传递的是个一般的字符串，很难指出那个actor来响应这个消息
+
+lookerUpper ! ("www.scala-lang.org", self)
+
+// 改为如下，则指出只有react能处理LoopupIP的actor来处理：
+
+case class LookupIP(hostname: String, requester: Actor)
+
+lookerUpper ! LookupIP("www.scala-lang.org", self)
+
+ 
+
+7.8.     不同jvm间的消息访问
+服务器端：
+object ActorServer extends Application {
+    import actors.Actor, actors.Actor._, actors.remote.RemoteActor
+    Actor.actor { // 创建并启动一个 actor
+      // 当前 actor 监听的端口： 3000
+      RemoteActor.alive(3000)
+
+      // 在 3000 端口注册本 actor，取名为 server1。
+      // 第一个参数为 actor 的标识，它以单引号开头，是 Scala 中的 Symbol 量，
+      // Symbol 量和字符串相似，但 Symbol 相等是基于字符串比较的。
+      // self 指代当前 actor （注意此处不能用 this）
+      RemoteActor.register('server1, Actor.self)
+ 
+      // 收到消息后的响应
+      loop {
+        Actor.react {case msg =>
+          println("server1 get: " + msg)
+        }
+      }
+    }
+}
+
+ 
+
+客户端：
+object ActorClient extends Application { 
+    import actors.Actor, actors.remote.Node, actors.remote.RemoteActor 
+    Actor.actor { 
+      // 取得一个节点（ip:port 唯一标识一个节点） 
+      // Node 是个 case class，所以不需要 new 
+      val node = Node("127.0.0.1", 3000) 
+
+      // 取得节点对应的 actor 代理对象 
+      val remoteActor = RemoteActor.select(node, 'server1) 
+ 
+      // 现在 remoteActor 就和普通的 actor 一样，可以向它发送消息了！ 
+      println("-- begin to send message")
+      remoteActor ! "ActorClient的消息" 
+      println("-- end")
+    } 
+}
+
+7.9.     STM
+http://nbronson.github.com/scala-stm/
+
+a lightweight Software Transactional Memory for Scala, inspired by the STMs in Haskell and Clojure.
+
+Cheat-Sheet:
+
+import scala.concurrent.stm._
+ 
+val x = Ref(0) // allocate a Ref[Int]
+val y = Ref.make[String]() // type-specific default
+val z = x.single // Ref.View[Int]
+ 
+atomic { implicit txn =>
+  val i = x() // read
+  y() = "x was " + i // write
+  val eq = atomic { implicit txn => // nested atomic
+    x() == z() // both Ref and Ref.View can be used inside atomic
+  }
+  assert(eq)
+  y.set(y.get + ", long-form access")
+}
+ 
+// only Ref.View can be used outside atomic
+println("y was '" + y.single() + "'")
+println("z was " + z())
+ 
+atomic { implicit txn =>
+  y() = y() + ", first alternative"
+  if (x getWith { _ > 0 }) // read via a function
+retry // try alternatives or block 
+} orAtomic { implicit txn =>
+  y() = y() + ", second alternative"
+}
+ 
+val prev = z.swap(10) // atomic swap
+val success = z.compareAndSet(10, 11) // atomic compare-and-set
+z.transform { _ max 20 } // atomic transformation
+val pre = y.single.getAndTransform { _.toUpperCase }
+val post = y.single.transformAndGet { _.filterNot { _ == ' ' } }
+
+
+XML
+8.1.     生成
+Scala原生支持xml，就如同Java支持String一样，这就让生成xml和xhtml很简单优雅：
+
+val name = "james"
+val age = 10
+val html = <html>name={name}, age="{age}"</html> toString
+// <html>name=james, age=&quot;10&quot;</html>
+又如：
+val html = <html><head><title>{myTitle}</title></head><body>{"hello world"}</body></html>
+
+
+更复杂的例子：
+val x = <r>{(1 to 5).map(i => <e>{i}</e>)}</r>
+// <r><e>1</e><e>2</e><e>3</e><e>4</e><e>5</e></r>
+val x0 = <users><user name="qh"/></users>
+val <users>{u}</users> = x0  // u: scala.xml.Node = <user name="qh"></user>
+
+
+By the way, if you want to include a curly brace (`{' or `}') as XML text, as opposed to using them to escape to Scala code, simply write two curly braces in a row:
+  scala> <a> {{{{brace yourself!}}}} </a>
+  res1: scala.xml.Elem = <a> {{brace yourself!}} </a>
+
+8.2.       xml文件
+xml.XML loadString "<p></p>"
+xml.XML loadFile "abc.xml"
+xml.XML.saveFull("foo.xml", node, "UTF-8", xmlDecl: Boolean, doctype : DocType)
+
+
+
+
+8.3.      读取：
+val x = <r>{(1 to 5).map(i => <e>{i}</e>)}</r>
+
+// <r><e>1</e><e>2</e><e>3</e><e>4</e><e>5</e></r>
+
+(x \ "e") map (_.text.toInt) // List(1, 2, 3, 4, 5)
+
+ 
+
+val x0 = <users>
+
+<user name="qh"><age>20</age></user>
+
+<user name="james"><age>30</age></user>
+
+</users>
+
+(x0 \ "user") // <user name="qh"><age>20</age></user>, <user name="james"><age>30</age></user>)
+
+(x0 \ "user" \ "age") // (<age>20</age>, <age>30</age>)
+
+(x0 \ "age")  // 直接下级: ()
+
+(x0 \\ "age") // 所有下级：(<age>20</age>, <age>30</age>)
+
+(x0 \ "_") 所有
+
+
+
+
+8.4       访问属性
+val x = <uu><u name="qh" /><u name="james" /><u name="qiu" /></uu>
+
+scala> (x \ "u" \\ "@name") foreach println
+qh
+james
+qiu
+ 
+
+例子：
+
+val data =
+
+<shopping>
+  <item name="bread" quantity="3" price="2.50"/>
+  <item name="milk" quantity="2" price="3.50"/>
+</shopping>
+
+val res = for (item <- data \ "item" ; 
+                 price = (item \ "@price").text.toDouble ; 
+                 qty = (item \ "@quantity").text.toInt)
+           yield (price * qty)
+
+printf("$%.2f\n", res.sum)
+
+8.5       Deserialization
+You can write of a serializer, a parser from XML back into your internal data structures. For example, you can parse back a CCTherm instance by using the following code:
+def fromXML(node: scala.xml.Node): CCTherm =
+    new CCTherm {
+        val description = (node \ "description").text
+        val yearMade = (node \ "yearMade").text.toInt
+        val dateObtained = (node \ "dateObtained").text
+        val bookPrice = (node \ "bookPrice").text.toInt
+        val purchasePrice = (node \ "purchasePrice").text.toInt
+        val condition = (node \ "condition").text.toInt
+}
+
+
+This code searches through an input XML node, named node, to find each of the six pieces of data needed to specify a CCTherm. The data that is text is extracted with .text and left as is.
+
+8.6     格式化输出
+val pp = new xml.PrettyPrinter(80, 4)  // 行宽 80，缩进为 4  
+pp formatNodes <b><a/></b>  
+
+结果是字符串 
+<b> 
+    <a></a> 
+
+</b> 
+
+ 
+
+8.7     Pattern matching on XML
+A pattern embedded in {} can use the full Scala pattern language, including binding new variables, performing type tests, and ignoring content using the _ and _* patterns. Here is a simple example:
+def proc(node: scala.xml.Node): String =
+node match {
+case <a>{contents}</a> => "It's an a: "+ contents
+case <b>{contents}</b> => "It's a b: "+ contents
+case _ => "It's something else."
+}
+scala> proc(<a>apple</a>)
+res16: String = It's an a: apple
+scala> proc(<b>banana</b>)
+res17: String = It's a b: banana
+scala> proc(<c>cherry</c>)
+res18: String = It's something else.
+val catalog =
+
+<catalog>
+  <cctherm>
+    <description>hot dog #5</description>
+    <yearMade>1952</yearMade>
+    <dateObtained>March 14, 2006</dateObtained>
+    <bookPrice>2199</bookPrice>
+    <purchasePrice>500</purchasePrice>
+    <condition>9</condition>
+  </cctherm>
+  <cctherm>
+    <description>Sprite Boy</description>
+    <yearMade>1964</yearMade>
+    <dateObtained>April 28, 2003</dateObtained>
+    <bookPrice>1695</bookPrice>
+    <purchasePrice>595</purchasePrice>
+    <condition>5</condition>
+  </cctherm>
+</catalog>
+
+catalog match {
+  case <catalog>{therms @ _*}</catalog> =>
+    for (therm @ <cctherm>{_*}</cctherm> <therms)
+      println("processing: "+(therm \ "description").text)
+}
+
+
+processing: hot dog #5
+processing: Sprite Boy
+
+
+
+简单配置及logging：
+----------------------------
+log {
+  filename = "/var/log/pingd.log"
+  roll = "daily"
+  level = "debug"
+}
+
+hostname = "pingd.example.com"
+port = 3000
+----------------------------
+
+val conf = net.lag.configgy.Configgy.configure("/etc/pingd.conf").config
+val hostname = conf.getString("hostname", "localhost")
+val port = conf.getInt("port", 3000)
+
+ 
+
+
+
+
+
+
+
+
+Scala 是构建在 JVM 上的静态类型的脚本语言，而脚本语言总是会有些约定来增强灵活性。灵活性可以让掌握了它的人如鱼得水，也会让初学者不知所措。比如说 Scala 为配合 DSL 在方法调用时有这么一条约定：
+
+在明确了方法调用的接收者的情况下，若方法只有一个参数时，调用的时候就可以省略点及括号。如 “0 to 2”，实际完整调用是 “0.to(2)”。但 “println(2)” 不能写成 “println 10“”，因为未写出方法调用的接收者 Console，所以可以写成 “Console println 10”
+
+到这里就要讲到 apply 和 update 方法相关的约定，描述的是直接在变量(对象)后直接加圆括号的代码的情况下，那就是:
+
+用括号传递给变量(对象)一个或多个参数时，Scala 会把它转换成对 apply 方法的调用；与此相似的，当对带有括号并包括一到若干参数的进行赋值时，编译器将使用对象的 update 方法对“括号里的参数和等号右边的值”执行调用。
+
+对上面那段话的解释可由下面几个例子得到很好的理解
+
+1. theArray(0), 取数组的第一个元素的操作会转换成 theArray.apply(0) 操作，这也能解释为什么 Scala 数组取值不用中括号括下标的方式，因为它也是一次方法调用
+
+2. anyObject("key1") 会被转换成 anyObject.apply("key") 操作，这也会让我们想到 Map 的取值操作，的确如此。我们可以作个例子：
+
+[plain] view plain copy 在CODE上查看代码片派生到我的代码片
+classSomeClass {  
+    defapply(key:String):String ={  
+        println("apply method called, key is: " + key)  
+        "Hello World!"  
+    }  
+}  
+   
+valanyObject =new SomeClass  
+println(anyObject("key1"))  
+
+执行后输出结果是：
+apply method called, key is: key1
+Hello World!
+
+说明是调用到了相应的 apply 方法的。
+
+3. 我们在构造 Array 或  Map 时，会简单的写成
+valnumNames =Array("zero","one","two")  
+
+这里也是调用的 apply 方法，我们看起来好像是作用在类 Array 上的，其实不然，而是作用在 Array 的伴生对象(object Array)上的，调用的是伴生对象 Array 的  apply 方法，即：
+[plain] view plain copy 在CODE上查看代码片派生到我的代码片
+valnumNames =Array.apply("zero","one","two")  
+
+上面的功效像是调用的 Array 类的 apply 工厂方法。同样看个单例对象的例子，也解释了伴生对象的 apply 方法的调用
+objectEMail {  
+    defapply(user:String, domain:String):String ={  
+        println("apply method called")  
+        user + "@"+ domain  
+    }  
+}  
+   
+valemail =EMail("lyrebing","hotmail.com")  
+println(email)  
+
+上面代码执行后输出结果是：
+apply method called
+lyrebing@hotmail.com
+
+有了前面 apply 方法的理解，下面对 update 方法的理解就很顺畅了，比如：
+
+greetStrings(0)="Hello"  
+
+会转换成调用
+greetStrings.update(0,"Hello")  
+来个复杂的 Demo，赋值时等号左边带两个参数，并且赋值操作会产生返回值的情况(纯粹用于演示)
+
+classSomeClass {  
+    defupdate(arg1:Int, arg2:String, arg3:String):String ={  
+        println("update method called")  
+        arg1+ "|"+ arg2+ "|"+ arg3  
+    }  
+}  
+   
+valobj =new SomeClass  
+valresult =(obj(1,"key1")="Hello")  
+println(result)  
+
+执行后输出结果为：
+update method called
+1|key1|Hello
+
+在应用 apply 和 update 规则时，关键是转换后的调用要找到相应的方法原型。再就是应用 update 时，等号右边的值会作为 update 方法的最后一个参数。
+
+
+
+
+
+Scala学习——注解
+注解可以在程序中的各项条目添加信息，这些信息可以被编译器或外部工具处理。将学习到如何与Java注解实现互操作，以及如何使用Scala特有的注解。
+什么是注解
+注解是插入到代码中以便有工具可以对它们进行处理的标签。工具可以在代码级别运作，也可以处理被编译器加入了注解信息的类文件。
+可以对Scala类使用Java注解。也可以使用Scala注解，是由Scala注解特有的，通常由Scala编译器或编译器插件处理。
+Java注解并不影响编译器如何将源码翻译成字节码，仅仅往字节码中添加数据，以便外部工具可以利用它们。而在Scala中，注解可以影响编译过程，比如@BeanProperty注解。
+什么可以被注解
+Scala中可以为类、方法、字段、局部变量和参数添加注解，与Java一样。可以同时添加多个注解，先后顺序没有影响。 
+@Entity class Credentials
+@Test def testSomeFeature() {}
+@BeanProperty var username = _
+def doSomething(@NotNull message: String) {}
+@BeanProperty @Id var username = _
+给主构造器添加注解时，需要将注解放置在构造器之前，并加上一对圆括号： 
+class Credentials @Inject() (var username: String, var password: String)
+为表达式添加注解，在表达式后加上冒号，然后是注解： 
+(myMap.get(key): @unchecked) match { ... }
+为类型参数添加注解： 
+class MyContainer[@specialized T]
+针对实际类型的注解应放置在类型名称之后： 
+String @cps[Unit]
+这个暂时不知道是什么东西，@cps注解将会在22章介绍。
+注解参数
+Java注解可以有带名参数。如果参数的名字是value，参数名可以略去。如果注解不带参数，圆括号可以省去。大多数注解参数带有缺省值。
+Java注解的参数类型是有规定的，但Scala中参数可以是任何类型，不过只有很少几个注解使用了。
+针对Java特性的注解
+不常用的Java特性，Scala提供了相应的注解。
+@volatile注解标记为易失的；@transient注解将字段标记为瞬态的；@strictfp注解对应strictfp修饰符；@native注解标记在C或C++代码中实现的方法，对应native修饰符。
+Scala使用@cloneable和@remote注解来代替Cloneable和java.rmi.Remote标记接口。
+Java编译器会跟踪受检异常。那么如果从Java代码中调用Scala的方法时，需要包含那些可能抛出的受检异常。这时，需要使用@throws注解来生成正确的签名： 
+class Book {
+  throws(classOf[IOException]) def read(filename: String) { ... }
+  ...
+}
+
+// 对应的Java代码
+void read(String filename) throws IOException
+使用@varargs注解可以让Java调用Scala中带有变长参数的方法。
+用于优化的注解
+尾递归
+递归有时能被转化成循环，可以节省栈空间。在函数式编程中这很重要，因为通常会使用递归方法来遍历集合。
+尾递归计算过程的最后一步是递归调用同一个方法，可以变换成跳回到方法顶部的循环。比如： 
+def sum(xs: Seq[Int], partial: BigInt): BigInt = 
+  if (xs.isEmpty) partial else sum(xs.tail, xs.head + partial)
+上面的代码中Scala会自动尝试使用尾递归优化。不过有的时候可能会因为某些原因使得编译器无法进行优化。如果需要依赖于编译器去掉递归，给方法加上@tailrec注释。这样的话，如果编译器无法应用递归优化，就会报错。
+对于消除递归，一个更加通用的机制叫“蹦床”。蹦床会执行一个循环，不停地调用函数，每个函数都返回下一个将被调用的函数。尾递归是一个特例，每个函数都返回它自己。Scala有一个名为TailCalls的工具对象，可以帮助实现蹦床。相互递归的函数返回类型为TailRec[A]，要么返回done(result)，要么返回tailcall(fun)，fun是下一个要被调用的函数。这个函数必须是不带额外参数且同样返回TailRec[A]的函数。示例： 
+import scala.util.control.TailCalls._
+def evenLength(xs: Seq[Int]): TailRec[Boolean] =
+  if (xs.isEmpty) done(true) else tailcall(oddLength(xs.tail))
+def oddLength(xs: Seq[Int]): TailRec[Boolean] =
+  if (xs.isEmpty) done(false) else tailcall(evenLength(xs.tail))
+
+// 获取结果使用result方法
+evenLength(1 to 1000000).result
+跳转表生成与内联
+在C++或Java中，switch语句通常可以被编译成跳转表，这比一系列的if/else表达式更加高效。Scala也会尝试对匹配语句生成跳转表。而@switch注解可以检查match语句是不是真的被编译成了跳转表。 
+(n: @switch) match {
+  case 0 => "Zero"
+  case 1 => "One"
+  case _ => "?"
+}
+方法内联是另一个常见的优化。内联将方法调用语句替换为被调用的方法体（减少了调用的开支，应该相当于C++中的inline函数吧，适合于小方法）。
+使用@inline来建议编译器做内联，或者使用@noinline来告诉编译器不要内联。
+可省略方法
+@elidable注解给可以在生产代码中移除的方法打上标记。这个等到使用时再回来看详细的吧。
+基本类型的特殊化
+打包和解包基本类型的值不高效，不过这样的操作在泛型代码里很常见。当使用泛型代码时，可以使用@specialized注解来使编译器自动生成基本类型的重载版本。 
+def allDifferent[@specialized(Long, Double) T](x: T, y: T, z: T) = ...
+@specialized注解后的括号内，是指定特殊化的基本类型。如上面的例子，特殊化了Long和Double两种类型。如果没有括号及括号内的内容，则是全部生成。
+用于错误和警告的注解
+加上了@deprecated注解的特性如果被使用，编译器会生成一个警告信息。
+@implicitNotFound注解用于子啊某个隐式参数不存在的时候生成有意义的错误提示，详细参见21章。
+@unchecked注解用于在匹配不完整时取消警告信息。
+@uncheckedVariance注解会取消与型变相关的错误提示。
+
+
+
+	
+	
+	
+	
+	
+	None是一个object，是Option的子类型，定义如下 
+case object None extends Option[Nothing] {
+  def isEmpty = true
+  def get = throw new NoSuchElementException("None.get")
+}
+
+scala推荐在可能返回空的方法使用Option[X]作为返回类型。如果有值就返回Some[x](Some也是Option的子类)，否则返回None，例如 
+def get(key: A): Option[B] = {
+	if (contains(key))
+		Some(getValue(key))
+	else
+		None
+}
+
+获得Option后，可以使用get获得包含的值，或者使用getOrElse获得默认值如果isEmpty为true。 
+
+Null是所有AnyRef的子类，在scala的类型系统中，AnyRef是Any的子类，同时Any子类的还有AnyVal。对应java值类型的所有类型都是AnyVal的子类。所以Null可以赋值给所有的引用类型(AnyRef)，不能赋值给值类型，这个java的语义是相同的。 null是Null的唯一对象。 
+
+Nothing是所有类型的子类，也是Null的子类。Nothing没有对象，但是可以用来定义类型。例如，如果一个方法抛出异常，则异常的返回值类型就是Nothing(虽然不会返回) 
+def get(index:Int):Int = {
+	if(x < 0) throw new Exception(...)
+	else ....
+}
+
+if语句是表达式，有返回值，必然有返回值类型，如果x < 0，抛出异常，返回值的类型为Nothing，Nothing也是Int的子类，所以，if表达式的返回类型为Int，get方法的返回值类型也为Int。 
+
+Nil是一个空的List，定义为List[Nothing]，根据List的定义List[+A]，所有Nil是所有List[T]的子类。
+	
+	
+	
+
+
+
+
+使用匿名函数和占位符定义函数  var f=1+(_:Int)+(_:Double)+3   返回一个函数  f(v1:INT,v2:Double) : Double = 1+v1+v2+3
+
+
+
+import packageA.{ClassA=>newClassName,_} 引用类并重命名
+import packageA.{ClassA=>_,_} 引用ClassA以外的其他类
+import packageA.{ClassA=>_,ClassB}  隐藏packageA中的ClassA这在多包同名类引用时很重要
+
+
+
+包，类或对象的成员可以标记访问修饰符private和protected，如果我们不使用这两种关键字，那么访问将被默认设置为public。这些修饰限制为成员的代码的某些区域访问。要使用访问修饰符，包括它的包，类或对象的成员定义的关键字，我们将在下一节中看到。
+
+私有成员：
+私有成员只能看到里面包含的成员定义的类或对象。下面是一个例子：
+
+class Outer {
+   class Inner {
+      private def f() { println("f") }
+      class InnerMost {
+         f() // OK
+      }
+   }
+   (new Inner).f() // Error: f is not accessible
+}
+在Scala中，访问 (new Inner).f() 是非法的，因为f被声明为private内部类并且访问不是在内部类内。与此相反，到f第一接入类最内层是确定的，因为该访问包含在类内的主体。 Java将允许这两种访问，因为它可以让其内部类的外部类访问私有成员。
+
+保护成员：
+受保护的成员是从该成员定义的类的子类才能访问。下面是一个例子：
+
+package p {
+   class Super {
+      protected def f() { println("f") }
+   }
+   class Sub extends Super {
+      f()
+   }
+   class Other {
+     (new Super).f() // Error: f is not accessible
+   }
+}
+类分给 f 访问是正常的，因为f被声明为受保护的超类和子类是超级的子类。相比之下，访问 f 在其他是不允许的，因为其他没有从超级继承。在Java中，后者访问将仍然允许的，因为其他的是在同一个包子。
+
+公共成员：
+未标示私有或受保护的每一个成员是公开的。不需要明确使用修饰符public。这样的成员可以从任何地方访问。下面是一个例子：
+
+
+  
+
+ 
+class Outer {
+   class Inner {
+      def f() { println("f") }
+      class InnerMost {
+         f() // OK
+      }
+   }
+   (new Inner).f() // OK because now f() is public
+}
+保护范围：
+Scala中的访问修饰符可以增加使用修饰符。形式：private[X]或protected[X]的修饰符意味着访问私有或受保护“达到”X，其中X代表了一些封闭的包，类或单个对象。考虑下面的例子：
+
+package society {
+   package professional {
+      class Executive {
+         private[professional] var workDetails = null
+         private[society] var friends = null
+         private[this] var secrets = null
+
+         def help(another : Executive) {
+            println(another.workDetails)
+            println(another.secrets) //ERROR
+         }
+      }
+   }
+}
+注意，上面的例子中以下几点：
+变量workDetails将可对任何一类封闭包professional范围内。
+变量friends 将可对任何一类封闭包society中。
+变量secrets 将可只在实例方法隐含的对象（this）。
+ 
+
+Scala 是构建在 JVM 上的静态类型的脚本语言，而脚本语言总是会有些约定来增强灵活性。灵活性可以让掌握了它的人如鱼得水，也会让初学者不知所措。比如说 Scala 为配合 DSL 在方法调用时有这么一条约定：
+
+在明确了方法调用的接收者的情况下，若方法只有一个参数时，调用的时候就可以省略点及括号。如 “0 to 2”，实际完整调用是 “0.to(2)”。但 “println(2)” 不能写成 “println 10“”，因为未写出方法调用的接收者 Console，所以可以写成 “Console println 10”
+
+到这里就要讲到 apply 和 update 方法相关的约定，描述的是直接在对象(对象)后直接加圆括号的代码的情况下，那就是:
+
+用括号传递给变量(对象)一个或多个参数时，Scala 会把它转换成对 apply 方法的调用；与此相似的，当对带有括号并包括一到若干参数的进行赋值时，编译器将使用对象的 update 方法对括号里的参数和等号右边的对象执行调用。
+
+对上面那段话的解释可由下面几个例子得到很好的理解
+
+1. theArray(0), 取数组的第一个元素的操作会转换成 theArray.apply(0) 操作，这也能解释为什么 Scala 数组取值不用中括号括下标的方式，因为它也是一次方法调用
+
+2. anyObject("key1") 会被转换成 anyObject.apply("key") 操作，这也会让我们想到 Map 的取值操作，的确如此。我们可以作个例子：
+ 
+class SomeClass {
+    def apply(key: String): String = {
+        println("apply method called, key is: " + key)
+        "Hello World!"
+    }
+}
+ 
+val anyObject = new SomeClass
+println(anyObject("key1"))
+执行后输出结果是：
+
+apply method called, key is: key1
+Hello World!
+
+说明是调用到了相应的 apply 方法的。
+
+3. 我们在构造 Array 或  Map 时，会简单的写成
+ 
+val numNames = Array("zero", "one", "two")
+这里也是调用的 apply 方法，我们看起来好像是作用在类 Array 上的，其实不然，而是作用在 Array 的伴生对象(object Array)上的，调用的是伴生对象 Array 的  apply 方法，即：
+ 
+val numNames = Array.apply("zero", "one", "two")
+本文原始链接 http://gloveangels.com/scala-apply-update-methods/, 来自 隔叶黄莺 Unmi Blog
+上面的功效像是调用的 Array 类的 apply 工厂方法。同样看个单例对象的例子，也解释了伴生对象的 apply 方法的调用
+ 
+object EMail {
+    def apply(user: String, domain: String): String = {
+        println("apply method called")
+        user + "@" + domain
+    }
+}
+ 
+val email = EMail("fantasia", "sina.com")
+println(email)
+上面代码执行后输出结果是：
+
+apply method called
+fantasia@sina.com
+
+有了前面 apply 方法的理解，下面对 update 方法的理解就很顺畅了，比如：
+
+greetStrings(0) = "Hello"
+会转换成调用
+
+greetStrings.update(0, "Hello")
+来个复杂的 Demo，赋值时等号左边带两个参数，并且赋值操作会产生返回值的情况(纯粹用于演示)
+
+class SomeClass {
+    def update(arg1: Int, arg2: String, arg3: String): String = {
+        println("update method called")
+        arg1 + "|" + arg2 + "|" + arg3
+    }
+}
+ 
+val obj = new SomeClass
+val result = (obj(1, "key1") = "Hello")
+println(result)
+执行后输出结果为：
+
+update method called
+1|key1|Hello
+
+在应用 apply 和 update 规则时，关键是转换后的调用要找到相应的方法原型。再就是应用 update 时，等号右边的值会作为 update 方法的最后一个参数。
+
+因为这样的行为，apply 方法又被称为注入方法，因为它可以传入一些参数并生成指定子集的元素。在以后的学习中会遇到它对偶的方法 unapply，被称为抽取方法，因为它可以传入相同子集的元素并抽取其中的部分，这是后话。
+
+
+柯里化，将接受两个参数的函数转化为接受一个参数的函数
+
+def method(v1:type)=(v2:type)=>expr
+
+调用方式 method(v1)(v2)
+
+
+
+scala> val a::b::c=List(1,2,3,4,5)
+a: Int = 1
+b: Int = 2
+c: List[Int] = List(3, 4, 5)
+
+
+
+
+
+
+Scala集合的主要特质
+
+Iterator，用来访问集合中所有元素
+val coll = ... // 某种Iterable  
+val iter = col.iterator  
+while(iter.hasNext)  
+  iter.next()  
+
+Seq是一个有先后次序的值得序列，比如数组或列表。
+IndexSeq允许我们通过整形的下表快速访问任意元素，如ArrayBuffer是带下标的。
+Set是一组没有先后次序的值，在SortedSet中，元素以某种排过序的顺序被访问。
+Map是一组（K,V）对偶，SortedMap按照键的排序访问。
+每个Scala集合特质或类，都有一个带有apply方法的伴生对象，这个apply方法可以用来构建该集合中的实例。  
+Iterable(0xFF, 0xFF00, 0xFF0000)  
+set(color.RED, color.GREEN, Color.BLUE)  
+Map(color.RED -> -0xFF0000, Color.GREEN -> 0xFF00, Color.BLUE -> 0xFF)  
+SortedSet("Hello" , "World")  
+可变和不可变集合
+<pre name="code" class="java">scala.collection.mutable.Map    //可变  
+scala.collection.immutable.Map //不可变   
+scala.collection.Map //超类  
+Scala优先采用不可变集合， scala.collection 包中的伴生对象产出不可变的集合  
+scala.collection.Map("Hello" -> 42) //不可变映射  
+因为Scala包和Preder对象总是被引入，他们都指向不可变特质的类型别名List、Set和Map.  
+Preedef.Map和scala.collection.immutable.Map是一回事  
+  
+import scala.collection.mutable  
+用Map得到不可变，用mutable.Map得到可变的。  
+
+
+
+将函数映射到集合
+map方法  
+val names = List("Peter" , "Paul", "Mary")  
+names.map(_.toUpperCase) // 等同于 for(n <- names) yield n.toUpperCase  
+  
+flatMap方法，如果函数产出一个集合，又想将所有值串联在一起  
+def ulcase(s:String) = Vector(s.toUpperCase(), s.toLowerCase())  
+names.map(ulcase)得到  
+List(Vector("PETER","peter"), Vector("PAUL","paul"), Vector("MARY","mary"))  
+names.flatMap(ulcase)得到  
+List("PETER","peter","PAUL","paul","MARY","mary")  
+  
+collect 方法用于 partial function，那些并没有对所有可能的输入值进行定义的函数， 产出被定义的所有参数的函数值得集合  
+"-3+4".collect(case '+' -> 1; case '-' -> -1) // vector(-1,1)  
+  
+foreach方法  
+names.foreach(println)  
+
+化简、折叠和扫描
+List(1,7,2,9).reduceLeft(_ - _)   
+( ( 1 - 7 ) - 2 ) - 9 = 1- 7 - 2 - 9 = -17  
+  
+List(1,7,2,9).reduceRight(_ - _)   
+1 - ( 7 - ( 2 - 9  ) ) = 1-7 + 2 -9 = -13  
+  
+以不同首元素开始计算  
+List(1,7,2,9).foldLeft(0)(_ - _)  
+0-1-7-2-9 = -19  
+List(1,7,2,9).foldLeft(" ")(_ + _) // 由柯里化判断第二个参数类型定义(String, Int) => String  
+" " +1 + 7+2+9 = " 1729"  
+(0 /: List(1,7,2,9))(_ - _) //  /:操作符代替了foldLeft操作  
+Scala 也提供了foldRight 和 :\的变体  
+折叠有时可以代替循环，比如计算字母出现频率  
+val freq = scala.collection.mutable.Map[Char, Int]() // 可变映射  
+for( c <- "Mississippi")   
+  freq(c) =freq.getOrElse(c,0)+1 // Map('i' ->4, 'M' -> 1, 's' -> 4, 'p' ->2)  
+  
+折叠实现  
+(Map[Char, Int]() /:"Mississippi"){  
+  (m,c) => m + (c -> (m.getOrElse(c,0) +1)  
+}// 这里的 Map是不可变，每次计算出一个新的Map  
+  
+scanLeft,scanRight， 得到包含所有中间结果的集合  
+(1 to 10).scanLeft(0)(_ + _)  
+Vector(0,1,3,6,10,15,21,28,36,45,55)  
+
+拉链操作
+zip  
+val prices = List(5.0,20.0,9.95) // 价格  
+val quantities = List(10,2,1)     //数量  
+prices zip quantities 得到一个List[(Double, Int)] , 一个个对偶的列表  
+List[(Double, Int)] = List( (5.0, 10), (20.0, 2 ), (9.95, 1))  
+计算总价  
+( (prices zip quantities) map {p => p._1 * p._2}) sum  
+  
+如果两个集合数量不一致  
+List( 5.0, 20.0, 9.95 ) zip List(10, 2) // List((5.0, 10), (20.0, 2))  
+  
+zipAll 指定短列表的缺省值：第二个参数补充左边，第三个参数补充右边  
+List(1,1).zipAll(List(2),6,7) // List((1,2),(1,7))  
+List(1).zipAll(List(2,3),6,7)// List((1,2), (3,6))  
+  
+zipWithIndex， 返回对偶列表，第二个组成部分是元素下标  
+"Scala".zipWithIndex // Vector(('S',0),('c',1),('a',2),('l',3),('a',4))  
+求最大编码的值得下标为  
+"Scala".zipWithIndex.max._2  
+
+迭代器 （相对于集合而言是一个“懒”的替代品，只有在需要时才去取元素，如果不需要更多元素，不会付出计算剩余元素的代价）
+对于那些完整构造需要很大开销的集合，适合用迭代器  
+如Source.fromFile产出一个迭代器，因为整个文件加载进内存不高效。  
+迭代器的两种用法  
+while(iter.hasNext)  
+  iter.next()  
+for(elem <- iter)  
+  对elem操作  
+上述两种循环都会讲迭代器移动到集合末端，不能再被使用，  
+调用 map filter count sum length方法后， 跌倒器也会位于集合的末端，不能使用  
+find 或 take  ， 迭代器位于找到的元素之后  
+
+流（stream）
+迭代器每次调用next都会改变指向，  
+如果要缓存之前的值，可以使用流  
+流是一个尾部被懒计算的不可变列表，也就是说只有需要时才计算  
+def numsForm(n:BigInt) : Stream[BigInt] = n #:: numsForm(n+1) // #:: 操作符 构建出来的是一个流  
+var tenOrMore = numsForm(10) // Stream(10,?), 其尾部是未被求值得  
+tenOrMore.tail.tail.tail // Stream(13,?)  
+val squares = numsForm(1).map{ x=> x*x) // Stream(1,?)  
+  
+take 可以一次获得多个值， force强制求值  
+squares.take(5).force // Stream(1,4,9,16,25)  
+squares.force // 会尝试对一个无穷流的所有成员求值，最后OutOfMemoryError  
+  
+迭代器可以用来构造一个流  
+Source.getLines返回一个Iterator[String]，用这个迭代器，对于每一行只能访问一次，而流将缓存访问过的行，允许重新访问  
+val words = Sourcce.fromFile("/usr/share/dict/words").getLines.toStream  
+words // Stream(A, ?)  
+words(5) // Aachen  
+words // Stream(A, A'o, AOL, AOL's, Aachen, ?)  
+
+懒试图（应用于集合）
+类似流的懒理念  
+与流的不同  
+1、连第一个元素都不会求值  
+2、不会缓存求过的值  
+  
+val powers = (0 unti 1000).view.map(pow(10,_))  
+powers(100) // pow(10,100)被计算，其他值未计算，同时也不缓存，下次pow(10,100)将重新计算  
+  
+force方法可以对懒视图强制求值，得到与原集合相同类型的新集合，  
+懒试图的好处：可以避免在多种变换下产生的中间集合  
+(0 to 1000).map(pow(10,_)).map(1/_) //先第一个map,再第二个map, 构建了一个中间集合  
+(0 to 1000).view.map(pow(10,_)).map(1/_).force // 记住两个map操作，每个元素被两个操作同时执行，不需要额外构中间集合  
+
+与Java集合的互操作
+import scala.collection.JavaConversions._  
+val props:scala.collection.mutable.Map[String,String] = System.getProperties()  
+如果担心那些不需要的隐式转换也被引入的话，只引入需要的即可  
+import scala.collection.JavaConversions.propertiesAsScalaMap  
+  
+这些转换产出的是包装器，让你可以使用目标接口来访问原本的值  
+props("name") = "clat" //props既是包装器  
+包装器将调用底层Properties对象的put("name","clat")  
+
+
+线程安全的集合
+Scala类库提供了六个特质，将他们混入集合，让集合的操作变成同步  
+SynchromizedBuffer  
+SynchromizedMap  
+SynchromizedPriorityQueue  
+SynchromizedQueue  
+SynchromizedSet  
+SynchromizedStack  
+  
+val scores =new scala.collection.collection.mutable.HashMap[String, Int] with scala.collection.mutalbe.SynchronizzedMap[String,Int]  
+注：这里可以确保scores不会被破坏，任何操作都必须先完成，其他线程才可执行另一个操作。但并发修改和遍历集合并不安全。  
+  
+通常来说，最好使用java.util.concurrent包中的类.  
+
+并行集合
+为了更好利用计算机的多个处理器，支持并发通常是必需的  
+如果coll是个大型集合，那么  
+coll.par.sum  //并发求和，par方法产出当前集合的一个并行实现，该实现会尽可能地并行执行集合方法  
+coll.par.count(_ % 2 ==0) //计算偶数的数量  
+对数组、缓冲、哈希表、平衡树而言，并行实现会直接重用底层实际集合的实现，所以很高效。  
+  
+可以通过对要遍历的集合应用.par并行化for循环  
+for( i <- (0 until 100).par) print( i + " " ) //数字是按照作用于该任务的线程产出的顺序输出  
+  
+在for/yield循环中，结果是依次组装的  
+for( i <- (0 until 100).par) yield i +" "  
+  
+par返回的并行集合扩展自ParSeq ParSet Parmap，都是ParIterable的子类型，不是Iterable的子类型，所以不能将并行集合传递给预期Iterable Seq Set Map的方法。  
+可以用ser方法将并行集合转换回串行的版本。  
+只有可以自由结合的操作 可以用平行集合  
+(a op b) op c = a op( b op c)， 加是可自由结合的  
+(a -b ) -c != a - (b -c)  减法不是自由结合  
+  
+有一个fold方法对集合的不同部分进行操作，但是不像foldLeft和foldRight那样灵活，  
+该操作符的两个操作元都必须是集合的元素类型，要求fold的参数类型与集合元素一样，不像上面foldLeft，参数是String, 集合是Int 那样  
+coll.par.fold(0)(_ + _)  
+  
+aggregate方法，可以解决上面的问题，该操作符应用于集合的不同部分，然后再用你另一个操作符组合结果  
+str.par.aggregate(Set[Char]())(_ + _, _ ++ _) //等同于 str.foldLeft(Set[Char]())(_ + _)  
+产出一个str中所有不同字符的集  
+
+
+ scala中的apply和unapply
+package com.wandoujia.incognito
+
+class ApplyDemo {
+  def apply() = "apply in class"
+  def test{
+    println("test")
+  }
+}
+
+/**
+  * 伴生对象，相当于类的静态方法
+  */
+object ApplyDemo {
+
+  def stat{
+    println("static method")
+  }
+
+  def apply() = new ApplyDemo
+
+  var count = 0
+
+  def incc = {
+    count += 1
+  }
+
+}
+
+object Main extends App{
+  ApplyDemo.stat
+  //类名后面加括号，相当于调用伴生对象的apply方法
+  val a = ApplyDemo()
+  a.test
+  //对象加括号相当于调用对象的apply方法
+  println(a())
+  val b = ApplyDemo.apply()
+  b.test
+  println(a.apply())
+
+  for(i <- 0 until 10){
+    ApplyDemo.incc
+  }
+
+  println(ApplyDemo.count)
+}
+
+结果如下：
+
+static method
+test
+apply in class
+test
+apply in class
+
+apply通常被称作注入方法
+
+unapply通常被称为提取方法，使用unapply来提取固定数量的对象，使用unapplySeq来提取一个序列
+
+如：
+
+object Student {
+def unapply(str: String): Option[(String, String, String)] = {
+val parts = str.split(",")
+if (parts.length == 3) Some(parts(0), parts(1), parts(2)) else None
+}
+}
+
+
+object Name {
+  def unapplySeq(input: String): Option[Seq[String］ =
+    if (input == "") None else Some(input.trim.split("\\s+"))
+}
+
+
+
+
+
+Scala.Actor实践心得与设计思想
+
+　　　         这段时间系统的学习了Scala，编程思想上可谓收获不少，想从里面挑些值得写的东西分享给大家，Scala的Actor
+可谓这门语言的一个亮点，函数式编程核心价值在于多核编程，所以就打算说说这个Actor，总结一下学习心得。先很俗
+套的简单谈谈概念，然后会拿四个例子做补充。主要内容包括基本原理，设计思想，单机环境并发测试。
+
+  　　        Actor是一种基于事件的轻量级线程，在以前的并发模型中，我们需要关注共享的数据结构，而使用Actor则需要
+关注操作数据的代码结构，因为减少了数据的共享。Actor的主要能力来源于消息传递，而不是采用阻塞调用的处理形式。
+如果创建直接或间接扩展 Actor的类，要确保对对象的所有调用都通过消息传递进行。
+
+ 
+
+　　   我把Actor的设计思想归为两类，使用目的归为两类。从设计思想上来说Scala推荐的是以消息传递为核心的设计
+思想，由于Scala可以无缝使用Java类库，所以也可以采用以共享数据为核心的设计，当然也可以写出混合式设计风格的
+。使用目的主要有两种，一种是Scala提供API给Java调用，另一种就是Scala自给自足。举三个例子，例子很简单，是一
+个累加器。
+  
+
+1、以消息传递为核心的设计：使用Actor的actor方法，使用不可变对象，不考虑数据共享问题，以消息传递为设计核心。
+
+ 
+
+复制代码
+ 1 import actors._, Actor._
+ 2 /*
+ 3  * Author:ShiYang
+ 4  * Blog：http://shiyangxt.cnblogs.com
+ 5  * */
+ 6 object SendMessageStyle {
+ 7 
+ 8   def main(args: Array[String]): Unit = {
+ 9     val caller = self
+10     val accumulator = actor {
+11       var continue = true
+12       var sum = 0
+13       loopWhile(continue) {
+14         reactWithin(500) {
+15           case number: Int => sum += number
+16           case TIMEOUT =>
+17             continue = false
+18             caller ! sum
+19         }
+20       }
+21     }
+22     accumulator ! 1
+23     accumulator ! 2
+24     accumulator ! 3
+25     receiveWithin(1000) {
+26       case result => println("Total is " + result)
+27     }
+28   }
+29 }
+复制代码
+ 
+
+2、以共享数据为核心的设计：构建由Actor继承共享数据操作类，以共享数据为核心。
+
+ 
+
+复制代码
+ 1 import actors._, Actor._
+ 2 
+ 3 /*
+ 4  * Author:ShiYang
+ 5  * Blog：http://shiyangxt.cnblogs.com
+ 6  * */
+ 7 object SharedDataStyle {
+ 8   case class Add(number: Int)
+ 9   case class GetResult(sender: Actor)
+10 
+11   class AddActor extends Actor {
+12     override def act(): Unit = process(0)
+13     def process(value: Int): Unit = {
+14       reactWithin(500) {
+15         case Add(number) => process(value + number)
+16         case GetResult(a) => a ! value; process(value)
+17         case _ => process(value)
+18       }
+19     }
+20   }
+21 
+22   def main(args: Array[String]): Unit = {
+23     val addActor = new AddActor
+24     addActor.start()
+25     addActor ! Add(1)
+26     addActor ! Add(2)
+27     addActor ! Add(3)
+28     addActor ! GetResult(self)
+29     receiveWithin(1000) {
+30       case result => println("Total is " + result)
+31     }
+32   }
+33 }
+复制代码
+ 
+
+3、以API形式提供给Java程序使用：由于Java不能直接向Actor发消息，所以需要对Scala的!()方法进行封装。
+
+ 
+
+复制代码
+ 1 import actors._, Actor._
+ 2 /*
+ 3  * Author:ShiYang
+ 4  * Blog：http://shiyangxt.cnblogs.com
+ 5  * */
+ 6 object ForJavaStyle {
+ 7   case class Add(number: Int)
+ 8   case class GetResult(sender: Actor)
+ 9   private class AddActor extends Actor {
+10     override def act(): Unit = process(0)
+11     def process(value: Int): Unit = {
+12       reactWithin(500) {
+13         case Add(number) => process(value + number)
+14         case GetResult(a) => a ! value; process(value)
+15         case _ => process(value)
+16       }
+17     }
+18   }
+19   private val addActor = new AddActor
+20   addActor.start()
+21   private def add(sender: Actor, num: Int): Unit = {
+22     sender ! Add(num)
+23   }
+24   private def getResult(sender: Actor): Int = {
+25     sender ! GetResult(self)
+26     receiveWithin(1000) {
+27       case result: Int => result
+28     }
+29   }
+30   def addForJava(num: Int): Unit = {
+31     add(addActor, num)
+32   }
+33   def getResultForJava(): Int = {
+34     getResult(addActor)
+35   }
+36 }
+复制代码
+ 
+
+Java端调用代码：
+
+ 
+
+复制代码
+ 1 /*
+ 2  * Author:ShiYang
+ 3  * Blog：http://shiyangxt.cnblogs.com
+ 4  * */
+ 5 public class GetFromScala {
+ 6 
+ 7     public static void main(String[] args) {
+ 8         ForJavaStyle$.MODULE$.addForJava(1);
+ 9         ForJavaStyle$.MODULE$.addForJava(2);
+10         ForJavaStyle$.MODULE$.addForJava(3);
+11         System.out.println("Total is "
+12                 + ForJavaStyle$.MODULE$.getResultForJava());
+13     }
+14 }
+复制代码
+
+
+      通过上面的例子可见Scala对Java语言有非常大的补充，提高了生产力。为Java提供了轻松实现多核并行编程的能
+力。为了进一步测试Actor的并发性能，于是做了一个简单的单机环境并发测试。程序是构建一个Actor动态有序数组，
+并发创建N个Actor对象，为了证明这些对象全都可用，顺序从数组的第一个Actor发消息到最后一个Actor，只有当一个
+Actor接收到前一个Actor发送的消息后，才向后一个Actor发送消息。当最后一个数组元素接收到消息后，再把消息从数组
+尾部用同样处理过程逆序发送到数组头部。这个消息发送过程不是并发处理，是顺序处理。这里只是为了证明这些对象全都
+可用。如果为了测试并发处理，可以修改程序，让每个数组元素给后一位数组元素发消息。这样就会看到输出混乱的发送信
+息，因为并发是无序的。
+
+
+测试环境：双核4G内存，Windows XP，Sun JVM1.6，单机环境，Scala版本2.9.0.1
+
+ 
+
+测试结果：当使用Receive方法接收消息时，由于Receive会在结束任务前一直持有线程，而Scala在后台默认只给Receive
+方法启动256个线程，我的程序又是顺序的发消息，而且不是临时接收器（只处理一次消息），所以Receive在这种情况下，
+只有255个并发。React接收器由于不需要长期持有线程，空闲即释放线程。所以React在本程序中可以跑20w的并发，如果
+简单优化一下JVM，就可以达到100w的并发量。默认React接收器后台会调用4个线程组成的线程池。如果修改程序让每个数
+组元素给后一位数组元素并发的发消息，那么在不阻塞线程的情况下，Receive方法也可以达到和React一样的并发量。因为
+这个测试程序是顺序发送消息，所以就没有设置超时，如果是并发环境，建议加上超时，避免线程阻塞。
+
+ 
+
+下面是测试程序：
+
+ 
+
+复制代码
+ 1 import actors._, Actor._, java.util._
+ 2 /*
+ 3  * Author:ShiYang
+ 4  * Blog：http://shiyangxt.cnblogs.com
+ 5  * */
+ 6 object ConcurrentTest {
+ 7 
+ 8   val actors = new ArrayList[Actor]
+ 9   val length = 1000000
+10   var startTime = System.nanoTime
+11 
+12   def main(args: Array[String]): Unit = {
+13     for (i <- 0 to length)
+14       actors.add(actor {
+15         info("react: " + i + " actor created")
+16         reactMessage
+17       })
+18     actors.get(0) ! (0, 0)
+19   }
+20 
+21   def info(msg: String) = println(msg + " received by " +
+22     Thread.currentThread)
+23 
+24   def receiveMessage {
+25     var continue = true
+26     while (continue) {
+27       receive {
+28         case (id: Int, direction: Int) =>
+29           sendMessage(id: Int, direction: Int)
+30         case "finish" =>
+31           continue = false
+32           val endTime = System.nanoTime
+33           println("Finish, spend time:" +
+34             (endTime - startTime) / 1000000000.0 + " secs")
+35         case _ => println("input error")
+36       }
+37     }
+38   }
+39 
+40   def reactMessage {
+41     var continue = true
+42     loopWhile(continue) {
+43       react {
+44         case (id: Int, direction: Int) =>
+45           sendMessage(id: Int, direction: Int)
+46         case "finish" =>
+47           continue = false
+48           val endTime = System.nanoTime
+49           println("Finish, spend time:" +
+50             (endTime - startTime) / 1000000000.0 + " secs")
+51         case _ => println("input error")
+52       }
+53     }
+54   }
+55 
+56   //direction=0->sendLatter;direction=1->sendFormer
+57   def sendMessage(id: Int, direction: Int) {
+58     if (direction == 0 && id != length) {
+59       info("Actor" + id + " send message to the Actor" + (id + 1))
+60       actors.get(id + 1) ! (id + 1, 0)
+61     } else if (id != 0 && direction == 1) {
+62       info("Actor" + id + " send message to the Actor" + (id - 1))
+63       actors.get(id - 1) ! (id - 1, 1)
+64     } else if (direction == 0 && id == length) {
+65       actors.get(length) ! (length, 1)
+66     } else if (id == 0 && direction == 1) {
+67       actors.get(0) ! "finish"
+68     }
+69   }
+70 }
+复制代码
+ 
+
+       前些天看到Scala正在努力支持.net平台，不过我觉得.net平台有F#，所以对于.net程序员来说Scala提供不了什么
+
+附加价值。如果非要找出来这样做的优点的话，就是Scala可以同时支持两个主流平台，野心不小。如果看后有所收获，请
+
+推荐让更多人看到，算我为Scala的推广尽了点绵薄之力。行文仓促，如果有不对的地方，欢迎指正。
+
+
+
+
+视图边界(“类型类”)
+
+有时候你并不需要指定一个类型等价于另外一个类型，或者是它的子类或者父类，如果那样做的话，你可能会和类型转换搞混淆。视图边界定义了可以“看作”是另一个类型的一种类型。这个对于需要“读取”一个对象，但是不需要修改它的场景是非常实用的。
+
+Implicit函数允许自动进行类型转换。更加确切地说，这些函数允许按需的函数应用，这将有助于类型推导，例如：
+
+scala> implicit def strToInt(x: String) = x.toInt
+strToInt: (x: String)Int
+ 
+scala> "123"
+res0: java.lang.String = 123
+ 
+scala> val y: Int = "123"
+y: Int = 123
+ 
+scala> math.max("123", 111)
+res1: Int = 123
+ 
+
+视图边界，和类型边界相似，也需要一个对于指定类型存在的函数。你可以用一个%来表示一个类型边界，例如：
+
+scala> class Container[A <% Int] { def addIt(x: A) = 123 + x }
+defined class Container
+这个表示类型A可以被“看作”是类型“Int”。让我们来试试。
+
+scala> (new Container[String]).addIt("123")
+res11: Int = 246
+ 
+scala> (new Container[Int]).addIt(123) 
+res12: Int = 246
+ 
+scala> (new Container[Float]).addIt(123.2F)
+:8: error: could not find implicit value for evidence parameter of type (Float) => Int
+       (new Container[Float]).addIt(123.2)
+        ^
+其他类型边界
+
+函数可以通过implicit参数来使用更加复杂的类型边界。例如，List对于数字内容支持sum函数，但是对于其他的则不行。悲剧的是，Scala的数字类型并不都共享同一个父类，因此我们不能使用T <: Number来实现。为了达到这样的效果，Scala的math库，为合适的类型定义了一个implicitNumeric[T]。然后再在List的定义中使用它：
+
+sum[B >: A](implicit num: Numeric[B]): B
+如果你调用List(1,2).sum()，你需要传入一个num参数，它会被隐式地进行设置。但是如果你通过List("whoop").sum()的方式来调用的话，会无法完成参数的设置。
+
+方法也可能会需要一些特定的“证据”来表明哪些类型可以进行设置，从而避免把奇怪的对象给设置成Numeric。并且，在这里你还可以使用之前介绍的类型关系操作符：
+
+A =:= B	A必须等于B
+A <:< B	A必须是B的子类
+A <%< B	A必须看作是B
+
+scala> class Container[A](value: A) { def addIt(implicit evidence: A =:= Int) = 123 + value }
+defined class Container
+ 
+scala> (new Container(123)).addIt
+res11: Int = 246
+ 
+scala> (new Container("123")).addIt
+:10: error: could not find implicit value for parameter evidence: =:=[java.lang.String,Int]
+同样的，对于前面的implicit，我们可以把限制放宽，可以进行对应的视图转换即可：
+
+scala> class Container[A](value: A) { def addIt(implicit evidence: A <%< Int) = 123 + value }
+defined class Container
+ 
+scala> (new Container("123")).addIt
+res15: Int = 246
+ 
+
+通过视图来进行泛型编程
+
+在Scala的标准类库里，视图主要用来实现集合类的泛型函数。例如，“min”函数（在Seq[]里），使用到了这个技术：
+
+def min[B >: A](implicit cmp: Ordering[B]): A = {
+  if (isEmpty)
+    throw new UnsupportedOperationException("empty.min")
+ 
+  reduceLeft((x, y) => if (cmp.lteq(x, y)) x else y)
+}
+ 
+
+使用这个的主要优点在于：
+
+集合中的元素不需要去实现Ordered，但是依然可以使用Ordered进行静态类型检测
+你可以直接定义你自己的排序，而不需要额外的类库支持
+
+scala> List(1,2,3,4).min
+res0: Int = 1
+ 
+scala> List(1,2,3,4).min(new Ordering[Int] { def compare(a: Int, b: Int) = b compare a })
+res3: Int = 4
+ 
+
+注意：在标准库中，有可以把Ordered转换为Ordering视图的方法。（反向转换也可以）
+
+
+trait LowPriorityOrderingImplicits {
+  implicit def ordered[A <: Ordered[A]]: Ordering[A] = new Ordering[A] {
+    def compare(x: A, y: A) = x.compare(y)
+  }
+}
+ 
+
+上下文边界和implicitly[]
+
+Scala 2.8 引入了一个使用和访问implicit参数的快捷方法。
+
+scala> def foo[A](implicit x: Ordered[A]) {}
+foo: [A](implicit x: Ordered[A])Unit
+ 
+scala> def foo[A : Ordered] {}                        
+foo: [A](implicit evidence$1: Ordered[A])Unit
+Implicit的值可以通过implicitly来进行访问。
+
+scala> implicitly[Ordering[Int]]
+res37: Ordering[Int] = scala.math.Ordering$Int$@3a9291cf
+把这些给组合起来，可以使得代码变得更加简洁，特别是在处理视图的时候。
+
+ 
+
+高度类型化的类型&临时多态
+
+Scala可以抽象出“高度类型化”的类型。例如，假设你需要多个类型的container来处理多个类型的数据。你可能会定义一个Container接口，然后它会被多个container类型实现：一个Option，一个List,等等。你想要定义一个Container接口，并且你需要使用其中的值，但是你不想要确定值的实际类型。
+
+这个和currying函数的场景非常相似。例如，鉴于“一元的类型”有着类似List[A]的构造器，这就意味着我们需要满足一“级”类型变量的条件，这样才能够产生具体的类型（就像一个非currying的函数只能有一个参数列表，它才能够被调用），一个高度类型化的类型需要更多的信息。
+
+
+scala> trait Container[M[_]] { def put[A](x: A): M[A]; def get[A](m: M[A]): A }
+ 
+scala> val container = new Container[List] { def put[A](x: A) = List(x); def get[A](m: List[A]) = m.head }
+container: java.lang.Object with Container[List] = $anon$1@7c8e3f75
+ 
+scala> container.put("hey")
+res24: List[java.lang.String] = List(hey)
+ 
+scala> container.put(123)
+res25: List[Int] = List(123)
+如果我们结合implicit和container接口，我们就能够得到“即时”多态（”ad-hoc” polymorphism）：这是一种可以在container上编写泛型函数的功能。
+
+
+scala> trait Container[M[_]] { def put[A](x: A): M[A]; def get[A](m: M[A]): A }
+ 
+scala> implicit val listContainer = new Container[List] { def put[A](x: A) = List(x); def get[A](m: List[A]) = m.head }
+ 
+scala> implicit val optionContainer = new Container[Some] { def put[A](x: A) = Some(x); def get[A](m: Some[A]) = m.get }
+ 
+scala> def tupleize[M[_]: Container, A, B](fst: M[A], snd: M[B]) = {
+     | val c = implicitly[Container[M]]                             
+     | c.put(c.get(fst), c.get(snd))
+     | }
+tupleize: [M[_],A,B](fst: M[A],snd: M[B])(implicit evidence$1: Container[M])M[(A, B)]
+ 
+scala> tupleize(Some(1), Some(2))
+res33: Some[(Int, Int)] = Some((1,2))
+ 
+scala> tupleize(List(1), List(2))
+res34: List[(Int, Int)] = List((1,2))
+ 
+
+F-bounded多态
+
+很多时候，我们需要在一个（泛型的）traint里访问一个具体的子类。例如，假设你有一些泛型的trait，但是需要和trait的一个特定的子类进行比较。
+
+trait Container extends Ordered[Container]
+现在，在这里需要一个compare方法。
+
+def compare(that: Container): Int
+这样的话，我们就不能访问具体的子类型了，例如:
+
+class MyContainer extends Container {
+  def compare(that: MyContainer): Int
+}
+这段代码会编译失败，因为我们给Container指定的是Ordered，而不是具体的子类型。
+
+我们可以使用F-bounded多态来修复它。
+
+trait Container[A <: Container[A]] extends Ordered[A]
+很奇怪的类型！但是请注意Ordered在A上是如何指定类型的，A本身也是一个Container[A]。
+
+现在
+
+class MyContainer extends Container[MyContainer] { 
+  def compare(that: MyContainer) = 0
+}
+现在它们都是有序的：
+
+scala> List(new MyContainer, new MyContainer, new MyContainer)
+res3: List[MyContainer] = List(MyContainer@30f02a6d, MyContainer@67717334, MyContainer@49428ffa)
+ 
+scala> List(new MyContainer, new MyContainer, new MyContainer).min
+res4: MyContainer = MyContainer@33dfeb30
+考虑到它们都是Container[_]的子类，我们可以定义另一个子类，并且创建一个Container[_]的混合列表。
+
+scala> class YourContainer extends Container[YourContainer] { def compare(that: YourContainer) = 0 }
+defined class YourContainer
+ 
+scala> List(new MyContainer, new MyContainer, new MyContainer, new YourContainer)                   
+res2: List[Container[_ >: YourContainer with MyContainer <: Container[_ >: YourContainer with MyContainer <: ScalaObject]]] 
+  = List(MyContainer@3be5d207, MyContainer@6d3fe849, MyContainer@7eab48a7, YourContainer@1f2f0ce9)
+注意最终的类型是如何被YourContainer 和 MyContainer进行限制的。这是类型推导器的工作。有趣的是–这个类型并不需要有实际的意义，它只是为List的所有类型提供了一个逻辑上的最小边界。那么，如果我们使用Ordered会怎么样呢？
+
+(new MyContainer, new MyContainer, new MyContainer, new YourContainer).min
+:9: error: could not find implicit value for parameter cmp:
+  Ordering[Container[_ >: YourContainer with MyContainer <: Container[_ >: YourContainer with MyContainer <: ScalaObject]]]
+对于这个统一的类型没有Ordered[] 存在。这个太不给力了。
+
+ 
+
+结构化的类型
+
+Scala 支持结构化的类型 – 对于这个类型的需求一般用接口结构（iterface structure）来表示,而非使用具体的某个类型。
+
+scala> def foo(x: { def get: Int }) = 123 + x.get
+foo: (x: AnyRef{def get: Int})Int
+ 
+scala> foo(new { def get = 10 })                 
+res0: Int = 133
+这个特性在很多场景都特别有用，但是具体的实现用的是反射，所以需要注意性能问题。
+
+ 
+
+抽象类型的成员
+
+在一个trait里，你可以使用抽象类型的成员。
+
+scala> trait Foo { type A; val x: A; def getX: A = x }
+defined trait Foo
+ 
+scala> (new Foo { type A = Int; val x = 123 }).getX   
+res3: Int = 123
+ 
+scala> (new Foo { type A = String; val x = "hey" }).getX
+res4: java.lang.String = hey
+ 
+
+在处理依赖注入等场景时，这是一个很有用的手段。
+
+你可以通过hash操作来引用一个抽象的类型变量：
+
+scala> trait Foo[M[_]] { type t[A] = M[A] }
+defined trait Foo
+ 
+scala> val x: Foo[List]#t[Int] = List(1)
+x: List[Int] = List(1)
+ 
+
+类型擦除和Manifest
+
+我们都知道，由于擦除的原因，类型信息在编译期都丢失了。Scala提供了Manifests，它可以让我们有选择地进行类型恢复。Manifest是一个implicit值，它是由编译器按需生成的。
+
+scala> class MakeFoo[A](implicit manifest: Manifest[A]) { def make: A = manifest.erasure.newInstance.asInstanceOf[A] }
+ 
+scala> (new MakeFoo[String]).make
+res10: String = ""
+ 
+
+范例学习：Finagle
+
+参考：https://github.com/twitter/finagle
+
+trait Service[-Req, +Rep] extends (Req => Future[Rep])
+ 
+trait Filter[-ReqIn, +RepOut, +ReqOut, -RepIn]
+  extends ((ReqIn, Service[ReqOut, RepIn]) => Future[RepOut])
+{
+  def andThen[Req2, Rep2](next: Filter[ReqOut, RepIn, Req2, Rep2]) =
+    new Filter[ReqIn, RepOut, Req2, Rep2] {
+      def apply(request: ReqIn, service: Service[Req2, Rep2]) = {
+        Filter.this.apply(request, new Service[ReqOut, RepIn] {
+          def apply(request: ReqOut): Future[RepIn] = next(request, service)
+          override def release() = service.release()
+          override def isAvailable = service.isAvailable
+        })
+      }
+    }
+ 
+  def andThen(service: Service[ReqOut, RepIn]) = new Service[ReqIn, RepOut] {
+    private[this] val refcounted = new RefcountedService(service)
+ 
+    def apply(request: ReqIn) = Filter.this.apply(request, refcounted)
+    override def release() = refcounted.release()
+    override def isAvailable = refcounted.isAvailable
+  }    
+}
+ 
+
+一个服务可以通过一个filter来验证请求。
+
+trait RequestWithCredentials extends Request {
+  def credentials: Credentials
+}
+ 
+class CredentialsFilter(credentialsParser: CredentialsParser)
+  extends Filter[Request, Response, RequestWithCredentials, Response]
+{
+  def apply(request: Request, service: Service[RequestWithCredentials, Response]): Future[Response] = {
+    val requestWithCredentials = new RequestWrapper with RequestWithCredentials {
+      val underlying = request
+      val credentials = credentialsParser(request) getOrElse NullCredentials
+    }
+ 
+    service(requestWithCredentials)
+  }
+}
+ 
+
+注意底层的服务对于请求验证的实现，它是静态地实现的。Filter也可以被认为是服务的转换器。
+
+ 
+
+现在，多个filter可以组合一起使用。
+
+val upFilter =
+  logTransaction     andThen
+  handleExceptions   andThen
+  extractCredentials andThen
+  homeUser           andThen
+  authenticate       andThen
+  route
+安全地使用类型吧！
+
+
+什么是Scala的延续以及为什么使用它们？ 
+
+scala scala-2.8 continuations delimited-continuations
+所以，我只是完成了“编程Scala中”，我一直在寻找到scala2.7和2.8之间的变化.a个似乎是最重要的是插件的延续，但我不明白什么或它是如何工作的。我已经看到了'其良好的异步I / O'，但我一直没能找出原因。关于这个问题比较流行的链接是这些： 而这个问题的StackOverflow： 什么是scala2.8和Scala 2.7之间最大的区别是什么？ 不幸的是，这些文献中没有试图界定什么是延续的还是什么移位/复位函数所应该做的，我还没有发现 CodeGo.net，做任何引用。我一直没能猜到怎么中的任何链接的文章的例子，工作（或他们做什么），这样一种方式了可能是通过这些样本的人去行由行。从第3条即使这样简单的一种：
+reset {
+ ...
+ shift { k: (Int=>Int) => // the continuation k will be the '_ + 1' below
+ k(7)
+ } + 1
+}
+// result: 8
+为什么结果8？这大概会开始。
+本文地址 ：CodeGo.net/88030/ 
+------------------------------------------------------------------------------------------------------------------------- 
+1. 我的博客不说明什么reset和shift这样做，所以你可能需要阅读一遍。 另一个很好的来源，这点我也点在我的博客，是在延续传递样式的维基百科条目.a个是，迄今为止，关于这一问题的最清晰，但它确实Scala的语法 CodeGo.net，以及继续被显式传递。 在分隔的延续，这是我在我的博客链接到，但好像破纸，给出了很多例子 但我认为分隔延续概念的最好的例子就是scala群。在这里面，库将停止代码的执行在一个点上，和延续。该库然后做-在这种情况下，转移到另一台主机，并返回结果（这是所有访问该变量的值）到已停止。 现在，你不理解Scala的页面上连简单的例子，所以不要看我的博客。在这里面我只关心解释为什么结果是这些基本知识，8。 
+2. 我发现现有的解释是在解释比我希望的概念不那么有效。我希望这个人是明确的（和正确的。）我有延续呢。 当一个函数延续cf正所谓： 执行跳过的restshift阻止和再次开始在它的端部 传递到cf是什么样的shift阻止“评为”为继续执行。这可能是不同的，每调用cf继续执行直到结束reset块（或直到调用reset如果没有块） 的结果reset块（或至reset（）如果没有块）是什么cf回报 继续执行后cf直到结束shift块 执行跳过，直到结束reset块（或调用reset？） 因此，在这个例子中，遵循从A字母到Z
+reset {
+ // A
+ shift { cf: (Int=>Int) =>
+ // B
+ val eleven = cf(10)
+ // E
+ println(eleven)
+ val oneHundredOne = cf(100)
+ // H
+ println(oneHundredOne)
+ oneHundredOne
+ }
+ // C execution continues here with the 10 as the context
+ // F execution continues here with 100
+ + 1
+ // D 10.+(1) has been executed - 11 is returned from cf which gets assigned to eleven
+ // G 100.+(1) has been executed and 101 is returned and assigned to oneHundredOne
+}
+// I
+此打印：
+11
+101
+
+3. 延续捕捉稍后调用的状态。 想想离开移位表达式和离开复位表达式作为函数之间。里面的移位表达式调用这个函数K，它的延续。你可以通过它周围，后来调用它，一次甚至更多。 我想通过复位表达式返回的值是后=移位表达式>中的表达式的值，但是这个我不太清楚。 因此，与延续你可以用一个相当武断的和非本地的一段代码中的函数。这可以为非标准控制线程，如coroutining或回溯。 所以应该延续在系统级上。通过您的应用程序代码洒向他们将是一个肯定会比最坏的意大利面条的goto可能永远不会变得更糟。 我没有在Scala中延续的深入了解，我只是从看的例子，知道延续从推断它 
+4. 由于典型的例子从研究论文的Scala的分隔延续，稍微修改等等函数输入shift给出的f并且不再
+def f(k: Int => Int): Int = k(k(k(7)))
+reset(
+ shift(f) + 1 // replace from here down with `f(k)` and move to `k`
+) * 2
+Scala的插件转换这个例子中，这样（的输入范围内reset从每个）开始shift到的调用reset被替换的函数（例如f）输入到shift。 的偏移（即移动）到一个函数k。该函数f输入函数k，其中k包含k输入x: Int，并在k替换shift(f)同x。
+f(k) * 2
+def k(x: Int): Int = x + 1
+它具有的效果：
+k(k(k(7))) * 2
+def k(x: Int): Int = x + 1
+注类型Int输入的x（即类型签名k）是由输入的类型签名给定f。 另一个例子借来的概念上等同的抽象，即read是函数的输入shift：
+def read(callback: Byte => Unit): Unit = myCallback = callback
+reset {
+ val byte = "byte"
+ val byte1 = shift(read) // replace from here with `read(callback)` and move to `callback`
+ println(byte + "1 = " + byte1)
+ val byte2 = shift(read) // replace from here with `read(callback)` and move to `callback`
+ println(byte + "2 = " + byte2)
+}
+我相信这将被转换为逻辑等价的：
+val byte = "byte"
+read(callback)
+def callback(x: Byte): Unit {
+ val byte1 = x
+ println(byte + "1 = " + byte1)
+ read(callback2)
+ def callback2(x: Byte): Unit {
+ val byte2 = x
+ println(byte + "2 = " + byte1)
+ }
+}
+我希望这阐明这是由这两个例子演示前的抽象。例如，典型的一个例子被提出，而不是在研究论文作为一个函数，我f，它不是清楚的读者，这是抽象的read在借用的第二个例子。 分隔的延续创造了从“你反转控制的从外reset“到”我的内心叫你reset“。 注意的返回类型f是，但k是不是，必须是作为返回类型reset，即f有自由申报任何返回类型k只要f返回类型reset。同上，用于read和capture（另见ENV下文）。 分隔的延续不implicit反转状态的控制，如：read和callback是不是纯函数。调用者不能创建引用透明的表情，也没有声明（又名透明）的控制权拟势在必行语义。 我们可以明确实现纯函数与分隔的延续。
+def aread(env: ENV): Tuple2[Byte,ENV] {
+ def read(callback: Tuple2[Byte,ENV] => ENV): ENV = env.myCallback(callback)
+ shift(read)
+}
+def pure(val env: ENV): ENV {
+ reset {
+ val (byte1, env) = aread(env)
+ val env = env.println("byte1 = " + byte1)
+ val (byte2, env) = aread(env)
+ val env = env.println("byte2 = " + byte2)
+ }
+}
+我相信这将被转换为逻辑等价的：
+def read(callback: Tuple2[Byte,ENV] => ENV, env: ENV): ENV =
+ env.myCallback(callback)
+def pure(val env: ENV): ENV {
+ read(callback,env)
+ def callback(x: Tuple2[Byte,ENV]): ENV {
+ val (byte1, env) = x
+ val env = env.println("byte1 = " + byte1)
+ read(callback2,env)
+ def callback2(x: Tuple2[Byte,ENV]): ENV {
+  val (byte2, env) = x
+  val env = env.println("byte2 = " + byte2)
+ }
+ }
+}
+这是越来越明确的喧闹， 切向注，Scala没有Haskell的全局类型推断而据我所知不能支持隐式升降的状态单体的unit（为隐藏明确Haskell的全局（hindley-米尔纳）类型推断一个可能的策略取决于不支持钻石多个虚拟继承。 

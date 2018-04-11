@@ -1,0 +1,46 @@
+.或:   函数调用
+..	连接符
+...	不定长参数
+
+a,b=b,a   交换数据
+
+[[
+	可以换行的字符串
+]]
+
+--注释
+--[[
+	可以换行的块注释
+]]
+--[[
+	可以换行的块注释
+]]--
+--[[
+	可以换行的块注释
+--]]
+
+
+
+lua 没有continue的原因
+
+local a = 1　　-- outer
+repeat
+    if f() then
+        continue
+    end
+    local a = 1　　-- inner
+    ...
+until a == 0
+
+由于continue会跳过后面local a = 1的声明，那么 until a == 0 到底是指内部的local a还是外部的a就会有歧义了！
+
+那么如何用别的机制来代码continue呢？有一个比较简单的方法：在循环内套一个repeat ... until true，再将想用continue的地方写成break。如：
+
+for i = 1, 10 do
+    repeat
+        if i == 5 then
+            break
+        end
+        print(i)
+    until true
+end

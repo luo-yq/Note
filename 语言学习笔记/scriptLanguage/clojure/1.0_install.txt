@@ -1,0 +1,41 @@
+安装插件sublimeREPL ，
+
+下载 clojure-1.8.0.jar 移动到我们已有的路径下：
+$ cd clojure/
+$ sudo mkdir /usr/local/lib/clojure
+$ sudo cp clojoure-1.8.0.jar /usr/local/lib/clojure
+然后进入刚刚创建的目录，我们可以先尝试一下进入 REPL ：
+bash$ java -cp clojure.jar clojure.main
+在进入的交互式命令行中，可以用经典的Lisp语法尝试输入一些运算，以及调用一些熟悉的Java函数：
+Clojure(println "Clojure is awesome!")(+ 2 5)(System/exit 0)
+clj Script
+如果每次都要切换目录，输入一大串命令来运行Clojure REPL，这简直太麻烦了。好在我们有另一种解决方案： clj 脚本。
+clj 脚本是对Clojure的调用，可以让我们快速进入REPL，也可以直接通过 clj 命令来运行写好的简单Clojure程序。
+我把 clj 脚本存放在 /usr/local/bin/ 目录下：
+bash$ sudo touch /usr/local/bin/clj
+然后用最喜爱的编辑器打开这个文件，输入下面内容：
+
+#!/bin/sh
+breakchars="(){}[],^%$#@\"\";:''|\\"
+CLOJURE_DIR=/usr/local/lib/clojure
+CLOJURE_JAR=$CLOJURE_DIR/clojure.jar
+if [ $# -eq 0 ]; then 
+    exec rlwrap --remember -c -b "$breakchars" \
+        -f "$HOME"/.clj_completions \
+        java -cp "$CLOJURE_JAR" clojure.main
+else
+    exec java -cp "$CLOJURE_JAR" clojure.main $1 -- "$@"
+fi
+然后给它加上权限：
+bash$ sudo chmod +x /usr/local/bin/clj
+这样就可以通过运行 clj 命令来进入REPL，同时可以运行 clj xxx.clj 来测试写好的简单的Clojure程序。是不是很方便呢？
+ 
+我在这里先写一个，因为REPL中并没有类似 exit 的命令，所以我就写了这么个函数：
+Clojure(defn exit [] (System/exit 0))
+把这行代码保存到 ~/.clojure.clj 文件里，这样在每次退出REPL时候，输入 (exit) 即可。
+
+brew install Clojure
+
+命名规范，小写单词，复写词已-分割，不是下划线。
+方法调用  （fun-name  arg1  arg2  arg3 ...）
+定义方法  (defn  fun-name [arg1] (方法体))

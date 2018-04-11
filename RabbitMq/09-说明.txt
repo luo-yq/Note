@@ -1,0 +1,4 @@
+1.消息发送给指定的exchange的指定路由
+exchange 类型分topic和direct
+路由决定发给的组
+如果每个客户端是一个独立的组即点对点的direct

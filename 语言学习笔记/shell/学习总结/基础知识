@@ -1,0 +1,38 @@
+
+常用命令
+mkdir -p 目录
+cd 目录
+rm -[r]f 文件[目录]
+mv/cp 源文件  新文件  （移动/拷贝文件）
+ls -al 
+touch 文件名     （生成空文件）
+echo 内容 >> 文件名  (文件不存在时生成文件)
+cat/tac 文件   （显示文件（正序/倒序））
+wc 文件 （统计行单词字符）
+
+
+tar  -czvf  压缩
+tar  -xzvf  解压缩
+
+
+alias  新命令='旧命令串'  
+
+
+
+more  less    （分页）
+head -n 行数 文件  （显示第n行）
+tail -n 行数 文件  （显示后n行）
+
+
+date  -s  日期/时间 （设置系统时间）
+
+useradd 用户名 （创建用户）
+userdel -r 用户名  （删除用户及目录）
+
+chkconfig --list  (显示开机启动列表)
+chkconfig 服务名  on/off （设置开机启动）
+
+
+&与ctrl+z 你可以使用&或ctrl+z来将命令放在后台执行
+
+

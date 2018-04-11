@@ -1,0 +1,76 @@
+文件描述符 (fd, File Descriptor):进程的运算，在大部分情况下，都是进行数据 (data) 的处理， 这些数据从哪里，读进来？又输出到哪里呢？ 这就是 fd 的功用了。
+
+在 shell 的进程中，最常使用的fd大概有三个，分别为:
+0：standard Input (STDIN)
+1: standard output(STDOUT)
+2: standard Error output （STDERR）
+
+在标准情况下，这些 fd 分别跟如下设备 (device) 关联：
+stdin(0): keyboard
+stdout(1): monitor
+stderr(2): monitor
+
+shell 中的两个特殊文件 “/dev/null” 和 “/dev/tty”
+/dev/null 当被用作重定向输出时，程序的输出被直接丢弃。该文件用在哪些不关心程序输出的地方。 当被用作重定向输入时，输入则是文件结束。
+/dev/tty 当被用作重定向时，表示重定向到终端。
+
+0<infile  等价于 <infile        >outfile  等价于  1>outfile
+将 fd 1跟 fd 2重定向到 / dev/null 去，就可忽略 stdout, stderr 的输出。 cmd  后添加 1>/dev/null 2>/dev/null  1代表stdout 2代表stderr .  也可以指定输入到其他文件
+将 fd 0重定向到 / dev/null，那就是读进空 (nothing)。
+
+
+
+用<来改变读进的数据通道 (stdin)，使之从指定的文件读进。
+用>来改变输出的数据通道 (stdout，stderr), 使之输出到指定的文件。>> 有追加的功能
+
+
+#从控制台输入内容并重定位输出到文件，当输入指定的[tag]后结束,不指定时CTRL+C 结束
+cat <<  [tag]  > outfile
+stdin
+[tag]
+
+cat < infile
+
+
+echo str > outfile : 重定向 stdout 或 stderr 进一个文件时,重写文件
+echo str >> outfile : 重定向 stdout 或 stderr 进一个文件时,追写文件
+
+
+以 | 符号建立管道
+program1 | program2 可将 program 的标准输出修改为 program2 的标准输入。这样做的好处是执行速度较快，不会产生临时文件。一般情况下，越复杂越强大的管道往往是高效的。
+
+
+`cmd1 | cmd2 | cmd3 | ... ` 将cmd2的输出存储为文件的方法如下：
+`cmd1 | cmd2 >file | cmd3`  导致cmd3 获取不到cmd2的输出
+`cmd1 | cmd2 >file; cmd3 < file`  file I/O 会变双倍，file I/O 是最常见的最大效能杀手。 凡是有经验的 shell 操作者，都会尽量避免或降低 file I/O 的频度。
+`cmd1 | cmd2 | tee file | cmd3`   tee命令是在不影响原本 I/O 的情况下， 将 stdout 赋值到一个文件中去，在预设上，`tee`会改写目标文件， 若你要改为追加内容的话，那可用 - a 参数选项。
+
+
+tr 是 translate 的简写，它可以用一个字符串来替换另一个字符串，或者可以完全除去一些字符。您也可以用它来除去重复字符。tr 用来从标准输入中通过替换或删除操作进行字符转换。tr 主要用于删除文件中控制字符或进行字符转换。
+
+tr [options] cource-char-file replace-char-list
+
+例如:
+
+去除 oops.txt 里面的重复的小写字符 tr -s "[a-z]"<oops.txt>result.txt
+删除空行 tr -s "[\012]" < plan.txt 或 tr -s ["\n"] < plan.txt
+有时需要删除文件中的 ^M，并代之以换行 tr -s "[\015]" "[\n]" < file 或 tr -s "[\r]" "[\n]" < file
+大写到小写 cat a.txt |tr "[a-z]" "[A-Z]" >b.txt
+各个选项的意义的:
+-c: 取 source-char-list 的反义，tr 要转换的字符编程位列在 source-char-list 中的字符，通常与选项 -d.-s 配合使用。
+-d: 删除标准输入里的字符，不是转换他们
+-s: 产出重复的字符，如果标准输入里出现了重复多次的 source-char-list 里所列的字符，将其浓缩成一个。
+tr 的行为模式
+如同过滤器一般，自标准输入读取字符，再将结果写到标准输出，任何输入字符只要出现在 source-char-list 中，就会置换成 replace-char-list 里相应的字符。
+
+
+
+
+所谓fork，我们所执行的任何程序，都是父进程 (parent process) 产生的一个 子进程 (child process), 子进程在结束后，将返回到父进程去。 
+所谓source，就是让 script 在当前 shell 内执行、 而不是产生一个 sub-shell 来执行。 由于所有执行结果均在当前 shell 内执行、而不是产生一个 sub-shell 来执行。
+exec 也是让 script 在同一个进程上执行，但是原有进程则被结束了。 简言之，原有进程能否终止，就是exec与source/fork的最大差异了。
+fork 调用:   ./shfile
+source调用:  . ./shfile   或   source ./shfile
+exec调用:    exec ./shfile
+
+

@@ -1,3 +1,6 @@
+amqp协议适合性能高的设备
+mqtt适合嵌入式这类性能要求不高的设备
+
 
 
 1.centos7中安装RabbitMQ
