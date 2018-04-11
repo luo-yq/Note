@@ -1,0 +1,31 @@
+wget http://mirrors.hust.edu.cn/apache/rocketmq/4.2.0/rocketmq-all-4.2.0-source-release.zip 
+unzip rocketmq-all-4.2.0-source-release.zip
+cd rocketmq-all-4.2.0/
+mvn -Prelease-all -DskipTests clean install -U
+cd distribution/target/apache-rocketmq
+
+
+wget http://mirrors.hust.edu.cn/apache/rocketmq/4.2.0/rocketmq-all-4.2.0-bin-release.zip
+unzip rocketmq-all-4.2.0-bin-release.zip -d apache-rocketmq
+cd apache-rocketmq
+
+
+#启动name服务
+nohup sh bin/mqnamesrv &
+tail -f ~/logs/rocketmqlogs/namesrv.log
+
+#启动broker用时较长
+nohup sh bin/mqbroker -n localhost:9876 &
+tail -f ~/logs/rocketmqlogs/broker.log 
+
+
+#设置发送地址
+export NAMESRV_ADDR=localhost:9876
+#测试生产消息
+sh bin/tools.sh org.apache.rocketmq.example.quickstart.Producer
+#测试消费消息
+sh bin/tools.sh org.apache.rocketmq.example.quickstart.Consumer
+
+#停止服务
+sh bin/mqshutdown broker
+sh bin/mqshutdown namesrv

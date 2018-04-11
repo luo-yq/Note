@@ -1,1 +1,36 @@
-02-安装.txt
+tar -xvzf jdk-8u161-linux-x64.tar.gz
+mkdir /opt/jdk
+mv jdk1.8.0_161 /opt/jdk/
+
+vi ~/.bashrc
+
+export JAVA_HOME = /opt/jdk/jdk1.8.0_161
+export PATH=$PATH:$JAVA_HOME/bin
+
+source ~/.bashrc
+
+update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.8.0_161/bin/java 100
+
+
+
+cd opt/
+wget https://archive.apache.org/dist/zookeeper/zookeeper-3.3.6/zookeeper-3.3.6.tar.gz
+tar -zxf zookeeper-3.4.6.tar.gz
+cd zookeeper-3.4.6
+mkdir data
+
+
+vi conf/zoo.cfg
+
+tickTime = 2000
+dataDir = /path/to/zookeeper/data
+clientPort = 2181
+initLimit = 5
+syncLimit = 2
+
+
+bin/zkServer.sh start
+bin/zkServer.sh stop
+
+
+
