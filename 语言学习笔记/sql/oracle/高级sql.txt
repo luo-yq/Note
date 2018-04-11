@@ -1,0 +1,1450 @@
+
+study
+循环
+
+3.1
+SET SERVEROUT ON
+BEGIN
+ DELETE FROM emp;
+ DBMS_OUTPUT.PUT_LINE(SQL%ROWCOUNT || ' rows have been deleted!');
+END;
+BEGIN
+ UPDATE emp SET deptno=20 WHERE empno=7839;
+ IF SQL%FOUND THEN
+  DBMS_OUTPUT.PUT_LINE('数据已更新！');
+ ELSE
+  DBMS_OUTPUT.PUT_LINE('该编号不存在！');
+ END IF;
+END;
+ROLLBACK;
+
+3.2
+1.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp ORDER BY sal;
+ v_empno emp.empno%TYPE;
+ v_ename emp.ename%TYPE;
+ v_sal emp.sal%TYPE;
+BEGIN
+ OPEN c_emp;
+ LOOP
+  FETCH c_emp INTO v_empno,v_ename,v_sal;
+ EXIT WHEN c_emp%NOTFOUND;
+   DBMS_OUTPUT.PUT_LINE (v_empno||'    '||v_ename||'    '||v_sal);
+ END LOOP;
+ CLOSE c_emp;
+END;
+3.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp ORDER BY sal;
+ r_emp c_emp%ROWTYPE;
+BEGIN
+ OPEN c_emp;
+ LOOP
+  FETCH c_emp INTO r_emp;
+ EXIT WHEN c_emp%NOTFOUND;
+  DBMS_OUTPUT.PUT_LINE(r_emp.empno||'    '||r_emp.ename
+  ||'    '||r_emp.sal);
+ END LOOP;
+ CLOSE c_emp;
+END;
+5.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno, ename, sal FROM emp ORDER BY sal;
+BEGIN
+ FOR r_emp IN c_emp LOOP
+  DBMS_OUTPUT.PUT_LINE( r_emp.empno||'    '||r_emp.ename
+  ||'    '||r_emp.sal);
+ END LOOP;
+END;
+7.
+BEGIN
+ FOR r_emp IN (SELECT empno, ename, sal FROM emp ORDER BY sal) LOOP
+  DBMS_OUTPUT.PUT_LINE( r_emp.empno||'    '||r_emp.ename
+  ||'    '||r_emp.sal);
+ END LOOP;
+END;
+3.3
+1.
+DECLARE
+ v_deptno emp.deptno%TYPE;
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp WHERE deptno=v_deptno;
+ r_emp c_emp%ROWTYPE;
+BEGIN
+ FOR r_dept IN (SELECT * FROM dept) LOOP
+  DBMS_OUTPUT.PUT_LINE(r_dept.deptno||'     '||r_dept.dname
+   ||'     '||r_dept.dname);
+  DBMS_OUTPUT.PUT_LINE('-------------------------------------');
+  v_deptno:=r_dept.deptno;
+ OPEN c_emp;
+ LOOP
+  FETCH c_emp INTO r_emp;
+ EXIT WHEN c_emp%NOTFOUND;
+  DBMS_OUTPUT.PUT_LINE(r_emp.empno||'     '||r_emp.ename
+   ||'     '||r_emp.sal);
+ END LOOP;
+  DBMS_OUTPUT.PUT_LINE('');
+  CLOSE c_emp;
+ END LOOP;
+END;
+3.
+DECLARE
+ CURSOR c_emp(p_deptno emp.deptno%TYPE) IS
+  SELECT empno,ename,sal FROM emp WHERE deptno=p_deptno;
+BEGIN
+ FOR r_dept IN (SELECT * FROM dept) LOOP
+  DBMS_OUTPUT.PUT_LINE(r_dept.deptno||'     '||r_dept.dname
+   ||'     '||r_dept.dname);
+  DBMS_OUTPUT.PUT_LINE('-------------------------------------');
+  FOR r_emp IN c_emp(r_dept.deptno) LOOP
+   DBMS_OUTPUT.PUT_LINE(r_emp.empno||'     '||r_emp.ename||'     '
+    ||r_emp.sal);
+  END LOOP;
+  DBMS_OUTPUT.PUT_LINE('');
+ END LOOP;
+END;
+3.4
+1.
+SELECT empno,ename,sal FROM emp;
+2.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp ORDER BY sal DESC FOR UPDATE;
+ v_increase NUMBER := 0;
+ v_new_sal  NUMBER;
+BEGIN
+ FOR r_emp IN c_emp LOOP
+  v_new_sal := r_emp.sal + v_increase;
+  UPDATE emp SET sal = v_new_sal WHERE CURRENT OF c_emp;
+  DBMS_OUTPUT.PUT_LINE(r_emp.empno||'      '||r_emp.ename||' old salary    = '||r_emp.sal||' new salary = '||v_new_sal);
+  v_increase:=v_increase+100;
+ END LOOP;
+END;
+
+3.5
+1.
+DECLARE
+ TYPE refcur IS REF CURSOR;
+ refcur_test refcur;
+ l_emp emp%ROWTYPE;
+ l_deptno emp.deptno%TYPE;
+BEGIN
+ L_deptno:=&部门编号;
+ OPEN refcur_test FOR
+  SELECT * FROM emp WHERE deptno=l_deptno;
+ DBMS_OUTPUT.PUT_LINE('---部门'||l_deptno||'的员工信息---');
+ FETCH refcur_test INTO l_emp;
+ WHILE refcur_test%FOUND LOOP
+  DBMS_OUTPUT.PUT_LINE('员工编号:'||l_emp.empno||'   员工姓名:'
+   ||l_emp.ename);
+  FETCH refcur_test INTO l_emp;
+ END LOOP;
+ CLOSE refcur_test;
+END;
+/
+
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+表加密
+CREATE TRIGGER tr_emp_bef
+BEFORE INSERT OR UPDATE OR DELETE
+ON emp
+BEGIN
+ IF user NOT IN ('SCOTT') THEN
+  RAISE_APPLICATION_ERROR(-20001,'您无权修改emp表');
+ END IF;
+END TRIGGER;
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+序列
+CREATE SEQUENCE student_seq
+ START WITH 1
+ INCREMENT BY 1;
+INSERT INTO student 
+VALUES
+(student_seq.nextval,'zhangsan');
+INSERT INTO student 
+VALUES
+(student_seq.nextval,'lisi');
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+包
+
+CREATE OR REPLACE PACKAGE pkg_dept
+AS
+ PROCEDURE sp_dept_insert
+ (i_deptno NUMBER,i_dname VARCHAR2,i_loc VARCHAR2);
+ FUNCTION f_dept_getname_byno(i_deptno NUMBER)
+  RETURN VARCHAR2;
+END pkg_dept;
+CREATE OR REPLACE PACKAGE BODY pkg_dept AS
+   --存储过程sp_dept_insert
+   PROCEDURE sp_dept_insert
+   (i_deptno NUMBER,i_dname VARCHAR2,i_loc VARCHAR2)
+   AS
+   BEGIN
+       INSERT INTO dept VALUES(i_deptno,i_dname,i_loc);
+       COMMIT;
+   EXCEPTION
+       WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('添加失败!原因为:'||SQLERRM);
+            ROLLBACK;
+   END sp_dept_insert;
+   --函数f_num_range
+   FUNCTION f_dept_getname_byno(i_deptno NUMBER)
+   RETURN VARCHAR2
+   AS
+       l_dname VARCHAR2(14);
+   BEGIN
+        SELECT dname INTO l_dname FROM dept WHERE deptno=i_deptno;
+        RETURN l_dname;
+   EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+             RETURN '错误!该编号的部门不存在!';
+   END f_dept_getname_byno;
+END pkg_dept;
+
+--   EXECUTE pkg_dept.sp_dept_insert(80,'deptD','BeiJing');
+--   SELECT pkg_dept.f_dept_getname_byno(80) FROM dual;
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+列类型
+
+DECLARE
+ l_empno emp.empno%TYPE;
+ l_emp emp%ROWTYPE;
+ empno_no_found EXCEPTION; 
+ l_count PLS_INTEGER;
+BEGIN
+ l_empno:=&员工编号;
+ SELECT COUNT(*) INTO l_count FROM emp WHERE empno=l_empno;
+ IF l_count<1 THEN
+  RAISE empno_no_found;
+ END IF;
+ SELECT * INTO l_emp FROM emp WHERE empno=l_empno;
+ DBMS_OUTPUT.PUT_LINE('编号是'||l_empno||'的员工姓名是'||l_emp.ename);
+EXCEPTION
+ WHEN empno_no_found THEN
+  RAISE_APPLICATION_ERROR(-20001,'该编号的员工不存在!');
+END;
+/
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+
+study
+execute immediate
+
+EXECUTE IMMEDIATE用法例子
+ 
+1. 在PL/SQL运行DDL语句
+
+ begin
+  execute immediate 'set role all';
+ end;
+ 
+2. 给动态语句传值(USING 子句)
+
+ declare
+  l_depnam varchar2(20) := 'testing';
+  l_loc    varchar2(10) := 'Dubai';
+  begin
+  execute immediate 'insert into dept values  (:1, :2, :3)'
+    using 50, l_depnam, l_loc;
+  commit;
+ end;
+ 
+3. 从动态语句检索值(INTO子句)
+
+ declare
+  l_cnt    varchar2(20);
+ begin
+  execute immediate 'select count(1) from emp'
+    into l_cnt;
+  dbms_output.put_line(l_cnt);
+ end;
+ 
+4. 动态调用例程.例程中用到的绑定变量参数必须指定参数类型.黓认为IN类型,其它类型必须显式指定
+ 
+ declare
+  l_routin   varchar2(100) := 'gen2161.get_rowcnt';
+  l_tblnam   varchar2(20) := 'emp';
+  l_cnt      number;
+  l_status   varchar2(200);
+ begin
+  execute immediate 'begin ' || l_routin || '(:2, :3, :4); end;'
+    using in l_tblnam, out l_cnt, in out l_status;
+  if l_status != 'OK' then
+     dbms_output.put_line('error');
+  end if;
+ end;
+ 
+5. 将返回值传递到PL/SQL记录类型;同样也可用%rowtype变量
+
+ declare
+  type empdtlrec is record (empno  number(4),
+                           ename  varchar2(20),
+                           deptno  number(2));
+  empdtl empdtlrec;
+ begin
+  execute immediate 'select empno, ename, deptno ' ||
+                   'from emp where empno = 7934'
+    into empdtl;
+ end;
+ 
+6. 传递并检索值.INTO子句用在USING子句前
+ 
+ declare
+  l_dept    pls_integer := 20;
+  l_nam     varchar2(20);
+  l_loc     varchar2(20);
+ begin
+  execute immediate 'select dname, loc from dept where deptno = :1'
+    into l_nam, l_loc
+    using l_dept ;
+ end;
+ 
+7. 多行查询选项.对此选项用insert语句填充临时表，用临时表进行进一步的处理,也可以用REF cursors纠正此缺憾.
+ 
+ declare
+  l_sal   pls_integer := 2000;
+ begin
+  execute immediate 'insert into temp(empno, ename) ' ||
+                   '          select empno, ename from emp ' ||
+                   '          where  sal > :1'
+    using l_sal;
+  commit;
+ end;
+ 
+       对于处理动态语句,EXECUTE IMMEDIATE比以前可能用到的更容易并且更高效.当意图执行动态语句时，适当地处理异常更加重要.应该关注于捕获所有可能的异常.
+       
+       
+       
+       
+       
+    DECLARE
+  CURSOR C01 IS SELECT * FROM USER_TABLES WHERE TABLE_NAME <>      'WS_ZZAJDCJDS'
+                          AND TABLE_NAME LIKE 'WS_%' ORDER BY TABLE_NAME;
+   I INT :=1;
+  BEGIN
+     I:=1;
+     FOR C IN C01 LOOP
+      DBMS_OUTPUT.PUT_LINE(I || '  ' ||C.TABLE_NAME);
+      I := I+1;
+      EXECUTE IMMEDIATE ('ALTER TABLE ' || C.TABLE_NAME || ' MODIFY Z VARCHAR2(20)');
+     END LOOP;
+ END;
+/
+DECLARE
+  CURSOR CUR_ITERATOR IS SELECT TABLE_NAME FROM USER_TABLES WHERE TABLE_NAME LIKE 'jbpm4_%';
+  INT_CNT INT DEFAULT 0;
+BEGIN
+  FOR CUR_01 IN CUR_ITERATOR LOOP
+    DBMS_OUTPUT.PUT_LINE(CUR_01.TABLE_NAME);
+    --EXECUTE IMMEDIATE 'ALTER TABLE ' || CUR_01.TABLE_NAME || ' ADD CQNR VARCHAR2(4000 CHAR)';
+    --EXECUTE IMMEDIATE 'ALTER TABLE ' || CUR_01.TABLE_NAME || ' ADD CBR VARCHAR2(50 CHAR)';
+    EXECUTE IMMEDIATE 'COMMENT COLUMN ON  ' || CUR_01.TABLE_NAME || '.CQNR IS' || '''呈请内容''';
+    INT_CNT := INT_CNT +1;
+    DBMS_OUTPUT.PUT_LINE(INT_CNT);
+  END LOOP;
+  
+END;
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+游标
+
+3.1
+SET SERVEROUT ON
+BEGIN
+ DBMS_OUTPUT.PUT_LINE(SQL%ROWCOUNT || ' rows have been deleted!');
+END;
+BEGIN
+ IF SQL%FOUND THEN
+  DBMS_OUTPUT.PUT_LINE('数据已更新！');
+ ELSE
+  DBMS_OUTPUT.PUT_LINE('该编号不存在！');
+ END IF;
+END;
+ROLLBACK;
+
+3.2
+1.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp ORDER BY sal;
+ v_empno emp.empno%TYPE;
+ v_ename emp.ename%TYPE;
+ v_sal emp.sal%TYPE;
+BEGIN
+ OPEN c_emp;
+ LOOP
+  FETCH c_emp INTO v_empno,v_ename,v_sal;
+ EXIT WHEN c_emp%NOTFOUND;
+   DBMS_OUTPUT.PUT_LINE (v_empno||'    '||v_ename||'    '||v_sal);
+ END LOOP;
+ CLOSE c_emp;
+END;
+3.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno,ename,sal FROM emp ORDER BY sal;
+ r_emp c_emp%ROWTYPE;
+BEGIN
+ OPEN c_emp;
+ LOOP
+  FETCH c_emp INTO r_emp;
+ EXIT WHEN c_emp%NOTFOUND;
+  DBMS_OUTPUT.PUT_LINE(r_emp.empno||'    '||r_emp.ename||'    '||r_emp.sal);
+ END LOOP;
+ CLOSE c_emp;
+END;
+5.
+DECLARE
+ CURSOR c_emp IS
+  SELECT empno, ename, sal FROM emp ORDER BY sal;
+BEGIN
+ FOR r_emp IN c_emp LOOP
+  DBMS_OUTPUT.PUT_LINE( r_emp.empno||'    '||r_emp.ename||'    '||r_emp.sal);
+ END LOOP;
+END;
+7.
+BEGIN
+ FOR r_emp IN (SELECT empno, ename, sal FROM emp ORDER BY sal) LOOP
+  DBMS_OUTPUT.PUT_LINE( r_emp.empno||'    '||r_emp.ename
+  ||'    '||r_emp.sal);
+ END LOOP;
+END;
+
+3.5
+1.
+DECLARE
+ TYPE refcur IS REF CURSOR;
+ refcur_test refcur;
+ l_emp emp%ROWTYPE;
+ l_deptno emp.deptno%TYPE;
+BEGIN
+ L_deptno:=&部门编号;
+ OPEN refcur_test FOR
+  SELECT * FROM emp WHERE deptno=l_deptno;
+ DBMS_OUTPUT.PUT_LINE('---部门'||l_deptno||'的员工信息---');
+ FETCH refcur_test INTO l_emp;
+ WHILE refcur_test%FOUND LOOP
+  DBMS_OUTPUT.PUT_LINE('员工编号:'||l_emp.empno||'   员工姓名:'
+   ||l_emp.ename);
+  FETCH refcur_test INTO l_emp;
+ END LOOP;
+ CLOSE refcur_test;
+END;
+/
+
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+触发器
+l         触发器设计原则
+1. 当一个操作执行时，为了确保与其相关的其他操作也必须执行时可以使用触发器。
+2. 如果能用简单约束（主键、外键、CHECK约束等）实现的功能不要使用触发器。
+3. 当触发器的代码超过60行或触发器大小超过32KB时，应先建立过程，再在触发器中调用过程。
+4. 不要建立递归触发器。递归触发器是指在触发器中执行的操作，又直接或间接地触发了同一个触发器。
+l       查看触发器信息
+通过数据字典视图USER_TRIGGERS
+l       禁用触发器
+ALTER TRIGGER trigger_name DISABLE;
+l       激活触发器
+ALTER TRIGGER trigger_name ENABLE;
+l       删除触发器
+DROP TRIGGER trigger_name;
+l       DML触发器
+Ø       行级触发器
+ü       BEFORE行级触发器
+ü       AFTER行级触发器
+Ø       语句级触发器
+ü       BEFORE语句级触发器
+ü       AFTER语句级触发器
+l       INSTEAD OF触发器
+l       系统触发器
+Ø       DDL触发器
+ü       模式级的DDL触发器
+ü       数据库级的DDL触发器
+Ø       数据库启动和关闭触发器
+Ø       用户登录和退出触发器
+l         创建INSTEAD OF触发器
+CREATE [OR REPLACE] TRIGGER trigger_name
+INSTEAD OF
+{INSERT|DELETE|UPDATE [OF column_list]}
+[OR {INSERT|DELETE|UPDATE [OF column_list]}]
+ON [schema.]view_name
+[REFERENCING [NEW AS new_alias] [OLD AS old_alias]]
+FOR EACH ROW
+PL/SQL Block;
+l       使用INSTEAD OF触发器，需注意以下几点：
+INSTEAD OF触发器只能应用于视图，而不能应用于表。
+INSTEAD OF触发器只能是行级的，不能是语句级的，定义INSTEAD OF触发器时必须加上FOR EACH ROW选项。
+在INSTEAD OF触发器不能包含WHEN子句。
+INSTEAD OF触发器的定义中不能包含BEFORE和AFTER选项。
+l       创建DML触发器的语法为：
+CREATE [OR REPLACE] TRIGGER trigger_name
+{BEFORE|AFTER}
+{INSERT|DELETE|UPDATE [OF column_list]}
+[OR {INSERT|DELETE|UPDATE [OF column_list]}]
+ON [schema.]table_name
+[REFERENCING [NEW AS new_alias] [OLD AS old_alias]]
+[FOR EACH ROW]
+[WHEN (condition)]
+PL/SQL Block;
+l       行级触发器是指在执行DML操作时，每作用一行就触发一次的触发器。
+l       行级触发器是触发器中最常用的一种，常用于数据审计和实现复杂的业务逻辑。
+l       创建行级触发器时必须加上FOR EACH ROW子句，凡是还FOR EACH ROW子句的触发器都是行级触发器
+l       在行级触发器的语句体中，可以引用DML语句中涉及的新值和旧值。
+l       旧值是指在DML语句前存在的数据
+l       新值是指由DML语句插入或更新进去的数据
+l       引用的方式是“:NEW.列名”和“:OLD.列名”（注意如果在触发器的触发条件中引用不能加冒号），如果为新行或旧行起了别名，则用别名代替其中的NEW或OLD。
+l       在使用BEFORE行级触发器时，可以引用新值，并且可以重新设置新值，也只有在BEFORE行级触发器中才可以重新设置新值。
+l       语句级触发器在执行DML语句时被自动触发，每个DML语句触发一次，即无论一个 DML语句影响了多少行数据，语句级触发器都只执行一次。
+l       语句级触发器通常用于审计DML操作和强制实施额外的安全措施。
+l       创建语句级触发器时不能包含WHEN子句
+ 
+
+3.3
+CREATE TRIGGER tr_emp_bef
+BEFORE INSERT OR UPDATE OR DELETE
+ON emp
+BEGIN
+ IF user NOT IN ('SCOTT') THEN
+  RAISE_APPLICATION_ERROR(-20001,'您无权修改emp表');
+ END IF;
+END TRIGGER;
+/
+CONNECT / AS SYSDBA；
+CONNECT SCOTT/TIGER;
+3.4
+CREATE OR REPLACE TRIGGER tr_emp_aft
+AFTER INSERT OR UPDATE OR DELETE
+ON emp
+BEGIN
+ CASE
+ WHEN INSERTING THEN
+  INSERT INTO t_emp_dml VALUES(user,sysdate,'INSERT');
+ WHEN UPDATING THEN
+  INSERT INTO t_emp_dml VALUES(user,sysdate,'UPDATE');
+ WHEN DELETING THEN
+  INSERT INTO t_emp_dml VALUES(user,sysdate,'DELETE');
+ END CASE;
+END TRIGGER;
+/
+
+3.5
+CREATE OR REPLACE VIEW v_dept_emp
+AS
+ SELECT d.deptno,d.dname,e.empno,e.ename
+ FROM dept d,emp e
+ WHERE d.deptno=e.deptno;
+SELECT * FROM v_dept_emp;
+INSERT INTO v_dept_emp VALUES(10,'ACCOUNTING',2222,'TOM');
+CREATE OR REPLACE TRIGGER tr_v_dept_emp_inf_row
+INSTEAD OF INSERT
+ON v_dept_emp
+FOR EACH ROW
+DECLARE
+ l_temp PLS_INTEGER;
+BEGIN
+ SELECT COUNT(*) INTO l_temp FROM dept WHERE deptno=:NEW.deptno;
+ IF l_temp=0 THEN
+  INSERT INTO dept(deptno,dname) VALUES(:NEW.deptno,:NEW.dname);
+ END IF;
+ SELECT COUNT(*) INTO l_temp FROM emp WHERE empno=:NEW.empno;
+ IF l_temp=0 THEN
+  INSERT INTO emp(empno,ename,deptno)
+  VALUES(:NEW.empno,:NEW.ename,:NEW.deptno);
+ END IF;
+END TRIGGER;
+/
+3.6
+CREATE TABLE t_test
+(id NUMBER);
+CREATE OR REPLACE TRIGGER tr_t_test_ddl
+BEFORE DROP ON SCHEMA
+BEGIN
+ IF ora_dict_obj_name='T_TEST' THEN  
+  RAISE_APPLICATION_ERROR(-20003,'表t_test不允许被删除!');
+ END IF;
+END TRIGGER;
+/
+DROP TABLE t_test;
+DROP TABLE scott.t_test;
+
+3.7
+CREATE TABLE t_db_event
+(
+ time DATE,
+ event VARCHAR2(10)
+);
+CREATE OR REPLACE TRIGGER tr_startup
+AFTER STARTUP ON DATABASE
+BEGIN
+ INSERT INTO t_db_event VALUES(sysdate,’STARTUP’);
+END;
+CREATE OR REPLACE TRIGGER tr_shutdown
+BEFORE SHUTDOWN ON DATABASE
+BEGIN
+ INSERT INTO t_db_event VALUES(sysdate,’SHUTDOWN’);
+END;
+SHUTDOWN IMMEDIATE
+STARTUP
+SELECT TO_CHAR(time,'YYYY-MM-DD HH24:MI:SS') AS ope_time,event 
+FROM t_db_event；
+3.8
+CREATE TABLE t_user_log
+(
+ username VARCHAR(20),
+ time_logon DATE,
+ time_logoff DATE
+);
+CREATE OR REPLACE TRIGGER tr_user_logon
+AFTER LOGON ON DATABASE
+BEGIN
+ INSERT INTO t_user_log(username,time_logon) VALUES(user,sysdate);
+END;
+CREATE OR REPLACE TRIGGER tr_user_logoff
+BEFORE LOGOFF ON DATABASE
+BEGIN
+ INSERT INTO t_user_log(username,time_logoff) VALUES(user,sysdate);
+END;
+CONNECT SCOTT/TIGER;
+CONNECT / AS SYSDBA;
+SELECT username,
+TO_CHAR(time_logon,'YYYY-MM-DD HH24:MI:SS') AS logon_time,
+TO_CHAR(time_logoff,'YYYY-MM-DD HH24:MI:SS') AS logoff_time 
+FROM t_user_log;
+
+3.9
+DESC user_triggers;
+COLUMN trigger_name FORMAT A16  --设置trigger_name列的显示宽度
+COLUMN triggering_event FORMAT A30  设置triggering_event列的显示宽度
+SELECT trigger_name,trigger_type,triggering_event,status FROM user_triggers WHERE table_name=’EMP’;
+ALTER TRIGGER tr_emp_bef_row DISABLE;
+ALTER TRIGGER tr_emp_bef_row ENABLE;
+DROP TRIGGERS trigger_name;
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+过程和函数
+
+l         共同点：两者的实质都是已命名的PL/SQL程序块，即子程序，它们是子程序的两种类型，存储在数据库中，可以从任何数据库客户端和前台应用程序中调用它们。
+l         不同点：
+过程
+函数
+参数模式可以是IN、OUT或IN OUT
+参数模式只能是IN模式
+在语法规范中不包含RETURN子句,可以有多个返回值
+在语法规范中必须包含RETURN子句，有且只有一个返回值
+在可执行语句部分可以有RETURN语句，但其后不能加任何表达式
+在可执行语句部分至少应该包含一条RETURN  expression语句
+可以用EXECUTE语句来执行
+不能用EXECUTE语句来执行
+l         查看过程、函数的信息SELECT object_name,procedure_name FROM USER_PROCEDURES;
+l         查看过程、函数的源代码SELECT line,text FROM USER_SOURCE WHERE name=‘…’;
+l         创建存储过程
+CREATE [OR REPLACE] PROCEDURE procedure_name
+[(parameter_list)]
+{AS|IS}
+     [local_declarations]
+BEGIN
+     executable_statements
+[EXCEPTION
+     exception_handlers]
+END [procedure_name];                          
+l       定义参数的语法：
+         parameter_name [IN|OUT|IN OUT]
+DATATYPE [{:=|DEFAULT} expression]
+l       创建函数：
+CREATE [OR REPLACE] FUNCTION function_name
+[(parameter_list)]
+RETURN DATATYPE
+  {AS|IS}
+     [local_declarations]
+  BEGIN
+     executable_statements
+  [EXCEPTION
+     exception_handlers]
+  END [function_name];
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+存储过程返回结果集
+
+存储过程返回结果集
+Oracle中scott用户下创建程序包：
+create or replace package pkg_test
+as
+type deptcur is ref cursor;
+procedure p_getdept(cur out deptcur );
+end pkg_test;
+/
+ create or replace package body pkg_test
+ as
+ procedure p_getdept(cur out deptcur )
+ as
+ begin
+ open cur for select * from dept;
+ end p_getdept;
+ end pkg_test;
+/
+
+(注：从9i开始有了sys_refcursor这种类型，在以前的Oracle版本中需要使用REF CURSOR,并且还需放在一个程序包中)
+create or replace procedure sp_getdept
+(result out sys_refcursor)
+as
+begin
+open result for select * from dept;
+end;
+/
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+函数
+数字函数：
+Abs(n)返回绝对值
+Acos(n)返回反余弦值-1<=n<=1,输出为弧度
+Asin(n) 返回反正弦值-1<=n<=1,输出为弧度
+Atan(n) 返回反正切值,输出为弧度
+Atan2(n，m) = Atan(n/m)
+Cos(n)返回余弦值，n为弧度
+Cosh(n) 返回双曲余弦值，n为弧度
+Sin(n) 返回正弦值，n为弧度
+Sinh(n) 返回双曲正弦值，n为弧度
+Tan(n) 返回正切值，n为弧度
+Tanh(n) 返回双曲正切值，n为弧度
+Exp(n)e的n次幂
+Ceil(n)返回大于等于n的最小整数
+Floor(n) 返回小于等于n的最大整数
+Round(n,[m])四舍五入小数点后m位，m<0：四舍五入小数点前m位
+Trunk(n,[m])截取到小数点后m位，m<0：截取到小数点前m位
+Log(m,n) 返回以m为底的n的对数
+Ln(n)=log(e,n)返回n的自然对数
+Mod(m,n)返回n/m的余数，n=0是返回m
+Power(m,n)返回m的n次幂
+Sqrt(n)开平方,n>0
+Sign(n)检测正负，返回-1,0,1
+字符函数
+AscII(char)返回首字符的AscII码值
+Chr(n)将AscII码值转换为字符
+Concat(char,char)=操作符“||”
+Initcap(char)每个单词首字母大写，其余字母小写
+Instr(char1,char2[,n[,m]])char2重复m次在char1从第n个字符起第一次出现的结束位置,如instr(12345577,'5',2,2)返回6
+Length(char)包含空格，length(null)返回null
+Lower(char)小写
+Upper(char)大写
+Lpad(char1,n,char2)char1左端填充char2直到length(char1)=n
+Rpad(char1,n,char2)char1右端填充char2直到length(char1)=n
+Trim([set From] char)去掉char两端的set,set为单个字符
+Rtrim(char[,set])去掉char右端所包含的，set中的任何字符。
+Ltrim(char[,set]) 去掉char左端端所包含的，set中的任何字符。
+Soundex(char)英文发音
+Substr(char,m[,n])m为开始位置，n为长度
+Translate(char,form_string,to_string)char按照form_string 和to_string一一对应关系替换
+Nls_initcap(char,’nls_param’)
+Nls_lower(char,’nls_param’)
+Nls_sort(char,’nls_param’)
+Nls_upper(char,’nls_param’)
+Regexp_replace(source_string,patten[,replace_string[,position[,occurrence[,match_parameter]]]]))
+Regexp_substr(source_string,patten [,position[,occurrence[,match_parameter]]]))
+Replace(char,search_string[,replacement_string])
+日期时间函数
+Add_months(d,n)日期d加月数n
+Months_between(d1,d2)日期d1-d2的月数
+Current_date当前会话日期
+Current_timestamp当前会话日期时间
+Dbtimezone数据库所在时区
+Localtimestamp当地日期时间
+Sysdate当前系统日期
+systimestamp当前系统日期时间
+Extract
+From_tz
+Last_day(d) 日期d所在月的最后一天
+New_time(date,zone,zone)
+Next_day(d,char)
+Numtodsinternal(n,char_expr)
+numtoyminternal(n,char_expr)
+round(d[,fmt])
+sessiontimezone
+sys_extract_utc(datetime_with_timezone)
+to_dsinternal(char[,’nls_param’])
+to_timestamp(char[fmt[,’nls_param’]])
+to_timestamp_tz(char[fmt[,’nls_param’]])
+to_yminternal(char)
+trunk(d[,fmt])
+tz_offset(time_zone_name||sessiontimezone||dbtimezone)
+转换函数
+AscIIstr(String)字符串转换为AscII码值
+bin_to_num(expr[,expr][,expr]…)二进制数转换为十进制
+cast(expr as type_name)
+chartorowid(char)
+compose(string)
+convert(char,dest_char_set,source_char_set)
+decompose(string)
+hextoraw(char)
+numtodsinternal(n,char_expr)
+numtoyminternal(n,char_expr)
+rawtohex(raw)
+rawtonhexr(raw)
+rowidtochar(rowed)
+rowidtonchar(rowid)
+scn_to_timestamp(number)
+timestamp_to_scn(timestamp)
+to_char(character)
+to_char(date[,fmt[,nls_param]])
+to_char(n[,fmt[,nls_param]])
+to_clob(char)
+to_date(char[,fmt[,nls_param]])
+to_dsinternal(char[,nls_param])
+to_multi_byte(char)
+to_nchar(character)
+to_nchar(datetime[,fmt[,nls_param]])
+to_nchar(number)
+to_nclob(clob_column|char)
+to_number(char[,fmt[,nls_param]])
+to_single_byte（char）
+to_yminterval(char)
+tracnslate…using
+unistr(string)
+集合函数
+Cardinality(nested_table)
+Collect(column)
+Powermultiset(expr)
+Powermultiset_by_cardinality(expr,cardinatility)
+Set(nested_table)
+其他单行函数
+User当前用户名
+Bfilename(‘directory’,’filename’)
+Coalesce(expr[,expr][,expr]…)
+Decode(expr,search,result[,search,result]…[,default])
+Depth(n)
+Dump(expr,returnfmt)
+Empty_blob()
+Empty_clob()
+Extract(xmltype_instance,xpath_string)
+Extractvalue(xmltype_instance,xpath_string)
+Greatest(expr[,expr]…)
+Least(expr[,expr]…)
+Nls_charset_decl_len(byte_count,charset_id)
+Nls_charset_id(text)
+Nls_charset_name(number)
+Nullif(expr1,expr2) “expr1= expr2？null：expr1”
+Nvl(expr1,expr2)  “expr1= null？expr2：expr1”
+Nvl2(expr1,expr2,expr3)  “expr1= null？expr3：expr2”
+Path(correction_integer)
+Sys_connect_by_path(column,char)
+Sys_context(‘context’,’attribute’)
+Sys_dburigen
+Sys_extract_utc(datetime_with_timezone)
+Sys_typeid(object_type_value)
+Sys_xmlagg(expr[,fmt])
+Sys_xmlgen(expr[,fmt])
+Uid
+Updatexml(xmltype_instance,xpath_string,value_expr)
+Userenv(parameter)返回当前用户环境的信息, parameter可以是:
+ENTRYID,SESSIONID,TERMINAL,ISDBA,LABLE,LANGUAGE,CLIENT_INFO,LANG
+1.ISDBA 查看当前用户是否是DBA如果是则返回true
+2.SESSION 返回会话标志
+4.ENTRYID 返回会话人口标志
+5.INSTANCE 返回当前INSTANCE的标志
+6.LANGUAGE 返回当前环境变量
+7.LANG 返回当前环境的语言的缩写
+8.TERMINAL 返回用户的终端或机器的标志
+Vsize(expr)返回oracle内部存储expr的实际字节数
+Xmlagg(xmltype_instance [order by sort_list])
+Xmlcolattval(value_expr[,value_expr]…)
+Xmlconcat(xmltype_instance[,xmltype_instance]…)
+Xmlelement(identifier[,xml_attribute_clause][,value_expr])
+Xmlforest(value_expr[,value_expr]…)
+Xmlsequence(xmltype_instance)
+Xmltransform(xmltype_instance,xsl_ss)
+分组函数
+Avg([all|distinct]expr)平均值
+Count([all|distinct]expr)总数
+Max([all|distinct]expr)最大值
+Min([all|distinct]expr)最小值
+sum([all|distinct]expr)和
+Corr(expr,expr)
+Cover_pop(expr,expr)
+Cover_samp(expr,expr)
+Cume_dist(expr,expr,…) within group(order by expr,expr,…)
+Dense_rank(expr,expr,…)
+First
+Last
+Group_id()
+Grouping(expr)
+Grouping_id(expr[,expr]…)
+Percent_rank(expr,expr…)
+Percentile_cont(percent_expr) within group (order by expr)
+Percentile_disc(percent_expr) within group (order by expr)
+rank(expr,expr…) within group (order by expr,expr…)
+stddev([all|distinct]expr)
+stddev_pop(expr)
+stddev_samp(expr)
+var_pop(expr)
+var_samp(expr)
+variance([all|distinct]expr)
+对象函数
+Deref(expr)
+Make_ref(object_table|object_view,key)
+Ref(expr)
+Reftohex(expr)
+Value(expr)
+ 
+
+--日期函数
+ADD_MONTHS(D,N)
+给指定的日期加上指定的月数后的日期值
+SELECT ADD_MONTHS(SYSDATE,5) FROM DUAL;
+LAST_DAY(D)
+得到包含D日期的月份的最后的一天的日期.
+SELECT LAST_DAY(SYSDATE) FROM DUAL;
+MONTH_BETWEEN(D1,D2)
+得到两个日期之间的月数.
+SELECT MONTH_BETWEEN(D1,D2) FROM DUAL;
+NEXT_DAY(D,CHAR)
+得到由CHAR命名的下一个星期几的日期.
+SELECT NEXT_DAY(sysdate,'星期二') FROM DUAL;
+ROUND(D,[FMT])
+得到按指定的模式FMT四舍五入到的日期.
+SELECT ROUND(sysdate,'YEAR') FROM DUAL;  --6月30日舍，7月1日入
+SELECT ROUND(sysdate,'MONTH') FROM DUAL; --15号舍，16号入
+SELECT ROUND(sysdate,'DAY') FROM DUAL;  ---星期三舍，星期四入
+SELECT ROUND(sysdate) FROM DUAL;   --舍到指定日期的零时，或入到指定日期第二天的零时
+TRUNC(D,[FMT])
+将指定日期截断为指定格式的日期，与ROUND类似，但它只舍不入
+SELECT TRUNC(sysdate,'MONTH') FROM DUAL;
+EXTRACT(FMT FROM D)
+提取指定日期的指定部分（年，月，日）,类似于SQL Server中的DATEPART
+select extract(year from sysdate) from dual;
+select extract(month from sysdate) from dual;
+select extract(day from sysdate) from dual;　　
+===============================================================================================
+--字符函数
+1.裁剪函数
+LTRIM,RTRIM和TRIM
+默认裁剪空格,可以设置成裁剪其它字符(LTRIM和RTRIM可裁剪字符串，TRIM只能裁剪字符)
+2.填充函数
+LPAD和RPAD
+三个参数:第一个是要被填充的字符串,第二个是总长度,第三个是填充字符串
+SELECT LPAD('ABC',10,'=') FROM DUAL;
+SELECT LPAD('ABC',10,'^&*') FROM DUA;;
+SELECT RPAD('ABC',10,'=') FROM DUAL;
+SELECT RPAD('ABC',10,'^&*') FROM DUAL;
+3.字符和ASCII码查询函数
+CHR和ASCII
+SELECT CHR(67) FROM DUAL;
+SELECT ASCII('A') FROM DUAL;
+SEELCT ASCII('z') FROM DUAL;
+4.子字符串相关函数
+--查找子字符串位置
+INSTR(char,substr[,pos]) 
+--查询在字符串CHAR中是否存在子字符串SUBSTR,如果存在,则返回第一次出现的位置;如果不存在,则返回0;如有有第三个函数POS,则从POS以后开始查起
+SELECT INSTR('ABCDE','FF') FROM DUAL;   --0
+SELECT INSTR('ABCDE','BC') FROM DUAL;   --2
+SELECT INSTR('ABCDE','BC',3) FROM DUAL; --0
+--取子字符串
+SUBSTR(CHAR,POS[,LEN])
+--从字符串的第POS个开始,取LEN个字符;如果没有LEN参数,则取到字符串末尾
+SELECT SUBSTR('ABCDEF',2) FROM DUAL;
+SELECT SUBSTR('ABCDEF',2,3) FROM DUAL;
+SELECT SUBSTR('ABEDEF',LENGTH('ABCDEF')-1,2) FROM DUAL; --右取两个字符,也可以把第三个参数去掉
+
+SELECT UPPER('AaBbCcDd') upper FROM dual;
+SELECT LOWER('AaBbCcDd') AaBbCcDd FROM dual;
+返回字符串并将字符串的第一个字母变为大写：
+SELECT INITCAP('TOm') upp FROM dual;
+连接两个字符串：
+SELECT CONCAT('010-','88888888')||'转23' 电话 FROM dual;
+SELECT ename,
+   LENGTH(ename),
+   sal,
+   LENGTH(TO_CHAR(sal))
+   FROM emp 
+   WHERE empno=7369;
+5.翻译函数
+TRANSLATE,REPLACE和DECODE
+按字符翻译
+TRANSLATE(CHAR,FROM,TO)
+SELECT TRANSLATE('ABCDE','BD','&*') FROM DUAL;  --'A&C*E'
+SELECT TRANSLATE('ABCDE','BD','&') FROM DUAL;   --'A&CE'
+按字符串替换
+REPLACE(CHAR,SERACH_STR,REP_STR)
+按字符串的不同,逐值替换
+DECODE(条件,值1,翻译值1,值2,翻译值2,...值n,翻译值n,缺省值)
+该函数的含义如下：
+IF 条件=值1 THEN
+　　　　RETURN(翻译值1)
+ELSIF 条件=值2 THEN
+　　　　RETURN(翻译值2)
+　　　　......
+ELSIF 条件=值n THEN
+　　　　RETURN(翻译值n)
+ELSE
+　　　　RETURN(缺省值)
+END IF
+----提高部分
+decode()函數使用技巧
+1、比较大小
+select decode(sign(变量1-变量2),-1,变量1,变量2) from dual; --取较小值
+sign()函数根据某个值是0、正数还是负数，分别返回0、1、-1
+例如：
+变量1=10，变量2=20
+则sign(变量1-变量2)返回-1，decode解码结果为“变量1”，达到了取较小值的目的。
+=================================================================================================
+转换函数
+TO_CHAR:把日期或数值转换成字符串
+TO_DATE:把字符串转换成日期
+
+TO_NUMBER:把字符串转换成数字
+SELECT TO_NUMBER('100') FROM dual;
+================================================================================================
+与NULL相关的函数
+NVL,NVL2和NULLIF
+NVL(EXP1,EXP2):如果表达式EXP1不为空,则返回EXP1的值;如果为空,则返回EXP2的值.
+NVL2(EXP1,EXP2,EXP3):如果表达式EXP1不为空,则返回EXP2的值;如果为空,则返回EXP3的值.
+NULLIF(EXP1,EXP2):如果两个表达式相等,则返回空值;如果不等,则返回EXP1的值.
+SELECT empname,sal+comm FROM emp;  --查询结果出现了多行空值
+解决方法:
+SELECT empname,sal+NVL(comm,0) FROM emp;
+或
+SELECT empname,sal+NVL2(comm,comm,0) FROM emp;
+
+=====================================================================================================
+GROUP BY子句的使用
+SELECT deptno,AVG(sal) FROM EMP GROUP BY deptno;        -- 查看每个部门的平均工资
+SELECT deptno,AVG(sal) FROM EMP GROUP BY deptno HAVING AVG(sal)>1500;  查看平均工资大于1500的部门的信息
+SELECT deptno,AVG(sal) FROM EMP GROUP BY deptno HAVING deptno=10; 查看部门10的平均工资
+
+=======================================================================================================
+分析函数
+ROW_NUMBER,RANK和DENSE_RANK
+ROW_NUMBER() OVER ([PARTITION BY column_name] ORDER BY ... [DESC|ASC]) 
+RANK() OVER ([PARTITION BY column_name] ORDER BY ... [DESC|ASC]) 
+DENSE_RANK() OVER ([PARTITION BY column_name] ORDER BY ... [DESC|ASC])
+
+1. ROUND(m，n)和TRUNC(m，n)
+ROUND按照指定的精度n对m进行四舍五入；
+TRUNC舍弃指定位数n后的小数部分，如果没有指定舍弃所有小数部分。
+2. ABS(n)
+返回指定值的绝对值。
+3. CEIL(n)
+返回大于或等于给出数字的最小整数。
+4. FLOOR(n)
+对给定的数字取整数。
+5. COS(n)和ACOS(n)
+分别返回一个给定数字的余弦和反余弦.
+6. MOD(n1，n2)
+返回一个n1除以n2的余数。
+7. POWER(n1，n2)
+返回n1的n2次方根。
+9. SIGN(n)
+取数字n的符号，大于0返回1，小于0返回-1，等于0返回0。
+10. SQRT(n)
+返回数字n的平方根。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+游标
+
+一、          显式游标
+定义游标——>打开游标——>提取数据——>关闭游标
+定义游标：cursor cursor_name is select_statement
+打开游标：open cursor_name
+提取数据：  1.fetch cursor_name into var1,var2…(循环中)
+            2.fetch cursor_name Bulk collect
+into collect1,collect2…[limit rows]
+（每次提取多条数据，rows int:=行数）
+关闭游标：close cursor_name
+显示游标属性：
+    c_name%isopen游标已经打开返回true，否则false
+    c_name%found执行提取语句后判断，如提取到数据返回true
+    c_name%notfound与%found值相反
+    c_name%rowcount返回到当前行为止已经提取到的行数
+循环语句：
+1.     Loop
+Exit when expr;
+End loop;
+2.     For I in 1..(c_name%rowcount) Loop
+End loop;
+二、          参数游标
+定义游标：cursor cursor_name（param datatype） is select_statement
+三、          使用游标更新或删除数据
+定义游标：cursor cursor_name（param datatype） is select_statement
+            For update [of column_reference] [nowait]
+        For update加行共享锁，
+nowait是否等待锁,指定不等待锁时，若行被锁时报资源正忙错误
+执行语句：1.update table_name set … where current of cursor_name;
+2.delete from table_name where current of cursor_name
+四、          游标for 循环(隐式打开关闭游标)
+    For record_name in cursor_name loop
+        Statements;
+    End loop;
+    For record_name in select_statement loop
+        Statements;
+    End loop;
+五、          游标变量
+定义ref cursor 类型和游标变量:
+            Type ref_type_name is ref cursor [return return_type];
+Return为返回类型，即游标行类型，顺序个数类型必须一致
+            Cursor_var ref_type_name;
+打开游标:open cursor_var for select_statement;
+提取游标数据: 1.fetch cursor_ var into var1,var2…(循环中)
+                2.fetch cursor_ var Bulk collect
+into collect1,collect2…[limit rows]
+（每次提取多条数据，rows int:=行数）
+ 
+关闭游标变量：close cursor_var
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+索引
+
+l       当数据的查询或插入修改正好分布在某一个较小的连续区域，往往会由于数据过于密集而降低读取效率。这时就可以创建反向键索引，将集中在一个小区域上的查询平均分布在整个索引上，从而提高效率。
+l       CREATE INDEX rev_index ON emp(deptno) REVERSE;
+l       前面使用的索引都是创建在高基数列上，也就是在此列上重复值较少。对低基数列上可以创建位图索引，来提高查询效率。
+l       CREATE BITMAP INDEX bit_index ON emp(job);
+l       基于一个或多个列上的函数或表达式创建的索引
+l       表达式中不能出现聚合函数
+l       不能在LOB类型的列上创建
+l       创建时必须具有 QUERY REWRITE 权限
+SQL> CREATE INDEX lowercase_idx
+     ON emp (LOWER(ename));
+SQL> SELECT * FROM emp
+     WHERE LOWER(ename)=‘smith';
+l       前面建立的各种索引都是与表关联的可选结构，查询时先在索引中查找，然后根据ROWID到表中取数据。每次查询都要重复这样的操作。如果表不是太大，并且主要以查询操作为主时，能不能考虑将表的数据也存储在索引中，从而提高性能。Oracle提出了索引组织表的概念。数据存储在索引中原来存放ROWID的位置。
+ 
+l       CREATE TABLE ind_org_table(id number(5) primary key,Name varchar2(10)) ORGANIZATION INDEX;
+ 
+l       索引组织表要求一定要有主键，查询是基于主键列的。
+l       对索引组织表的操作和普通表一样。
+l       在SQL SERVER数据库中，创建表的时候，可以很方便地将表的主键设置为自增主键，这样我们在对表操作时，就不用担心主键的问题。在Oracle中如何实现呢？
+l       反向键索引是一种特殊类型的索引，当索引基于某种有规则的序数时是非常有用的，如果一个标准索引基于一个含有这种数据的列，当操作集中于序数的某一部分时，往往会因为操作频繁而降低读取性能，因为每次数据操作都会带来对索引的维护，而其他操作则要等待维护完成后在进行。比如在建有自增主键的列上。
+l       CREATE INDEX index_name
+l       ON table_name(column_list) REVERSE;
+ 
+l       使用位图索引的优点在于，它最适用于低基数列（如性别），也就是不同值的数目比表的行数少的列。如果某个列的值重复了超过一百次，则可以考虑在该列上创建位图索引。例如，如果一个表有100万行，其中一个列有小于1000个不同的值，则可以考虑在该列上创建位图索引。可以使用CREATE BITMAP INDEX命令来创建位图索引。
+l       索引组织表的数据存储在与其关联的索引中
+l       索引中存储的是行的实际数据，而不是ROWID
+l       基于主键访问数据
+l       CREATE TABLE 命令与 ORGANIZATION INDEX 子句一起用于创建索引组织表
+SQL> CREATE TABLE ind_org_tab (
+       vencode NUMBER(4) PRIMARY KEY,
+       venname VARCHAR2(20)
+     )
+     ORGANIZATION INDEX;
+l       普通表与索引组织表的比较
+普通表
+索引组织表
+ROWID 唯一地标识行
+主键唯一地标识行
+隐式的 ROWID 列
+没有隐式的 ROWID 列
+基于 ROWID 的访问
+基于主键的访问
+支持分区
+不支持分区
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+oracle自定义函数
+
+CREATE OR REPLACE TYPE ty_str_split IS TABLE OF VARCHAR2 (4000)
+CREATE OR REPLACE FUNCTION fn_split (p_str IN VARCHAR2, p_delimiter IN VARCHAR2)
+    RETURN ty_str_split
+IS
+    j INT := 0;
+    i INT := 1;
+    len INT := 0;
+    len1 INT := 0;
+    str VARCHAR2 (4000);
+    str_split ty_str_split := ty_str_split ();
+BEGIN
+    len := LENGTH (p_str);
+    len1 := LENGTH (p_delimiter);
+    WHILE j < len
+    LOOP
+        j := INSTR (p_str, p_delimiter, i);
+        IF j = 0
+        THEN
+            j := len;
+            str := SUBSTR (p_str, i);
+            str_split.EXTEND;
+            str_split (str_split.COUNT) := str;
+            IF i >= len
+            THEN
+                EXIT;
+            END IF;
+        ELSE
+            str := SUBSTR (p_str, i, j - i);
+            i := j + len1;
+            str_split.EXTEND;
+            str_split (str_split.COUNT) := str;
+        END IF;
+    END LOOP;
+    RETURN str_split;
+END fn_split;
+ 
+declare
+ a ty_str_split;
+ begin 
+ a:=fn_split ('asfffsffsff', 's');
+ dbms_output.put_line(a(a.count-1));
+ end;
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+JDBC对BLOB和CLOB读取的专用处理和通用处理
+
+try{
+       ResultSet rs = (ResultSet)result;
+       rs.next();
+        BLOB xmlBlob = (BLOB)rs.getBlob(1);
+        InputStream is = xmlBlob.getBinaryStream();
+        BufferedInputStream input = new BufferedInputStream(is);
+        byte[] buff = new byte[2048];
+        int bytesRead = 0;
+        while(-1 != (bytesRead = input.read(buff, 0, buff.length))) {
+         //在这里执行写入，如写入到文件的
+System.out.println(new String(buffer))}
+设有表：
+create table blobimg (id int primary key, contents blob);
+一、BLOB入库的专用访问：
+     1) 最常见于Oracle的JDBC示例中
+     一般是先通过select   ... for update锁定blob列，然后写入blob值，然后提交。要用到特定的Oracle BLOB类。
+Class.forName("oracle.jdbc.driver.OracleDriver");
+Connection con = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:testdb", "test", "test");//处理事务
+con.setAutoCommit(false);
+Statement st = con.createStatement();//插入一个空对象
+st.executeUpdate("insert into BLOBIMG          values(1,empty_blob())");//用for update方式锁定数据行
+ResultSet rs = st.executeQuery("select contents from  BLOBIMG  where  id=1  for update");
+if (rs.next()) {//使用oracle.sql.BLOB类，没办法了，变成专用的了
+oracle.sql.BLOB blob = (oracle.sql.BLOB) rs.getBlob(1).;//到数据库的输出流
+OutputStream outStream = blob.getBinaryOutputStream();//这里用一个文件模拟输入流
+File file = new File("d:\\proxy.txt");
+InputStream fin = new FileInputStream(file);//将输入流写到输出流
+byte[] b = new byte[blob.getBufferSize()];
+int len = 0;
+while ( (len = fin.read(b)) != -1) {
+                  outStream.write(b, 0, len);
+}
+//依次关闭
+fin.close();
+outStream.flush();
+outStream.close();
+}
+con.commit();
+con.close();
+2) 再厉害一点的，是通过调用DBMS_LOB包中的一些函数来处理，效率好像也不错.
+　不过，要使用到存储过程，用到专用类OracleCallableStatement。
+　例： import java.sql.*;
+import java.io.*;
+import oracle.jdbc.driver.*;
+import oracle.sql.*;
+class TestBlobWriteByDBMS_LOB {
+
+            public static void main (String args []) throws SQLException , 
+            FileNotFoundException, IOException
+            {
+                DriverManager.registerDriver (new oracle.jdbc.driver.OracleDriver());
+                Connection conn = 
+                    DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:ora92","scott","tiger");
+                conn.setAutoCommit(false);
+                Statement stmt = conn.createStatement();
+                stmt.execute( "delete from demo" );
+                System.out.println( "deleted from demo" );
+                stmt.execute( "insert into demo (id,theBlob) values (s_enr.nextval,empty_blob())" );
+                conn.commit();
+                System.out.println( "committed" );
+                ResultSet rset = stmt.executeQuery ("SELECT theBlob FROM demo where id = s_enr.currval   FOR UPDATE");
+                System.out.println( "Executed Query" );
+                if(rset.next())
+                {
+                    System.out.println( "Fetched row " );
+                    BLOB l_mapBLOB = ((OracleResultSet)rset).getBLOB(1);
+                    File binaryFile = new File("e:\\free\\jo.jpg");
+                    FileInputStream instream=new          FileInputStream(binaryFile);
+                    int chunk = 32000;
+                    
+                    System.out.println( "Chunk = "+ chunk );
+                    
+                    byte[] l_buffer = new byte[chunk];
+                    int l_nread = 0;
+                    
+                    OracleCallableStatement cstmt = (OracleCallableStatement)conn.prepareCall( "begin dbms_lob.writeappend( :1, :2, :3 ); end;" );
+                    cstmt.registerOutParameter( 1, OracleTypes.BLOB );
+                    while ((l_nread= instream.read(l_buffer)) != -1) 
+                    {
+                        cstmt.setBLOB(          1, l_mapBLOB );
+                        cstmt.setInt(           2, l_nread );
+                        cstmt.setBytes( 3, l_buffer );
+                        cstmt.executeUpdate();
+                        l_mapBLOB = cstmt.getBLOB(1);
+                    }
+                    instream.close();
+                    conn.commit();
+                    rset.close();
+                    stmt.close();
+                    conn.close();
+                }
+            }
+}
+二、BLOB值读取的通用处理：
+这个jdbc标准接口可以直接调用，因此比较简单，如下所示：      
+Connection con = ConnectionFactory.getConnection();
+con.setAutoCommit(false);
+Statement st = con.createStatement();
+ResultSet rs = st.executeQuery("select contents from   BLOBIMG  where  id=1");
+if (rs.next()) {
+            java.sql.Blob blob = rs.getBlob(1);
+            InputStream ins = blob.getBinaryStream();
+            //输出到文件
+            File file = new File("d:\\output.txt");
+            OutputStream fout = new FileOutputStream(file);
+            //下面将BLOB数据写入文件
+            byte[] b = new byte[1024];
+            int len = 0;
+            while ( (len = ins.read(b)) != -1) {
+              fout.write(b, 0, len);
+            }
+            //依次关闭
+            fout.close();
+            ins.close();
+}            
+con.commit();
+con.close();
+三、BLOB值写入的通用处理：
+　这时要借助于PreparedStatement的动态绑定功能，借用其setObject()方法插入字节流到BLOB字段。
+public void insertFile(File f) throws Exception{ 
+            FileInputStream fis=new FileInputStream(f,Connection conn); 
+            byte[] buffer=new byte[1024]; 
+            data=null; 
+            int sept=0;int len=0; 
+            while((sept=fis.read(buffer))!=-1){ 
+                if(data==null){ 
+                len=sept; 
+                data=buffer; 
+                }else{ 
+                    byte[] temp; 
+                    int tempLength; 
+                    tempLength=len+sept; 
+                    temp=new byte[tempLength]; 
+                    System.arraycopy(data,0,temp,0,len); 
+                    System.arraycopy(buffer,0,temp,len,sept); 
+                    data=temp; 
+                    len=tempLength; 
+                } 
+                if(len!=data.length()){ 
+                byte temp=new byte[len]; 
+                System.arraycopy(data,0,temp,0,len); 
+                data=temp; 
+                } 
+            } 
+            String sql="insert into fileData (filename,blobData) value(?,?)"; 
+            PreparedStatement ps=conn.prepareStatement(sql); 
+            ps.setString(1,f.getName()); 
+            ps.setObject(2,data); 
+            ps.executeUpdate();
+}
+四. CLOB读取的通用处理
+public static String getClobString(ResultSet rs, int col) { 
+            try { 
+                Clob c=resultSet.getClob(2); 
+                Reader reader=c.getCharacterStream(): 
+                if (reader == null) { 
+                    return null; 
+                } 
+                StringBuffer sb = new StringBuffer(); 
+                char[] charbuf = new char[4096]; 
+                for (int i = reader.read(charbuf); i > 0; i = reader.read(charbuf)) { 
+                    sb.append(charbuf, 0, i); 
+                } 
+                return sb.toString(); 
+            } catch (Exception e) { 
+                return ""; 
+            } 
+}
+当然还可以直接编写BLOB存取的存储过程供JDBC调用，那也非常方便。不过可能要用到外部LOB类型。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+ 
+

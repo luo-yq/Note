@@ -1,0 +1,813 @@
+
+study
+sqlplus
+SQLPLUS 命令的使用大全
+1. 执行一个SQL 脚本文件
+SQL>start file_name
+SQL>@ file_name
+我们可以将多条sql 语句保存在一个文本文件中，这样当要执行这个文件中的所有的sql 语句时，用上面的任一命
+令即可，这类似于dos 中的批处理。
+2. 对当前的输入进行编辑
+SQL>edit
+3. 重新运行上一次运行的sql 语句
+SQL>/
+4. 将显示的内容输出到指定文件
+SQL> SPOOL file_name
+在屏幕上的所有内容都包含在该文件中，包括你输入的sql 语句。
+5. 关闭spool 输出
+SQL> SPOOL OFF
+只有关闭 spool 输出，才会在输出文件中看到输出的内容。
+6．显示一个表的结构
+SQL> desc table_name
+7. COL 命令：
+主要格式化列的显示形式。
+该命令有许多选项，具体如下：
+COL[UMN] [{ column|expr} [ option ...]]
+Option 选项可以是如下的子句:
+ALI[AS] alias
+CLE[AR]
+FOLD_A[FTER]
+FOLD_B[EFORE]
+FOR[MAT] format
+HEA[DING] text
+JUS[TIFY] {L[EFT]|C[ENTER]|C[ENTRE]|R[IGHT]}
+LIKE { expr|alias}
+NEWL[INE]
+NEW_V[ALUE] variable
+NOPRI[NT]|PRI[NT]
+NUL[L] text
+OLD_V[ALUE] variable
+ON|OFF
+WRA[PPED]|WOR[D_WRAPPED]|TRU[NCATED]
+1). 改变缺省的列标题
+COLUMN column_name HEADING column_heading
+For example:
+Sql>select * from dept;
+DEPTNO DNAME LOC
+---------- ---------------------------- ---------
+10 ACCOUNTING NEW YORK
+sql>col LOC heading location
+sql>select * from dept;
+DEPTNO DNAME location
+--------- ---------------------------- -----------
+10 ACCOUNTING NEW YORK
+2). 将列名ENAME 改为新列名EMPLOYEE NAME 并将新列名放在两行上：
+Sql>select * from emp
+Department name Salary
+---------- ---------- ----------
+10 aaa 11
+SQL> COLUMN ENAME HEADING ’Employee|Name’
+Sql>select * from emp
+Employee
+Department name Salary
+---------- ---------- ----------
+10 aaa 11
+note: the col heading turn into two lines from one line.
+3). 改变列的显示长度：
+FOR[MAT] format
+Sql>select empno,ename,job from emp;
+EMPNO ENAME JOB
+---------- ---------- ---------
+7369 SMITH CLERK
+7499 ALLEN SALESMAN
+7521 WARD SALESMAN
+Sql> col ename format a40
+EMPNO ENAME JOB
+---------- ---------------------------------------- ---------
+7369 SMITH CLERK
+7499 ALLEN SALESMAN
+7521 WARD SALESMAN
+4). 设置列标题的对齐方式
+JUS[TIFY] {L[EFT]|C[ENTER]|C[ENTRE]|R[IGHT]}
+SQL> col ename justify center
+SQL> /
+EMPNO ENAME JOB
+---------- ---------------------------------------- ---------
+7369 SMITH CLERK
+7499 ALLEN SALESMAN
+7521 WARD SALESMAN
+对于NUMBER 型的列，列标题缺省在右边，其它类型的列标题缺省在左边
+5). 不让一个列显示在屏幕上
+NOPRI[NT]|PRI[NT]
+SQL> col job noprint
+SQL> /
+EMPNO ENAME
+---------- ----------------------------------------
+7369 SMITH
+7499 ALLEN
+7521 WARD
+6). 格式化NUMBER 类型列的显示：
+SQL> COLUMN SAL FORMAT $99,990
+SQL> /
+Employee
+Department Name Salary Commission
+---------- ---------- --------- ----------
+30 ALLEN $1,600 300
+7). 显示列值时，如果列值为NULL 值，用text 值代替NULL 值
+COMM NUL[L] text
+SQL>COL COMM NUL[L] text
+8). 设置一个列的回绕方式
+WRA[PPED]|WOR[D_WRAPPED]|TRU[NCATED]
+COL1
+--------------------
+HOW ARE YOU?
+SQL>COL COL1 FORMAT A5
+SQL>COL COL1 WRAPPED
+COL1
+-----
+HOW A
+RE YO
+U?
+SQL> COL COL1 WORD_WRAPPED
+COL1
+-----
+HOW
+ARE
+YOU?
+SQL> COL COL1 WORD_WRAPPED
+COL1
+-----
+HOW A
+9). 显示列的当前的显示属性值
+SQL> COLUMN column_name
+10). 将所有列的显示属性设为缺省值
+SQL> CLEAR COLUMNS
+8. 屏蔽掉一个列中显示的相同的值
+BREAK ON break_column
+SQL> BREAK ON DEPTNO
+SQL> SELECT DEPTNO, ENAME, SAL
+FROM EMP
+WHERE SAL < 2500
+ORDER BY DEPTNO;
+DEPTNO ENAME SAL
+---------- ----------- ---------
+10 CLARK 2450
+MILLER 1300
+20 SMITH 800
+ADAMS 1100
+9. 在上面屏蔽掉一个列中显示的相同的值的显示中，每当列值变化时在值变化之前插入n 个空行。
+BREAK ON break_column SKIP n
+SQL> BREAK ON DEPTNO SKIP 1
+SQL> /
+DEPTNO ENAME SAL
+---------- ----------- ---------
+10 CLARK 2450
+MILLER 1300
+20 SMITH 800
+ADAMS 1100
+10. 显示对BREAK 的设置
+SQL> BREAK
+11. 删除6、7 的设置
+SQL> CLEAR BREAKS
+12. Set 命令：
+该命令包含许多子命令：
+SET system_variable value
+system_variable value 可以是如下的子句之一：
+APPI[NFO]{ON|OFF|text}
+ARRAY[SIZE] {15|n}
+AUTO[COMMIT]{ON|OFF|IMM[EDIATE]|n}
+AUTOP[RINT] {ON|OFF}
+AUTORECOVERY [ON|OFF]
+AUTOT[RACE] {ON|OFF|TRACE[ONLY]} [EXP[LAIN]] [STAT[ISTICS]]
+BLO[CKTERMINATOR] {.|c}
+CMDS[EP] {;|c|ON|OFF}
+COLSEP {_|text}
+COM[PATIBILITY]{V7|V8|NATIVE}
+CON[CAT] {.|c|ON|OFF}
+COPYC[OMMIT] {0|n}
+COPYTYPECHECK {ON|OFF}
+DEF[INE] {&|c|ON|OFF}
+DESCRIBE [DEPTH {1|n|ALL}][LINENUM {ON|OFF}][INDENT {ON|OFF}]
+ECHO {ON|OFF}
+EDITF[ILE] file_name[.ext]
+EMB[EDDED] {ON|OFF}
+ESC[APE] {|c|ON|OFF}
+FEED[BACK] {6|n|ON|OFF}
+FLAGGER {OFF|ENTRY |INTERMED[IATE]|FULL}
+FLU[SH] {ON|OFF}
+HEA[DING] {ON|OFF}
+HEADS[EP] {||c|ON|OFF}
+INSTANCE [instance_path|LOCAL]
+LIN[ESIZE] {80|n}
+LOBOF[FSET] {n|1}
+LOGSOURCE [pathname]
+LONG {80|n}
+LONGC[HUNKSIZE] {80|n}
+MARK[UP] HTML [ON|OFF] [HEAD text] [BODY text] [ENTMAP {ON|OFF}] [SPOOL
+{ON|OFF}] [PRE[FORMAT] {ON|OFF}]
+NEWP[AGE] {1|n|NONE}
+NULL text
+NUMF[ORMAT] format
+NUM[WIDTH] {10|n}
+PAGES[IZE] {24|n}
+PAU[SE] {ON|OFF|text}
+RECSEP {WR[APPED]|EA[CH]|OFF}
+RECSEPCHAR {_|c}
+SERVEROUT[PUT] {ON|OFF} [SIZE n] [FOR[MAT] {WRA[PPED]|WOR[D_
+WRAPPED]|TRU[NCATED]}]
+SHIFT[INOUT] {VIS[IBLE]|INV[ISIBLE]}
+SHOW[MODE] {ON|OFF}
+SQLBL[ANKLINES] {ON|OFF}
+SQLC[ASE] {MIX[ED]|LO[WER]|UP[PER]}
+SQLCO[NTINUE] {> |text}
+SQLN[UMBER] {ON|OFF}
+SQLPRE[FIX] {#|c}
+SQLP[ROMPT] {SQL>|text}
+SQLT[ERMINATOR] {;|c|ON|OFF}
+SUF[FIX] {SQL|text}
+TAB {ON|OFF}
+TERM[OUT] {ON|OFF}
+TI[ME] {ON|OFF}
+TIMI[NG] {ON|OFF}
+TRIM[OUT] {ON|OFF}
+TRIMS[POOL] {ON|OFF}
+UND[ERLINE] {-|c|ON|OFF}
+VER[IFY] {ON|OFF}
+WRA[P] {ON|OFF}
+1). 设置当前session 是否对修改的数据进行自动提交
+SQL>SET AUTO[COMMIT] {ON|OFF|IMM[EDIATE]| n}
+2)．在用start 命令执行一个sql 脚本时，是否显示脚本中正在执行的SQL 语句
+SQL> SET ECHO {ON|OFF}
+3).是否显示当前sql 语句查询或修改的行数
+SQL> SET FEED[BACK] {6|n|ON|OFF}
+默认只有结果大于6 行时才显示结果的行数。如果set feedback 1 ，则不管查询到多少行都返回。当为off 时，一
+律不显示查询的行数
+4).是否显示列标题
+SQL> SET HEA[DING] {ON|OFF}
+当set heading off 时，在每页的上面不显示列标题，而是以空白行代替
+5).设置一行可以容纳的字符数
+SQL> SET LIN[ESIZE] {80|n}
+如果一行的输出内容大于设置的一行可容纳的字符数，则折行显示。
+6).设置页与页之间的分隔
+SQL> SET NEWP[AGE] {1|n|NONE}
+当set newpage 0 时，会在每页的开头有一个小的黑方框。
+当 set newpage n 时，会在页和页之间隔着n 个空行。
+当 set newpage none 时，会在页和页之间没有任何间隔。
+7).显示时，用text 值代替NULL 值
+SQL> SET NULL text
+8).设置一页有多少行数
+SQL> SET PAGES[IZE] {24|n}
+如果设为0，则所有的输出内容为一页并且不显示列标题
+9).是否显示用DBMS_OUTPUT.PUT_LINE 包进行输出的信息。
+SQL> SET SERVEROUT[PUT] {ON|OFF}
+在编写存储过程时，我们有时会用dbms_output.put_line 将必要的信息输出，以便对存储过程进行调试，只有将
+serveroutput 变量设为on 后，信息才能显示在屏幕上。
+10).当SQL 语句的长度大于LINESIZE 时，是否在显示时截取SQL 语句。
+SQL> SET WRA[P] {ON|OFF}
+当输出的行的长度大于设置的行的长度时（用set linesize n 命令设置），当set wrap on 时，输出行的多于的字符会
+另起一行显示，否则，会将输出行的多于字符切除，不予显示。
+11).是否在屏幕上显示输出的内容，主要用与SPOOL 结合使用。
+SQL> SET TERM[OUT] {ON|OFF}
+在用 spool 命令将一个大表中的内容输出到一个文件中时，将内容输出在屏幕上会耗费大量的时间，设置set
+termspool off 后，则输出的内容只会保存在输出文件中，不会显示在屏幕上，极大的提高了spool 的速度。
+12).将SPOOL 输出中每行后面多余的空格去掉
+SQL> SET TRIMS[OUT] {ON|OFF}
+13)显示每个sql 语句花费的执行时间
+set TIMING {ON|OFF}
+14．修改sql buffer 中的当前行中，第一个出现的字符串
+C[HANGE] /old_value/new_value
+SQL> l
+1* select * from dept
+SQL> c/dept/emp
+1* select * from emp
+15．编辑sql buffer 中的sql 语句
+EDI[T]
+16．显示sql buffer 中的sql 语句，list n 显示sql buffer 中的第n 行，并使第n 行成为当前行
+L[IST] [n]
+17．在sql buffer 的当前行下面加一行或多行
+I[NPUT]
+18．将指定的文本加到sql buffer 的当前行后面
+A[PPEND]
+SQL> select deptno,
+2 dname
+3 from dept;
+DEPTNO DNAME
+---------- --------------
+10 ACCOUNTING
+20 RESEARCH
+30 SALES
+40 OPERATIONS
+SQL> L 2
+2* dname
+SQL> a ,loc
+2* dname,loc
+SQL> L
+1 select deptno,
+2 dname,loc
+3* from dept
+SQL> /
+DEPTNO DNAME LOC
+---------- -------------- -------------
+10 ACCOUNTING NEW YORK
+20 RESEARCH DALLAS
+30 SALES CHICAGO
+40 OPERATIONS BOSTON
+19．将sql buffer 中的sql 语句保存到一个文件中
+SAVE file_name
+20．将一个文件中的sql 语句导入到sql buffer 中
+GET file_name
+21．再次执行刚才已经执行的sql 语句
+RUN
+or
+/
+22．执行一个存储过程
+EXECUTE procedure_name
+23．在sql*plus 中连接到指定的数据库
+CONNECT user_name/passwd@db_alias
+24．设置每个报表的顶部标题
+TTITLE
+25．设置每个报表的尾部标题
+BTITLE
+26．写一个注释
+REMARK [text]
+27．将指定的信息或一个空行输出到屏幕上
+PROMPT [text]
+28．将执行的过程暂停，等待用户响应后继续执行
+PAUSE [text]
+Sql>PAUSE Adjust paper and press RETURN to continue.
+29．将一个数据库中的一些数据拷贝到另外一个数据库（如将一个表的数据拷贝到另一个数据库）
+COPY {FROM database | TO database | FROM database TO database}
+{APPEND|CREATE|INSERT|REPLACE} destination_table
+[(column, column, column, ...)] USING query
+sql>COPY FROM SCOTT/TIGER@HQ TO JOHN/CHROME@WEST
+create emp_temp
+USING SELECT * FROM EMP
+30．不退出sql*plus，在sql*plus 中执行一个操作系统命令：
+HOST
+Sql> host hostname
+该命令在windows 下可能被支持。
+31．在sql*plus 中，切换到操作系统命令提示符下，运行操作系统命令后，可以再次切换回sql*plus：
+!
+sql>!
+$hostname
+$exit
+sql>
+该命令在 windows 下不被支持。
+32．显示sql*plus 命令的帮助
+HELP
+如何安装帮助文件：
+Sql>@ ?sqlplusadminhelphlpbld.sql ?sqlplusadminhelphelpus.sql
+Sql>help index
+33．显示sql*plus 系统变量的值或sql*plus 环境变量的值
+Syntax
+SHO[W] option
+where option represents one of the following terms or clauses:
+system_variable
+ALL
+BTI[TLE]
+ERR[ORS] [{FUNCTION|PROCEDURE|PACKAGE|PACKAGE BODY|
+TRIGGER|VIEW|TYPE|TYPE BODY} [schema.]name]
+LNO
+PARAMETERS [parameter_name]
+PNO
+REL[EASE]
+REPF[OOTER]
+REPH[EADER]
+SGA
+SPOO[L]
+SQLCODE
+TTI[TLE]
+USER
+1) . 显示当前环境变量的值：
+Show all
+2) . 显示当前在创建函数、存储过程、触发器、包等对象的错误信息
+Show error
+当创建一个函数、存储过程等出错时，变可以用该命令查看在那个地方出错及相应的出错信息，进行修改后再次进
+行编译。
+3) . 显示初始化参数的值：
+show PARAMETERS [parameter_name]
+4) . 显示数据库的版本：
+show REL[EASE]
+5) . 显示SGA 的大小
+show SGA
+6). 显示当前的用户名
+show user
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+sqlplus 常用命令
+
+SQLPLUS 常用命令
+一：登录SQL*Plus
+  1. sqlplus /nolog
+  2. sqlplus "用户名/口令"
+  3. sqlplus "用户名/口令@服务名"
+  4. sqlplus " / as sysdba"
+  5. sqlplus "/@服务名 as sysdba"
+二：创建连接
+  1. CONN[ECT] 用户名/口令
+  2. CONN / AS SYSDBA
+  3. CONN 用户名/口令@服务名 
+  4. CONN 用户名/口令@服务名 AS SYSDBA
+三: 执行命令
+  1.如果执行SQL语句,末尾必须加;
+  2.执行脚本文件的方法:
+   (1)@ d:\a.ora
+   (2)STA[RT] @d:\a.ora  --前两个功能相同
+   (3)@@ d:\a.ora    --在脚本文件中还可以再调用其它的脚本文件
+四: 执行操作系统命令:
+   1. HOST可进入到DOS>, EXIT退回到SQL>
+   2. $DIR D:\
+五: 打开编辑器,编辑缓冲区中的SQL语句
+    ED[IT]
+六: 执行缓冲区中的命令
+    1. L[IST] --只显示出来,但不执行
+    2. /      --只执行但不显示
+    3. R[UN]  --显示并执行,相当于L和/的合并
+七: 退出SQL*Plus
+   EXIT或QUIT
+八: 列出表或视图的结构
+   DESC[RIBE] 表名
+九: 显示环境变量SHOW
+    1.显示所有变量: SHOW ALL
+    2.显示登录用户: SHOW USER
+    3.显示编译错误: SHOW ERRO[RS]
+ 
+十: 显示帮助: HELP (HELP TOPIC或HELP INDEX)
+十一: 格式化列的输出结果(COLUMN命令)
+   1. COLUMN 列名 HEADING "要显示的列名",如COLUMN ename HEADING "员工姓名"
+   2. COLUMN 列名 FORMAT fmt,如COLUMN sal FORMAT $9999.99,  COLUMN ename FORMAT A30 --30个字符
+   3. 前面两个也可以一起用,如COLUMN sal FORMAT $9999.99 HEADING ""员工工资
+十二: 设置一页之后是否暂停屏幕的滚动: SET PAUSE ON/OFF
+十三: 设置是否显示命令执行的时间: SET TIMING ON/OFF
+十四: 设置每页的行数,默认是14: SET PAGESIZE 20
+十五: 设置行的宽度,默认是80个字符: SET LINESIZE 800
+十六:清除缓冲区和屏: CLEAR SCREEN 或 CLSCR  --SQLPLUSW状态
+ 
+查看当前使用的数据库实例: select name from V$database;
+切换两个数据库实例
+在sqlplus里connect username/password@sid
+或host set ORACLE_SID=sid
+或cmd里set ORACLE_SID=sid
+或修改注册表里ORACLE_SID项
+SQL>SET DEFINE ON
+经常用于运行SQL 脚本中， 对变量的宏替换(&)
+SQL>DEFINE TSTEMP=TEMPTS
+将运行脚本中的&TSTEMP 替换成 TEMPTS
+SQL>SET DEFINE OFF
+关闭宏替换， 经常用于运行PACKAGE或存储过程
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+sqlplus技巧
+
+◆1．使用SQL*PLUS动态生成批量脚本
+将spool与select命令结合起来使用，可以生成一个脚本，脚本中包含有可以批量执行某一任务的语句。
+例1：
+生成一个脚本，删除SCOTT用户下的所有的表：
+a. 创建gen_drop_table.sql文件，包含如下语句：
+SPOOL c:drop_table.sql
+SELECT 'DROP TABLE '|| table_name ||';' FROM user_tables;
+SPOOL OFF
+b. 以SCOTT用户登录数据库
+SQLPLUS > @ …..gen_dorp_table.sql
+c. 在c盘根目录下会生成文件drop_table.sql文件，包含删除所有表的语句，如下所示:
+SQL> SELECT 'DROP TABLE '|| table_name ||';' FROM user_tables;
+'DROPTABLE'||TABLE_NAME||';'
+--------------------------------------------------------------------------------
+DROP TABLE DEPT;
+DROP TABLE EMP;
+DROP TABLE PARENT;
+DROP TABLE STAT_VENDER_TEMP;
+DROP TABLE TABLE_FORUM;
+5 rows selected.
+SQL> SPOOL OFF
+d. 对生成的drop_table.sql文件进行编辑去掉不必要的部分，只留下drop table …..语句
+e. 在scott用户下运行dorp_table.sql文件，删除scott用户下所有的表。
+SQLPLUS > @ c:dorp_table.sql
+在上面的操作中，在生成的脚本文件中会有多余的字符，如运行的sql语句，标题，或返回的行数，需要我们编辑该脚本后再运行，给实际的操作带来诸多不便。懒惰是人的本性，这促使我们用更简单的办法来实现上面的任务。
+a. 创建gen_drop_table.sql文件，包含如下语句：
+set echo off
+set feedback off
+set newpage none
+set pagesize 5000
+set linesize 500
+set verify off
+set pagesize 0
+set term off
+set trims on
+set linesize 600
+set heading off
+set timing off
+set verify off
+set numwidth 38
+SPOOL c:drop_table.sql
+SELECT 'DROP TABLE '|| table_name ||';' FROM user_tables;
+SPOOL OFF
+b. 以SCOTT用户登录数据库
+SQLPLUS > @ …..gen_dorp_table.sql
+c. 在c盘根目录下会生成文件drop_table.sql文件，包含删除所有表的语句，如下所示:
+DROP TABLE DEPT;
+DROP TABLE EMP;
+DROP TABLE PARENT;
+DROP TABLE STAT_VENDER_TEMP;
+DROP TABLE TABLE_FORUM;
+d. 在scott用户下运行dorp_table.sql文件，删除scott用户下所有的表。
+SQLPLUS > @ c:dorp_table.sql
+◆2．将一个表中的数据导出生成一个文本文件，列与列之间以”,”隔开
+set echo off
+set feedback off
+set newpage none
+set pagesize 5000
+set linesize 500
+set verify off
+set pagesize 0
+set term off
+set trims on
+set linesize 600
+set heading off
+set timing off
+set verify off
+set numwidth 38
+SPOOL c:drop_table.sql
+select DEPTNO || ',' || DNAME FROM DEPT;
+SPOOL OFF
+将上面的内容保存为一个文本文件后，以scott登录，执行该文件后显示结果：
+10,ACCOUNTING
+20,RESEARCH
+30,SALES
+40,OPERATIONS
+通过上面的两个例子，我们可以将：
+set echo off
+set feedback off
+set newpage none
+set pagesize 5000
+set linesize 500
+set verify off
+set pagesize 0
+set term off
+set trims on
+set linesize 600
+set heading off
+set timing off
+set verify off
+set numwidth 38
+SPOOL c:具体的文件名
+你要运行的sql语句
+SPOOL OFF
+作为一个模版，只要将必要的语句假如这个模版就可以了。
+在oracle的较新版本中，还可以用set colsep命令来实现上面的功能：
+SQL> set colsep ,
+SQL> select * from dept;
+10,ACCOUNTING ,NEW YORK
+20,RESEARCH ,DALLAS
+30,SALES ,CHICAGO
+40,OPERATIONS ,BOSTON
+35,aa ,bb
+◆3．动态生成spool命令所需的文件名
+在我们上面的例子中，spool命令所需要的文件名都是固定的。有时我们需要每天spool一次，并且每次spool的文件名都不相同，如文件名包含当天的日期，该如何实现呢？
+column dat1 new_value filename;
+select to_char(sysdate,'yyyymmddhh24mi') dat1 from dual;
+spool c:&&filename..txt
+select * from dept;
+spool off;
+◆4．如何从脚本文件中得到WINDOWS环境变量的值：
+在windos中：
+spool c:temp%ORACLE_SID%.txt
+select * from dept;
+...
+spool off
+在上面的例子中，通过%ORACLE_SID%的方式引用环境变量ORACLE_SID的值，如果ORACLE_SID的值为orcl，则生成的spool文件名为：orcl.txt
+在UNIX中：
+spool c:temp$ORACLE_SID.txt
+select * from dept;
+...
+spool off
+在上面的例子中，通过$ORACLE_SID的方式引用环境变量ORACLE_SID的值，如果ORACLE_SID的值为orcl，则生成的spool文件名为：orcl.txt
+◆5．如何指定缺省的编辑脚本的目录
+在sql*plus中，可以用save命令，将上一条执行的sql语句保存到一个文件中，但是如何设置该文件的缺省目录呢？
+通过SQL> set editfile c:tempfile.sql 命令，可以设置其缺省目录为c:tmpe，缺省文件名为file.sql。
+◆6．如何除去表中相同的行
+找到相同的行：
+SELECT * FROM dept a
+WHERE ROWID <> (SELECT MAX(ROWID)
+FROM dept b
+WHERE a.deptno = b.deptno
+AND a.dname = b.dname -- Make sure all columns are compared
+AND a.loc = b.loc);
+注释：
+如果只找deptno列相同的行，上面的查询可以改为：
+SELECT * FROM dept a
+WHERE ROWID <> (SELECT MAX(ROWID)
+FROM dept b
+WHERE a.deptno = b.deptno)
+删除相同的行：
+DELETE FROM dept a
+WHERE ROWID <> (SELECT MAX(ROWID
+FROM dept b
+WHERE a.deptno = b.deptno
+AND a.dname = b.dname -- Make sure all columns are compared
+AND a.loc = b.loc);
+注意：上面并不删除列值为null的行。
+◆7．如何向数据库中插入两个单引号(’’)
+Insert inot dept values(35,’aa’’’’bb’,’a’’b’);
+在插入时，用两个’表示一个’。
+◆8．如何设置sql*plus的搜寻路径，这样在用@命令时，就不用输入文件的全路径。
+设置SQLPATH环境变量。
+如：
+SQLPATH = C:ORANTDBS;C:APPSSCRIPTS;C:MYSCRIPTS
+◆9．@与@@的区别是什么？
+@等于start命令，用来运行一个sql脚本文件。
+@命令调用当前目录下的，或指定全路径，或可以通过SQLPATH环境变量搜寻到的脚本文件。
+@@用在脚本文件中，用来指定用@@执行的文件与@@所在的文件在同一目录，而不用指定全路径，也不从SQLPATH环境变量指定的路径中寻找文件，该命令一般用在嵌套脚本文件中。
+◆10．&与&&的区别
+&用来创建一个临时变量，每当遇到这个临时变量时，都会提示你输入一个值。
+&&用来创建一个持久变量，就像用用define命令或带new_vlaue字句的column命令创建的持久变量一样。当用&&命令引用这个变量时，不会每次遇到该变量就提示用户键入值，而只是在第一次遇到时提示一次。
+如，将下面三行语句存为一个脚本文件，运行该脚本文件，会提示三次，让输入deptnoval的值：
+select count(*) from emp where deptno = &deptnoval;
+select count(*) from emp where deptno = &deptnoval;
+select count(*) from emp where deptno = &deptnoval;
+将下面三行语句存为一个脚本文件，运行该脚本文件，则只会提示一次，让输入deptnoval的值：
+select count(*) from emp where deptno = &deptnoval;
+select count(*) from emp where deptno = &deptnoval;
+select count(*) from emp where deptno = &deptnoval;
+◆11．引入copy的目的
+Copy命令在两个数据库之间拷贝数据时特别有用，特别是该命令可以在两个数据库之间传递long型字段的数据。
+缺点：
+在两个数据库之间传递数据时，有可能丢失精度(lose precision)。
+◆12．问什么在修改大量的行时，我的脚本会变得很慢？
+当通过PL/SQL块修改一个表中的许多行时，你会创建在表上创建一个cursor，但是只有在你关闭cursor时，才会释放ROLLBACK SEGMENT，这样，当cursor仍然打开时，修改过程会变慢，这是因为数据库不得不搜寻大量的rollback segment以便于维护读一致性。为了避免这样情况，试着在表上加一个标志字段来描述该行是否已经被修改，然后关闭该cursor，然后再打开该cursor。每次可以修改5000行
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+数据库管理员
+
+sqlplus username/password@url/instanse
+select * from v$datafile;
+alter tablespace tablespacename add datafile 'filepath';
+SQLPLUS 常用命令
+一：登录SQL*Plus
+  1. sqlplus /nolog
+  2. sqlplus "用户名/口令"
+  3. sqlplus "用户名/口令@服务名"
+  4. sqlplus " / as sysdba"
+  5. sqlplus "/@服务名 as sysdba"
+二：创建连接
+  1. CONN[ECT] 用户名/口令
+  2. CONN / AS SYSDBA
+  3. CONN 用户名/口令@服务名 
+  4. CONN 用户名/口令@服务名 AS SYSDBA
+三: 执行命令
+  1.如果执行SQL语句,末尾必须加;
+  2.执行脚本文件的方法:
+   (1)@ d:\a.ora
+   (2)STA[RT] @d:\a.ora  --前两个功能相同
+   (3)@@ d:\a.ora    --在脚本文件中还可以再调用其它的脚本文件
+四: 执行操作系统命令:
+   1. HOST可进入到DOS>, EXIT退回到SQL>
+   2. $DIR D:\
+五: 打开编辑器,编辑缓冲区中的SQL语句
+    ED[IT]
+六: 执行缓冲区中的命令
+    1. L[IST] --只显示出来,但不执行
+    2. /      --只执行但不显示
+    3. R[UN]  --显示并执行,相当于L和/的合并
+七: 退出SQL*Plus
+   EXIT或QUIT
+八: 列出表或视图的结构
+   DESC[RIBE] 表名
+九: 显示环境变量SHOW
+    1.显示所有变量: SHOW ALL
+    2.显示登录用户: SHOW USER
+    3.显示编译错误: SHOW ERRO[RS]
+ 
+十: 显示帮助: HELP (HELP TOPIC或HELP INDEX)
+十一: 格式化列的输出结果(COLUMN命令)
+   1. COLUMN 列名 HEADING "要显示的列名",如COLUMN ename HEADING "员工姓名"
+   2. COLUMN 列名 FORMAT fmt,如COLUMN sal FORMAT $9999.99,  COLUMN ename FORMAT A30 --30个字符
+   3. 前面两个也可以一起用,如COLUMN sal FORMAT $9999.99 HEADING ""员工工资
+十二: 设置一页之后是否暂停屏幕的滚动: SET PAUSE ON/OFF
+十三: 设置是否显示命令执行的时间: SET TIMING ON/OFF
+十四: 设置每页的行数,默认是14: SET PAGESIZE 20
+十五: 设置行的宽度,默认是80个字符: SET LINESIZE 800
+十六:清除缓冲区和屏: CLEAR SCREEN 或 CLSCR  --SQLPLUSW状态
+-- 修改会话的默认日期格式
+ALTER SESSION SET nls_date_format = 'YYYY-MM-DD';
+-- 显示日期和时间部分
+ALTER SESSION SET nls_date_format = 'YYYY-MM-DD HH:MI:SS AM';
+ALTER SESSION SET nls_date_format = 'YYYY-MM-DD HH24:MI:SS';
+--显示打印
+set serveroutput on;
+--打印
+dbms_output.print_line('');
+--并集
+SELECT * FROM dept
+UNION ALL
+SELECT * FROM dept_cp;
+SELECT * FROM dept
+UNION 
+SELECT * FROM dept_cp;
+--交集
+SELECT * FROM dept
+INTERSECT
+SELECT * FROM dept_cp;
+--差集
+SELECT * FROM dept
+MINUS
+SELECT * FROM dept_cp;
+--另一种分页方法：
+SELECT * FROM dept WHERE ROWNUM<=4
+MINUS
+SELECT * FROM dept WHERE ROMNUM<=2
+ 
+1.CONN SYS/PASSWORD AS SYSDBA;
+ 
+2.ARCHIVE LOG LIST;
+ 
+3.SHUTDOWN IMMEDIATE;
+ 
+4.STARTUP MOUNT;
+ 
+5.ALTER DATABASE ARCHIVELOG;
+ 
+6.ALTER DATABASE OPEN;
+ 
+7.ARCHIVE LOG LIST;
+ 
+8.md d:\backup
+md d:\bak
+ 
+9.ALTER SYSTEM SET log_archive_start =true SCOPE=spfile;
+ 
+10.SHOW PARAMETER log_archive_start;
+ 
+11.SHUTDOWN IMMEDIATE;
+ 
+12.STARTUP
+ 
+13.SHOW PARAMETER log_archive_start;
+ 
+14.ALTER SYSTEM SET log_archive_max_processes=3;
+ 
+15.ALTER SYSTEM SET log_archive_dest_1="location=d:\bak";
+ALTER SYSTEM SET log_archive_dest_2="location=d:\backup";
+ 
+16.ALTER SYSTEM SET log_archive_format='arch_%T_%S_%R.arc' SCOPE=spfile;
+ 
+18.ALTER SYSTEN SWITCH LOGFILE;
+
+1.exp soctt/tiger file=c:\scott.dmp owner=scott
+ 
+3.imp scott/tiger file=c:\scott.dmp full=y ignore=y
+ 
+5.exp scott/tiger file=c:\table.dmp tables=(dept,emp)
+ 
+6.imp system/abcdef file=c:\table.dmp 
+fromuser=SCOTT touser=student 
+tables=(dept,emp)
+Oracle中如何实现填充因子？
+ 
+ 
+CREATE INDEX idx_name ON table_name(column_name)
+[PCTFREE integer]
+[PCTUSED integer]
+ 
+ 
+PCTFREE: 指定存储索引的每个数据块为将来的更新保留的百分比，取值范围是0-100。0表示允许填满，默认为10。
+PCTUSED：指定索引的每个数据块已用空间的最小百分比，当块中已用空间低于PCTUSED时，块就成了行插入的候选块，取值范围也是0-100，默认为40。
+PCTFREE和PCTUSED的和必须小于100。这两个参数结合使用可以更高效地利用表内空间，并最终确定是把新行插入到现有的数据块还是新块中。
+ 
+ 
+ 这两个选项在创建表时同样适用。
+ 
+//特殊用法，利用现有的表创建新表: 
+CREATE TABLE <newtable> 
+AS 
+SELECT {*|columns}
+FROM <oldtable> [WHERE <condition>];
+//特殊用法
+INSERT INTO another_table(column_list) 
+SELECT columns_list FROM one_table;
+ 
+
+//分页
+SELECT * FROM
+ (SELECT ROWNUM num,empno FROM
+ (SELECT empno FROM emp ORDER BY empno desc))
+WHERE num>=6 AND num<=10;
+ 
+SELECT * FROM
+(SELECT ROW_NUMBER() OVER (ORDER BY empno DESC) num,empno 
+FROM emp)
+WHERE  num>=6 AND num<=10;
+ 
+ Copyright ©2010 lyt. All Rights Reserved.
+
+ 

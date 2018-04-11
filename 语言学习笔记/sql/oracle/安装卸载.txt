@@ -1,0 +1,92 @@
+Oracle安装后在服务管理器里面没有相关的服务，只有一个监听的！是怎么回事
+你在安装ORACLE数据库的时候，没有创建启动数据库，那么你的数据库是不能用的，你只能访问别人的数据库，而在自己的机子上是没有数据库的；如果你想自己的机子上有数据库的话，建议重装，并装上创建启动数据库。
+
+Oracle新手最经常碰到的6个错误及解决方案
+1.ORA-12541:TNS:没有监听器
+	原因:没有启动监听器或者监听器损坏.如果是前者.使用命令net start OracleOraHome81TNSListener(名字可能有出入)即可,如果是后者.则使用[Net8 Configuration Assistant"工具向导之[监听程序配置"增加一个监听器即可(基本不用写任何信息.一路OK.在添加之前可能需要把所有的监听器先删除!)
+2.ORA-12500:TNS:监听程序无法启动专用服务器进程  或 ORA-12560:TNS:协议适配器错误
+	原因:ORACLE的数据库服务没有启动.使用命令net start ORACLESERVICEORADB(ORADB为数据库名字)即可.如果仍没有解决.请继续向下看.
+3.数据库服务启动失败.则很有可能是其注册表项值损坏.
+	最好的做法是以下两步:
+	1)ORADIM -DELETE -SID oradb 删除数据库服务项
+	2)ORADIM -NEW -SID oradb 新增数据库服务项
+	注:这个过程中如果出错.就重启计算机!
+4.ORA-12154:TNS:能解析服务名
+	原因:ORACLE的网络服务名没有正确配置.请使用[Net8 Configuration Assistant"工具向导之[本地网络服务名配置"配置TNS即可.如果仍没有解决.请继续向下看.
+5.ORA-1034 :TNS:ORACLE不可用
+	原因:ORACLE的数据库服务正确启动.但是数据库没有打开!
+	使用命令:
+	1)svrmgrl 启动服务管理器
+	2)connect internal 以internal身份登陆
+	3)startup 打开数据库
+6.ORA-12560:TNS:协议适配器错误(顽固性的)
+	原因:未知.
+	解决:必杀技--打开[Windows任务管理器".杀死ORACLE.exe及ORADIM.exe进程.书写自己的ora＿startup.bat.执行之!
+PS:
+1.我的ora＿startup.bat:
+	net start OracleOraHome81TNSListener
+	net start ORACLESERVICEORADB
+	svrmgrl 一般情况下不用.不过有时少不了它的.具体步骤见第5步.
+2.我的ora＿shutdown.bat:
+	net stop OracleOraHome81TNSListener
+	net stop ORACLESERVICEORADB
+3.ORACLE相关服务名请参见[管理工具"之[服务"中以ORACLE开头的服务名.
+
+以下是删除服务项的一些办法做参考.从中不难发现你看不到相关服务项的原因.
+方法一:
+1. 运行regedit
+2. 选择HKEY＿LOCAL＿MACHINESYSTEMCurrentControlSetServices
+3. 选中需要删除的SERVICE.将其删除
+重新启动后就可以了
+方法二:
+1.开始-＞设置-＞控制面板-＞管理工具-＞服务停止所有Oracle服务.
+2.开始-＞程序-＞Oracle - OraHome81-＞Oracle Installation Products-＞Universal Installer
+卸装所有Oracle产品.但Universal Installer本身不能被删除
+3.运行regedit.选择HKEY＿LOCAL＿MACHINESOFTWAREORACLE.按del键删除这个入口.
+4.运行regedit.选择HKEY＿LOCAL＿MACHINESYSTEMCurrentControlSetServices.滚动这个列表.删除所有Oracle入口.
+5.运行regedit.
+HKEY＿LOCAL＿MACHINESYSTEMCurrentControlSetServicesEventlogApplication.
+删除所有Oracle入口.
+6.开始-＞设置-＞控制面板-＞系统-＞高级-＞环境变量
+删除环境变量CLASSPATH和PATH中有关Oracle的设定
+7.从桌面上.STARTUP(启动)组.程序菜单中.删除所有有关Oracle的组和图标
+8.删除Program FilesOracle目录
+9.重新启动计算机.重起后才能完全删除Oracle所在目录
+10.删除与Oracle有关的文件.选择Oracle所在的缺省目录C:Oracle.删除这个入
+口目录及所有子目录.并从Windows 2000目录(一般为C:WINNT)下删除以下文
+件ORACLE.INI.oradim73.INI.oradim80.INI.oraodbc.ini等等.
+11. WIN.INI文件中若有［ORACLE］的标记段.删除该段
+12. 如有必要.删除所有Oracle相关的ODBC的DSN
+13. 到事件查看器中.删除Oracle相关的日志
+说明:
+到现在为止.你还是可以发现在服务里面还有oracle的服务存在.必须把他删除.否则你再安装oracle时就会出现什么服务已经存在的错误提示了!!而这些服务是在HKEY＿LOCAL＿MACHINESYSTEMCurrentControlSetEnumRoot下以LEGACY＿ORACLE打头的.而且你选种按delete删除时系统会提示你一个错误!!不让你删除!!!现提供具体删除方法.win2000的如下:
+运行regedt32注意了.不是regedit!!!!在HKEY＿LOCAL＿MACHINE那页找到HKEY＿LOCAL＿MACHINESYSTEMCurrentControlSetEnumRoot先选中ROOT然后点菜单上的安全-权限把自己添加到里面.并且权限设置为完全控制.确定后再删除ROOT下所有LEGACY＿ORACLE打头的键.同样的方法也可以把HKEY＿LOCAL＿MACHINESYSTEMControlSet001和HKEY＿LOCAL＿MACHINESYSTEMControlSet002两个下面EnumRoot下所有LEGACY＿ORACLE打头的键删除.重新启动计算机可以发现.服务里面的那些都没有了!!
+在winXP中就比较简单了.还是运行regedit.找到LEGACY＿ORACLE打头的键后右击.选择权限.同样将everyone设置为完全控制就可以删除了!删除后重新启动一下就可以了!!
+如果有个别DLL文件无法删除的情况.则不用理会.重新启动.开始新的安装.安装时.选择一个新的目录.则.安装完毕并重新启动后.老的目录及文件就可以删除掉了.
+
+database control url：  http://localhost:1158/em
+isqlplus url： http://localhost:5560/isqlplus
+isqlplus dba url：  http://localhost:5560/isqlplus/dba
+ 
+彻底删除Oracle服务：先停掉Oracle运行的应用程序，然后用卸载程序卸载。再接着对安装服务进行删除操作。 实现删除Oracle服务步骤：
+1、开始－＞设置－＞控制面板－＞管理工具－＞服务停止所有Oracle服务。
+2、开始－＞程序－＞Oracle - OraHome81－＞Oracle Installation Products－＞Universal Installer卸装所有Oracle产品，但Universal Installer本身不能被删除
+3、运行regedit，选择 HKEY_LOCAL_MACHINE\SOFTWARE\ORACLE 按del键删除这个入口。
+4、运行regedit，选择  HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services 滚动这个列表，删除所有Oracle入口。
+5、运行regedit， HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Eventlog\Application   删除所有Oracle入口。
+6、开始－＞设置－＞控制面板－＞系统－＞高级－＞环境变量,删除环境变量CLASSPATH和PATH中有关Oracle的设定
+7、从桌面上、STARTUP（启动）组、程序菜单中，删除所有有关Oracle的组和图标
+8、删除\Program Files\Oracle目录
+9、重新启动计算机，重起后才能完全删除Oracle所在目录
+10、删除与Oracle有关的文件，删除Oracle所在的缺省目录，并从Windows目录（一般为C:\WINNT）下删除以下文件ORACLE.INI、oradim73.INI、oradim80.INI、oraodbc.ini等等。
+11 WIN.INI文件中若有[ORACLE]的标记段，删除该段
+12 如有必要，删除所有Oracle相关的ODBC的DSN
+13、 到事件查看器中，删除Oracle相关的日志
+到现在为止，删除Oracle服务还未完成。你还是可以发现在服务里面还有oracle的服务存在，必须把他删除，否则你再安装oracle时就会出现什么服务已经存在的错误提示了！！而这些服务是在 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\Root 下以LEGACY_ORACLE打头的，而且你选种按delete删除时系统会提示不让你删除！！！现提供具体删除方法，win2000的如下：
+运行regedt32注意了，不是regedit！！！！在HKEY_LOCAL_MACHINE那页找到 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\Root  
+先选中ROOT然后点菜单上的安全-权限把自己添加到里面，并且权限设置为完全控制，确定后再删除ROOT下所有LEGACY_ORACLE打头的键，同样的方法也可以把
+HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001和HKEY_LOCAL_MACHINE\SYSTEM\ControlSet002 
+两个下面\Enum\Root下所有LEGACY_ORACLE打头的键删除，重新启动计算机可以发现，服务里面的那些都没有了！！
+在winXP中就比较简单了，还是运行regedit，找到LEGACY_ORACLE打头的键后右击，选择权限，同样将everyone设置为完全控制就可以删除了！删除后重新启动一下就可以了！！
+如果有个别DLL文件无法删除的情况，则不用理会，重新启动，开始新的安装，安装时，选择一个新的目录，则，安装完毕并重新启动后，老的目录及文件就可以删除掉了。
+到此，整个删除Oracle服务完毕。

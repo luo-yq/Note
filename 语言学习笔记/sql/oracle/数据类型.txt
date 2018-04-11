@@ -1,0 +1,460 @@
+
+标量数据类型
+Ø       数字数据类型
+Ø       字符数据类型
+Ø       日期时间数据类型
+Ø       布尔数据类型
+属性数据类型
+Ø       %TYPE
+Ø       %ROWTYPE
+ LOB数据类型
+复合数据类型
+引用数据类型
+数据类型
+描述
+NUMBER[(precision,scale)]  可用来存储整数、定点数和浮点数。Precision是精度，scale是小数位数，最高精度是38个十进制位。如果不指定精度，默认为38位。
+DECIMAL   NUMBER的子类型，用于存储最高精度38位的定点数。
+FLOAT     NUMBER的子类型，用于存储最高精度38位的浮点数。
+REAL      NUMBER的子类型，用于存储最高精度18位的浮点数。
+INTEGER，INT    NUMBER的子类型，用于存储最高精度38位的整数。
+BINARY_FLOAT    10g中新增的数据类型，用来存储最高精度32位的浮点数，一般比NUMBER类型速度更快，占用5个字节的存储空间。
+BINARY_DOUBLE   10g中新增的数据类型，用来存储最高精度64位的浮点数，一般比NUMBER类型速度更快，占用9个字节的存储空间。
+BINARY_INTEGER   用于存储带符号的整数，大小范围介于－231-1和231-1之间。
+NATURAL          BINARY_INTEGER的子类型，可用于存储非负整数，即自然数。
+NATURALN         BINARY_INTEGER的子类型，可用于存储自然数，且不能为空。
+POSITIVE         BINARY_INTEGER的子类型，可用于存储正整数。
+POSITIVEN        BINARY_INTEGER的子类型，可用于存储正整数，且不能为空。
+SIGNTYPE         BINARY_INTEGER的子类型，只能存储-1、0和1。
+PLS_INTEGER      用于存储带符号的整数，大小范围介于－231-1和231-1之间。类似于BINARY_INTEGER，存储空间更小，运算速度更快，建议在PLS_INTEGER数值范围之内的所有计算都使用此类型。
+CHAR[（max_size[CHAR|BYTE]）]
+用于存储固定长度的字符数据。最大长度32767个字节。如果不指定最大长度，默认值为1。如果没有写CHAR或BYTE，默认为BYTE。需注意与Oracle中CHAR类型的区别，向Oracle数据库表中插入CHAR类型的值时，其长度不要超出2000个字节。
+VARCHAR2（max_size[CHAR|BYTE]）
+用于存储可变长度的字符数据。最大长度32767个字节。如果没有写CHAR或BYTE，默认为BYTE。需注意与Oracle中VARCHAR2类型的区别，向Oracle数据库表中插入VARCHAR2类型的值时，其长度不要超出4000个字节。
+STRING（max_size[CHAR|BYTE]）   类似于VARCHAR2
+LONG       类似于VARCHAR2，最大长度为32760个字节，注意Oracle中的该类型最大长度为2GB。
+RAW（max_size）    用于存储固定长度的二进制数据，最大长度为32760个字节。如有必要可在字符集之间自动转换。注意Oracle中的该类型最大长度为2000个字节。
+LONG RAW    类似于RAW，最大长度为32760个字节。不能在字符集之间自动转换。注意Oracle中的该类型最大长度为2GB。
+DATE      用于存储固定长度的日期和时间数据。支持的日期范围为：公元前4712年1月1日到公元9999年12月31日。日期函数SYSDATE能返回当前的日期和时间。
+TIMESTAMP[（precision）]
+从9i开始新增的类型，也用于存储日期和时间，比DATE类型存储的时间更精确。Precision代表秒的小数部分的位数，取值范围0到9，默认为6。
+日期函数SYSTIMESTAMP返回当前的日期时间信息。
+l       布尔数据类型用于存储逻辑值，它只有一种类型即BOOLEAN类型，它的取值只能是TRUE、FALSE和NULL，需注意在Oracle数据列中不能使用该类型。
+l       属性类型是用于引用变量或数据库表列的数据类型，以及表示表中一行的记录类型。
+l       PL/SQL支持两种属性类型：
+l       %TYPE
+l       ％ROWTYPE
+l       %TYPE：
+l       引用某个变量或数据库列的数据类型来声明变量。声明的语法如下：
+l       variable_name other_var_name%TYPE|table_name.column_name%TYPE;
+如：aa NUMBER(2);
+       bb aa%type;  --引用某个变量的数据类型
+       cc dept.dname%type; --引用某个数据库列的数据类型
+l       %ROWTYPE：引用数据库表中的一行的记录类型，可以存储从表中选择或由游标提取出的整行数据。声明语法如下：
+Ø       variable_name table_name%ROWTYPE;
+ 
+如：
+emp_rec emp%ROWTYPE;
+ 
+DECLARE
+ BB EMP%ROWTYPE;
+BEGIN
+   SELECT * INTO BB FROM EMP WHERE EMPNO=7902;
+  DBMS_OUTPUT.PUT_LINE(BB.EMPNO);
+END;
+l       循环控制用于重复执行一系列语句。
+l       循环控制包括LOOP和EXIT语句
+l       使用EXIT语句可以立即退出循环
+l       使用EXIT WHEN语句可以根据条件结束循环
+l       使用循环控制语句一定要避免死循环
+l       循环有三种类型：LOOP循环、WHILE循环和FOR循环。
+l       包括LOOP与END LOOP之间的一系列语句。为了避免进入死循环，必须在循环中加入EXIT或EXIT WHEN语句。
+l       LOOP循环的语法如下：
+LOOP   
+        statements;
+END LOOP;
+DECLARE
+num PLS_INTEGER;
+BEGIN
+num:=1;
+LOOP
+                       EXIT WHEN num>=100;
+      IF MOD(num,9)=0 THEN
+               DBMS_OUTPUT.PUT(num||'  ');
+        END IF;
+                       num:=num+1;
+END LOOP;
+DBMS_OUTPUT.NEW_LINE;
+END;
+/
+DECLARE
+num PLS_INTEGER;
+BEGIN
+num:=1;
+         WHILE num<=100
+LOOP                      
+        IF MOD(num,9)=0 THEN
+               DBMS_OUTPUT.PUT(num||'  ');
+       END IF;
+                       num:=num+1;
+END LOOP;
+DBMS_OUTPUT.NEW_LINE;
+END;
+/
+l       在执行语句前，FOR循环中的循环次数是已知的，也就是说，FOR循环适于用在循环次数为已知的情况下。
+l       在FOR循环中，循环计数器变量无需事先声明，且在循环体语句中不能给计数器变量赋值。
+l       FOR循环的步长总为1。
+l       FOR循环的语法如下：
+l       FOR counter IN [REVERSE] value1..value2 LOOP
+l         statements;
+l       END LOOP;
+l        
+DECLARE
+num PLS_INTEGER;
+BEGIN
+FOR num IN 1..100
+LOOP
+        IF MOD(num,9)=0 THEN
+               DBMS_OUTPUT.PUT(num||'  ');
+        END IF;
+END LOOP;
+DBMS_OUTPUT.NEW_LINE;
+END;
+/
+l       顺序控制用于按顺序执行的语句。顺序控制包括GOTO语句和NULL语句。
+l       GOTO语句用于无条件地将控制权转到标签指定的语句。GOTO语句不能跳转到IF语句、CASE语句、LOOP语句或子块中。
+l       NULL语句什么也不做，只是将控制权转移到下一条语句。
+ 
+DECLARE
+l_sal emp.sal%TYPE;
+BEGIN
+SELECT sal INTO l_sal FROM emp WHERE empno=7499;
+IF l_sal<2000 THEN
+        GOTO UPDATION;
+ELSE
+        NULL;
+END IF;
+<<UPDATION>>
+UPDATE emp SET sal=2000 WHERE empno=7499;
+END;
+/
+l       PL/SQL通过控制结构来控制命令执行的流程。控制结构有三种类型：
+Ø       条件控制
+　IF语句
+　IF—THEN、IF—THEN—ELSE和IF—THEN—ELSIF
+　CASE语句 （两种形式）
+Ø       循环控制
+　LOOP循环、WHILE循环和FOR循环
+Ø       顺序控制
+　GOTO语句和NULL语句
+l       程序运行时出现的错误被称为异常。
+l       异常的分类 ：
+Ø       预定义异常
+Ø       自定义异常
+l       异常的抛出
+Ø       系统异常会自动抛出
+Ø       用RAISE语句显示抛出
+　RAISE exception_name;
+Ø       用RAISE_APPLICATION_ERROR语句抛出
+ü       用于创建用户定义的错误信息
+ü       可以在可执行部分和异常处理部分使用
+ü       错误编号必须介于 –20000 和 –20999 之间
+ü       错误消息的长度可长达 2048 个字节
+ü       语法：RAISE_APPLICATION_ERROR(error_number,error_message)；
+l       异常的处理 ：
+ 
+l       异常处理部分的一般语法：
+       EXCEPTION
+              WHEN exception_name1 THEN
+                     statements1;
+              WHEN exception_name2 THEN
+                     statements2;
+              ……
+              WHEN OTHERS THEN
+                     Other_statements;
+       END;
+DECLARE
+  rate itemfile.itemrate%TYPE;
+  rate_exception EXCEPTION;
+BEGIN
+  SELECT NVL(itemrate,0) INTO rate FROM itemfile
+  WHERE  itemcode = 'i207';
+  IF rate = 0 THEN
+    RAISE rate_exception;
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('项费率为：' || rate);
+  END IF;
+EXCEPTION
+  WHEN rate_exception THEN
+    RAISE_APPLICATION_ERROR(-20001, '未指定项费率');
+END;
+l       为了处理SQL语句，Oracle将在内存中分配一个区域，这就是上下文区。
+l       游标就是指向上下文区的句柄或指针。通过游标，PL/SQL程序可以控制上下文区和在处理语句时上下文区会发生些什么事情。
+l       逐行处理查询结果，以编程的方式访问数据
+l       游标的类型：
+隐式游标
+REF 游标
+显式游标
+REF 游标用于处理运行时才能确定的动态 SQL 查询的结果
+游标类型
+l         静态游标
+l       在PL/SQL中使用DML语句时自动创建隐式游标
+l       隐式游标自动声明、打开和关闭，其名为 SQL
+l       通过检查隐式游标的属性可以获得最近执行的DML 语句的信息
+l       隐式游标的属性有：
+Ø       %FOUND – SQL 语句影响了一行或多行时为 TRUE
+Ø       %NOTFOUND – SQL 语句没有影响任何行时为TRUE
+Ø       %ROWCOUNT – SQL 语句影响的行数
+Ø       %ISOPEN  - 游标是否打开，始终为FALSE
+SQL> SET SERVEROUTPUT ON
+SQL> BEGIN
+       UPDATE toys SET toyprice=270
+       WHERE toyid= 'P005';
+       IF SQL%FOUND THEN
+              DBMS_OUTPUT.PUT_LINE(‘表已更新');
+       END IF;
+     END;
+       /只有在 DML 语句影响一行
+或多行时，才返回 True
+ 
+ 
+SQL> SET SERVEROUTPUT ON
+SQL> DECLARE
+      v_TOYID TOYS.ID%type := '&TOYID';
+      v_TOYNAME TOYS.NAME%Type := '&TOYNAME';
+     BEGIN
+      UPDATE TOYS SET NAME = v_TOYNAME
+      WHERE toyid=v_TOYID;
+      IF SQL%NOTFOUND THEN
+                  DBMS_OUTPUT.PUT_LINE('编号未找到。');
+      ELSE
+              DBMS_OUTPUT.PUT_LINE(‘表已更新');
+       END IF;
+     END;
+/如果 DML 语句不影响任何行，则返回 True
+ 
+ 
+SQL> SET SERVEROUTPUT ON
+SQL> BEGIN
+       UPDATE vendor_master
+       SET venname= 'Rob Mathew'
+       WHERE vencode='V004';
+       DBMS_OUTPUT.PUT_LINE (SQL%ROWCOUNT);
+     END;
+     /返回 DML 语句影响的行数
+ 
+ 
+l       %ISOPEN表示游标是否打开。在隐式游标中%ISOPEN始终为FALSE。因为隐式游标是在执行完SQL语句后自动关闭的。
+l       注意：
+l       游标属性不能直接用于SQL语句中。如果需要在SQL语句中使用，可先将其放入一PL/SQL变量中，然后在SQL语句中通过该变量使用游标属性值。
+l       显式游标在 PL/SQL 块的声明部分定义查询，该查询可以返回多行
+l       显式游标的操作过程： 
+l       声明游标
+l       打开游标
+l       使用游标
+l       关闭游标
+l       声明游标的语法：
+ CURSOR 游标名称 [(parameter,…)]
+      [return returntype]
+       IS   select_语句
+l       打开游标的语法：
+    OPEN  游标名称(参数)
+l       使用游标的语法：
+    FETCH 游标名称  INTO 变量
+l       关闭游标的语法：
+    CLOSE 游标名称
+SQL>SET SERVER OUTPUT ON
+SQL>DECLARE
+        my_toy_price toys.toyprice%TYPE;                            CURSOR toy_cur IS
+              SELECT toyprice FROM toys
+              WHERE toyprice<250;
+    BEGIN
+            OPEN toy_cur; 
+            LOOP
+             FETCH toy_cur INTO my_toy_price;
+             EXIT WHEN toy_cur%NOTFOUND;
+             DBMS_OUTPUT.PUT_LINE
+          (toy_cur%ROWCOUNT||‘.玩具单价=：'||my_toy_price);
+            END LOOP;
+            CLOSE toy_cur;
+   END;
+ 
+ 
+DECLARE
+CURSOR c_emp IS
+        SELECT empno,ename,sal FROM emp ORDER BY sal;
+r_emp c_emp%ROWTYPE;
+BEGIN
+OPEN c_emp;
+LOOP
+        FETCH c_emp INTO r_emp;
+EXIT WHEN c_emp%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(r_emp.empno||'    '||r_emp.ename
+        ||'    '||r_emp.sal);
+END LOOP;
+CLOSE c_emp;
+END;
+ 
+ 
+ 
+SQL> SET SERVEROUTPUT ON
+SQL> set serveroutput on
+DECLARE
+              desig    VARCHAR2(20);
+              emp_code VARCHAR2(5);
+              empnm    VARCHAR2(20);
+              CURSOR emp_cur(empparam VARCHAR2) IS
+               SELECT empno, ename FROM emp
+               WHERE empno=empparam;
+     BEGIN
+              desig:= '&desig';
+              OPEN emp_cur(desig);
+              LOOP
+                     FETCH emp_cur INTO emp_code,empnm;
+                     EXIT WHEN emp_cur%NOTFOUND;
+                     DBMS_OUTPUT.PUT_LINE(emp_code||' '||empnm);
+             END LOOP;
+              CLOSE emp_cur;
+     END;
+ 
+ 
+l       允许使用游标删除或更新活动集中的行
+l       声明游标时必须使用 SELECT … FOR UPDATE语句
+      
+    CURSOR <cursor_name> IS
+         SELECT statement FOR UPDATE [OF columns][NOWAIT];
+ 
+       UPDATE <table_name>
+       SET <set_clause>
+       WHERE CURRENT OF <cursor_name>
+ 
+ 
+SQL> SET SERVEROUTPUT ON
+SQL> DECLARE
+  new_sal NUMBER;
+  CURSOR cur_emp IS
+    SELECT sal FROM emp WHERE sal<3000
+    FOR UPDATE OF sal;
+BEGIN
+  OPEN cur_emp;
+  LOOP
+    FETCH cur_emp INTO new_sal;
+    EXIT WHEN cur_emp%NOTFOUND;
+    UPDATE emp
+    SET sal = 1.1*new_sal
+    WHERE CURRENT OF cur_emp;
+  END LOOP;
+  CLOSE cur_emp;
+  COMMIT;
+END;
+ 
+ 
+ 
+l       循环游标用于简化游标处理代码
+l       当用户需要从游标中提取所有记录时使用
+l       循环游标隐式打开，自动从活动集获取数据，在处理完后自动关闭。
+l       循环游标自动创建%ROWTYPE的变量
+l       循环游标的语法如下：
+ 
+FOR <record_index> IN <cursor_name>
+LOOP
+       <executable statements>
+END LOOP;
+ 
+ 
+SQL> SET SERVER OUTPUT ON
+SQL> DECLARE
+         CURSOR emp_cur IS
+           SELECT empno,ename,deptno
+           FROM emp;
+     BEGIN
+         FOR toy_rec IN emp_cur
+         LOOP
+               DBMS_OUTPUT.PUT_LINE(
+                             '员工编号：'||' ' ||toy_rec.empno||' '           
+            ||'员工名称：'||' '||toy_rec.ename||' '
+            ||'部门名称：'||' '||toy_rec.deptno);
+        END LOOP;
+     END;
+ 
+ 
+l       REF 游标和游标变量用于处理运行时动态执行的 SQL 查询
+l       创建游标变量需要两个步骤：
+Ø       声明 REF 游标类型
+Ø       声明 REF 游标类型的变量
+l       用于声明 REF 游标类型的语法为：
+       TYPE <ref_cursor_name> IS REF CURSOR;
+       [RETURN <return_type>];
+l       打开游标变量的语法如下：
+        OPEN cursor_name FOR select_statement;
+l       声明强类型的 REF 游标
+TYPE my_curtype IS REF CURSOR
+  RETURN stud_det%ROWTYPE;
+order_cur my_curtype;
+声明弱类型的 REF 游标
+TYPE my_ctype IS REF CURSOR;
+stud_cur my_ctype;
+SET SERVEROUTPUT ON
+declare
+  type refemp is ref cursor;
+  aaa refemp;
+  bh number(10);
+  name varchar2(50);
+  flag varchar2(10);
+BEGIN
+    flag:='&hh';
+    if flag='1' then
+             open aaa for select empno,ename from emp;
+    else
+              open aaa for select deptno,dname from dept;
+     end if;
+     fetch aaa into bh,name;
+     while aaa%found loop
+            dbms_output.put_line(bh||'  '||name);
+             fetch aaa into bh,name;
+     end loop;
+     close aaa;
+END;
+ 
+SQL> DECLARE
+       TYPE toys_curtype IS REF CURSOR
+          RETURN toys%ROWTYPE;
+       toys_curvar toys_curtype;
+       toys_rec toys%ROWTYPE;
+     BEGIN
+      OPEN toys_curvar FOR
+        SELECT * FROM toys;
+      FETCH toys_curvar INTO toys_rec;
+       ...
+      CLOSE toys_curvar;
+     END;
+ 
+ 
+SET SERVEROUTPUT ON
+declare
+  type refemp is ref cursor return emp%rowtype;
+  aaa refemp;
+  bh emp%rowtype;
+  flag varchar2(10);
+BEGIN
+    flag:='&hh';
+if flag='1' then
+    open aaa for select * from emp;  -- 输入1时形成此游标，可以正常运行
+else
+    open aaa for select * from dept; -- 输入非1时形成此游标，由于与返回类型不一致不能正常运行
+end if;
+     fetch aaa into bh;
+     while aaa%found loop
+       dbms_output.put_line(bh.empno||'  '||bh.ename);
+       fetch aaa into bh;
+     end loop;
+close aaa;
+END;
+ 
+l       以SCOTT身份登录到Oracle数据库后完成以下作业：
+l       1. 圆周率PI假定取常量3.14，让用户输入圆的半径，用PL/SQL程序计算出圆的面积，并显示出来。
+l       2. 用SELECT语句查询出编号是7369的员工所在的部门，根据其所在部门的不同，给予不同的工资。如果部门编号是10，工资定为1000；如果部门编号是20，工资定为1200；如果部门编号是30，工资定为1500；否则的话，工资定为1800。分别用CASE和IF条件控制结构来实现此功能。
+l       先创建一个表demo，表中有两列：id（NUMBER）和info（VARCHAR2(10)），按右表所示向表demo中插入数据。
+l       编写一个PL/SQL匿名块，使用游标将demo表的info字段按照id的升序顺序连接为一句话输出。
+ 
+Write here...
+ Copyright ©2011 lyt. All Rights Reserved.

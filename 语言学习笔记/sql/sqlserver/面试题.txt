@@ -1,0 +1,342 @@
+
+一．选择题
+10. 下列模式中，能够给出数据库物理存储结构与物理存取方法的是__A____。
+A、内模式 B、外模式 C、概念模式 D、逻辑模式
+13. 如果要创建一个数据组分组报表，第一个分组表达式是"部门"，第二个分组表达式是"性别"，第三个分组表达式是"基本工资"，当前索引的索引表达式应当是__B____。
+A、部门+性别+基本工资 B、部门+性别+STR（基本工资）
+C、STR（基本工资）+性别+部门 D、性别+部门+STR（基本工资）
+17. 要控制两个表中数据的完整性和一致性可以设置"参照完整性"，要求这两个表__A____。
+A、是同一个数据库中的两个表 B、不同数据库中的两个表
+C、两个自由表 D、一个是数据库表另一个是自由表
+20. 设当前数据库有10条记录（记录未进行任何索引），在下列三种情况下，当前记录号为1时；EOF()为真时；BOF()为真时，命令?RECN()的结果分别是____A__。
+A、1,11,1 B、1,10,1 C、1,11,0 D、1,10,0
+24. 执行SELECT 0选择工作区的结果是___B___。
+A、选择了0号工作区 B、选择了空闲的最小号工作区
+C、关闭选择的工作区 D、选择已打开的工作区
+26. DELETE FROM S WHERE 年龄>60语句的功能是_B_____。
+B、S表中年龄大于60岁的记录被加上删除标记
+ 
+30. 以下属于非容器类控件的是___D___。
+ 
+A、Form B、Label C、page D、Container
+ 
+31. 将查询结果放在数组中应使用___D___短语。
+ 
+A、INTO CURSOR B、TO ARRAY C、INTO TABLE D、INTO ARRAY
+ 
+二、填空题
+40. 关系数据库管理系统能实现的专门关系运算包括选择、连接和__投影____。
+ 
+42.SQL SELECT语句为了将查询结果存放到临时表中应该使用__ Into cursor 或 Into cursor cursorname ____短语。
+ 
+43. 多栏报表的栏目数可以通过__页面设置 或 列数____来设置。
+ 
+44. 在打开项目管理器之后再打开"应用程序生成器"，可以通过按ALT+F2键，快捷菜单和"工具"菜单中的__应用程序生成器____。
+ 
+46. 查询设计器中的"联接"选项卡，可以控制__联接类型 或 联接条件____选择。
+ 
+7. 对长度为N的线性表进行顺序查找，在最坏情况下所需要的比较次数为__B____。
+ 
+A、N+1 B、N C、(N+1)/2 D、N/2
+ 
+8. 视图设计一般有3种设计次序，下列不属于视图设计的是___B___。
+ 
+A、自顶向下 B、由外向内 C、由内向外 D、自底向上
+ 
+11. 在下面的Visual FoxPro表达式中，运算结果是逻辑真的是__D____。
+ 
+A、EMPTY(.NULL.)
+ 
+B、LIKE('acd','ac?')
+ 
+C、AT('a','123abc')
+ 
+D、EMPTY(SPACE(2))
+ 
+12. 表达式VAL(SUBS("奔腾586",5,1))*Len("visual foxpro")的结果是_____D_。
+A、13.00 B、14.00 C、45.00 D、65.00
+ 
+13. 以下关于自由表的叙述，正确的是___C___。
+ 
+A、全部是用以前版本的FOXPRO（FOXBASE）建立的表
+ 
+B、可以用Visual FoxPro建立，但是不能把它添加到数据库中
+ 
+C、自由表可以添加到数据库中，数据库表也可以从数据库中移出成为自由表
+ 
+D、自由表可以添加到数据库中，但数据库表不可从数据库中移出成为自由表
+ 
+14. 下面关于数据环境和数据环境中两个表之间的关系的陈述中，___C___是正确的。
+ 
+A、数据环境是对象，关系不是对象
+ 
+B、数据环境不是对象，关系是对象
+ 
+C、数据环境是对象，关系是数据环境中的对象
+ 
+D、数据环境和关系均不是对象
+ 
+15. 在"报表设计器"中，可以使用的控件是____A__。
+ 
+A、标签、域控件和线条
+ 
+B、标签、域控件和列表框
+ 
+C、标签、文本框和列表框
+ 
+D、布局和数据源
+ 
+17. 用来指明复选框的当前选中状态的属性是__C____。
+ 
+A、Selected
+ 
+B、Caption
+ 
+C、Value
+ 
+D、ControlSource
+ 
+18. 使用菜单操作方法打开一个在当前目录下已经存在的查询文件zgjk.qpr后，在命令窗口生成的命令是__B__。
+ 
+A、OPEN QUERY zgjk.qpr
+ 
+B、MODIFY QUERY zgjk.qpr
+ 
+C、DO QUERY zgjk.qpr
+ 
+D、CREATE QUERY zgjk.qpr
+ 
+19. 可以伴随着表的打开而自动打开的索引是__C____。
+ 
+A、单一索引文件（IDX）
+ 
+B、复合索引文件（CDX）
+ 
+C、结构化复合索引文件
+ 
+D、非结构化复合索引文件
+ 
+20. 在数据库设计器中，建立两个表之间的一对多联系是通过以下索引实现的___A___。
+ 
+A、"一方"表的主索引或候选索引，"多方"表的普通索引
+ 
+B、"一方"表的主索引，"多方"表的普通索引或候选索引
+ 
+C、"一方"表的普通索引，"多方"表的主索引或候选索引
+ 
+D、"一方"表的普通索引，"多方"表的候选索引或普通索引
+ 
+21. 下列函数中函数值为字符型的是__B____。
+ 
+A、DATE()
+ 
+B、TIME()
+ 
+C、YEAR()
+ 
+D、DATETIME()
+ 
+22. 下面对控件的描述正确的是__B____。
+ 
+A、用户可以在组合框中进行多重选择
+ 
+B、用户可以在列表框中进行多重选择
+ 
+C、用户可以在一个选项组中选中多个选项按钮
+ 
+D、用户对一个表单内的一组复选框只能选中其中一个
+ 
+23. 确定列表框内的某个条目是否被选定应使用的属性是___D___。
+ 
+A、Value
+ 
+B、ColumnCount
+ 
+C、ListCount
+ 
+D、Selected
+ 
+26. 设X="ABC"，Y="ABCD"，则下列表达式中值为.T.的是__C____。
+ 
+A、X=Y
+ 
+B、X==Y
+ 
+C、X$Y
+ 
+D、AT(X,Y)=0
+ 
+29. 有关SCAN循环结构，叙述正确的是__B____。
+ 
+A、SCAN循环结构中的LOOP语句，可将程序流程直接指向循环开始语句SCAN，首先判断EOF()函数的真假
+ 
+B、在使用SCAN循环结构时，必须打开某一个数据库
+ 
+C、SCAN循环结构的循环体中必须写有SKIP语句
+ 
+D、SCAN循环结构，如果省略了子句\FOR和WHILE条件子句，则直接退出循环
+ 
+32. 查询订购单号（字符型，长度为4）尾字符是"1"的错误命令是___C___。
+ 
+A、SELECT * FROM 订单 WHERE SUBSTR(订购单号,4)＝"1"
+ 
+B、SELECT * FROM 订单 WHERE SUBSTR(订购单号,4,1)＝"1"
+ 
+C、SELECT * FROM 订单 WHERE "1"$订购单号
+ 
+D、SELECT * FROM 订单 WHERE RIGHT(订购单号,1)＝"1"
+ 
+34. 根据"职工"项目文件生成emp_sys.exe应用程序的命令是_____B_。
+ 
+A、BUILD EXE emp_sys FROM 职工
+ 
+B、BUILD APP emp_sys.exe FROM 职工
+ 
+C、LIKE EXE emp_sys FROM 职工
+ 
+D、LIKE APP emp_sys.exe FROM 职工
+二、 填空题
+37. 数据库系统的三级模式分别为___概念或概念级___模式、内部级模式与外部级模式。
+ 
+38. 在最坏情况下，冒泡排序的时间复杂度为___n(n-1)/2___。
+ 
+39. 在面向对象方法中，信息隐蔽是通过对象的___封装___性来实现的。
+ 
+41.要把帮助文件设置为复制到硬盘上的Foxhelp.chm文件，需要在"选项"对话框的____文件位置__选项卡上设置。
+ 
+42. TIME( )的返回值的数据类型是__.字符 或 C____类型。
+ 
+43. 在定义字段有效性规则中，在规则框中输入的表达式中类型是______逻辑表达式__。
+ 
+44. 设计报表通常包括两部分内容：__数据源 ____和布局。
+ 
+45. ____内部联接__是指只有满足联接条件的记录才包含在查询结果中。
+ 
+47. 设有如下关系表R、S和T：
+ 
+R(BH,XM,XB,DWH)
+ 
+S(SWH,DWM)
+ 
+T(BH,XM,XB,DWH)
+ 
+实现R∪T的SQL语句是_______。
+ 
+答案：SELECT * FROM R UNION SELECT * FROM T 或
+ 
+       SELE * FROM R UNIO SELE * FROM T 或
+ 
+       SELECT * FROM R UNIO SELECT * FROM T 或
+ 
+       SELE * FROM R UNION SELE * FROM T
+ 
+
+2.请教一个面试中遇到的SQL语句的查询问题
+表中有A B C三列,用SQL语句实现：当A列大于B列时选择A列否则选择B列，当B列大于C列时选择B列否则选择C列。
+------------------------------------------
+select (case when a>b then a else b end ),
+(case when b>c then b esle c end)
+from table_name
+
+5.在sqlserver2000中请用sql创建一张用户临时表和系统临时表，里面包含两个字段ID和IDValues,类型都是int型，并解释下两者的区别?
+------------------------------------------
+用户临时表:create table #xx(ID int, IDValues int)
+系统临时表:create table ##xx(ID int, IDValues int)
+区别:
+用户临时表只对创建这个表的用户的Session可见,对其他进程是不可见的.
+当创建它的进程消失时这个临时表就自动删除.
+全局临时表对整个SQL Server实例都可见,但是所有访问它的Session都消失的时候,它也自动删除.
+6.sqlserver2000是一种大型数据库，他的存储容量只受存储介质的限制，请问它是通过什么方式实现这种无限容量机制的。
+------------------------------------------
+它的所有数据都存储在数据文件中(*.dbf),所以只要文件够大,SQL    Server的存储容量是可以扩大的.
+SQL Server 2000 数据库有三种类型的文件：
+主要数据文件
+主要数据文件是数据库的起点，指向数据库中文件的其它部分。每个数据库都有一个主要数据文件。主要数据文件的推荐文件扩展名是 .mdf。
+次要数据文件
+次要数据文件包含除主要数据文件外的所有数据文件。有些数据库可能没有次要数据文件，而有些数据库则有多个次要数据文件。次要数据文件的推荐文件扩展名是 .ndf。
+日志文件
+日志文件包含恢复数据库所需的所有日志信息。每个数据库必须至少有一个日志文件，但可以不止一个。日志文件的推荐文件扩展名是 .ldf。
+7.请用一个sql语句得出结果
+从table1,table2中取出如table3所列格式数据，注意提供的数据及结果不准确，只是作为一个格式向大家请教。
+如使用存储过程也可以。
+table1
+月份mon 部门dep 业绩yj
+-------------------------------
+一月份      01      10
+一月份      02      10
+一月份      03      5
+二月份      02      8
+二月份      04      9
+三月份      03      8
+table2
+部门dep      部门名称dname
+--------------------------------
+      01      国内业务一部
+      02      国内业务二部
+      03      国内业务三部
+      04      国际业务部
+table3 （result）
+部门dep 一月份      二月份      三月份
+--------------------------------------
+      01      10        null      null
+      02      10         8        null
+      03      null       5        8
+      04      null      null      9
+------------------------------------------
+1)
+select a.部门名称dname,b.业绩yj as '一月份',c.业绩yj as '二月份',d.业绩yj as '三月份'
+from table1 a,table2 b,table2 c,table2 d
+where a.部门dep = b.部门dep and b.月份mon = '一月份' and
+a.部门dep = c.部门dep and c.月份mon = '二月份' and
+a.部门dep = d.部门dep and d.月份mon = '三月份' and
+2)
+select a.dep,
+sum(case when b.mon=1 then b.yj else 0 end) as '一月份',
+sum(case when b.mon=2 then b.yj else 0 end) as '二月份',
+sum(case when b.mon=3 then b.yj else 0 end) as '三月份',
+sum(case when b.mon=4 then b.yj else 0 end) as '四月份',
+sum(case when b.mon=5 then b.yj else 0 end) as '五月份',
+sum(case when b.mon=6 then b.yj else 0 end) as '六月份',
+sum(case when b.mon=7 then b.yj else 0 end) as '七月份',
+sum(case when b.mon=8 then b.yj else 0 end) as '八月份',
+sum(case when b.mon=9 then b.yj else 0 end) as '九月份',
+sum(case when b.mon=10 then b.yj else 0 end) as '十月份',
+sum(case when b.mon=11 then b.yj else 0 end) as '十一月份',
+sum(case when b.mon=12 then b.yj else 0 end) as '十二月份',
+from table2 a left join table1 b on a.dep=b.dep
+8.华为一道面试题
+一个表中的Id有多个记录，把所有这个id的记录查出来，并显示共有多少条记录数。
+------------------------------------------
+select id, Count（*) from tb group by id having count(*)>1
+select * from(select count(ID) as count from table group by ID)T where T.count>1
+
+9。表结构以及数据如下：
+CREATE TABLE 表 
+(ID int, 日期 varchar(11), 单据 char(3))
+INSERT INTO 表 (ID , 日期 , 单据 ) VALUES ( 1 , '2004-08-02' , '001' );
+INSERT INTO 表 (ID , 日期 , 单据 ) VALUES ( 2 , '2004-09-02' , '001' );
+INSERT INTO 表 (ID , 日期 , 单据 ) VALUES ( 3 , '2004-10-02' , '002' );
+INSERT INTO 表 (ID , 日期 , 单据 ) VALUES ( 4 , '2004-09-02' , '002' );
+要求:设计一个查询，返回结果如下：
+ID 日期 单据
+---------- ----------- ---
+1 2004-08-02 001
+4 2004-09-02 002
+即对于每个单据号，返回日期最小的行。
+--解答：
+--相关子查询
+select a.* from 表 a
+where 日期=
+(select min(日期) from 表 where 单据=a.单据)
+--用JOIN的连接
+select a.* from 表 a,
+(select min(日期) 日期,单据 from 表 group by 单据) b
+where a.单据=b.单据 and a.日期=b.日期
+--不用JOIN的连接
+select a.* from 表 a JOIN 
+(select min(日期) 日期,单据 from 表 group by 单据) b
+ON a.单据=b.单据 and a.日期=b.日期
+--用谓词Exists
+select * from 表 a
+where not exists(select 1 from 表 where 单据=a.单据 and 日期<a.日期)
+ 

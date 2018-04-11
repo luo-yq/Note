@@ -1,0 +1,28 @@
+mysql基础
+
+
+
+修改密码
+
+mysqladmin -u u  -h h  password  'p'
+
+
+
+
+
+生产环境安装：不带默认的数据库
+mysql_secure_installation 
+
+
+
+
+
+
+
+
+
+
+
+启动：mysql  as  daemon
+
+mysqld_safe &

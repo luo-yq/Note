@@ -1,0 +1,275 @@
+
+数据泵IMPDP 导入工具的使用
+分类： Oracle Datapump 2010-10-08 09:11 12206人阅读 评论(0) 收藏 举报
+工具schemaoraclesystemattributes
+
+--=================================
+
+--数据泵IMPDP 导入工具的使用
+
+--=================================
+
+   
+
+    数据的导入导出时数据库经常处理的作业之一，Oracle 提供了IMP和IMPDP以及SQL*Loader等工具来完成数据的导入工作，其中IMP服务于早期的9i之前的版本，在10g及后续版本，Oracle 提供了数据泵高速导入工具，本文主要介绍IMPDP的使用方法，关于高速导出工具请参照：数据泵EXPDP 导出工具的使用。SQL*Loader请参照：SQL*Loader使用方法。
+
+ 
+
+一、数据泵的体系结构
+
+    数据泵的体系结构在数据泵EXPDP 导出工具的使用已列出，再此不再赘述。
+
+ 
+
+二、IMPDP支持的接口及导入模式
+
+    导入接口
+
+        使用命令行带参数的
+
+        使用命令行带参数文件
+
+        使用命令行交互
+
+        使用database console(GUI)
+
+    几种常用的导入模式
+
+        导入表
+
+        导入方案
+
+        导入表空间
+
+        导入数据库
+
+        传输表空间模式
+
+               
+
+       
+
+三、演示如何导入
+
+    1.关于查看impdp的帮助，使用以下命令
+
+        [oracle@oradb ~]$ impdp -?  或[oracle@oradb ~]$ impdp -help  前者提供帮助信息并开启命令行交互模式
+
+   
+
+    2. 导入表
+
+        --将表dept,emp导入到scott方案中
+
+        impdp scott/tiger directory=dump_scott dumpfile=tab.dmp tables=dept,emp
+
+ 
+
+        --将表dept和emp从scott方案导入到system方案中，对于方案的转移，必须使用remap_shcema参数
+
+        impdp system/manage directory=dump_scott dumpfile=tab.dmp tables=scott.dept,scott.emp remap_schema=scott:system
+
+ 
+
+    3.导入方案
+
+        --将dump_scott目录下的schema.dmp导入到scott方案中
+
+        impdp scott/tiger directory=dump_scott dumpfile=schema.dmp schemas=scott
+
+       
+
+        --将scott方案中的所有对象转移到system方案中
+
+        impdp system/redhat directory=dump_scott dumpfile=schema.dmp schemas=scott remap_schema=scott:system
+
+ 
+
+    4.导入表空间
+
+        impdp system/redhat directory=dump_scott dumpfile=tablespace.dmp tablespaces=user01
+
+       
+
+    5.导入数据库
+
+        impdp system/redhat directory=dump_scott dumpfile=full.dmp full=y      
+
+       
+
+    6.将数据对象原样导回(演示从Windows客户端来实现，数据库基于Linux系统)
+
+        从Windows客户端来导出scott.emp表，导出后删除该表，再原样导回
+
+        C:/>expdp scott/tiger@list2 directory=dump_scott dumpfile=emp.dmp tables=emp
+
+       
+
+        C:/>sqlplus scott/tiger@list2
+
+        SQL> drop table emp;
+        Table dropped.
+        SQL> commit;
+
+        Commit complete.
+        SQL> select count(1) from emp;
+        select count(1) from emp
+                             *
+        ERROR at line 1:
+        ORA-00942: table or view does not exist
+        SQL> host impdp scott/tiger@list2 directory=dump_scott dumpfile=emp.dmp
+
+ 
+
+        SQL> select count(1) from emp;
+
+          COUNT(1)
+
+        ----------
+
+                14     
+
+ 
+
+    7.将导出的对象使用remap_schema参数转移到不同的方案
+
+        a.将dept从scott用户导入到system用户下
+
+            expdp scott/tiger directory=dump_scott dumpfile=dept.dmp tables=dept
+
+            方法一：
+            impdp system/redhat tables=scott.dept directory=dump_scott dumpfile=dept.dmp remap_schema=scott:system
+
+            方法二：
+            sql>grant imp_full_database to scott;
+            impdp scott/tiger directory=dump_scott dumpfile=dept.dmp tables=dept
+                  remap_schema=scott:system table_exists_action=replace
+
+   
+
+        b.将scott方案下的所有对象导入到system方案下
+
+            expdp scott/tiger directory=dump_scott dumpfile=allobj.dmp schemas=scott
+            impdp scott/tiger directory=dump_scott dumpfile=allobj.dmp remap_schema=scott:system table_exists_action=replace
+
+ 
+
+    8.使用remap_datafile参数转移到不同的数据文件(用于不同平台之间存在不同命名方式时)
+
+        下面的示例首先创建了一个参数文件，参数文件名为payroll.par
+
+            directory=pump_scott
+            full=y
+            dumpfile=datafile.dmp
+            remap_datafile='db$:[hrdata.payroll]tbs2.f':'/db/hrdata/payroll/tbs2.f'  --指明重新映射数据文件
+            impdp scott/tiger PARFILE=payroll.par
+
+   
+
+    9.使用remap_tablespace参数转移到不同的表空间
+
+        impdp scott/scott remap_tablespace=users:tbs1 directory=dpump_scott dumpfile=users.dmp
+
+       
+
+    10.并行导入：
+
+        expdp e/e directory=dump_e dumpfile=a_%u.dmp schemas=e parallel=3
+        impdp e/e directory=dump_e dumpfile=a_%u.dmp schemas=e parallel=3 table_exists_action=replace
+
+ 
+
+四、数据泵impdp参数：
+
+    1.REMAP_DATAFILE
+
+        该选项用于将源数据文件名转变为目标数据文件名,在不同平台之间搬移表空间时需要该选项.
+        REMAP_DATAFILE=source_datafie:target_datafile
+
+
+    2.REMAP_SCHEMA
+
+        该选项用于将源方案的所有对象装载到目标方案中.
+        REMAP_SCHEMA=source_schema:target_schema
+
+
+    3.REMAP_TABLESPACE
+
+        将源表空间的所有对象导入到目标表空间中
+        REMAP_TABLESPACE=source_tablespace:target:tablespace 
+
+    4.REUSE_DATAFILES
+
+        该选项指定建立表空间时是否覆盖已存在的数据文件.默认为N
+        REUSE_DATAFIELS={Y | N}
+
+ 
+
+    5.SKIP_UNUSABLE_INDEXES
+
+        指定导入是是否跳过不可使用的索引,默认为N 
+
+    6,sqlfile  参数允许创建DDL 脚本文件
+
+        impdp scott/tiger directory=dump_scott dumpfile=a1.dmp sqlfile=c.sql
+        默认放在directory下，因此不要指定绝对路径
+
+ 
+
+    7.STREAMS_CONFIGURATION
+
+        指定是否导入流元数据(Stream Matadata),默认值为Y.
+
+ 
+
+    8.TABLE_EXISTS_ACTION
+
+        该选项用于指定当表已经存在时导入作业要执行的操作,默认为SKIP
+        TABBLE_EXISTS_ACTION={SKIP | APPEND | TRUNCATE | FRPLACE }
+
+        当设置该选项为SKIP时,导入作业会跳过已存在表处理下一个对象;
+        当设置为APPEND时,会追加数据
+        当设置为TRUNCATE时,导入作业会截断表,然后为其追加新数据;
+        当设置为REPLACE时,导入作业会删除已存在表,重建表并追加数据,
+        注意,TRUNCATE选项不适用与簇表和NETWORK_LINK选项
+
+ 
+
+    9.TRANSFORM
+
+        该选项用于指定是否修改建立对象的DDL语句
+        TRANSFORM=transform_name:value[:object_type]
+        transform_name用于指定转换名,其中SEGMENT_ATTRIBUTES用于标识段属性(物理属性,存储属性,表空间,日志等信息),
+        STORAGE用于标识段存储属性,VALUE用于指定是否包含段属性或段存储属性,object_type用于指定对象类型.
+        Impdp scott/tiger directory=dump dumpfile=tab.dmp transform=segment_attributes:n:table
+
+ 
+
+    10.TRANSPORT_DATAFILES
+        该选项用于指定搬移空间时要被导入到目标数据库的数据文件
+        TRANSPORT_DATAFILE=datafile_name
+        Datafile_name用于指定被复制到目标数据库的数据文件
+        Impdp system/manager DIRECTORY=dump DUMPFILE=tts.dmp
+        TRANSPORT_DATAFILES=’/user01/data/tbs1.f’
+
+ 
+
+五、影响数据泵性能的相关参数
+
+        对下列参数建议如下设置
+        disk_asynch_io=true
+        db_block_checking=false
+        db_block_checksum=false
+
+
+        对下列参数建议设置更高的值来提高并发
+
+        processes                    
+        sessions   
+        parallel_max_servers                
+
+       
+        对下列参数应尽可能的调大空间大小
+
+        shared_pool_size                   
+        undo_tablespace                     

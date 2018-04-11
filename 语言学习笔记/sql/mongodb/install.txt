@@ -1,0 +1,45 @@
+安装
+brew install mongodb
+
+安装的最后提示启动方法
+mongod --config /usr/local/etc/mongod.conf
+mongod --dbpath=/Users/lyt1987/Desktop/study/mongodb/m_data --logpath=/Users/lyt1987/Desktop/study/mongodb/log_data --logappend --port=27017 &
+
+vim .mongodb.conf  
+
+mongodb3的配置
+systemLog:
+  destination: file
+  path: /usr/local/var/log/mongodb/mongo.log
+  logAppend: true
+storage:
+  dbPath: /usr/local/var/mongodb
+net:
+  bindIp: 127.0.0.1
+
+
+mongodb 2的配置
+ port=10001 #端口号 
+ fork=true #以守护进程的方式运行，创建服务器进程 
+ #master=true 
+ #单主从配置时设为主服务器 
+ #salve=true ##单主从配置时设为从服务器 
+ logpath=/Volumes/mac/repository/dbdata/mongodb/log/mongodb.log #日志输出文> 件路径 
+ logappend=true #日志输出方式 
+ dbpath=/Volumes/mac/repository/dbdata/mongodb/data #数据库路径 
+ #replSet=blort #设置富本集的名字 
+ shardsvr=true #设置是否分片
+
+
+用安装包的话要进行系统环境设置
+export PATH=~/Develope-Tools/mongodb/bin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:$PATH
+alias mongostart="mongod -f ~/.mongodb.conf"  
+
+
+#添加--rest 启动 mongodb-web服务，端口号为mongod端口号+1000
+cd mongodb-3.2.7/mongodb/
+#./bin/mongod --dbpath ../data --port 27001 --logpath ../log &
+./bin/mongod --dbpath ../data/master --port 27001 --master -—rest &
+./bin/mongod --dbpath ../data/slave --port 27002  —-rest --slave --source localhost:27002 &
+
+#从数据库中只能进行查询操作

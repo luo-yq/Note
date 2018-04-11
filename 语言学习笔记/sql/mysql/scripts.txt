@@ -1,0 +1,585 @@
+对于大的数据库，将数据装载到一个没有 FULLTEXT 索引的表中，然后再使用 ALTER TABLE   (或 CREATE INDEX) 创建索引，这将是非常快的。将数据装载到一个已经有 FULLTEXT 索引的表中，将是非常慢的。
+1.使用Mysql全文检索fulltext的先决条件
+    表的类型必须是MyISAM
+建立全文检索的字段类型必须是char,varchar,text
+
+2.建立全文检索先期配置
+由于Mysql的默认配置是索引的词的长度是4,所以要支持中文单字的话,首先更改这个.
+*Unix用户要修改my.cnf,一般此文件在/etc/my.cnf,如果没有找到,先查找一下find / -name 'my.cnf'
+在 [mysqld] 位置内加入:  
+       ft_min_word_len     = 2 
+其它属性还有
+       ft_wordlist_charset = gbk 
+       ft_wordlist_file = /home/soft/mysql/share/mysql/wordlist-gbk.txt 
+       ft_stopword_file = /home/soft/mysql/share/mysql/stopwords-gbk.txt 
+稍微解释一下: 
+       ft_wordlist_charset 表示词典的字符集, 目前支持良好的有(UTF-8, gbk, gb2312, big5) 
+       ft_wordlist_file 是词表文件, 每行包括一个词及其词频(用若干制表符或空格分开,消岐专用) 
+       ft_stopword_file 表示过滤掉不索引的词表, 一行一个. 
+       ft_min_word_len     加入索引的词的最小长度, 缺省是 4, 为了支持中文单字故改为 2 
+
+3.建立全文检索
+在建表中用FullText关键字标识字段,已存在的表用 ALTER TABLE (或 CREATE INDEX) 创建索引
+CREATE fulltext INDEX index_name ON table_name(colum_name);
+
+4.使用全文检索
+    在SELECT的WHERE字句中用MATCH函数,索引的关键词用AGAINST标识,IN BOOLEAN MODE是只有含有关键字就行,不用在乎位置,是不是起启位置.
+SELECT * FROM articles WHERE MATCH (tags) AGAINST ('旅游' IN BOOLEAN MODE);
+
+
+mysql全文搜索有三种模式：
+
+一、自然语言查找。这是mysql默认的全文搜索方式，sql示例：
+1
+select  id,title FROM post WHERE MATCH(content) AGAINST ('search keyword')
+或者显式声明使用自然语言搜索方式
+1
+select  id,title FROM post WHERE MATCH(content) AGAINST ('search keyword' IN NATURAL LANGUAGE MODE)
+
+由于自然语言搜索方式是默认模式，所以可以省略声明模式的“IN NATURAL LANGUAGE MODE”部分。
+自然语言搜索模式的么特点：
+忽略停词（stopword），英语中频繁出现的and/or/to等词被认为是没有实际搜索的意义，搜索这些不会获得任何结果。
+如果某个词在数据集中频繁出现的几率超过了50%，也会被认为是停词，所以如果数据库中只有一行数据，不管你怎么全文搜索都不能获得结果。
+搜索结果都具有一个相关度的数据，返回结果自动按相关度由高到低排列。
+只针对独立的单词进行检索，而不考虑单词的局部匹配，如搜索box时，就不会将boxing作为检索目标。
+
+二、布尔查找。这种查找方式的特点是没有自然查找模式中的50%规则，即便有词语在数据集中频繁出现的几率超过50%，也会被作为搜索目标进行检索并返回结果，而且检索时单词的局部匹配也会被作为目标进行检索。sql示例
+1
+select  id,title FROM post WHERE MATCH(content) AGAINST ('search keyword' IN BOOLEAN MODE)
+
+三、带子查询扩展的自然语言查找。
+1
+select  id,title FROM post WHERE MATCH(content) AGAINST ('search keyword' IN BOOLEAN MODE WITH EXPANSION)
+暂时没有明白这种模式。
+
+在我的实际使用中还发现了以下细节：
+
+布尔查找时必须指定返回结果的排序方式，它不会像自然语言查找那样会自动将结果按相关度排序返回。
+即使是布尔查找，对长度小于等于3的单词也不会进行检索，因为mysql有一个系统变量FT_MIN_WORD_LEN指定了全文检索时可接受的最小单词长度，默认值是4。.
+
+
+
+
+    1、GRANT命令使用说明：
+
+    先来看一个例子，创建一个只允许从本地登录的超级用户jack，并允许将权限赋予别的用户，密码为：jack.
+
+mysql> grant all privileges on *.* to jack@'localhost' identified by "jack" with grant option;
+Query OK, 0 rows affected (0.01 sec)
+    GRANT命令说明：
+    ALL PRIVILEGES 是表示所有权限，你也可以使用select、update等权限。
+
+    ON 用来指定权限针对哪些库和表。
+
+    *.* 中前面的*号用来指定数据库名，后面的*号用来指定表名。
+
+    TO 表示将权限赋予某个用户。
+
+    jack@'localhost' 表示jack用户，@后面接限制的主机，可以是IP、IP段、域名以及%，%表示任何地方。注意：这里%有的版本不包括本地，以前碰到过给某个用户设置了%允许任何地方登录，但是在本地登录不了，这个和版本有关系，遇到这个问题再加一个localhost的用户就可以了。
+
+    IDENTIFIED BY 指定用户的登录密码。
+
+    WITH GRANT OPTION 这个选项表示该用户可以将自己拥有的权限授权给别人。注意：经常有人在创建操作用户的时候不指定WITH GRANT OPTION选项导致后来该用户不能使用GRANT命令创建用户或者给其它用户授权。
+
+备注：可以使用GRANT重复给用户添加权限，权限叠加，比如你先给用户添加一个select权限，然后又给用户添加一个insert权限，那么该用户就同时拥有了select和insert权限。
+
+    2、刷新权限
+
+    使用这个命令使权限生效，尤其是你对那些权限表user、db、host等做了update或者delete更新的时候。以前遇到过使用grant后权限没有更新的情况，只要对权限做了更改就使用FLUSH PRIVILEGES命令来刷新权限。
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.01 sec)
+    3、查看权限
+
+查看当前用户的权限：
+mysql> show grants;  
+查看某个用户的权限：
+mysql> show grants for 'jack'@'%'; 
+    4、回收权限
+
+mysql> revoke delete on *.* from 'jack'@'localhost';
+Query OK, 0 rows affected (0.01 sec)
+    5、删除用户
+
+mysql> select host,user,password from user; 
+
+mysql> drop user 'jack'@'localhost'; 
+
+
+
+mysql> rename user 'jack'@'%' to 'jim'@'%';
+
+
+
+
+
+查看日志是否启动
+mysql> show varibles like 'log_bin'
+mysql> show master status
+看二进制日志文件用mysqlbinlog
+shell>mysqlbinlog mail-bin.000001
+或者shell>mysqlbinlog mail-bin.000001 | tail
+备注:日志目录如果没有指定，则默认在datadir配置目录下，通过my.ini查看该配置目录
+
+
+
+
+工具：mysql administrator /  mysql query browser
+
+查看帮助 help/? sql指令
+? contents
+? data types
+? datatype
+? create table
+ 
+显示服务器状态： show status
+显示存储创建信息： show procedure status like proname
+显示建库建表语句：show create dbname/tablename/view/procedure 
+显示授权用户的安全权限：show grants [user]\
+显示错误或警告：show errors/warnings
+
+排序：order by firstorder desc,secondorder asc...
+分页：limit start offset pagesize  （等价于limit start,pagesize）
+操作符：= <> != < <= > >= (between and) (is null) (in(,,,)效率高于or) (not)
+优先级：and>or 需要or先执行的需要加()
+匹配符：%多个字符 _单个字符
+正则表达式：regex 如regex '.000' 匹配符.为一个字符,|或,[其中一个字符] \\f换页,\\n换行,\\r回车,\\t制表符,\\v纵向制表符，*{0,}+{1,}?{0,1}
+函数：concat(,,,), distinct columns, rtrim(str), ltrim(str), trim(str) now(),upper(str),length(str),lower(str),
+函数：left(),right(),locate(),substring(),soundex(str)转为发音
+函数：addDate(),addTime(),DateDiff(),Date_add(),Date_fomat(),now(),curDate(),curTime()
+函数：Date(),time(),year(),Month(),Day(),Hour(),Minute(),second(),DayOfWeek()
+函数：abs(),exp(),mod(),pi(),rand()随机数,sqrt(),sin(),cos(),tan()
+聚集函数：avg(),count(),max(),min(),sum()
+分组：group by...having...
+子查询： column in (select column ...)
+(select column ...) as 列
+(select columns ...) as 子表
+select * from where ... group by ... having ... order by ... limit ...
+
+笛卡尔交叉form a,b 不带条件
+自然联结：from a,b,c where ....
+自关联from a where col=(..from a where)
+内联，有匹配才返回，两边不为空inner join
+左外联，左边不为空left outer join 
+右外联，右边不为空right outer join
+
+union all不去除相同行
+
+全文检索：表的类型必须是MyISAM,建立全文检索的字段类型必须是char,varchar,text
+create table tablename(
+id int not null auto_increment,--自增列
+...
+
+primary key(col),--主键
+fulltext(col)--全文本检索
+) ENGINE=MyISAM--表类型
+DEFAULT CHARACTER SET charset--字符集
+COLLATE collate;--校对
+
+where match(col) against(str)
+
+举例：against('str1 -str2* str3...') -表示排除不包含，*表示词尾通配符模糊匹配 +包含必须存在  ""作为一个短语 ....
+
+update ignore .... 更新多行时允许部分行失败
+
+mysql 变量以@开头
+
+存储：在命令行中编写存储，将结束符先修改为其他字符
+delemiter //--设置//作为语句结束符
+create procedure producename(out p1 type(length),in p2 type(length)...)
+begin
+	...
+end//
+delemiter ;--设置;作为语句结束符
+
+
+调用存储：call producename(p1,p2...)
+
+游标：
+declare var type;
+declare done boolean default 0;
+declare continue handler for sqlstate '02000' set done=1;--当状态为未找到时设置done为1
+declare cursorname cursor for select ...;
+open cursorname;
+repeat
+	fetch cursorname into var;
+until done end repeat;
+close cursorname;
+
+
+事务：
+start transaction;
+rollback;
+commit;
+savepoint p1;
+rollback to p1;
+set autocommit=0;关闭自动提交
+
+
+
+show character set;
+show collation;
+show variables like 'character%';
+show variables like 'collation%';
+
+
+
+安全管理
+create user uname identified by pwd;
+rename user uname to newuname;
+drop user uname;
+show grants for uname;
+grant select on db.* to uname;
+revoke select on db.* from uname;
+修改别人的密码set password for uname = password(newpwd);
+修改自己的密码set password = password(newpwd);
+
+授权方式：
+整个服务器grant all
+整个库grant ... on db.*
+特定表grant ... on db.t
+特定列
+特定存储
+
+权限种类
+CREATE数据库、表或索引，创建数据库、表或索引权限
+DROP数据库或表，删除数据库或表权限
+GRANT OPTION数据库、表或保存的程序，赋予权限选项
+REFERENCES数据库或表
+ALTER表，更改表，比如添加字段、索引等
+DELETE表，删除数据权限
+INDEX表，索引权限
+INSERT表，插入权限
+SELECT表，查询权限
+UPDATE表，更新权限
+CREATE VIEW视图，创建视图权限
+SHOW VIEW视图，查看视图权限
+ALTER ROUTINE存储过程，更改存储过程权限
+CREATE ROUTINE存储过程，创建存储过程权限
+EXECUTE存储过程，执行存储过程权限
+FILE服务器主机上的文件访问，文件访问权限
+CREATE TEMPORARY TABLES服务器管理，创建临时表权限
+LOCK TABLES服务器管理，锁表权限
+CREATE USER 服务器管理，创建用户权限
+PROCESS 服务器管理，查看进程权限
+RELOAD 服务器管理，执行flush-hosts, flush-logs, flush-privileges, flush-status, flush-tables, flush-threads, refresh, reload等命令的权限
+REPLICATION CLIENT 服务器管理，复制权限
+REPLICATION SLAVE 服务器管理，复制权限
+SHOW DATABASES 服务器管理，查看数据库权限
+SHUTDOWN 服务器管理，关闭数据库权限
+SUPER 服务器管理，执行kill线程权限
+
+
+数据库保护
+analyze table tablename;
+check table tablename1,...;
+mysqld  --help  --safe-mode  --verbose  --version  
+
+
+
+登录  mysql -h 远程主机地址 -P 端口 -u 用户名 -p 回车 
+帮助  mysql --help
+退出  quit/exit
+
+显示数据库列表: show databases; 
+创建数据库:create database dbname; 
+打开数据库:use dbname;  
+显示数据库中的数据表:show tables; 
+显示数据表的表结构: describe/desc tablename; 
+建表:create table 表名(字段设定列表) 
+创建临时表:CREATE TEMPORARY TABLE 表名(字段设定列表)
+删除数据库 : drop database dbname; 
+册除表:drop table tablename; 
+显示表中的记录:select * from 表名; 
+修改数据库结构: 
+    增加字段：    alter table dbname add column <字段名><字段选项> 
+    修改字段：    alter table dbname change <旧字段名> <新字段名><选项> 
+    删除字段:     alter table dbname drop column <字段名> 
+
+SHOW COLUMNS FROM tablename 显示表的属性、属性类型、键信息、是否允许 NULL 值，默认值，以及其他一些信息。
+SHOW INDEX FROM tablename 显示表中所有索引的细节信息，包括PRIMARY KEY。
+SHOW TABLE STATUS LIKE tablename\G 报告MySQL DBMS的性能及统计的细节信息。
+
+
+
+INSERT 和 NSERT IGNORE 和 REPLACE
+INSERT IGNORE。如果一个记录没有复制一个已存在的记录，MySQL 就会将它照常插入。如果该记录与现存的某个记录重复，IGNORE 关键字就会让 MySQL 将其摒弃，不会产生错误。
+REPLACE 如果记录是一个新记录，将它照常插入。如果是一个重复记录，新的记录将会替换旧有记录。
+
+在MySQL中，序列最简单的用法就是将一列定义为 AUTO_INCREMENT ，然后让 MySQL 来处理剩下的任务。
+...id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+获取 AUTO_INCREMENT 的值
+LAST_INSERT_ID() 是一个 SQL 函数，所以可以把它用在任何能够理解 SQL 语句的客户端中。另外，PERL 和 PHP 还提供了一些专有的函数来获取最后记录的自动增加值。
+
+
+
+MySQL 正则表达式  SELECT name FROM person_tbl WHERE name REGEXP '^[aeiou]|ok$';
+^	字符串的开始位置
+$	字符串的结尾
+.	单个字符
+[...]	一对方括号之间的字符
+[^...]	未在一对方括号之间的字符
+p1|p2|p3	交替匹配模式1、模式2或模式3
+*	匹配前面元素的零个或多个实例
++	匹配前面元素的一个或多个实例
+{n}	匹配前面元素的n个实例
+{m,n}	匹配前面元素的m~n个实例，m <= n
+
+
+
+
+1.添加密码： 格式：mysqladmin -u 用户名 password 新密码 
+2.修改密码： 格式：mysqladmin -u 用户名 -p 旧密码 password 新密码 
+3.增加新用户: 
+
+授予权限：
+grant create,select,update,insert,delete,alte....(授予相关的操作权限) 
+on 数据库.* 
+to 用户名@登录主机 identified by '密码' 
+
+授予所有的权限: 
+grant all privileges 
+on bbs.* 
+to bbsroot@localhost identified by '52netseek' 
+
+回收权限： 
+revoke create,select,update,insert,delete,alter 
+on phpbb.* 
+from phpbbroot@localhost identified by '52netseek'; 
+
+完全将phpbbroot这个用户删除: 
+delete from mysql.user where user='phpbbroot' and host='localhost'; 
+flush privileges; 刷新数据库 
+
+MySQL密码忘记了怎么办?
+如果 MySQL 正在运行，首先杀之： killall -TERM mysqld。 
+启动 MySQL ：bin/safe_mysqld --skip-grant-tables & 
+就可以不需要密码就进入 MySQL 了。然后就是 
+update user set password=password("new_pass") where user="root";
+
+INSERT INTO user 
+          (host, user, password, 
+           select_priv, insert_priv, update_priv) 
+           VALUES ('localhost', 'guest', 
+           PASSWORD('guest123'), 'Y', 'Y', 'Y');
+
+FLUSH PRIVILEGES;
+SELECT host, user, password FROM user WHERE user = 'guest';
+
+在添加新用户时，记住要用 MySQL 提供的 PASSWORD() 函数对该用户的密码进行加密处理。如上例所示，密码 mypass 被加密成了 6f8c114b58f2ce9e。
+注意这里所用的 FLUSH PRIVILEGES 语句。它让服务器重新加载授权表。如果不使用它，就至少得等到服务器重新启动后，才能使用新用户账号连接 mysql。
+
+你也可以为新用户指定其他权限，在执行 INSERT 查询时，将用户表中的下面这些列的值都设为 ‘Y’，或者使用 UPDATE 查询稍后对它们进行更新。
+
+Select,Insert,Update,Delete,Create,Drop,Reload,Shutdown,Process,File,Grant,References,Index,Alter
+ 
+
+
+
+
+改变一列的定义或名称
+要想改变列的定义，需要使用 MODIFY 或 CHANGE 子句，并配合使用 ALTER 命令。例如，ALTER TABLE testalter_tbl MODIFY c CHAR(10);
+CHANGE 的语法稍有不同。必须把所要改变的列名放到 CHANGE 关键字的后面，然后指定新的列定义。相关范例如下所示：ALTER TABLE testalter_tbl CHANGE i j BIGINT;
+同理，如果想利用 CHANGE 将 j 从 BIGINT 转为 INT，并且不改变列名，则语句如下：ALTER TABLE testalter_tbl CHANGE j j INT;
+ALTER TABLE testalter_tbl  MODIFY j BIGINT NOT NULL DEFAULT 100;如果不使用上述命令，则MySQL 会在所有这些列中填充 NULL 值。
+改变列的默认值ALTER TABLE testalter_tbl ALTER i SET DEFAULT 1000;
+ALTER TABLE testalter_tbl ALTER i DROP DEFAULT;
+ALTER TABLE testalter_tbl RENAME TO alter_tbl;
+ALTER TABLE testalter_tbl TYPE = MYISAM;
+通过 SHOW TABLE STATUS 语句可以显示当前的表类型。SHOW TABLE STATUS LIKE 'testalter_tbl'\G
+*************************** 1. row ****************
+           Name: testalter_tbl
+           Type: MyISAM
+     Row_format: Fixed
+           Rows: 0
+ Avg_row_length: 0
+    Data_length: 0
+Max_data_length: 25769803775
+   Index_length: 1024
+      Data_free: 0
+ Auto_increment: NULL
+    Create_time: 2007-06-03 08:04:36
+    Update_time: 2007-06-03 08:04:36
+     Check_time: NULL
+ Create_options:
+        Comment:
+
+
+ALTER TABLE testalter_tbl DROP i; 如果表中只有一列，则 DROP 子句不起作用。
+ALTER TABLE testalter_tbl ADD i INT;
+ALTER TABLE testalter_tbl DROP i;
+ALTER TABLE testalter_tbl ADD i INT FIRST;
+ALTER TABLE testalter_tbl DROP i;
+ALTER TABLE testalter_tbl ADD i INT AFTER c;
+标识符 FIRST 和 AFTER 只能和 ADD 子句一起使用。这也意味着，如果要重新定位一列，就必须先用 DROP 删除它，然后再用 ADD 将它添加到新的位置。
+
+
+INSERT 与 UPDATE 语句在拥有索引的表中执行会花费更多的时间，而 SELECT 语句却会执行得更快。这是因为，在进行插入或更新时，数据库也需要插入或更新索引值。
+
+CREATE UNIQUE INDEX index_name ON table_name ( column1, column2,...);也可以使用一或多个列来创建索引。
+CREATE UNIQUE INDEX AUTHOR_INDEX ON tutorials_tbl (tutorial_author)简单索引允许在表中复制值。
+CREATE UNIQUE INDEX AUTHOR_INDEX ON tutorials_tbl (tutorial_author DESC) 按照降序在列中索引数值
+ALTER TABLE tbl_name ADD PRIMARY KEY (column_list) 该语句添加一个主键。意味着索引值必须是唯一的，不能为 NULL。
+ALTER TABLE tbl_name ADD UNIQUE index_name (column_list) 该语句为必须唯一的值（除了 NULL 值之外，NULL 值可以多次出现）创建索引。
+ALTER TABLE tbl_name ADD INDEX index_name (column_list) 语句为可能多次出现的值创建一般索引。
+ALTER TABLE tbl_name ADD FULLTEXT index_name (column_list) 语句创建专用于文本搜索的 FULLTEXT 索引。
+ALTER TABLE tbl_name DROP INDEX (column_list);
+ALTER TABLE t AUTO_INCREMENT = 100;
+
+下面这个范例将在现有表中添加主键,主键列必须为 NOT NULL。
+ALTER TABLE testalter_tbl MODIFY i INT NOT NULL;
+ALTER TABLE testalter_tbl ADD PRIMARY KEY (i);
+ALTER TABLE testalter_tbl DROP PRIMARY KEY;
+
+如果要删除非主键的索引，则必须指定索引名称。
+使用 SHOW INDEX 命令可以列出表的所有索引。以垂直格式输出（标识为 \G）会比较便于查看，可避免单行内容过长。语法格式如下：
+SHOW INDEX FROM table_name\G
+........
+
+CREATE TABLE ... SELECT 这个复制表必须与原有表在索引、默认值等方面都完全相同。
+INSERT INTO... SELECT 从旧表中复制数据，可以使用 
+
+手动拷贝备份: 
+cp -rf mysql mysql.bak 将现在的数据库目录备份为mysql.bak . 
+cp -rf mysql.bak/* mysql 数据库恢复,恢复数据库以后，文件已改变了，要更改文件的所属权限必须改变MySQL数据库的用户读写权限。 所以我们得启动和运行mysql，并登陆数据库: 
+
+
+导出： 
+使用select into outfile 'filename'语句 
+select * from personal into outfile 'out.txt'; 可以看在/var/lib/mysql/office/目录下有out.txt 
+select * from personal into outfile './out.txt'; 可以看在out.txt 在/var/lib/mysql/目录下用out.txt 
+SELECT * FROM passwd INTO OUTFILE '/tmp/tutorials.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\r\n';
+
+使用mysqldump实用程序(可以轻松处理多个表) 
+mysqldump bbs >bbs.sql 将数据库bbs导入到bbs.sql中 
+
+只想导出建表指令: 
+mysqldump -d bbs >bbscreate.sql 
+只想导出插入数据的sql指令： 
+mysqldump -t bbs >bbsinsert.sql 
+同时导出数据库中建表指令和表中的数据： 
+mysqldump -T ./ bbs cdb_admingroups (其中./表示当前目录,cdb_admingroups为bbs数据库其中的一个表) 
+    cdb_admingroups.sql 导出了建表指令 
+    cdb_admingroups.txt 导出了表中的数据 
+
+
+输出文件直接由 MySQL 服务器创建，因此文件名应该指明其在服务器主机上的保存位置。该语句没有 LOCAL 版，这一点跟 LOAD DATA 不同。
+必须拥有 MySQL 的 FILE 权限，才能执行 SELECT ... INTO OUTFILE。
+输出文件不能是已有文件。这一特点保证了 MySQL 不会覆盖掉一些可能是非常重要的文件。
+你必须有服务器主机的登录账号，或者能够利用其它方式获取主机文件，否则 SELECT ... INTO OUTFILE 对你来说没有任何用处。
+在 UNIX 系统下，创建的文件是全局可读的，但可写权限却属于 MySQL 服务器。这意味着虽然你可以读取文件，但可能无法删除它。
+将表导出为原始数据
+mysqldump 程序用于复制或备份表与数据库。它能把表输出为一个原始数据文件，或者是一个能重建表中记录的 INSERT 语句集合。
+
+要想把表转储为一个数据文件，必须指定一个 --tab 选项，用它来指明 MySQL 服务器写入文件的目录。
+
+例如，把数据库 TUTORIALS 中的表 tutorials_tbl 转储为 /tmp 中的一个文件，需要使用如下命令：
+
+$ mysqldump -u root -p --no-create-info --tab=/tmp TUTORIALS tutorials_tbl 将表内容或定义以 SQL 格式导出
+
+以 SQL 格式将表导出为文件，使用类似下列命令：
+$ mysqldump -u root -p TUTORIALS tutorials_tbl > dump.txt
+$ mysqldump -u root -p TUTORIALS > database_dump.txt 备份主机上的所有数据库，使用如下命令：
+$ mysqldump -u root -p --all-databases > database_dump.txt 自MySQL 3.23.12版本开始，可以使用 --all-databases 选项。
+
+利用mysqldump来备份数据库 mysqldump --opt bbs -u root -p > bbs.sql 
+注:--opt添加备份的其它选项,bb为其中一个数据库名, 
+备份所有数据库: mysqldump --opt --all-databases -u root -p >mysql.bak 
+
+在主机间复制数据库
+在一台主机上导出 $ mysqldump -u root -p database_name table_name > dump.txt 
+在另一台主机上ftp dump.txt 后导入$ mysql -u root -p database_name < dump.txt
+
+$ mysqldump -u root -p database_name | mysql -h other-host.com database_name
+
+
+导入： 
+将bbs.sql导入数据库可以使用: mysql bbstest <bbs.sql (这个常用在将本地的数据库文件传到服务器上，再导入到数据库bbstest中) 
+恢复所有数据库,不用输入数据库的名字: mysql -u root -p < mysql.bak 
+
+source c:\ajax.sql 执行数据库初始化语句
+
+从文件中加载数据库: load data infile "/tmp/name.txt" into table names; 
+LOAD DATA LOCAL INFILE 'dump.txt' INTO TABLE mytbl;如果不写 LOCAL 关键字，MySQL 会从服务器主机文件系统的根目录开始。
+LOAD DATA LOCAL INFILE 'dump.txt' INTO TABLE mytbl (b, c, a);指定一个列表来指示数据文件中具体表列的加载次序。
+     默认情况下，LOAD DATA 假定数据文件中每行都由换行符所终止，每行的数据值由制表符所分隔开。
+LOAD DATA LOCAL INFILE 'dump.txt' INTO TABLE mytbl FIELDS TERMINATED BY ':' LINES TERMINATED BY '\r\n'; 指定值由冒号（:）分隔，行由换行符及回车符终止。
+
+处理引号与特殊字符
+FIELDS 子句能指定除了 TERMINATED BY 之外的其他格式选项。默认情况下，LOAD DATA 会假定值不加引号，并把反斜杠（\）解释为表示特殊意义的转义字符。
+要想明确指定引号字符，需使用 ENCLOSED BY 。MySQL 会在处理输入时将该字符从数据值末尾清除掉。改变默认的转义字符，需使用 ESCAPED BY。在指定 ENCLOSED BY 来表示引号字符应该从数据值末尾清除时，有可能在数据值中包含引号字符，或在其之前添加转义字符。如果引号和转义字符是"和\，那么输入值"a""b\"c"被解读为a"b"c。
+
+
+利用mysqlimport 导入数据 mysqlimport -u root -p --local database_name dump.txt
+
+如果使用mysqlimport，命令行选项就会提供格式说明符。mysqlimport 命令作用相当于前面的两个LOAD DATA 语句，语法如下：
+$ mysqlimport -u root -p --local --fields-terminated-by=":" \
+   --lines-terminated-by="\r\n"  database_name dump.txt
+
+mysqlimport 语句使用 --columns 选项来指定列次序。 mysqlimport -u root -p --local --columns=b,c,a  database_name dump.txt
+对于 mysqlimport 而言，相应的指定引号和转义值的命令行选项是--fields-enclosed-by和--fields-escaped-by。
+
+
+
+
+use buy
+GO
+exec sp_addumpdevice 'disk','buy_bk3','d:\buy_bk3.bak'   --创建备份设备
+exec sp_addumpdevice 'disk','buy_bk4','d:\buy_bk4.bak'
+go
+backup database juanyanDB to buy_bk3
+backup database buy to buy_bk4 with differential
+--在进行以下操作前,先把PUBS数据库的还原模式改为"完全"(方法:选中数据库PUBS--属性--选项--备份模式:从简单改为完全)
+--首先创建两个备份设备,一个用来存放数据库备份,一个用来存放日志备份
+sp_addumpdevice 'disk','pubs1','d:\pubs.bak'
+sp_addumpdevice 'disk','pubs_log','d:\pubs.bak'
+--在设备PUBS1上对PUBS数据库进行完全备份
+backup database pubs  to pubs1 with name='pubs1完全备份',init
+--在设备PUBS1上对PUBS数据库进行增量备份
+backup database pubs to pubs1 with DIFFERENTIAL,name='pubs1差异备份1',noinit
+--中间可能有若干次日志备份,但最后的恢复不用它们,所以在此省略
+--在设备PUBS1上对PUBS数据库进行第二次增量备份
+backup database pubs to pubs1 with DIFFERENTIAL,name='pubs1差异备份2',noinit
+--备份事务日志(第一次)
+backup log pubs to pubs_log with name='pubs1日志备份1',init
+--备份事务日志(第二次)
+backup log pubs to pubs_log with name='pubs1日志备份2',noinit
+/******
+**进行完以上操作后,共存在一个全库备份,两个增量备份,和两个日志备份,
+**恢复时应按照如下的步骤进行:
+**1: 先恢复全库备份(应该用最新的,在此只有一个,因此它就是最新的)
+**2: 再恢复最新的增量备份(第二个增量备份)
+**3: 最后依次恢复最后一次增量备份后的日志备份(即先日志备份1,再日志备份2)
+*******/
+--注意:恢复时其事务链号应该是连续的,否则会报错
+--可使用如下的命令查看事务链号,注意末尾带LSN的几项的值,看是否能连续
+restore headeronly  from pubs_log
+restore headeronly  from pubs1
+--下面进行恢复
+--1: 先恢复全库备份,必须带norecovery,只有在最后一次日志恢复时可不带此选项
+restore database pubs from pubs with norecovery
+--2: 再恢复最新的增量备份(第二个增量备份)
+restore database pubs from pubs1 with file=3,norecovery
+
+--依次恢复最后一次增量备份后的日志备份
+--先恢复日志备份1
+restore log pubs from pubs_log with file=1,norecovery
+--先恢复日志备份2,此时不要再加norecovery
+restore log pubs from pubs_log with file=2,recovery
+
+--注意:如果在恢复增量备份时报如下错误:无法将设备 'pubs1' 上的备份应用于数据库 'pubs'。
+--原因是:此增量备份与之前所恢复的完全备份不匹配,如用另一个完全备份设备PUBSBAK恢复数据库后,又用上面的增量备份来恢复,就会报错
+--如果报类似以下错:
+--此备份集中的日志终止于 LSN 9000000023900001，该 LSN 太早，无法应用到数据库。包含 LSN 9000000025000001 的较新的日志备份可以还原。
+--则是因为事务链号不连续造成的,请依次使用各个日志备份
+--最后一次还原还可以指定还原到某个时间点的状态,如下所示:
+restore log pubs from pubs_log with file=2,recovery,stopat= '2008-10-25 10:15'
+--增量备份可以自动地找到最新的全库备份,而不一定与全库备份在同一个备份设备中,即使某个增量备份和一个全库备份在同一个备份设备中,如果在该全库备份后又有新的全库备份,该增量备份也不会与同一个备份设备中的全库备份相匹配
+
+--在还原数据库时,可以重命名数据库,并且可以移动数据文件和日志文件的位置
+restore database pubs2
+from pubs1
+with move 'pubs' to 'd:\pubs.mdf',
+     move 'pubs_log' to 'd:\pubs_log.ldf'
+ Copyright ©2010 lyt. All Rights Reserved.
+

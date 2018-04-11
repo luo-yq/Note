@@ -1,0 +1,834 @@
+存储过程
+
+--这是一个可以将表中的数据自动生成INSERT语句的存储过程
+--有个BUG，如果是自动增长列，数据也会被插入
+--在查询分析器中执行完成后，可以从执行结果中复制出SQL脚本。
+IF OBJECT_ID('spGenInsertSQL','P') IS NOT NULL 
+DROP PROC spGenInsertSQL
+GO
+CREATE   proc spGenInsertSQL (@tablename varchar(256))
+as
+begin
+declare @sql varchar(8000)
+declare @sqlValues varchar(8000)
+set @sql =' ('
+set @sqlValues = 'values (''+'
+select @sqlValues = @sqlValues + cols + ' + '','' + ' ,@sql = @sql + '[' + name + '],'
+  from
+      (select case
+                when xtype in (48,52,56,59,60,62,104,106,108,122,127)  --如果是数值型或MOENY型    
+                     then 'case when '+ name +' is null then ''NULL'' else ' + 'cast('+ name + ' as varchar)'+' end'
+                when xtype in (58,61) --如果是datetime或smalldatetime类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'convert(varchar,'+ name +',120)'+ '+'''''''''+' end'
+               when xtype in (167) --如果是varchar类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'replace('+ name+','''''''','''''''''''')' + '+'''''''''+' end'
+                when xtype in (231) --如果是nvarchar类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+'''N'''''' + ' + 'replace('+ name+','''''''','''''''''''')' + '+'''''''''+' end'
+                when xtype in (175) --如果是CHAR类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'cast(replace('+ name+','''''''','''''''''''') as Char(' + cast(length as varchar)  + '))+'''''''''+' end'
+                when xtype in (239) --如果是NCHAR类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+'''N'''''' + ' + 'cast(replace('+ name+','''''''','''''''''''') as Char(' + cast(length as varchar)  + '))+'''''''''+' end'
+                else '''NULL'''
+              end as Cols,name
+         from syscolumns
+        where id = object_id(@tablename)
+      ) T
+set @sql ='select ''INSERT INTO ['+ @tablename + ']' + left(@sql,len(@sql)-1)+') ' + left(@sqlValues,len(@sqlValues)-4) + ')'' from '+@tablename
+--print @sql
+exec (@sql)
+end
+GO
+--验证各种类型：
+drop table test
+create table test
+(
+id int identity(1,1) primary key, 
+testdate datetime default getdate(),
+testvarchar varchar(2),
+testnvarchar nvarchar(2),
+testchar char(2),
+testnchar nchar(2)
+)
+go
+insert into test values(getdate(),'ab','中','cd','中国')
+go
+exec spGenInsertSQL test
+--经试验，61表示的是DATETIME类型，网上原来的存储过程用的是CAST，后来我改成了CONVERT，这样可以更加灵活地控制输出的日期格式
+--在SYSCOLUMNS表中，每种数据类型都用一个数字来表示，其具体的含义可以参阅SYSTYPES表
+
+
+T- SQL
+
+/*T-SQL编程*/
+/*查看版本和使用语言*/
+select '版本信息'=@@version,'语言名称'=@@language
+/*或*/
+select @@version as '版本信息',@@language as '语言名称'
+/*查看服务器当前连接数和SQL Server最大连接数*/
+select '当前连接数'=@@connections,'SQL Server最大连接数'=@@max_connections
+
+/*局部变量声明*/
+declare @var1 int,@var2 float
+select @var1=10,@var2=20.91
+select '@var1的值'=@var1,'@var2的值'=@var2
+/*或*/
+declare @var1 int,@var2 float
+set @var1=10   set @var2=20.91         
+select '@var1的值'=@var1,'@var2的值'=@var2
+
+declare @jobdesc varchar(20)
+set @jobdesc='computer manager'
+insert into jobs values (@jobdesc,@var1,@var2)
+select *from jobs order by job_id desc
+ 
+
+
+union
+
+UNION的使用：
+1. 两个查询必须有相同数目的字段
+2. 两个查询中对应字段的数据类型必须相同（兼容不行吗，测试一下）
+3. 两个查询中的字段名可以不一样
+4. 两个查询中都不能包含ORDER BY子句，但是可以对UNION后的结果进行排序
+ 如：SELECT cola,colb FROM ta union  SELECT colC,cold FROM tb ORDER BY 1,2
+5. 多个查询的联合,可以加（），先联合哪个是完全等效的,
+     如：A UNION (B UNION C)
+  (A UNION B) UNION C
+  (A UNION C) UNION B
+  但如果是UNION和UNION ALL联用，则结果可能不一样
+ 
+
+
+触发器
+
+CREATE TRIGGER TR_STOCK_UPDATE2
+ON smoke_t_stock
+for update
+as
+declare @newprice money,@oldprice money,@name varchar(20)
+select @newprice=stockprice,@name=smokeproductname from inserted
+select @oldprice=stockprice from deleted 
+if update(stockprice)
+begin
+ declare @temp float
+ set @temp=(@newprice-@oldprice)/@oldprice
+ if @temp>0.1
+  begin
+   print '超过限制'
+   rollback tran
+  end
+ else
+  print '没有超限'
+end
+触发器不是行集的
+--有三个表：一个入库表t_insert,一个入库明细表t_insert_detail,一个库存表t_product
+--在入库明细表上创建一个DELETE触发器，删除时把库存表中对应的产品数量修改
+if object_id('t_insert','U') is not null
+drop table t_insert 
+go
+create table t_insert (id int primary key);
+go
+if object_id('t_insert_detail','U') is not null
+drop table t_insert_detail 
+go
+create table t_insert_detail(id int ,productid int,quantity decimal(18,2),primary key(id,productid));
+go
+if object_id('t_product','U') is not null
+drop table t_product 
+go
+create table t_product(productid int primary key,quantity decimal(18,2))
+go
+insert into t_product values(1,10);
+insert into t_product values(2,10);
+go
+insert into t_insert values(100)
+go
+
+insert into t_insert_detail values(100,1,10)
+insert into t_insert_detail values(100,2,10)
+go
+select * from t_insert
+select * from t_insert_detail
+select * from t_product
+
+go
+if object_id('tr_delete','TR') is not null
+drop trigger tr_delete
+go
+create trigger tr_delete on t_insert_detail  after delete
+as
+begin
+declare @productid int,@quantity int,@cnt int
+select @cnt=count(*) from deleted
+DECLARE MyCursor CURSOR for select productid,quantity from deleted
+open MyCursor
+while @cnt>0
+BEGIN
+     FETCH NEXT FROM MyCursor INTO @productid,@quantity
+ update t_product set quantity=quantity-@quantity where productid=@productid
+ set @cnt=@cnt-1
+END
+CLOSE MyCursor
+DEALLOCATE MyCursor
+end
+go
+ 
+
+存储过程基础
+
+--查看当前系统所有数据库
+exec sp_databases
+--查看当前数据库中所有表和视图
+exec sp_tables
+--查看库中某表的相关信息
+exec sp_columns student
+
+--创建存储过程 
+create procedure stu_name
+  @cla varchar(12)='信息系'
+as
+select student.stuid as 学号,stuname as 姓名,class as 班级
+from student,grade where student.stuid=grade.stuid and student.class like @cla
+go
+--下面代码调用存储过程
+exec stu_name
+
+--创建存储过程 
+create procedure stu_add
+   (@stuid nvarchar(6),@stuname nvarchar(50),@stusex nvarchar(1),@class char(10),@postcode nvarchar(6))
+as
+begin
+insert into student values (@stuid,@stuname,@stusex,@class,@postcode)
+end
+go
+
+--SQL SERVER中的输出参数，类似于ORACLE中的IN OUT，既可以做输入也可以做输出，甚至是只做输入
+if exists(select name from sysobjects where name='p_proc1' and type='P')
+drop proc p_proc1
+go
+CREATE PROCEDURE p_proc1
+@temp int  output  --这个例子主要是测试了一下是否可以为输出参数传默认值,没什么用
+AS
+   print @temp
+   --SELECT @temp=5  
+GO  
+--执行上面的存储过程
+declare @tp int
+set @tp=10
+exec p_proc1 @temp=@tp output
+select @tp
+GO
+--带返回值的存储过程
+--首先创建用户表,并插入一条记录
+CREATE TABLE T_USER(UID INT IDENTITY(1,1) PRIMARY KEY,UNAME VARCHAR(20),PWD VARCHAR(20))
+INSERT T_USER VALUES('A','AA')
+GO
+--创建带返回值的存储过程:验证用户输入
+if exists(select name from sysobjects where name='p_checkUser' and type='P')
+ drop proc p_checkUser
+go
+create proc p_checkUser
+@uname varchar(20),
+@pwd varchar(20)
+with encryption
+as
+declare @cnt int --声明一个临时变量
+select @cnt=count(*) from t_user where uname=@uname and pwd=@pwd
+if @cnt=1
+ begin
+ --print 'all right'
+ return 0--如果用户名和密码都正确返回0
+ end
+select @cnt=count(*) from t_user where uname=@uname 
+if @cnt=1
+ begin
+  --print 'name is right'
+  RETURN 1--如果用户名正确而密码不正确,返回1
+ end
+else
+ begin
+  --print 'all error'
+  RETURN 2--如果用户名和密码都不正确,返回2
+ end
+GO
+--模拟前台程序,根据存储过程的返回值,向用户进行相应的提示
+DECLARE @rec INT
+EXEC @rec=p_checkUser 'A','AA'  --分别改用'A','BB'和'B','BB'来测试
+IF @rec=0
+ print 'all right'
+else if @rec=1
+ print 'name is right'
+else if @rec=2
+ print 'all error'
+GO
+--另外一种实现方式
+if object_id('p_checklogin','P') is not null
+ drop proc p_checklogin
+go
+create proc p_checklogin
+@uname varchar(20),
+@pwd varchar(20)
+with encryption
+as
+ if exists(select uid from usr where uname=@uname and pwd=@pwd)
+ return 0
+ else if exists (select uid from usr where uname=@uname)
+ return 1
+ else
+ return 2
+创建用户定义的系统存储过程
+注意两点：1：在master数据库中  2:名字以sp_开头
+
+下面的示例创建一个过程，显示表名以 emp 开头的所有表及其对应的索引。如果没有指定参数，该过程将返回表名以 sys 开头的所有表（及索引）。
+IF EXISTS (SELECT name FROM sysobjects
+      WHERE name = 'sp_showindexes' AND type = 'P')
+   DROP PROCEDURE sp_showindexes
+GO
+USE master
+GO
+CREATE PROCEDURE sp_showindexes
+   @@TABLE varchar(30) = 'sys%'
+AS 
+SELECT o.name AS TABLE_NAME,
+   i.name AS INDEX_NAME, 
+   indid AS INDEX_ID
+FROM sysindexes i INNER JOIN sysobjects o
+   ON o.id = i.id 
+WHERE o.name LIKE @@TABLE
+GO         
+USE pubs
+EXEC sp_showindexes 'emp%'
+GO
+下面是结果集：
+TABLE_NAME       INDEX_NAME       INDEX_ID 
+---------------- ---------------- ----------------
+employee         employee_ind     1
+employee         PK_emp_id        2
+(2 row(s) affected)
+
+GO
+--查看存储过程创建的文本
+--方法一:
+SELECT o.id, c.text
+FROM sysobjects o INNER JOIN syscomments c 
+   ON o.id = c.id
+WHERE o.type = 'P' AND o.name = 'p_checkLogin'
+GO
+--方法二:
+SP_HELPTEXT p_checkLogin
+GO
+ 
+
+
+游标基础
+使用游标变量
+Microsoft? SQL Server? 2000 也支持 cursor 数据类型的变量。游标可以有两种方法与一个 cursor 变量相关联：
+/* Use DECLARE @local_variable, DECLARE CURSOR and SET. */
+DECLARE @MyVariable CURSOR
+DECLARE MyCursor CURSOR FOR
+SELECT LastName FROM Northwind.dbo.Employees
+SET @MyVariable = MyCursor
+/* Use DECLARE @local_variable and SET */
+DECLARE @MyVariable CURSOR
+SET @MyVariable = CURSOR SCROLL KEYSET FOR
+SELECT LastName FROM Northwind.dbo.Employees
+declare title_csr scroll cursor for
+select title,price from titles where type ='business' for update of price 
+open title_csr
+fetch last from title_csr
+while @@fetch_status=0
+begin
+update titles set price=price*1.5 where current of title_csr
+fetch title_csr
+end
+close title_csr
+deallocate title_csr
+declare job_csr cursor read_only for 
+select top 50 percent* from jobs
+order by job_id desc
+open job_csr
+fetch job_csr
+while @@fetch_status=0
+begin 
+ fetch job_csr
+end
+close job_csr
+open job_csr
+declare @id varchar,@id1 int
+fetch next from job_csr into @id1,@id,@id,@id
+while @@fetch_status=0
+begin 
+print 'job_desc:'+convert(varchar,@id1)
+fetch next from job_csr into @id1,@id,@id,@id
+end
+deallocate job_csr
+
+declare job_csr cursor scroll for 
+select top 50 percent* from jobs
+order by job_id desc
+open job_csr
+fetch job_csr
+while @@fetch_status=0
+begin 
+ fetch job_csr
+end
+close job_csr
+open job_csr
+declare @id varchar,@id1 int
+fetch next from job_csr into @id1,@id,@id,@id
+while @@fetch_status=0
+begin 
+print 'job_desc:'+convert(varchar,@id1)
+fetch next from job_csr into @id1,@id,@id,@id
+end
+fetch absolute 4 from job_csr
+fetch prior  from job_csr
+fetch relative -2 from job_csr
+close job_csr
+deallocate job_csr
+ 
+                       /*游标*/
+/*定义只读游标*/
+declare author_csr cursor read_only for
+select au_fname,au_lname from authors where state='CA'
+order by au_fname,au_lname
+ 
+/*定义变量*/
+declare @lname varchar(20),@fname varchar(20)
+
+/*打开游标*/
+open author_csr
+/**执行第一次数据读取操作*/
+fetch next from author_csr into @lname,@fname
+/**循环游标读取工作*/
+while @@fetch_status=0
+begin
+    print 'author name:'+@lname+' '+@fname
+    fetch next from author_csr into @lname,@fname
+end
+/*关闭游标*/
+close author_csr
+/*释放游标*/
+deallocate author_csr
+
+ /*使用游标更新数据*/
+/*定义游标*/
+declare title_csr1 cursor  for
+select title,price from titles where type='business' for update of price
+/*打开游标*/
+open title_csr1
+/*使用游标提取第一行数据*/
+fetch title_csr1
+while @@fetch_status=0
+begin
+    update titles set price=price*1.5 where current of title_csr1
+    fetch title_csr1
+end
+/*关闭游标*/
+close title_csr1
+/*释放游标*/
+deallocate title_csr1
+
+    /*滚动游标*/
+/*定义只读游标*/
+declare author_csr1 scroll cursor  for
+select au_fname,au_lname from authors where state='CA'
+order by au_fname,au_lname
+ 
+/*定义变量*/
+declare @lname varchar(20),@fname varchar(20)
+
+/*打开游标*/
+open author_csr1
+/*数据集中的最后一行*/
+fetch last from author_csr1
+/*当前游标所在行的上一行*/
+fetch prior from author_csr1
+/*提取数据集中的第四行*/
+fetch absolute 4 from author_csr1
+/*提取当前行的前两行*/
+fetch relative -2 from author_csr1
+
+/*数据集中的第一行*/
+fetch first from author_csr1
+/*关闭游标*/
+close author_csr1
+/*释放游标*/
+deallocate author_csr1
+
+declare title_csr scroll cursor for
+select title,price from titles where type ='business' for update of price 
+open title_csr
+fetch last from title_csr
+while @@fetch_status=0
+begin
+update titles set price=price*1.5 where current of title_csr
+fetch title_csr
+end
+close title_csr
+deallocate title_csr
+declare job_csr cursor read_only for 
+select top 50 percent* from jobs
+order by job_id desc
+open job_csr
+fetch job_csr
+while @@fetch_status=0
+begin 
+ fetch job_csr
+end
+close job_csr
+open job_csr
+declare @id varchar,@id1 int
+fetch next from job_csr into @id1,@id,@id,@id
+while @@fetch_status=0
+begin 
+print 'job_desc:'+convert(varchar,@id1)
+fetch next from job_csr into @id1,@id,@id,@id
+end
+deallocate job_csr
+
+declare job_csr cursor scroll for 
+select top 50 percent* from jobs
+order by job_id desc
+open job_csr
+fetch job_csr
+while @@fetch_status=0
+begin 
+ fetch job_csr
+end
+close job_csr
+open job_csr
+declare @id varchar,@id1 int
+fetch next from job_csr into @id1,@id,@id,@id
+while @@fetch_status=0
+begin 
+print 'job_desc:'+convert(varchar,@id1)
+fetch next from job_csr into @id1,@id,@id,@id
+end
+fetch absolute 4 from job_csr
+fetch prior  from job_csr
+fetch relative -2 from job_csr
+close job_csr
+deallocate job_csr
+
+
+
+
+验证
+
+IF EXISTS (SELECT * 
+      FROM   master..sysdatabases 
+      WHERE  name = N'docDB')
+   DROP DATABASE docDB 
+create database docDB
+       /**
+                on primary(name=,
+                            filename=.mdf,
+                            size=,
+                            maxsize=,
+                            filegrowth=),
+                           (.ndf)
+                  log on(.ldf)
+      */
+ /*
+        * IF EXISTS(SELECT name 
+     FROM   sysobjects 
+     WHERE  name = N'<table_name, sysname, test_table>' 
+     AND   type = 'U')
+      DROP TABLE <table_name, sysname, test_table>
+  */
+ 
+
+
+
+
+
+事务
+
+if object_id('student')<>0
+drop table student
+go
+--set implicit_transactions on
+begin transaction putinid                             --输入编号
+go
+declare @results int,@num int
+select @results=0,@num=0
+create table student(id int not null,[name] char(8),age int)
+insert into student values(01,null,null)
+save tran A
+W:
+while @num<10
+begin
+ select @results=@results+@@error,@num=@num+1
+ goto M
+end
+while 1=2
+begin
+ M:insert into student values(@num+1,null,null)
+     goto W    
+end
+--set @results=1
+if @results=0
+commit transaction putinid
+else
+rollback transaction A
+select *from student
+--commit
+go
+declare cur  cursor read_only  for select id from student
+declare @num int
+set @num=0
+goto N
+W2:
+if @num between 5 and 10
+begin
+ select @num=@num+1
+ goto N
+end
+if 1=2
+   begin
+    N:  begin
+   insert into student values(@num+1,null,null)
+   select @num=@num+1
+   goto W2  
+   end
+   end
+select *from student
+open cur
+set @num=0
+while @num<10
+begin
+ fetch next from cur
+    select @num=@num+1
+end
+close cur
+deallocate cur
+commit
+print @@error 
+if @@error<>0
+ begin 
+  print '输入无效'
+ end 
+else
+ 
+
+
+
+
+
+
+索引
+
+--创建一个表
+CREATE TABLE t_test
+(tid int,
+num fload
+)
+Go
+ 
+--插入100万条记录
+Declare @cnt int
+Set @cnt=0
+While @cnt<=1000000
+Begin
+       Insert into t_test values(@cnt, rand())
+End
+ 
+--显示语句执行时间
+Set statistics time on
+ 
+--执行两个查询语句，时间都较长
+Select * from t_test where tid=100
+ 
+Select * from t_test where tid!=100
+ 
+--创建索引
+Create index idx_tid on t_test(tid)
+ 
+--再重新执行上面的查询语句
+Select * from t_test where tid=100 –这一句的执行时间大大缩短，因为使用了索引
+ 
+Select * from t_test where tid!=100 –这一句时间基本没变，因为没用使用索引（当返回的记录数超过表中记录总数的2%时，查询优化器不再使用索引）
+ 
+此外，可以查看“执行计划”来查看查询优化器使用索引的情况，方法是：
+在查询分析器中，依次点击菜单“查询”è“显示执行计划”
+ --在students的Stud表上创建名为studid_ind的聚集索引
+create clustered index studid_ind on Stud(Studid)
+--在students的Stud表上创建名为studfullname_ind的非聚集索引
+create unique index studfullname_ind on Stud(Fname desc,Lname)
+--查看索引
+sp_helpindex Stud
+--使用索引查询
+select *from Stud(index=studid_ind)where Studid='200710090002'
+--删除索引
+drop index Stud.studid_ind
+--修改Stud表,设定Studid为主键
+alter table Stud add constraint PK_Studid primary key clustered(studid)
+--删除用primary key 约束的PK_Stud聚集索引
+drop index Stud.PK_Studid
+--重建索引
+dbcc DBREINDEX (Stud,PK_Studid)
+--重建索引,填充因子占50%
+dbcc DBREINDEX (Stud,PK_Studid,50)
+--重建非聚集索引
+create index Studname_ind on Stud(Fname,Lname)with drop_existing
+                /**因为非聚集索引包含聚集索引,所以在除去聚集索引时必须重建非聚集索引.
+                 如果重建聚集索引,则必须重建非聚集索引,以便使用新的索引.
+               */
+                
+
+--创建视图
+ALTER VIEW OrderList_view 
+AS
+SELECT TOP 100 PERCENT o1.OrderID,SendDate,OrderDate,[Address],
+ProductID,Quantity,Discount
+FROM [OrderList] o2
+INNER JOIN  [Order] o1
+ON  o1.OrderID=o2.OrderID AND OrderDate>'2007-09-17'
+ORDER BY SendDate
+
+CREATE INDEX Outdate_ind
+ON OrderList_view(SendDate)
+--出现错误提示:"无法对视图 'OrderList_view' 创建 索引，因为该视图未绑定到架构。"
+--查阅联机丛书,在创建视图时需增加WITH SCHEMABINDING 子句,且视图名和表名前必须加"用户名."
+ALTER VIEW OrderList_view WITH SCHEMABINDING
+AS
+.....
+--修改成功后,再执行创建索引命令,报错:"无法对视图 'OrderList_view' 创建 索引。它没有唯一聚集索引。"
+
+--先为视图创建唯一聚集索引
+CREATE UNIQUE CLUSTERED INDEX Outdate_ind
+ON OrderList_view(ORDERID,PRODUCTID)
+--执行后报错: 2005中：无法对视图 "OrderManager.dbo.OrderList_view" 创建 索引，因为其中包含 TOP 关键字。请考虑删除 TOP 或不对视图进行索引。
+--           2000中：无法 index 视图 'OrderManager.dbo.OrderList_view'。它包含一个或多个不允许使用的构造。
+--因此,把TOP和ORDER BY子句删除
+ALTER VIEW dbo.OrderList_view WITH SCHEMABINDING
+AS
+SELECT LISTID,o1.OrderID,SendDate,OrderDate,[Address],
+ProductID,Quantity,Discount
+FROM dbo.[OrderList] o2
+INNER JOIN  dbo.[Order] o1
+ON  o1.OrderID=o2.OrderID AND OrderDate>'2007-09-17'
+--再创建创建唯一聚集索引,哈哈,又出了个错:2005中：无法对视图 'OrderManager.dbo.OrderList_view' 创建 索引，因为此视图使用了隐式转换来执行从字符串到 datetime 或 smalldatetime 的转换。请使用带确定样式值的显式转换。
+--                                    2000中：无法在视图 'OrderManager.dbo.OrderList_view' 上创建索引，因其需要进行涉及日期或变量的转换。
+ALTER VIEW dbo.OrderList_view WITH SCHEMABINDING
+AS
+SELECT LISTID,o1.OrderID,SendDate,OrderDate,[Address],
+ProductID,Quantity,Discount
+FROM dbo.[OrderList] o2
+INNER JOIN  dbo.[Order] o1
+ON  o1.OrderID=o2.OrderID AND OrderDate>CONVERT(DATETIME,'2007-9-17 00:00:00.000')
+
+--再创建创建唯一聚集索引,哈哈,还有错:2005中："该视图包含不精确或不具有确定性的转换。"
+--2000中：无法在视图 'OrderManager.dbo.OrderList_view' 上创建索引，因为函数 'convert' 生成具有不确定性的结果。
+--把日期部分去除后,可以成功
+ALTER VIEW dbo.OrderList_view WITH SCHEMABINDING
+AS
+SELECT LISTID,o1.OrderID,SendDate,OrderDate,[Address],
+ProductID,Quantity,Discount
+FROM dbo.[OrderList] o2
+INNER JOIN  dbo.[Order] o1
+ON  o1.OrderID=o2.OrderID
+CREATE UNIQUE CLUSTERED INDEX Outdate_ind
+ON OrderList_view(ORDERID,PRODUCTID)
+--再创建题目中要求的索引,可以成功;但此时已经去除了日期列
+CREATE INDEX Outdate_ind1
+ON OrderList_view(SendDate)
+
+
+
+
+触发器调用存储过程
+create proc p_a
+as
+select * from titles
+go
+create trigger tr_a on titles
+for update
+as
+exec p_a
+update titles set price=10 where title_id='BU1032'
+
+
+
+
+
+特殊字符
+
+DECLARE @title varchar(80)
+SELECT @title='Computer' --SET  @title='PubTitle'
+SELECT * FROM titles WHERE title like '%'+@title+'%'
+SELECT 
+[当前时间]=getdate(),
+DATENAME(dw,getdate()) AS '星期',
+DATEPART(dy,getdate()) '一年中的第几天',
+MONTH(getdate()) "第几月",
+YEAR(getdate()) [哪一年]
+SELECT
+[当前时间]=getdate(),
+[20天后的日期]=DATEADD(dd,20,getdate())
+
+
+
+特殊类型
+sqlserver
+--标识列(自动增长列)和计算列的例子
+CREATE TABLE t_sale
+(
+tid int not null identity(100,1),
+basesale money null,
+prize money,
+sumsale as basesale+prize
+)
+insert into t_sale values(1000,500)
+--bit类型
+create table t2(test bit)
+insert into t2 values(0)
+insert into t2 values(1)
+insert into t2 values(-1)
+insert into t2 values(4)
+insert into t2 values('1')
+insert into t2 values('TRUE') --不支持
+
+--date日期时间类型
+CREATE TABLE T3(TEST DATETIME);
+INSERT INTO T3 VALUES(GETDATE())
+INSERT INTO T3 VALUES('2008-8-8')
+ 日期信息的输入
+set dateformat mdy
+declare @dt datetime
+set @dt='08/05/03'
+select @dt
+--MONEY类型
+CREATE TABLE T4(TEST MONEY)
+INSERT INTO T4 VALUES($100)
+INSERT INTO T4 VALUES(￥100) --不支持这个符号
+INSERT INTO T4 VALUES(£20.234) --英磅
+
+
+
+
+查询语句的处理原则
+
+查询语句的处理原则（执行顺序）：
+一：单表
+1. 从FROM子句中的表开始
+2. 如果有一条WHERE子句，应用它的搜索条件到表的每一条记录，保留为TRUE的那些记录，去掉为FALSE或NULL的记录
+3. 对每个保留的记录，计算选择列表中每项的值，以生成一条查询结果记录，对于每个字段引用，则使用当前记录中该字段的值
+4. 如果使用了DISTINCT，则消除所生成的查询结果中的重复记录
+5. 如果有ORDER BY子句，则对查询结果进行排序
+ SELECT语句的基本搜索条件：（WHERE子句）
+1：比较测试（=,<>,!=,<,>,<=,>=）
+ 如：WHERE price>10
+2：范围测试（BETWEEN...AND...）
+ 如：WHERE price BETWEEN 10 AND 20
+3：组成员测试（IN）
+ 如：WHERE state IN('CA','MI')
+4：模式匹配测试（LIKE）,与通配符字符一起使用
+ 如：WEHRE state LIKE '%A'
+   注意转义字符的使用：如想查询产品名称开头3字母是A%B的产品，其中%不是通配符，这时候就需要使用转义字符
+ 如：WHERE proname LIKE 'A$%B%' ESCAPE '$' ,这个语句中的第一个%不是通配符，而第二个是通配符
+5：空值测试（IS NULL）
+ 如 WHERE price IS NULL
+ 
+

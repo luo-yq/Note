@@ -1,0 +1,698 @@
+ABS()	返回数值表达式的绝对值
+ACOS()	返回数值表达式的反余弦值。如果参数未在[-1, 1]区间内，则返回 NULL
+ASIN()	返回数值表达式的反正弦值。如果参数未在[-1, 1]区间内，则返回 NULL
+ATAN()	返回数值表达式的反正切值
+ATAN2()	返回两个参数的反正切值
+BIT_AND()	返回表达式参数中的所有二进制位的按位与运算结果
+BIT_COUNT()	返回传入的二进制值的字符串形式
+BIT_OR()	返回表达式参数中的所有二进制位的按位或运算结果
+CEIL()	返回值为不小于传入数值表达式的最小整数值
+CEILING()	同CEIL()返回值为不小于传入数值表达式的最小整数值
+CONV()	转换数值表达式的进制
+COS()	返回所传入数值表达式（以弧度计）的余弦值
+COT()	返回所传入数值表达式的余切值
+DEGREES()	将数值表达式参数从弧度值转变为角度值
+EXP()	返回以e（自然对数的底数）为底，以所传入的数值表达式为指数的幂
+FLOOR()	返回不大于所传入数值表达式的最大整数
+FORMAT()	将数值表达式参数四舍五入到一定的小数位
+GREATEST()	返回传入参数的最大值
+INTERVAL()	比较所传入的多个表达式：expr1、expr2、expr3……，如果 expr1 < expr2，则返回0；如果 expr1 < expr3，则返回1……以此类推
+LEAST()	返回传入参数中的最小值
+LOG()	返回传入数值表达式的自然对数
+LOG10()	返回传入数值表达式的常用对数（以10为底的对数）
+MOD()	返回参数相除的余数
+OCT()	返回传入数值表达式的八进制数值的字符串表现形式。如果传入值为 NULL，则返回 NULL
+PI()	返回 π 值
+POW()	返回两个参数的幂运算结果，其中一个参数为底，另一个参数为它的指数。
+POWER()	返回两个参数的幂运算结果，其中一个参数为底，另一个参数为它的指数。
+RADIANS()	将参数由角度值转换成弧度值
+ROUND()	将所传入数值表达式四舍五入为整数。也可以用来将参数四舍五入到一定的小数位
+SIN()	返回参数（以弧度计）的正弦值
+SQRT()	返回参数的非负平方根
+STD()	返回参数的标准方差值
+STDDEV()	返回参数的标准方差值
+TAN()	返回参数（以弧度计）的正切值
+TRUNCATE()	将数值参数 expr1 的小数位截取到 expr2 位如果 expr2 为0，则结果没有小数位。
+ 
+
+ATAN2(Y,X)
+返回两个参数 X 与 Y 的反正切值，类似于 Y/X 的反正切值，但两个参数的符号是用来确定所得结果的象限的。
+ 
+BIT_AND(expression)
+返回表达式参数 expression 中的所有二进制位的按位与运算结果。按位与运算的规则是这样的：如果两个同等位都是同样值（0或1），则返回1，否则返回0。函数本身返回的是一个64位的整形值，如果没有匹配项，则返回18446744073709551615。在下面的示例中，对表 CARS 按照Maker 字段进行分组， 然后再对 PRICE（价格）字段执行 BIT_AND() 函数。
+
+mysql> SELECT 
+          MAKER, BIT_AND(PRICE) BITS
+          FROM CARS GROUP BY MAKER
+
+BIT_COUNT(numeric_value)
+该函数会将参数 numeric_value 转化成二进制数，然后再返回这个二进制数中1的个数。下例展示了如何对一些数使用BIT_COUNT() 函数。
+
+mysql> SELECT
+          BIT_COUNT(2) AS TWO,
+          BIT_COUNT(4) AS FOUR,
+          BIT_COUNT(7) AS SEVEN
+
+BIT_OR(expression)
+按位或运算函数。返回表达式参数 expression 中所有位的按位或运算结果。其中的基本原理是：如果相对应的位匹配（就是相同的意思，同为0或1），则返回0，否则返回1。函数本身返回的是一个64位的整形数值，如果记录并不匹配，则返回0。下例将对对 CARS 表按照 Maker 分组，然后对 PRICE 字段执行 BIT_OR() 函数。
+
+mysql> SELECT 
+          MAKER, BIT_OR(PRICE) BITS
+          FROM CARS GROUP BY MAKER
+
+
+CONV(N,from_base,to_base)
+该函数用于在不同进制间转换数值。将数值 N 从 初始进制参数 from_base 转换为目标进制参数 to_base，然后以字符串的形式返回。该函数可使用的进制范围为2-36。如果函数参数中有一个为 NULL 值，则函数返回 NULL。下例中，将16进制数5转换为了2进制数101。
+
+
+
+FORMAT(X,D)将数值 X 以下列格式进行格式化：###,###,###.##，并将小数位缩减到 D 位。
+mysql>SELECT FORMAT(423423234.65434453,2);
++---------------------------------------------------------+
+| FORMAT(423423234.65434453,2)                            |
++---------------------------------------------------------+
+| 423,423,234.65                                          |
++---------------------------------------------------------+
+
+GREATEST(n1,n2,n3,..........)返回 n1、n2、n3等一系列参数中的最大值。
+mysql>SELECT GREATEST(3,5,1,8,33,99,34,55,67,43);
++---------------------------------------------------------+
+| GREATEST(3,5,1,8,33,99,34,55,67,43)                     |
++---------------------------------------------------------+
+| 99                                                      |
++---------------------------------------------------------+
+
+INTERVAL(N,N1,N2,N3,..........)
+将第一个参数 N 与后续的一列参数 N1、N2、N3 等一一进行比对。返回结果规则为：如果N < N1，返回0；如果 N < N2，则返回1；如果N < N3则返回2……以此类推。如果N为NULL，则返回-1。参数列表 N1、N2、N3……必须满足N1 < N2 < N3……才能正常执行本函数。
+
+mysql>SELECT INTERVAL(6,1,2,3,4,5,6,7,8,9,10);
++---------------------------------------------------------+
+| INTERVAL(6,1,2,3,4,5,6,7,8,9,10)                        |
++---------------------------------------------------------+
+| 6                                                       |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+注意，6是在后续参数列表中，第一个大于 N 的值所对应的索引（参数列表的初始索引为0）。所以，在我们这个例子中，7正是这个大于 N 的值，它的索引却是6。
+
+LEAST(N1,N2,N3,N4,......)该函数是 GREATEST() 函数的逆向函数，返回 N1、N2、N3、N4 等值的最小值。
+
+mysql>SELECT LEAST(3,5,1,8,33,99,34,55,67,43);
++---------------------------------------------------------+
+| LEAST(3,5,1,8,33,99,34,55,67,43)                        |
++---------------------------------------------------------+
+| 1                                                       |
++---------------------------------------------------------+
+
+LOG(X) 与 LOG(B,X)单参数 X 版本的函数返回 X 的自然对数。双参数版本的函数将返回以 B 为底 X 的对数。
+MOD(N,M)返回 N 除以 M 的余数。
+OCT(N)以字符串形式返回八进制数 N，作用相当于 CONV(N,10,8)。
+POW(X,Y) 与POWER(X,Y)这两个函数都能返回 X 的 Y 次幂。
+ROUND(X) 与 ROUND(X,D)将 X 四舍五入，返回最接近 X 的整数。如果传入第二个参数 D，则函数会将 X 四舍五入到 小数点后的 D 位。D 必须为正值，否则小数点后所有数值都将被清除。
+TRUNCATE(X,D)X 值的小数位被截取到 D 位。如果 D 为0，则 X 无小数位。如果 D 为负值，则将把 X 整数部分末位 D 位数值清除为0。以上运算均为清除，非四舍五入。
+
+
+
+RAND 函数用于产生从0到1之间的随机数。
+mysql>  SELECT RAND(1), RAND( ), RAND( );
+还可以使用 ORDER BY RAND() 来随机化一组行或值。比如对于下面这个 employee_tbl 表。
+mysql> SELECT * FROM employee_tbl ORDER BY RAND();
+
+
+
+
+ASCII()	返回字符串 str 中最左边字符的 ASCII 代码值
+BIN()	返回十进制数值 N 的二进制数值的字符串表现形式
+BIT_LENGTH()	返回字符串 str 所占的位长度
+CHAR()	返回每一个传入的整数所对应的字符
+CHAR_LENGTH()	单纯返回 str 的字符串长度
+CHARACTER_LENGTH()	作用等同于CHAR_LENGTH()
+CONCAT_WS()	返回串联并以某种分隔符进行分隔的字符串
+CONCAT()	返回串联的字符串
+CONV()	转换数值的进制
+ELT()	返回一定索引处的字符串
+EXPORT_SET()	返回一个字符串，其中，对于每个设置在bits中的位，得到一个on字符串，而对于每个未设定的位，则得到一个off字符串。
+FIELD()	返回第一个参数在随后参数中的索引（下文中有时也称其为位置）
+FIND_IN_SET()	返回第一个参数在第二个参数中的索引
+FORMAT()	将数值参数进行一些格式化，并保留指定的小数位数
+HEX()	返回参数的16进制数的字符串形式
+INSERT()	在字符串的指定位置处，将指定数目的字符串替换为新字符串
+INSTR()	返回子字符串第一次出现的索引
+LCASE()	等同于 LOWER()
+LEFT()	按指定规则，返回字符串中最左方的一定数目的字符
+LENGTH()	返回字符串的字节长度
+LOAD_FILE()	加载指定名称的文件
+LOCATE()	返回子字符串第一次出现的位置
+LOWER()	返回小写的参数
+LPAD()	返回字符串参数，其左侧由指定字符串补齐指定数目
+LTRIM()	去除前导空格
+MAKE_SET()	返回一个由逗号分隔的字符串集，其中每个字符串都拥有bits 集中相对应的二进制位
+MID()	从指定位置返回子字符串
+OCT()	将参数转变成八进制数，返回这个八进制数的字符串形式
+OCTET_LENGTH()	等同于 LENGTH()
+ORD()	如果参数中最左方的字符是个多字节字符，则返回该字符的ASCII代码值
+POSITION()	等同于 LOCATE()
+QUOTE()	对参数进行转义，以便用于 SQL 语句
+REGEXP	使用正则表达式进行模式匹配
+REPEAT()	按指定次数重复字符串
+REPLACE()	查找更换指定的字符串
+REVERSE()	反转字符串参数中的字符
+RIGHT()	返回字符串参数最右边指定位数的字符
+RPAD()	将字符串按指定次数重复累加起来
+RTRIM()	除去字符串参数的拖尾空格
+SOUNDEX()	返回一个soundex字符串
+SOUNDS LIKE	对比声音
+SPACE()	返回指定空格数目的字符串
+STRCMP()	对比两个字符串
+SUBSTRING_INDEX()	将字符串参数中在指定序号的分隔符之前的子字符串予以返回
+SUBSTRING() 与 SUBSTR()	按指定规则返回子字符串
+TRIM()	清除字符串参数的前导及拖尾空格
+UCASE()	等同于 UPPER()
+UNHEX()	将16进制数的每一位都转变为ASCII字符
+UPPER()	将参数全转变为大写
+
+
+BIN(N)
+返回十进制数值 N 的二进制数值的字符串表现形式。其中，N 是一 BIGINT 型数值。该函数等同于 CONV(N, 10, 2)。如果 N 为 NULL，则返回 NULL。
+
+
+CHAR(N,... [USING charset_name])
+会将每一个参数 N 都解释为整数，返回由这些整数在 ASCII 码中所对应字符所组成的字符串。忽略 NULL 值。
+
+mysql> SELECT CHAR(77,121,83,81,'76');
++---------------------------------------------------------+
+| CHAR(77,121,83,81,'76')                                 |
++---------------------------------------------------------+
+| MySQL                                                   |
++---------------------------------------------------------+
+
+CHAR_LENGTH(str)单纯返回 str 的字符串长度。多字节字符会被当成单字符对待，所以如果一个字符串包含5个双字节字符，LENGTH() 返回10，而 CHAR_LENGTH() 会返回5。
+CHARACTER_LENGTH(str)与函数 CHAR_LENGTH() 作用相同。
+
+CONCAT(str1,str2,...)
+将一众字符串参数加以连接，返回结果字符串。可能有1或多个参数。如果参数中都是非二进制字符串，结果也是非二进制字符串。如果参数包含任何二进制字符串，结果也是二进制字符串。数值型参数会被转化成相应的二进制字符串形式。如果想避免这样，可以使用显式的类型转换，如下例所示：
+
+mysql> SELECT CONCAT('My', 'S', 'QL');
++---------------------------------------------------------+
+| CONCAT('My', 'S', 'QL')                                 |
++---------------------------------------------------------+
+| MySQL                                                   |
++---------------------------------------------------------+
+
+CONCAT_WS(separator,str1,str2,...)
+一种特殊的 CONCAT 函数。利用分隔符 separator 参数来连接后续的参数 str1、str2……分隔符添加在后续参数之间，与后续参数一样，它也可以是一个字符串。如果该分隔符参数为 NULL，则结果也是 NULL。
+
+mysql> SELECT CONCAT_WS(',','First name','Last Name' );
++---------------------------------------------------------+
+| CONCAT_WS(',','First name','Last Name' )                |
++---------------------------------------------------------+
+| First name, Last Name                                   |
++---------------------------------------------------------+
+
+CONV(N,from_base,to_base)
+将数值在不同进制间转换。将数值型参数 N 由初始进制 from_base 转换为目标进制 to_base 的形式并返回。如果任何参数为 NULL，则返回 NULL。N 可以是整数，但也可以是字符串。进制取值范围为2-36。如果 to_base 为负值，N 被认为是有符号数值；反之，N被认为是无符号数值。函数运算精度为64位。
+
+mysql> SELECT CONV('a',16,2);
++---------------------------------------------------------+
+| CONV('a',16,2)                                          |
++---------------------------------------------------------+
+| 1010                                                    |
++---------------------------------------------------------+
+
+ELT(N,str1,str2,str3,...)
+如果 N = 1，则返回 str1，如果N = 2 则返回 str2，以此类推。如果 N 小于1或大于参数个数，则返回 NULL。ELT() 是 FIELD() 的功能补充函数。
+
+mysql> SELECT ELT(1, 'ej', 'Heja', 'hej', 'foo');
++---------------------------------------------------------+
+| ELT(1, 'ej', 'Heja', 'hej', 'foo')                      |
++---------------------------------------------------------+
+| ej                                                      |
++---------------------------------------------------------+
+
+EXPORT_SET(bits,on,off[,separator[,number_of_bits]])
+对于 bits 中的每一位，都能得到一个on 字符串，对于未在bits中的每个比特，则得到off字符串。bits 中的比特从右向左（从低位到高位比特）排列，而字符串则是按照从左至右的顺序添加到结果上，并由 separator 字符串分隔（默认采用逗号 ,）。bits 中的位数由 number_of_bits 提供，如果不指定，则默认为64。如果大于64，则会自动截取为64，它是一个无符号整形值，因此上-1也和64具有一样的效果。
+
+mysql> SELECT EXPORT_SET(5,'Y','N',',',4);
++---------------------------------------------------------+
+| EXPORT_SET(5,'Y','N',',',4)                             |
++---------------------------------------------------------+
+| Y,N,Y,N                                                 |
++---------------------------------------------------------+
+
+FIELD(str,str1,str2,str3,...)返回 str 在后面的参数列（str1、str2、str3……）中的索引（起始索引为1）。如果未在参数列中发现 str 则返回0。
+
+FIND_IN_SET(str,strlist)
+如果字符串 str 在由 N 个子字符串组成的字符串列表 strlist 中，则返回其在 strlist 中的索引（字符串列表 strlist 的初始索引为1）。
+mysql> SELECT FIND_IN_SET('b','a,b,c,d');
+
+FORMAT(X,D)将数值参数 X 以'#,###,###.##' 的形式进行格式化，并四舍五入到小数点后 D 位处，然后将格式化结果以字符串形式返回。如果 D 为0，则结果没有小数部分。
+
+HEX(N_or_S)
+当 N_or_S 为数值时，以16进制数的字符串形式返回 N 的值，N 为 BIGINT 型值。该函数作用等同于 CONV(N, 10, 16)。
+
+当 N_or_S 为字符串时，返回 N_or_S 的16进制字符串形式，N_or_S 中的每个字符都被转换为2个16进制数字。
+
+mysql> SELECT HEX(255);
++---------------------------------------------------------+
+| HEX(255)                                                |
++---------------------------------------------------------+
+| FF                                                      |
++---------------------------------------------------------+
+
+
+mysql> SELECT 0x616263;
++---------------------------------------------------------+
+| 0x616263                                                |
++---------------------------------------------------------+
+| abc                                                     |
++---------------------------------------------------------+
+
+INSERT(str,pos,len,newstr)在原始字符串 str 中，将自左数第 pos 位开始，长度为 len 个字符的字符串替换为新字符串 newstr，然后返回经过替换后的字符串。如果 pos 未在原始字符串长度内，则返回原始字符串。如果 len 不在原始字符串长度内，则返回原始字符串中自 pos 位起后面剩余的字符串。如果函数中任一参数为 NULL，则返回 NULL。
+INSTR(str,substr)返回 substr 在 str 中第一次出现时的位置（也就是索引）。作用类似于双参数版本的 LOCATE() 函数，只不过参数的次序调换了过来。
+LCASE(str)等同于 LOWER()。
+LEFT(str,len)返回字符串 str 自左数的 len 个字符。如果任一参数为 NULL，则返回 NULL。
+LENGTH(str)返回字符串 str 的字节长度。多字节字符被如实计算为多字节。所以，对于包含5个双字节字符（如中文字符）的字符串，LENGTH() 返回10，而 CHAR_LENGTH() 返回5。
+
+LOAD_FILE(file_name)读取文件并以字符串形式返回文件内容。使用该函数时，文件必须位于服务器主机中，且必须制定该文件的完整路径名。必须拥有 FILE 权限。文件对于所有人都必须是可读状态，而且文件尺寸也必须小于 max_allowed_packet 字节。
+
+如果因为未满足上述几个条件，从而文件不存在于服务器主机中，或者不可读，则函数返回 NULL。
+
+自 MySQL 5.0.19 起，character_set_filesystem 系统变量负责对字符串形式文件名加以解读。 
+
+mysql> UPDATE table_test
+    -> SET blob_col=LOAD_FILE('/tmp/picture')
+    -> WHERE id=1;
+...........................................................
+LOCATE(substr,str), LOCATE(substr,str,pos)第一种格式函数的作用如下：返回 substr 在 str 中第一次出现的位置（即索引）。第二种格式函数则返回自 str 指定位置 pos （即索引）起， substr 在 str 中第一次出现的位置。如果在 str 中未找到 substr，则两种函数都返回0。
+LOWER(str)根据当前所采用的字符集映射关系，将 str 所有字符都转为小写，并返回新字符串。
+LPAD(str,len,padstr)左补齐函数。将字符串 str 左侧利用字符串 padstr 补齐为整体长度为 len 的字符串。如果 str 大于 len，则返回值会缩减到 len 个字符。
+LTRIM(str)将字符串 str 中前部的空格字符去除，然后返回新的 str 字符串。
+
+MAKE_SET(bits,str1,str2,...)
+返回一个集合值（是一个由字符 , 所分隔的众多子字符串所组合而成的字符串），该集合中包含的字符串的比特数等于bits 集合中的对应比特数。例如，str1 对应着 bit 0，str2 对应 bit 1，以此类推。str1、str2……中的 NULL 值将不会添加到结果中。
+
+mysql> SELECT MAKE_SET(1,'a','b','c');
++---------------------------------------------------------+
+| MAKE_SET(1,'a','b','c')                                 |
++---------------------------------------------------------+
+| a                                                       |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+MID(str,pos,len)
+MID(str,pos,len) 作用等同于 SUBSTRING(str,pos,len)。
+OCT(N)以字符串形式返回 N 的八进制数，N 是一个BIGINT 型数值。作用相当于CONV(N,10,8)。如果 N 为 NULL，则返回 NULL。
+OCTET_LENGTH(str)作用等同于 LENGTH()。
+ORD(str)如果 str 最左边的字符是一个多字节字符，利用以下公式计算返回该字符的 ASCII 代码值。
+
+（第一个字节的 ASCII 代码）
+
++ （第1个字节的 ASCII 代码 × 256）
+
++ （第3个字节的 ASCII 代码 × 2562）……
+如果最左边的字符不是多字节字符，则函数按照 ASCII() 方式返回值。
+
+mysql> SELECT ORD('2');
++---------------------------------------------------------+
+| ORD('2')                                                |
++---------------------------------------------------------+
+| 50                                                      |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+POSITION(substr IN str)
+作用等同于 LOCATE(substr,str)。
+
+QUOTE(str)
+产生一个在SQL语句中可用作正确转义数据值的结果。将 str 中的每一个单引号（'）、反转杠（\）、 ASCII的NUL值，以及Control+Z组合前加上反斜杠，最后再补足左右闭合用的单引号。如果参数为 NULL，则返回 NULL 的字符串形式（不用单引号闭合），
+
+mysql> SELECT QUOTE('Don\'t!');
++---------------------------------------------------------+
+| QUOTE('Don\'t!')                                        |
++---------------------------------------------------------+
+| 'Don\'t!'                                               |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+注意：检查一下，如果安装的 MySQL 不支持这个函数，则不要使用。
+expr REGEXP pattern
+将 expr 与 pattern 进行模式匹配。如果相匹配则返回1，否则返回0。如果 expr 与 pattern 两个参数中有一个为 NULL，则结果也为 NULL。除了在处理二进制字符串时，REGEXP 对大小写并不敏感。第1个
+
+mysql> SELECT 'ABCDEF' REGEXP 'A%C%%';
++---------------------------------------------------------+
+| 'ABCDEF' REGEXP 'A%C%%'                                 |
++---------------------------------------------------------+
+| 0                                                       |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+第2个实例：
+
+mysql> SELECT 'ABCDE' REGEXP '.*';
++---------------------------------------------------------+
+|  'ABCDE' REGEXP '.*'                                    |
++---------------------------------------------------------+
+| 1                                                       |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+第3个示例：
+
+mysql> SELECT 'new*\n*line' REGEXP 'new\\*.\\*line';
++---------------------------------------------------------+
+| 'new*\n*line' REGEXP 'new\\*.\\*line'                   |
++---------------------------------------------------------+
+| 1                                                       |
++---------------------------------------------------------+
+
+REPEAT(str,count)将字符串 str 重复 count 次，返回结果字符串。如果 count 小于1，则返回一个空字符串。如果 str 或 count 为 NULL，则返回 NULL。
+REPLACE(str,from_str,to_str)查找字符串 str 中出现的 from_str ，将其都更换为 to_str。在查找 from_str 时，函数对大小写是敏感的。
+REVERSE(str)以反向顺序返回 str 所有字符。
+RIGHT(str,len)返回 str 右边末 len 位的字符。如果有的参数是 NULL 值，则返回 NULL。
+RPAD(str,len,padstr)在 str 右方补齐 len 位的字符串 padstr，返回新字符串。如果 str 长度大于 len，则返回值的长度将缩减到 len 所指定的长度。
+RTRIM(str)去除 str 的拖尾空格，返回新字符串。
+
+SOUNDEX(str)
+一种能够生成判断字符串是否同音的soundex 字符串的函数。返回 str 的 soundex 字符串。听起来相似的两个字符串应该具有相同的soundex 字符串。标准的soundex 字符串包含4个字符，但 MySQL 的 SOUNDEX() 函数返回的是任意长度的字符串。可以在结果上使用 SUBSTRING() 来获取标准的 soundex 字符串。str 中的非字母字符自动会被忽略。所有在 A-Z 范围之外的国际字母字符会被认为是元音字母。
+
+expr1 SOUNDS LIKE expr2作用等同于 SOUNDEX(expr1) = SOUNDEX(expr2)。
+SPACE(N)返回包含 N 个空格的字符串。
+
+STRCMP(str1, str2)对比两个字符串 str1 和 str2，如果两字符串相等，返回1；如果当前的排序规则，str1 小于 str2，则返回-1，反之则都返回1。第1个
+
+mysql> SELECT STRCMP('MOHD', 'MOHD');
++---------------------------------------------------------+
+| STRCMP('MOHD', 'MOHD')                                  |
++---------------------------------------------------------+
+| 0                                                       |
++---------------------------------------------------------+
+第2个
+
+mysql> SELECT STRCMP('AMOHD', 'MOHD');
++---------------------------------------------------------+
+| STRCMP('AMOHD', 'MOHD')                                 |
++---------------------------------------------------------+
+| -1                                                      |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+第3个
+
+mysql> SELECT STRCMP('MOHD', 'AMOHD');
++---------------------------------------------------------+
+| STRCMP('MOHD', 'AMOHD')                                 |
++---------------------------------------------------------+
+| 1                                                       |
++---------------------------------------------------------+
+
+SUBSTRING(str,pos)、SUBSTRING(str FROM pos)、SUBSTRING(str,pos,len)、SUBSTRING(str FROM pos FOR len)
+在以上4种函数变种形式中，没有 len 参数的函数形式会返回自 str 中位置 pos 处之后的子字符串；有 len 参数的函数形式会返回自 str 中位置 pos 处之后，长度为 len 的子字符串。使用 FROM 的函数形式则是采用的标准的 SQL 语法。pos 参数也可能取负值，在这种情况下，取字符串的方式是从字符串 str 的末尾向前（而非从前往后），从这种逆向顺序的 pos 处开始取字符串。另外，负值的 pos 参数可用于任何形式的 SUBSTRING() 函数中。
+mysql> SELECT SUBSTRING('Quadratically',5);
+mysql> SELECT SUBSTRING('foobarbar' FROM 4);
+mysql> SELECT SUBSTRING('Quadratically',5,6);
+
+SUBSTRING_INDEX(str,delim,count)
+返回 str 中第 count 次出现的分隔符 delim 之前的子字符串。如果 count 为正数，将最后一个分隔符左边（因为是从左数分隔符）的所有内容作为子字符串返回；如果 count 为负值，返回最后一个分隔符右边（因为是从右数分隔符）的所有内容作为子字符串返回。在寻找分隔符时，函数对大小写是敏感的。
+mysql> SELECT SUBSTRING_INDEX('www.mysql.com', '.', 2);
+
+TRIM([{BOTH | LEADING | TRAILING} [remstr] FROM] str) 与 TRIM([remstr FROM] str)
+将字符串 str去除 remstr 所指定的前缀或后缀，返回结果字符串。如果没有指定标识符BOTH、LEADING，或TRAILING，则默认采用 BOTH，即将前后缀都删除。remstr 其实是个可选参数，如果没有指定它，则删除的是空格。
+mysql> SELECT TRIM('  bar   ');
+mysql> SELECT TRIM(LEADING 'x' FROM 'xxxbarxxx');
+mysql> SELECT TRIM(BOTH 'x' FROM 'xxxbarxxx');
+mysql> SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz');
+
+UCASE(str)作用等同于 UPPER()。
+
+UNHEX(str)它是HEX(str) 的逆向函数。将参数中的每一对16进制数字都转换为10进制数字，然后再转换成 ASCII 码所对应的字符。结果返回的字符是二进制字符串。
+参数 str 中的字符必须是合法的16进制数字：0-9，A-F或者a-f（因为16进制不区分字母的大小写）。如果参数 X 中包含非16进制数字，则函数返回 NULL。
+
+UPPER(str)根据当前所采用的字符集映射关系，将 str 所有字符都转为大写，并返回新字符串。
+SUM 函数用来在不同记录中计算某一字段的总和值。
+
+
+
+
+ADDDATE()	添加日期
+ADDTIME()	添加时间
+CONVERT_TZ()	转换不同时区
+CURDATE()	返回当前日期
+CURRENT_DATE() 与 CURRENT_DATE	等同于 CURDATE()
+CURRENT_TIME() 与 CURRENT_TIME	等同于 CURTIME()
+CURRENT_TIMESTAMP() 与 CURRENT_TIMESTAMP	等同于 NOW()
+CURTIME()	返回当前时间
+DATE_ADD()	添加两个日期
+DATE_FORMAT()	按指定方式格式化日期
+DATE_SUB()	求解两个日期的间隔
+DATE()	提取日期或日期时间表达式中的日期部分
+DATEDIFF()	求解两个日期的间隔
+DAY()	等同于 DAYOFMONTH()
+DAYNAME()	返回星期中某天的名称
+DAYOFMONTH()	返回一月中某天的序号（1-31）
+DAYOFWEEK()	返回参数所定影的一周中某天的索引值
+DAYOFYEAR()	返回一年中某天的序号（1-366）
+EXTRACT	提取日期中的相应部分
+FROM_DAYS()	将一个天数序号转变为日期值
+FROM_UNIXTIME()	将日期格式化为 UNIX 的时间戳
+HOUR()	提取时间
+LAST_DAY	根据参数，返回月中最后一天
+LOCALTIME() 和 LOCALTIME	等同于 NOW()
+LOCALTIMESTAMP 和 LOCALTIMESTAMP()	等同于 NOW()
+MAKEDATE()	基于给定参数年份和所在年中的天数序号，返回一个日期
+MAKETIME	MAKETIME()
+MICROSECOND()	返回参数所对应的毫秒数
+MINUTE()	返回参数对应的分钟数
+MONTH()	返回传入日期所对应的月序数
+MONTHNAME()	返回月的名称
+NOW()	返回当前日期与时间
+PERIOD_ADD()	为年-月组合日期添加一个时段
+PERIOD_DIFF()	返回两个时段之间的月份差值
+QUARTER()	返回日期参数所对应的季度序号
+SEC_TO_TIME()	将描述转变成 'HH:MM:SS' 的格式
+SECOND()	返回秒序号（0-59）
+STR_TO_DATE()	将字符串转变为日期
+SUBDATE()	三个参数的版本相当于 DATE_SUB()
+SUBTIME()	计算时间差值
+SYSDATE()	返回函数执行时的时间
+TIME_FORMAT()	提取参数中的时间部分
+TIME_TO_SEC()	将参数转化为秒数
+TIME()	提取传入表达式的时间部分
+TIMEDIFF()	计算时间差值
+TIMESTAMP()	单个参数时，函数返回日期或日期时间表达式；有2个参数时，将参数加和
+TIMESTAMPADD()	为日期时间表达式添加一个间隔 INTERVAL
+TIMESTAMPDIFF()	从日期时间表达式中减去一个间隔 INTERVAL
+TO_DAYS()	返回转换成天数的日期参数
+UNIX_TIMESTAMP()	返回一个 UNIX 时间戳
+UTC_DATE()	返回当前的 UTC 日期
+UTC_TIME()	返回当前的 UTC 时间
+UTC_TIMESTAMP()	返回当前的 UTC 时间与日期
+WEEK()	返回周序号
+WEEKDAY()	返回某天在星期中的索引值
+WEEKOFYEAR()	返回日期所对应的星期在一年当中的序号（1-53）
+YEAR()	返回年份
+YEARWEEK()	返回年份及星期序号
+ADDDATE(date,INTERVAL expr unit), ADDDATE(expr,days)
+在第2个参数使用 INTERVAL 格式时，ADDDATE() 作用就相当于 DATE_ADD()。相关的函数 SUBDATE() 相当于 DATE_SUB()。要想了解 INTERVAL 单位参数，参看DATE_ADD()相关内容。
+
+mysql> SELECT DATE_ADD('1998-01-02', INTERVAL 31 DAY);
+mysql> SELECT ADDDATE('1998-01-02', INTERVAL 31 DAY);
+当函数的第2个参数采用 days 格式时，MySQL 会认为它是一个表示天数的整数，将它添加到 expr 上。
+
+mysql> SELECT ADDDATE('1998-01-02', 31);
+ADDTIME(expr1, expr2)
+ADDTIME() 将 expr2 参数加到 expr1 参数上，返回结果。expr1 是一个时间或日期时间表达式。expr2 是一个时间表达式。
+
+mysql> SELECT ADDTIME('1997-12-31 23:59:59.999999','1 1:1:1.000002');
+
+CONVERT_TZ(dt,from_tz,to_tz)
+这是一个转换时区的函数，将参数 from_tz 所定时区的日期时间值 dt 转变到参数 to_tz 所定时区，然后返回结果。如果参数无效，则该函数返回 NULL 值。
+
+mysql> SELECT CONVERT_TZ('2004-01-01 12:00:00','GMT','MET');
++---------------------------------------------------------+
+| CONVERT_TZ('2004-01-01 12:00:00','GMT','MET')           |
++---------------------------------------------------------+
+| 2004-01-01 13:00:00                                     |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql> SELECT CONVERT_TZ('2004-01-01 12:00:00','+00:00','+10:00');
++---------------------------------------------------------+
+| CONVERT_TZ('2004-01-01 12:00:00','+00:00','+10:00')     |
++---------------------------------------------------------+
+| 2004-01-01 22:00:00                                     |
++---------------------------------------------------------+
+1 row in set (0.00 sec)
+
+CURDATE()返回当前日期的函数。根据函数究竟用于字符串还是数字上下文，选择使用 'YYYY-MM-DD'（'年-月-日'） 或 YYYYMMDD（年月日） 格式返回当前日期。
+CURDATE()+0返回数值
+CURRENT_DATE 和 CURRENT_DATE() 实际上等于 CURDATE()。
+CURTIME()根据函数究竟用于字符串或数字上下文，选择以 'HH:MM:SS' 还是 HHMMSS 格式返回当前时间值（以当前时区来定）。
+CURTIME()+0返回数值
+CURRENT_TIME 和 CURRENT_TIME() 都相当于 CURTIME()。
+CURRENT_TIMESTAMP 和 CURRENT_TIMESTAMP() 实际上相当于 NOW()。
+
+DATE(expr)提取日期或日期时间表达式 expr 中的日期部分。
+DATEDIFF(expr1,expr2)将返回expr1 - expr2的值，用来表示两个日期相差的天数。expr1 和 expr2 都是日期或日期时间表达式。运算中只用到了这些值的日期部分。
+
+DATE_ADD(date,INTERVAL expr unit) 与 DATE_SUB(date,INTERVAL expr unit)
+执行日期计算的两种函数。date 是一个用来指定开始日期的 DATETIME 或 DATE 值。expr 是一种以字符串形式呈现的表达式，用来指定从开始日期增加或减少的间隔值。如果是负的间隔值，则 expr 值的第一个字符是-号。unit 是一个单位关键字，用来指定expr表达式应该采取的单位。
+
+INTERVAL 关键字与单位说明符都不区分大小写。
+
+下表列出了每个单位数值所对应的 expr 参数的期望格式。
+
+单位所能取的值	期望的expr格式
+MICROSECOND	毫秒
+SECOND	秒
+MINUTE	分
+HOUR	小时
+DAY	日
+WEEK	周
+MONTH	月
+QUARTER	季度
+YEAR	年
+SECOND_MICROSECOND	'秒.毫秒'
+MINUTE_MICROSECOND	'分.毫秒'
+MINUTE_SECOND	'分:秒'
+HOUR_MICROSECOND	'小时.毫秒'
+HOUR_SECOND	'小时:分:秒'
+HOUR_MINUTE	'小时:分'
+DAY_MICROSECOND	'日.毫秒'
+DAY_SECOND	'日 小时:分:秒'
+DAY_MINUTE	'日 小时:分'
+DAY_HOUR	'日 小时'
+YEAR_MONTH	'年-月'
+QUARTER 和 WEEK 都是 MySQL 5.0.0 才开始引入的单位值。
+
+mysql> SELECT DATE_ADD('1997-12-31 23:59:59',  INTERVAL '1:1' MINUTE_SECOND);
+mysql> SELECT DATE_ADD('1999-01-01', INTERVAL 1 HOUR);
+
+DATE_FORMAT(date,format)
+该函数会根据 format 字符串来格式化 date 值。
+
+下表中列出了一些可用于 format 字符串的标识符。格式标识符第一个字符必须是%字符。
+
+格式标识符	说明
+%a	一星期中每天名称的缩写（Sun...Sat）
+%b	月份的缩写（Jan...Dec）
+%c	月份的数字表现形式（0...12）
+%D	带有英语后缀的一个月中的每一天的名称（0th、1st、2nd、3rd）
+%d	用数字形式表现的每月中的每一天（00...31）
+%e	用数字形式表现的每月中的每一天（0...31）
+%f	毫秒（000000...999999）
+%H	24时制显示的小时（00...23）
+%h	12时制显示的小时（01...12）
+%I	12时制显示的小时（01...12）
+%i	以数字形式表现的分钟数（00...59）
+%j	一年中的每一天（001...366）
+%k	24时制小时的另一种表现格式（0...23）
+%l	12时制小时的另一种表现格式（1...12）
+%M	用完整英文名称表示的月份（January...December）
+%m	用数字表现的月份（00...12）
+%p	上午（AM）或下午（PM）
+%r	12时制的时间值（hh:mm:ss，后跟 AM 或 PM）
+%S	秒（00...59）
+%s	秒（00...59）
+%T	24时制的小时（hh:mm:ss）
+%U	星期（00...53），其中星期天是每星期的开始日
+%u	星期（00...53），其中星期一是每星期的开始日
+%V	星期（01...53），其中星期天是每星期的开始日，和 %X 一起使用
+%v	星期（01...53），其中星期一是每星期的开始日，和 %x 一起使用
+%W	一星期中各日名称（Sunday...Saturday）
+%w	一星期中各日名称（0代表星期日，6代表星期六，以此类推）
+%X	某星期所处年份。其中，星期天是每星期的开始日，采用4位数字形式表现，和 %V一起使用
+%x	某星期所处年份。其中，星期一是每星期的开始日，采用4位数字形式表现，和 %V 一起使用
+%Y	4位数字表示的年份
+%y	2位数字表示的年份
+%%	符号%的字面值
+%x（x为斜体）	字符x的字面值，x指以上未列出的任何字符
+mysql> SELECT DATE_FORMAT('1997-10-04 22:23:00', '%W %M %Y');
+mysql> SELECT DATE_FORMAT('1997-10-04 22:23:00''%H %k %I %r %T %S %w');
+
+DATE_SUB(date,INTERVAL expr unit)类似 DATE_ADD() 函数。
+DAY(date)   DAY() 等同于 DAYOFMONTH()。
+DAYNAME(date)  返回 date 参数所对应的星期几。
+DAYOFMONTH(date)  返回 date 参数所对应的一月中的第几天，取值范围从0到31。
+DAYOFWEEK(date)  返回 date 参数所对应的每周中的某一天的索引值（1 = Sunday，2 = Monday……7 = Saturday）。这些索引值对应着 ODBC 标准。
+DAYOFYEAR(date)   返回 date 参数所对应的一年中的某一天，取值范围从1到366。
+
+EXTRACT(unit FROM date)使用同样的单位标识符 DATE_ADD() 或 DATE_SUB()，但是只从 date 中提取相应部分，而不执行日期运算。
+mysql> SELECT EXTRACT(YEAR FROM '1999-07-02');
+mysql> SELECT EXTRACT(YEAR_MONTH FROM '1999-07-02 01:02:03');
+
+FROM_DAYS(N)给定某日 N，返回一个 DATE 值。 SELECT FROM_DAYS(729669);
+使用 FROM_DAYS() 时，要特别注意古代的日期。该函数不适用于格里高里历（即公历）颁布（公元1582年）之前的日期。
+
+FROM_UNIXTIME(unix_timestamp) FROM_UNIXTIME(unix_timestamp,format)
+mysql> SELECT FROM_UNIXTIME(875996580);
+
+HOUR(time) 基于date参数，返回小时数
+LAST_DAY(date) 所在月份的最后一天
+LOCALTIME 和 LOCALTIME() 与 NOW() 具有相同意义。
+LOCALTIMESTAMP 和 LOCALTIMESTAMP() 与 NOW()具有相同意义。
+MAKEDATE(year,dayofyear)基于给定参数年份（year）和一年中的某一天（dayofyear），返回一个日期值。dayofyear必须大于0，否则结果为空。dayofyear与DAYOFYEAR()函数取值类似，取值范围为1-366。
+MAKETIME(hour,minute,second)基于给定的 hour、minute以及 second 这3个参数，计算出一个时间值。
+MICROSECOND(expr)基于时间或“日期+时间”的表达式 expr，返回一个以毫秒计的时间值，取值范围为0-99999。
+MINUTE(time)基于 time 参数，返回分钟数，取值范围为0-59。
+MONTH(date)基于 date 参数，返回月份值，取值范围为0-12。
+MONTHNAME(date)基于 date 参数，返回月份的完整英文名称。
+NOW()返回一定格式的日期+时间值。根据函数是否用于字符串或数字内容，格式为 'YYYY-MM-DD HH:MM:SS' 或 YYYYMMDDHHMMSS。
+PERIOD_ADD(P,N)将 N 个月添加到时段 P （格式为 YYMM 或 YYYYMM）上，返回值格式为 YYYYMM。注意：时段参数 P 不是一个日期值。
+PERIOD_DIFF(P1,P2) 时段 P1 和 P2 之间的月份差值。P1 与 P2 的格式应为 YYMM 或 YYYYMM。注意，时段参数 P1 和 P2 都不是日期值。
+QUARTER(date)返回参数 date 所对应的年中某季度，取值范围为1-4。
+SECOND(time)返回参数 time 所对应的秒数，取值范围为0-59。
+
+SEC_TO_TIME(seconds)将参数 seconds 转换成以'HH:MM:SS' 或 HHMMSS 格式（根据函数应用上下文是字符串还是数字）输出的时间值。
+mysql> SELECT SEC_TO_TIME(2378);
+
+STR_TO_DATE(str,format)DATE_FORMAT()函数的逆向函数。包含2个参数，字符串类型参数 str 和格式字符串参数 format。返回值有2种可能性：如果格式字符串既包含日期又包含时间，则返回一个 DATETIME 值；如果格式字符串只包含日期或时间部分，则函数也相应返回 DATE 或 TIME 类型的值。
+mysql> SELECT STR_TO_DATE('04/31/2004', '%m/%d/%Y');
+
+SUBDATE(date,INTERVAL expr unit) 与 SUBDATE(expr,days)当第二个参数采用 INTERVAL 格式时，SUBDATE() 等同于 DATE_SUB()。要想详细了解 INTERVAL 单元参数，请参考 DATE_ADD()。
+mysql> SELECT DATE_SUB('1998-01-02', INTERVAL 31 DAY);
+mysql> SELECT SUBDATE('1998-01-02', INTERVAL 31 DAY);
+
+SUBTIME(expr1,expr2)返回值为 expr1 - expr2，格式与 expr1 相同。expr1 是一个时间或日期时间表达式，而 expr2 是一个时间表达式。
+mysql> SELECT SUBTIME('1997-12-31 23:59:59.999999','1 1:1:1.000002');
+
+SYSDATE() 根据函数所应用的上下文究竟是字符串还是数字，以 'YYYY-MM-DD HH:MM:SS' 或 YYYYMMDDHHMMSS 格式返回当前日期与时间值。
+TIME(expr)提取时间或日期时间表达式 expr 的时间部分，将其作为字符串返回。
+
+TIMEDIFF(expr1,expr2)返回表示为时间值的 expr1 - expr2，expr1 和 expr2 都是时间或日期与时间表达式，但两者必须类型相同。
+mysql> SELECT TIMEDIFF('1997-12-31 23:59:59.000001','1997-12-30 01:01:01.000002');
+
+
+TIMESTAMP(expr), TIMESTAMP(expr1,expr2)当只接受一个参数 expr（日期或日期时间类型）时，函数将这个参数以日期时间的形式返回；若接受两个参数，函数则会将时间参数 expr2 添加到日期或日期时间参数 expr1 上，以日期时间形式返回这个组合值。
+mysql> SELECT TIMESTAMP('2003-12-31');
+
+TIMESTAMPADD(unit,interval,datetime_expr)函数将表示间隔值的整形参数 interval 添加到日期或日期时间参数 datetime_expr 上。interval 所采用的单位由 unit 参数指定。unit 参数的取值范围是：FRAC_SECOND、SECOND、MINUTE、HOUR、DAY、WEEK、MONTH、QUARTER 或 YEAR。
+unit 值也可以通过一个前面介绍过的关键字来标识，或者说需要加上前缀 SQL_TSI_。例如：DAY 和 SQL_TSI_DAY。这两种形式都是合法的。
+mysql> SELECT TIMESTAMPADD(MINUTE,1,'2003-01-02');
+
+TIMESTAMPDIFF(unit,datetime_expr1,datetime_expr2)返回两个日期或日期时间类型参数 datetime_expr1 与 datetime_epr2 之间的整数差值。返回值所采用的单位由 unit 参数指定。有关unit 的合法值，可参看 TIMESTAMPADD() 函数介绍。
+mysql> SELECT TIMESTAMPDIFF(MONTH,'2003-02-01','2003-05-01');
+
+TIME_FORMAT(time,format)该函数和 DATE_FORMAT() 函数用法类似，但 format 字符串中只含有与小时、分钟、秒相关的格式标识符。
+如果 time 值包含一个大于23的小时数，%H 与 %k 小时格式标识符就会生成一个超出平时所用范围（0-23）的值。其他与小时相关的格式标识符会生成以12取模的值。
+mysql> SELECT TIME_FORMAT('100:00:00', '%H %k %h %I %l'); 
+
+TIME_TO_SEC(time)将 time 参数转换成秒数返回。
+mysql> SELECT TIME_TO_SEC('22:23:00');
+
+TO_DAYS(date)基于日期参数 date，返回一个天数（自年份0开始的天数）。
+mysql> SELECT TO_DAYS(950501);
+
+UNIX_TIMESTAMP(), UNIX_TIMESTAMP(date)如果不传入参数调用该函数，返回一个 UNIX 时间戳，它是一个自 '1970-01-01 00:00:00' UTC（世界统一时间） 起计算的秒数，无符号整形值。如果传入 date 参数调用该函数，则返回一个自'1970-01-01 00:00:00' UTC 到该参数所示时间所经历的秒数。date 参数可能是 DATE 字符串、DATETIME 字符串、TIMESTAMP，或者也有可能是以 YYMMDD 或 YYYYMMDD 格式表示的数值。
+
+UTC_DATE, UTC_DATE()根据函数应用的上下文究竟是字符串还是数字，相应地以 'YYYY-MM-DD' 或 YYYYMMDD 格式返回当前的 UTC 日期值。
+UTC_TIME, UTC_TIME()根据函数应用的上下文究竟是字符串还是数字，相应地以 'HH:MM:SS' 或 HHMMSS 格式返回当前的 UTC 时间值。
+UTC_TIMESTAMP, UTC_TIMESTAMP()根据函数应用的上下文究竟是字符串还是数字，相应地以 'YYYY-MM-DD HH:MM:SS' 或 YYYYMMDDHHMMSS 格式返回当前的 UTC 日期与时间值。
+
+WEEK(date[,mode])该函数返回日期参数 date 所对应的星期序号。如果传入两个参数，则可以指定每星期起始日究竟是星期天还是星期一，以及返回值范围究竟是0-53，还是从1-53。如果忽略 mode 参数，就采用 default_week_format 系统变量值。
+模式	每星期的起始天	范围	当 Week 1 是第一个星期时
+0	星期日	0-53	本年有一个周日
+1	星期一	0-53	本年有3天以上
+2	星期日	1-53	本年有一个周日
+3	星期一	1-53	本年有3天以上
+4	星期日	0-53	本年有3天以上
+5	星期一	0-53	本年有一个周一
+6	星期日	1-53	本年有3天以上
+7	星期一	1-53	本年有一个周日
+
+WEEKDAY(date)返回日期参数 date 所对应的星期中每天的索引值（例如，0=星期一，1=星期二，6=星期天）。
+WEEKOFYEAR(date)返回日期参数 date 所对应的一年中的星期序号（范围1-53）。WEEKOFYEAR() 是一个兼容函数，与 WEEK(date,3)等同。
+YEAR(date)返回 date 的年份，范围为1000-9999。当 date 为0时，返回0。
+YEARWEEK(date) 与 YEARWEEK(date,mode)返回 date 的年份及星期序号。mode 参数等同于 WEEK() 中的 mode 参数。结果中的年份可能会和 date 参数中的年份有所不同，差异体现在年份中的第一个与最后一个星期上。

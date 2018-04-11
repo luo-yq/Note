@@ -1,0 +1,217 @@
+脚本控制台
+mongo [ip地址]:[监听端口]/[数据库]。例如我们可以使用mongo 127.0.0.1:27017/user，连接本机的user数据库。
+
+mongostat --port 11111 1  监听mongo状态,这些统计命令包括插入数、查询数、更新数、删除数以及游标的操作等。有些命令还能显示碰到页面错误的时间，以及写锁的时间百分比.每秒刷新一次
+mongotop --port 11111 1  监听集合的水平的统计数据,查看哪些大量的时间花费在读取和写入数据，每秒刷新一次
+
+
+show dbs 或 show databases  显示所有数据库使用情况
+use test 使用数据库，（如果不存在则只切换不创建，只有在开始使用后才创建数据库）
+db 查看当前所在的数据库
+
+db.[集合名].insert([文档]) 插入数据，集合不存在时，会先创建集合后插入数据
+db.c1.insert({name:"xiangyue"}) /*插入数据后，newdb数据库被创建*/  
+若成功则返回:WriteResult({ "nInserted" : 1 })
+若失败则返回:WriteResult({
+	"nInserted" : 0,
+	"writeError" : {
+		"code" : *****,
+		"errmsg" : "*****"
+	}
+})
+
+db.c1.find()查询集合所有数据
+db.c1.find({name:"user2"})查询集合数据，查询结果中始终存在_id。如果不想显示某字段（包括_id），则可以将其设为 0。db.c1.find({},{"name":"user2",_id:0})
+db.c1.remove({name:"user2"})删除数据
+db.c1.update({name:"user3"},{_id:3,name:"user33",age:13})修改数据
+db.createCollection("c2")创建集合
+db.dropDatabase 删除当前数据库
+db.help() /*查看数据库的帮助，该方法显示数据库级能使用的方法*/
+db.[集合名].help() /*查看集合的帮助，该方法显示集合级能使用的方法*/
+
+show collections 或 show tables 查看当前数据库中存在的集合
+
+
+
+创建集合
+db.createCollection(name, options)
+name	字符串	所要创建的集合名称
+options	文档	可选。指定有关内存大小及索引的选项
+    capped	布尔	（可选）如果为 true，则创建固定集合。固定集合是指有着固定大小的集合，当达到最大值时，它会自动覆盖最早的文档。
+    当该值为 true 时，必须指定 size 参数。
+    autoIndexID	布尔	（可选）如为 true，自动在 _id 字段创建索引。默认为 false。
+    size	数值	（可选）为固定集合指定一个最大值（以字节计）。
+    如果 capped 为 true，也需要指定该字段。
+    max	数值	（可选）指定固定集合中包含文档的最大数量。
+    在插入文档时，MongoDB 首先检查固定集合的 size 字段，然后检查 max 字段。
+
+     
+
+MongoDB 删除文档
+db.collection.remove(
+   <query>,
+   <justOne>
+)
+如果你的 MongoDB 是 2.6 版本以后的，语法格式如下：
+db.collection.remove(
+   <query>,
+   {
+     justOne: <boolean>,
+     writeConcern: <document>
+   }
+)
+参数说明：
+query :（可选）删除的文档的条件。
+justOne : （可选）如果设为 true 或 1，则只删除一个文档。
+writeConcern :（可选）抛出异常的级别。
+
+
+>db.col.remove({'title':'MongoDB 教程'}) # 删除多条数据
+如果你只想删除第一条找到的记录可以设置 justOne 为 1，如下所示：
+>db.COLLECTION_NAME.remove(DELETION_CRITERIA,1)
+如果你想删除所有数据，可以使用以下方式（类似常规 SQL 的 truncate 命令）：
+>db.col.remove({})
+
+
+MongoDB OR 条件
+>db.col.find(
+   {
+      $or: [
+	     {key1: value1}, {key2:value2}
+      ]
+   }
+).pretty()
+
+
+AND 和 OR 联合使用
+>db.col.find({"likes": {$gt:50}, $or: [{"by": "菜鸟教程"},{"title": "MongoDB 教程"}]}).pretty()
+
+
+MongoDB 条件操作符
+MongoDB (>) 大于操作符 - $gt   db.col.find({"likes" : {$gt : 100}})
+MongoDB（>=）大于等于操作符 - $gte  db.col.find({likes : {$gte : 100}})
+MongoDB (<) 小于操作符 - $lt   db.col.find({likes : {$lt : 150}})
+MongoDB (<=) 小于操作符 - $lte  db.col.find({likes : {$lte : 150}})
+MongoDB 使用 (<) 和 (>) 查询 - $lt 和 $gt   db.col.find({likes : {$lt :200, $gt : 100}})
+
+
+for(i=1;i<=10;i++){
+	db.user.insert({_id:i,name:"user"+i,age:10+i})
+}
+
+
+
+
+
+DB methods:
+	db.adminCommand(nameOrDocument) - switches to 'admin' db, and runs command [ just calls db.runCommand(...) ]
+	db.auth(username, password)
+	db.cloneDatabase(fromhost)
+	db.commandHelp(name) returns the help for the command
+	db.copyDatabase(fromdb, todb, fromhost)
+	db.createCollection(name, { size : ..., capped : ..., max : ... } )
+	db.createUser(userDocument)
+	db.currentOp() displays currently executing operations in the db
+	db.dropDatabase()
+	db.eval() - deprecated
+	db.fsyncLock() flush data to disk and lock server for backups
+	db.fsyncUnlock() unlocks server following a db.fsyncLock()
+	db.getCollection(cname) same as db['cname'] or db.cname
+	db.getCollectionInfos([filter]) - returns a list that contains the names and options of the db's collections
+	db.getCollectionNames()
+	db.getLastError() - just returns the err msg string
+	db.getLastErrorObj() - return full status object
+	db.getLogComponents()
+	db.getMongo() get the server connection object
+	db.getMongo().setSlaveOk() allow queries on a replication slave server
+	db.getName()
+	db.getPrevError()
+	db.getProfilingLevel() - deprecated
+	db.getProfilingStatus() - returns if profiling is on and slow threshold
+	db.getReplicationInfo()
+	db.getSiblingDB(name) get the db at the same server as this one
+	db.getWriteConcern() - returns the write concern used for any operations on this db, inherited from server object if set
+	db.hostInfo() get details about the server's host
+	db.isMaster() check replica primary status
+	db.killOp(opid) kills the current operation in the db
+	db.listCommands() lists all the db commands
+	db.loadServerScripts() loads all the scripts in db.system.js
+	db.logout()
+	db.printCollectionStats()
+	db.printReplicationInfo()
+	db.printShardingStatus()
+	db.printSlaveReplicationInfo()
+	db.dropUser(username)
+	db.repairDatabase()
+	db.resetError()
+	db.runCommand(cmdObj) run a database command.  if cmdObj is a string, turns it into { cmdObj : 1 }
+	db.serverStatus()
+	db.setLogLevel(level,<component>)
+	db.setProfilingLevel(level,<slowms>) 0=off 1=slow 2=all
+	db.setWriteConcern( <write concern doc> ) - sets the write concern for writes to the db
+	db.unsetWriteConcern( <write concern doc> ) - unsets the write concern for writes to the db
+	db.setVerboseShell(flag) display extra information in shell output
+	db.shutdownServer()
+	db.stats()
+	db.version() 当前数据库版本
+
+
+
+	
+
+	DBCollection help
+	db.collection.find().help() - show DBCursor help
+	db.collection.bulkWrite( operations, <optional params> ) - bulk execute write operations, optional parameters are: w, wtimeout, j
+	db.collection.count( query = {}, <optional params> ) - 计算匹配到的文档数, 可选参数: limit, skip, hint, maxTimeMS
+	db.collection.copyTo(newColl) - 复制集合 by copying all documents to newColl; no indexes are copied.
+	db.collection.convertToCapped(maxBytes) - calls {convertToCapped:'collection', size:maxBytes}} command
+	db.collection.createIndex(keypattern[,options])
+	db.collection.createIndexes([keypatterns], <options>) 创建索引  options: background: 后台创建  unique: 唯一索引 ...
+	db.collection.dataSize()
+	db.collection.deleteOne( filter, <optional params> ) - delete first matching document, optional parameters are: w, wtimeout, j
+	db.collection.deleteMany( filter, <optional params> ) - delete all matching documents, optional parameters are: w, wtimeout, j
+	db.collection.distinct( key, query, <optional params> ) - e.g. db.collection.distinct( 'x' ), optional parameters are: maxTimeMS
+	db.collection.drop() 删除集合
+	db.collection.dropIndex(index) - e.g. db.collection.dropIndex( "indexName" ) or db.collection.dropIndex( { "indexKey" : 1 } )
+	db.collection.dropIndexes()
+	过时--db.collection.ensureIndex(keypattern[,options]) - DEPRECATED, use createIndex() instead
+	db.collection.explain().help() - show explain help
+	db.collection.reIndex()
+	db.collection.find([query],[fields]) - query 是一个可选的查询过滤器. fields 是一个可选的返回字段集合配置，1表示显示，0表示不显示.
+	                                              e.g. db.collection.find( {x:77} , {name:1, x:1} )
+	db.collection.find(...).count()
+	db.collection.find(...).limit(n) 取n条数据
+	db.collection.find(...).skip(n) 跳过n条数据
+	db.collection.find(...).sort({KEY:-1}) sort()方法可以通过参数指定排序的字段，并使用 1 和 -1 来指定排序的方式，其中 1 为升序排列，而-1是用于降序排列。
+	db.collection.findOne([query], [fields], [options], [readConcern]) 查询唯一记录
+	db.collection.findOneAndDelete( filter, <optional params> ) - 删除匹配到的第一个文档, 可选参数: projection, sort, maxTimeMS
+	db.collection.findOneAndReplace( filter, replacement, <optional params> ) - 替换匹配到的第一个文档, 可选参数: projection, sort, maxTimeMS, upsert, returnNewDocument
+	db.collection.findOneAndUpdate( filter, update, <optional params> ) - 更新匹配到的第一个文档, 可选参数: projection, sort, maxTimeMS, upsert, returnNewDocument
+	db.collection.getDB() get DB object associated with collection
+	db.collection.getPlanCache() get query plan cache associated with collection
+	db.collection.getIndexes()
+	db.collection.group( { key : ..., initial: ..., reduce : ...[, cond: ...] } )
+	db.collection.insert(obj)
+	db.collection.insertOne( obj, <optional params> ) - insert a document, optional parameters are: w, wtimeout, j
+	db.collection.insertMany( [objects], <optional params> ) - insert multiple documents, optional parameters are: w, wtimeout, j
+	db.collection.mapReduce( mapFunction , reduceFunction , <optional params> )
+	db.collection.aggregate( [pipeline], <optional params> ) - performs an aggregation on a collection; returns a cursor
+	db.collection.remove(query)
+	db.collection.replaceOne( filter, replacement, <optional params> ) - 替换匹配到的第一个文档, 可选参数: upsert, w, wtimeout, j
+	db.collection.renameCollection( newName , <dropTarget> ) renames the collection.
+	db.collection.runCommand( name , <options> ) runs a db command with the given name where the first param is the collection name
+	db.collection.save(obj)
+	db.collection.stats({scale: N, indexDetails: true/false, indexDetailsKey: <index key>, indexDetailsName: <index name>})
+	db.collection.storageSize() - includes free space allocated to this collection
+	db.collection.totalIndexSize() - size in bytes of all the indexes
+	db.collection.totalSize() - storage allocated for all data and indexes
+	db.collection.update( query, object[, upsert_bool, multi_bool] ) - instead of two flags, you can pass an object with fields: upsert, multi
+	db.collection.updateOne( filter, update, <optional params> ) - 更新匹配到的第一个文档, 可选参数: upsert, w, wtimeout, j
+	db.collection.updateMany( filter, update, <optional params> ) - 更新查询到的文档, optional parameters are: upsert, w, wtimeout, j
+	db.collection.validate( <full> ) - SLOW
+	db.collection.getShardVersion() - only for use with sharding
+	db.collection.getShardDistribution() - prints statistics about data distribution in the cluster
+	db.collection.getSplitKeysForChunks( <maxChunkSize> ) - calculates split points over all chunks and returns splitter function
+	db.collection.getWriteConcern() - returns the write concern used for any operations on this collection, inherited from server/db if set
+	db.collection.setWriteConcern( <write concern doc> ) - sets the write concern for writes to the collection
+	db.collection.unsetWriteConcern( <write concern doc> ) - unsets the write concern for writes to the collection

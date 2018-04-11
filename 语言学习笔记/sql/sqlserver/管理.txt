@@ -1,0 +1,447 @@
+建库.txt
+1. 创建指定数据文件和事务日志文件的数据库(注意：1：目录必须已经存在；2：MB是默认值，可以省略)
+USE master
+GO
+CREATE DATABASE Sales
+ON 
+( NAME = Sales_dat,
+   FILENAME = 'c:\data\saledat.mdf',
+   SIZE = 10,
+   MAXSIZE = 50,
+   FILEGROWTH = 5 )
+LOG ON
+( NAME = 'Sales_log',
+   FILENAME = 'c:\data\salelog.ldf',
+   SIZE = 5MB,
+   MAXSIZE = 25MB,
+   FILEGROWTH = 5MB )
+GO
+2. 指定多个数据文件和事务日志文件创建数据库
+USE master
+GO
+CREATE DATABASE Archive 
+ON
+PRIMARY ( NAME = Arch1,
+      FILENAME = 'c:\data\archdat1.mdf',
+      SIZE = 100MB,
+      MAXSIZE = 200,
+      FILEGROWTH = 20),
+( NAME = Arch2,
+   FILENAME = 'c:\data\archdat2.ndf',
+   SIZE = 100MB,
+   MAXSIZE = 200,
+   FILEGROWTH = 20),
+( NAME = Arch3,
+   FILENAME = 'c:\data\archdat3.ndf',
+   SIZE = 100MB,
+   MAXSIZE = 200,
+   FILEGROWTH = 20)
+LOG ON 
+( NAME = Archlog1,
+   FILENAME = 'c:\data\archlog1.ldf',
+   SIZE = 100MB,
+   MAXSIZE = 200,
+   FILEGROWTH = 20),
+( NAME = Archlog2,
+   FILENAME = 'c:\data\archlog2.ldf',
+   SIZE = 100MB,
+   MAXSIZE = 200,
+   FILEGROWTH = 20)
+GO
+3. 创建简单的数据库，只指定主文件(注意：会自动创建一个 1 MB 的事务日志文件)
+USE master
+GO
+CREATE DATABASE Products
+ON 
+( NAME = prods_dat,
+   FILENAME = 'c:\data\prods.mdf',
+   SIZE = 4,
+   MAXSIZE = 10,
+   FILEGROWTH = 1 )
+GO
+4. 不指定文件创建数据库(自动创建相应的主文件和事务日志文件)
+CREATE DATABASE mytest
+5. 不指定 SIZE 创建数据库
+USE master
+GO
+CREATE DATABASE Products2
+ON 
+( NAME = prods2_dat,
+   FILENAME = 'c:\program files\microsoft sql server\mssql\data\prods2.mdf' )
+GO
+
+
+use master
+
+  IF EXISTS (SELECT * 
+      FROM   master..sysdatabases 
+      WHERE  name = N'docDB')
+   DROP DATABASE docDB
+ 
+       
+create database docDB
+       /**
+                on primary(name=,
+                            filename=.mdf,
+                            size=,
+                            maxsize=,
+                            filegrowth=),
+                           (.ndf)
+                  log on(.ldf)
+      */
+ /*
+        * IF EXISTS(SELECT name 
+     FROM   sysobjects 
+     WHERE  name = N'<table_name, sysname, test_table>' 
+     AND   type = 'U')
+      DROP TABLE <table_name, sysname, test_table>
+  */
+go
+USE docDB
+GO
+if exists (select * from sysobjects where name='[comand]' and type='U')
+drop table[comand]
+if object_id('[comand]') is not null
+drop table[comand]
+go
+CREATE TABLE [comand](
+ com_id int not null identity(1,1),
+ com_name char(8),
+        com_alt varchar(50))
+GO
+use master
+go
+create database blogDB
+on
+primary
+       ( name=blog_titles,
+  filename='e:\blog_titles.mdf',
+  size=1,
+  maxsize=10,
+  filegrowth=2
+ ),
+       ( name=blog_logs,
+  filename='e:\blog_logs.ndf',
+  size=1,
+  maxsize=10,
+  filegrowth=2
+ )
+log on 
+ ( name=blog_log_titles,
+  filename='e:\blog_log_titles.ldf',
+  size=1,
+  maxsize=5,
+  filegrowth=1
+ )
+go
+Alter database blogdb
+add file
+       (name=blog_pictrues,
+ filename='e:\blog_pictures.mdf',
+ size=1,
+ maxsize=10,
+ filegrowth=2) 
+go
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+用户管理
+GRANT表示为安全帐户授予权限
+DENY表示拒绝权限，既拒绝直接授予的权限，也拒绝从角色继承来的权限
+REVOKE表删除权限，既可删除授予的权限，也可删除拒绝的权限
+如：
+--为角色ROLE01授予创建视图的权限
+grant create view to role01
+--把用户USER01加入到角色中
+sp_addrolemember 'role01','user01'
+--此时，用户USER01有创建视图的权限，从角色中继承而来
+create view v1 as select * from titles
+--拒绝权限
+deny create view to user01
+--拒绝权限后，用户失去的创建视图的权限，以下语句执行报错说无权限
+create view v2 as select * from titles
+--删除权限
+revoke create view from user01
+--删除权限后，用户又可以创建视图了（如下语句执行成功），可见REVOKE也可删除拒绝的权限
+create view v2 as select * from titles
+--需注意，验证以上功能时，所有的CREATE VIEW语句应该以USER01关联的登录帐户登录到查询分析器中执行，
+--而关于权限的则可以用SA登录来执行，因此，打开两个查询分析器较方便
+
+--新建SQL SERVER注册时，普通用户也可以注册成功，以普通用户注册，相当于以普通用户身份登录企业管理器，这一点与ORACLE有区别（ORACLE中只有SYS和SYSTEM可以登录企业管理器），但是，登录后可能会有许多操作不允许执行
+
+ 
+
+权限
+
+GRANT表示为安全帐户授予权限
+DENY表示拒绝权限，既拒绝直接授予的权限，也拒绝从角色继承来的权限
+REVOKE表删除权限，既可删除授予的权限，也可删除拒绝的权限
+如：
+--为角色ROLE01授予创建视图的权限
+grant create view to role01
+--把用户USER01加入到角色中
+sp_addrolemember 'role01','user01'
+--此时，用户USER01有创建视图的权限，从角色中继承而来
+create view v1 as select * from titles
+--拒绝权限
+deny create view to user01
+--拒绝权限后，用户失去的创建视图的权限，以下语句执行报错说无权限
+create view v2 as select * from titles
+--删除权限
+revoke create view from user01
+--删除权限后，用户又可以创建视图了（如下语句执行成功），可见REVOKE也可删除拒绝的权限
+create view v2 as select * from titles
+--需注意，验证以上功能时，所有的CREATE VIEW语句应该以USER01关联的登录帐户登录到查询分析器中执行，
+--而关于权限的则可以用SA登录来执行，因此，打开两个查询分析器较方便
+
+--新建SQL SERVER注册时，普通用户也可以注册成功，以普通用户注册，相当于以普通用户身份登录企业管理器，这一点与ORACLE有区别（ORACLE中只有SYS和SYSTEM可以登录企业管理器），但是，登录后可能会有许多操作不允许执行
+ 
+
+
+用户注册和验证
+
+create procedure register
+@username char(10),
+@password char(12),
+@makesure char(12)
+with encryption 
+as
+begin
+ begin tran
+ insert into [user] values(@username,@password)
+ if @password=@makesure
+          begin
+  --return 0
+   print 'succeed'
+   commit
+   end
+        else 
+   begin
+  --return 1
+  print 'please make sure of your password!'
+  rollback
+   end
+end
+go
+if object_id('login','p') is not null
+drop procedure login
+go
+create procedure login
+@username char(10),
+@password char(12)
+with encryption 
+as
+begin 
+ if exists(select*from [user] where username=@username and [password]=@password)
+   begin
+  print 'waitting for logining on ....'
+   end
+        else print 'please make sure of your password!'
+end
+
+
+
+登录账户的管理
+--1. 创建登录账户
+sp_addlogin 'login02','aa' --登录用户名login02，密码aa
+sp_addlogin 'login02','aa','pubs'--默认数据库是pubs
+--也可创建WINDOWS用户，然后将其添加到SQL SERVER的登录账户（在企业管理器中完成）
+--2.查看登录账户
+use master
+select * from syslogins
+--3：允许或拒绝WINDOWS账户登录SQL SERVER服务器
+sp_grantlogin 'lgz\lll'
+sp_grantlogin 'lll' --这样不行，必须加域名，错误提示为 'login01' 不是有效的 Windows NT 名称。请给出完整名称: <域\用户名>。
+sp_grantlogin 'login02' --为SQL SERVER用户设置也不允许
+sp_denylogin 'lgz\lll'
+--4：修改SQL SERVER验证账户的密码
+sp_password 'sa','as' --修改当前登录账户的密码，sa为旧密码，as为新密码
+sp_password 'aa','bb','login02' --修改其他登录账户的密码，aa为旧密码，bb为新密码
+--5:删除登录账户
+--废除WINDOWS身份验证的登录账户，注意不是删除，因为在操作系统中该账户仍存在，只是不再与SQL SERVER有关系
+sp_revokelogin 'lgz\lll'
+--删除SQL SERVER登录账户
+sp_droplogin 'login02'
+-------------------------------------------------------------------------------------------------------
+--数据库角色和服务器角色
+--1：查看固定服务器角色
+sp_helpsrvrole
+sp_helpsrvrole serveradmin --加上单引号，即sp_helpsrvrole 'serveradmin'也可以
+--2：查看固定服务器角色成员
+sp_helpsrvrolemember sysadmin
+--3: 向固定服务器角色添加成员（注意添加进来的是登录账户）
+sp_addsrvrolemember 'login01','sysadmin'--login01是已经存在的登录账户，将其添加到sysadmin这个固定服务器角色中
+sp_addsrvrolemember 'lgz\lll','sysadmin'
+--4：从固定服务器角色中删除成员
+sp_dropsrvrolemember 'login01','sysadmin'
+
+--总结：服务器角色不能自己添加，只能使用系统原有的固定服务器角色，而且其权限是不能修改的，我们所胡做的，只是向其中添加成员
+-------------------------------------------------------------------------------------------------------
+--数据库角色的管理
+--1:查看固定数据库角色列表
+sp_helpdbfixedrole
+--2:向当前数据库中添加标准角色
+sp_addrole 'role01'
+--3:删除当前数据库中的某个标准角色
+sp_droprole 'role01'
+--4: 向当前数据库中添加应用程序角色
+sp_addapprole 'approle01','aaa' --approle01为角色名，aaa为密码
+--5: 激活应用程序角色
+sp_setapprole 'approle01','aaa'--approle01为角色名，aaa为密码
+--6:删除应用程序角色
+sp_dropapprole 'approle01'
+
+-------------------------------------------------------------------------------------------------------
+--数据库用户管理
+--1：创建数据库用户,并使其与登录账户相关联
+--注意只添加到了当前数据库
+sp_grantdbaccess 'login01','dbuser01'--login01为登录账户名，dbuser01为新创建的数据库用户名
+--2: 删除数据库用户
+sp_revokedbaccess 'dbuser01'
+--3:将用户添加到标准数据库角色，（向标准数据库角色中添加成员）
+sp_addrolemember 'role01','dbuser01'
+--4： 将用户从标准数据库角色中移除
+sp_droprolemember 'role01','dbuser01'
+ 
+
+
+备份与恢复
+
+--在进行以下操作前,先把PUBS数据库的还原模式改为"完全"(方法:选中数据库PUBS--属性--选项--备份模式:从简单改为完全)
+--首先创建两个备份设备,一个用来存放数据库备份,一个用来存放日志备份
+sp_addumpdevice 'disk','pubs1','d:\pubs.bak'
+sp_addumpdevice 'disk','pubs_log','d:\pubs.bak'
+--在设备PUBS1上对PUBS数据库进行完全备份
+backup database pubs 
+to pubs1
+with
+name='pubs1完全备份',
+init
+--在设备PUBS1上对PUBS数据库进行增量备份
+backup database pubs 
+to pubs1
+with DIFFERENTIAL,
+name='pubs1差异备份1',
+noinit
+--中间可能有若干次日志备份,但最后的恢复不用它们,所以在此省略
+--在设备PUBS1上对PUBS数据库进行第二次增量备份
+backup database pubs 
+to pubs1
+with DIFFERENTIAL,
+name='pubs1差异备份2',
+noinit
+--备份事务日志(第一次)
+backup log pubs
+to pubs_log
+with
+name='pubs1日志备份1',
+init
+--备份事务日志(第二次)
+backup log pubs
+to pubs_log
+with
+name='pubs1日志备份2',
+noinit
+/******
+**进行完以上操作后,共存在一个全库备份,两个增量备份,和两个日志备份,
+**恢复时应按照如下的步骤进行:
+**1: 先恢复全库备份(应该用最新的,在此只有一个,因此它就是最新的)
+**2: 再恢复最新的增量备份(第二个增量备份)
+**3: 最后依次恢复最后一次增量备份后的日志备份(即先日志备份1,再日志备份2)
+*******/
+--注意:恢复时其事务链号应该是连续的,否则会报错
+--可使用如下的命令查看事务链号,注意末尾带LSN的几项的值,看是否能连续
+restore headeronly  from pubs_log
+restore headeronly  from pubs1
+--下面进行恢复
+--1: 先恢复全库备份,必须带norecovery,只有在最后一次日志恢复时可不带此选项
+restore database pubs
+from pubs
+with norecovery
+--2: 再恢复最新的增量备份(第二个增量备份)
+restore database pubs
+from pubs1
+with file=3,norecovery
+
+--依次恢复最后一次增量备份后的日志备份
+--先恢复日志备份1
+restore log pubs
+from pubs_log
+with file=1,norecovery
+--先恢复日志备份2,此时不要再加norecovery
+restore log pubs
+from pubs_log
+with file=2,recovery
+
+--注意:如果在恢复增量备份时报如下错误:无法将设备 'pubs1' 上的备份应用于数据库 'pubs'。
+--原因是:此增量备份与之前所恢复的完全备份不匹配,如用另一个完全备份设备PUBSBAK恢复数据库后,又用上面的增量备份来恢复,就会报错
+--如果报类似以下错:
+--此备份集中的日志终止于 LSN 9000000023900001，该 LSN 太早，无法应用到数据库。包含 LSN 9000000025000001 的较新的日志备份可以还原。
+--则是因为事务链号不连续造成的,请依次使用各个日志备份
+--最后一次还原还可以指定还原到某个时间点的状态,如下所示:
+restore log pubs
+from pubs_log
+with file=2,recovery,stopat= '2008-10-25 10:15'
+--增量备份可以自动地找到最新的全库备份,而不一定与全库备份在同一个备份设备中,即使某个增量备份和一个全库备份在同一个备份设备中,如果在该全库备份后又有新的全库备份,该增量备份也不会与同一个备份设备中的全库备份相匹配
+
+--在还原数据库时,可以重命名数据库,并且可以移动数据文件和日志文件的位置
+restore database pubs2
+from pubs1
+with move 'pubs' to 'd:\pubs.mdf',
+     move 'pubs_log' to 'd:\pubs_log.ldf'
+ 
+
+   
+
+如何还原到故障点
+如果数据库使用时发生故障,可以使用以下方法,将数据库还原到故障点,方法如下:
+1.执行使用 NO_TRUNCATE 子句的 BACKUP LOG 语句以备份当前活动的事务日志。(一定要带NO_TRUNCATE,备份到一个新的备份设备)
+2.执行使用 NORECOVERY 子句的 RESTORE DATABASE 语句以还原数据库备份。
+3.执行使用 NORECOVERY 子句的 RESTORE LOG 语句以应用每个事务日志备份。
+4.执行使用 RECOVERY 子句的 RESTORE LOG 语句以应用步骤 1 中创建的事务日志备份。
+示例:
+下例备份 MyNwind 数据库的当前活动事务日志（即使 MyNwind 不可访问），然后使用以前创建的备份将数据库还原到故障点：
+EXEC SP_ADDUMPDEVICE 'MyNwind_1','D:\MyNwind_1.BAK'
+EXEC SP_ADDUMPDEVICE 'MyNwind_log1','D:\MyNwind_log1.BAK'
+
+BACKUP DATABASE MyNwind
+   TO MyNwind_1
+BACKUP DATABASE MyNwind
+   TO MyNwind_1
+   WITH DIFFERENTIAL
+ 
+BACKUP LOG MyNwind
+   TO MyNwind_log1
+--注意:以上几步应该是在故障发生以前完成的
+--假设现在数据库出现故障
+--创建一个新的备份设备
+EXEC SP_ADDUMPDEVICE 'MyNwind_log2','D:\MyNwind_log1.BAK'
+-- Back up the currently active transaction log.
+BACKUP LOG MyNwind
+   TO MyNwind_log2 --一个新的备份设备
+   WITH NO_TRUNCATE
+GO
+-- Restore the database backup.
+RESTORE DATABASE MyNwind
+   FROM MyNwind_1  --原来的一个全库备份,这一步也可以是两步,即先还原全库备份再还原最新的增量备份
+   WITH NORECOVERY
+GO
+-- Restore the first transaction log backup.
+RESTORE LOG MyNwind
+   FROM MyNwind_log1
+   WITH NORECOVERY
+GO
+-- Restore the final transaction log backup.
+RESTORE LOG MyNwind
+   FROM MyNwind_log2
+   WITH RECOVERY
+GO
+
+
+ 

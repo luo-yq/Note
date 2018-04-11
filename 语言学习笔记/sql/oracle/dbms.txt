@@ -1,0 +1,228 @@
+
+dbms_output
+作用:用于输入和输出信息,使用过程PUT和PUT_LINES可以将信息发送到缓冲区,使用过程GET_LINE和GET_LINES可以显示缓冲区信息.
+详细如下:
+  1.enable  该过程用于激活对过程PUT,PUT_LINE,GET_LINE,GET_LINES的调用
+  语法如下:
+    dbms_output.enable(buffer_size in integer default 20000);
+  2.disable  该过程用于禁止对过程PUT,PUT_LINE,GET_LINE,GET_LINES的调用
+  语法如下:
+    dbms_output.disable;
+  3.put和put_line   过程put_line用于将一个完整行的信息写入到缓冲区中,过程put则用地分块建立行信息
+  4.new_line  该过程用于在行的尾部追加行结束符.当使用过程PUT时,必须调用NEW_LINE过程来结束行.
+  5.get_line和get_lines  过程get_line用于取得缓冲区的单行信息,过程get_lines用于取得缓冲区的多行信息.
+
+
+dbms_job
+作用:用于安排和管理作业队列,通过使用作业,可以使ORACLE数据库定期执行特定的任务.
+  1.submit  用于建立一个新作业.当建立作业时,需要给作业要执行的操作,作业的下次运行日期及运行时间间隔.
+  语法如下:
+    dbms_out.submit (
+      job out binary_integer,what in varchar2,
+      next_date in date default sysdate,
+      interval in varchar2 default 'null',
+      no_parse in boolean default false,
+      instance in binary_integer default any_instance,
+      force in boolean default false
+    );
+    注:job用于指定作业编号;what用于指定作业要执行的操作;next_date用于指定作业的下次运行日期;interval用于指定运行作业的时间间隔;no_parse用于指定是否解析与作业相关的过程;instance用于指定哪个例程可以运行作业;force用于指定是否强制运行与作业相关的例程.
+  示例如下:
+    var jobno number
+    begin
+      dbms_job.submit(:jobno,
+        'dbms_ddl.analyze_object(''table'',
+        ''scott'',''emp'',''compute'');',
+        sysdate,'sysdate+1');
+      commit;
+    end;
+    /
+  2.remove  删除作业队列中的特定作业
+    SQL>exec dbms_job.remove(1);
+  3.change  用于改变与作业相关的所有信息,包括作业操作,作业运行日期以及运行时间间隔等.
+    SQL>exec dbms_job.change(2,null,null,'sysdate+2');
+  4.what  用于改变作业要执行的操作
+    SQL>exec dbms_job.what(
+          2,'dbms_stats.gather_table_stats->(''scott'',''emp'');');    
+  5.next_date  用于改变作业的下次运行日期
+    SQL>exec dbms_job.next_date('2','sysdate+1');
+  6.instance  用于改变作业的例程
+    SQL>exec dbms_job.instance(2,1);
+  7.interval  用于改变作业的运行时间间隔
+    SQL>exec dbms_job.interval(2,'sysdate+1/24/60');
+  8.broken  用于设置作业的中断标识
+    SQL>exec dbms_job.broken(2,true,'sysdate+1');
+  9.run  用于运行已存在的作业
+    sql>exec dbms_job.run(1);
+
+
+dbms_pipe
+作用:用于在同一例程程的不同会话之间进行管道通信.注意,如果用户要执行包dbms_pipe中的过程和函数,则必须要为用户授权.
+sql>conn sys/oracle as sysdba;
+sql>grant execute on dbms_pipe to scott;
+  1.create_pipe  该函数用于建立公用管道或私有管道.如果将参数private设置为TRUE,则建立私有管道;如果设置为FALSE,则建立公用管道.
+  示例如下:
+    declare
+      falg int;
+    begin
+      flag:=dbms_pipe.create_pipe('public_pipe',8192,false);
+      if flag=0 then
+        dbms_output.put_line('建立公用管道成功');
+      end if;
+    end;
+    /
+  2.pack_message  该过程用于将消息写入到本地消息缓冲区
+  3.send_message  该函数用于将本地消息缓冲区中的内容发送到管道
+  4.receive_message  该函数用于接收管道消息
+  5.next_item_type  该函数用于确定本地消息缓冲区下一项的数据类型,如果该函数返回0,则表示管道没有任何消息;如果返回6,则表示下一项的数据类型为number;如果返回9,则表示下一项的数据类型为varchar2;如果返回11,则表示下一项的数据类型为rowid;如果返回12,则表示下一项的数据类型为date;如果返回23,则表示下一项的数据类型为raw.
+  6.unpack_message  该过程用于将消息缓冲区的内容写入到变量中.
+  7.remove_pipe  该函数用于删除已经建立的管道
+  8.purge  该过程用于清除管道中的内容
+  9.reset_buffer  该过程用于复位管道缓冲区
+  10.unique_session_name  该函数用于为特定会话返回惟一的名称,并且名称的最长度为30字节.
+
+
+dbms_alert
+作用:用于生成并传递数据库预警信息.使用包DBMS_ALERT,则必须以SYS登陆,为该用户授予执行权限.
+sql>conn sys/oracle as sysdba
+sql>grant execute on dbms_alert to scott;
+  1.register  用于注册预警事件
+    sql>exec dbms_alter.register('alter1');
+  2.remove  用于删除会话不需要的预警事件.
+  3.removeall
+  用于删除当前会话所有已注册的预警事件
+  语法如下:
+    dbms_alter.removeall;
+  4.set_defaults  用于设置检测预警事件的时间间隔,默认时间间隔为5秒
+  5.signal  用于指定预警事件所对应的预警消息.
+  6.waitany  用于等待当前会话的任何预警事件,并且在预警事件发生时输出相应信息.在执行该过程之前,会隐含地发出COMMIT.
+  语法如下:
+    dbms_alter.waitany (
+      name out varchar2,message out varchar2,
+      status out integer,timeout in number default maxwait
+    );
+  注:status用于返回状态值,返回0表示发生了预警事件,返回1表示超时;timeout用于设置预警事件的超时时间.
+  7.waitone  用于等待当前会话的特定预警事件,并且在发生预警事件时输出预警消息.
+  语法同上
+
+
+dbms_transaction
+作用:用于在过程,函数,和包中执行SQL事务处理语句.
+  1.read_only  用于开始只读事务,其作用与SQL语句SET TRANSACTION READ ONLY完全相同
+  2.read_write  用于开始读写事务,------------------------------------WRITE-------
+  3.advise_rollback  用于建议回退远程数据库的分布式事务
+  4.advise_nothing  用于建议远程数据库的分布式事务不进行任何处理
+  5.advise_commit  用于建议提交远程数据库的分布式事务
+  6.user_rollback_segment  用于指定事务所要使用的回滚段
+  7.commit_comment  用于在提交事务时指定注释.
+  8.commit_force  用于强制提交分布式事务.
+  9.commit  用于提交当前事务
+  10.savepoint  用于设置保存点
+  11.rollback  用于回退当前事务
+  12.rollback_savepoint  用于回退到保存点
+  13.rollback_force  用于强制回退分布式事务
+  14.begin_discrete_transaction  用于开始独立事务模式
+  15.purge_mixed  用于清除分布式事务的混合事务结果
+  16.purge_lost_db_entry  用于清除本地数据库所记载的远程事务入口,该事务入口操作因为远程数据库问题未能在远程数据库完成.
+  17.local_transaction_id  用于返回当前事务的事务标识号
+  18.step_id  用于返回排序DML事务的惟一正整数
+
+
+dbms_session
+作用:提供了使用PL/SQL实现ALTER SESSION命令,SET ROLE命令和其他会话信息的方法.
+  1.set_identifier  用于设置会话的客户ID号
+  2.set_context  用于设置应用上下文属性
+  3.clear_context  用于清除应用上下文的属性设置
+  4.clear_identifier  用于删除会话的set_client_id.
+  5.set_role  用于激活或禁止会话角色
+  6.set_sql_trace  用于激活或禁止当前会话的SQL跟踪
+  语法如下:
+    dbms_session.set_sql_trace(sql_strace boolean);
+  7.set_nls  用于设置NLS特征
+  语法如下:
+    dbms_session.set_nls(param varchar2,value varchar2);
+  8.close_database_link  用于关闭已经打开的数据库链
+  9.reset_package  用于复位当前会话的所有包,并且会释放包状态
+  10.modify_package_state  用于修改当前会话的PL/SQL程序单元的状态
+  语法如下:
+    dbms_session.modify_package_state(action_flags in pls_integer);
+  11.unique_session_id  用于返回当前会话的惟一ID标识符
+  12.is_role_enabled  用于确定当前会话是否激活了特定角色.
+  语法如下:
+    dbms_session.is_role_enabled(rolename varchar2)
+      return boolean;
+  13.is_session_alive  用于确定特定会话是否处于活动状态.
+  14.set_close_cached_open_cursors  用于打开或关闭close_cached_open_cursors
+  15.free_unused_user_meory  用于在执行了大内在操作(超过100K)之后回收未用内存
+  16.set_context  设置应用上下文属性的值
+  17.list_context  用于返回当前会话原命名空间和上下文列表
+  18.swith_current_consumer_group 用于改变当前会话的资源使用组
+
+
+dbms_rowid
+作用:用于在PL/SQL程序和SQL语句中取得行标识符的信息并建立ROWID,通过该包可以取得行所在的文件号,行所在文件的数据块号,行所在数据块的行号,以及数据库对象号等消息.
+  1.rowid_create  建立ROWID
+  语法如下:
+    dbms_rowid.rowid_create (
+      rowid_type in number,object_number in number,
+      relative_fno in n umber,block_number in number,
+      row_number in number)
+      return rowid;
+  注:rowid_type用于指定ROWID类型(0:受限ROWID,1:扩展ROWID);object_number用于指定数据对象号;relative_fno用于指定相对文件号;block_number用于指定在文件中的数据块号;row_number用于指定在数据块中的行号.
+  2.rowid_info  用于取得特定ROWID的详细信息.
+  3.rowid_type  用于返回特定ROWID的类型
+  4.rowid_object  用于取得特定ROWID所对应的数据对象号
+  5.rowid_relative_fno  用于取得特定ROWID所对应的相对文件号
+  6.rowid_block_number  用于返回特定ROWID在数据文件中所对应的数据块号.
+  7.rowid_row_number  用于返回特定ROWID在数据块中所对应的行号.
+  8.rowid_to_obsolute_fno  用于返回特定ROWID所对应的绝对文件号
+  9.rowid_to_extended  用于将受限rowid转变为扩展rowid
+  10.rowid_to_restricted  用于将扩展rowid转换为受限rowid
+  11.rowid_verify  检查是否可以将受限rowid转变为扩展rowid
+
+
+dbms_rls
+作用:只适用于Oracle Enterprise Edition,它用于实现精细访问控制,并且精细访问控制是通过在SQL语句中动态增加谓词(WHERE子句)来实现的.通过使用ORACLE的精细访问控制特征,可以使不同数据库用户在执行相同SQL语句时操作同一张表上的不同数据.
+
+dbms_ddl
+作用:提供了在PL/SQL块中执行DDL语句的方法,并且也提供了一些DDL的特殊管理方法.
+
+dbms_shared_pool
+作用:提供了对共享池的一些过程和函数访问,它使用户可以显示共享池中的对象尺寸,绑定对象到共享池,清除绑定到共享池的对象.为了使用该包,必须运行dbmspool.sql脚本来建立该包.
+
+dbms_random
+作用:提供了内置的随机数生成器,可以用于快速生成随机数.
+
+dbms_logmnr
+作用:通过使用包DBMS_LOGMNR和DBMS_LOGMNR_D,可以分析重做日志和归档日志所记载的事务变化,最终确定误操作(例如DROP TABLE)的时间,跟踪用户事务操作,跟踪并还原表的DML操作.
+
+dbms_flashback
+作用:用于激活或禁止会话的flashback特征,为了使得普通用户可以使用该包,必须要将执行该包的权限授予这些用户.
+
+dbms_obfuscation_toolkit
+作用:用于加密和解密数据,另外还可以生成密码检验和.通过加密输入数据,可以防止黑客或其他用户窃取私有数据;而通过结合使用加密和密码检验和,可以防止黑客破坏初加密的数据.当使用该包加密数据时,要求被加密数据的长度必须为8字节的整数倍.当使用DES算法加密数据时,密钥长度不能低于8字节;当使用DES3算法加密数据时,密钥长度不能低于16字节.
+
+dbms_space
+作用:用于分析段增长和空间的需求
+
+dbms_space_admin
+作用:提供了局部管理表空间的功能
+
+dbms_tts
+作用:用于检查表空间集合是否是自包含的,并在执行了检查之后,将违反自包含规则的信息写入到临时表TRANSPORT_SET_VIOLATIONS中.
+
+dbms_repair
+作用:用于检测,修复在表和索引上的损坏数据块.
+
+dbms_resource_manager
+作用:用于维护资源计划,资源使用组和资源计划指令;包dbms_resource_manager_privs用于维护与资源管理相关的权限.
+
+dbms_stats
+作用:用于搜集,查看,修改数据库对象的优化统计信息.
+
+utl_file
+作用:用于读写OS文件.使用该包访问OS文件时,必须要为OS目录建立相应的DIRECTORY对象..当用户要访问特定目录下的文件时,必须要具有读写DIRECTORY对象的权限.在使用UTL_FILE包之前,应首先建立DIRECTORY对象.
+
+utl_inaddr
+作用:用于取得局域网或Internet环境中的主机名和IP地址.
+
+ 

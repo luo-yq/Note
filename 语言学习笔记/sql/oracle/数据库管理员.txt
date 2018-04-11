@@ -1,0 +1,1475 @@
+oracle用户创建及权限设置
+
+权限：
+
+　　create session
+
+　　create table
+
+　　unlimited tablespace
+
+　　connect
+
+　　resource
+
+　　dba
+
+　　例：
+
+　　#sqlplus /nolog
+
+　　SQL> conn / as sysdba;
+
+　　SQL>create user username identified by password
+
+　　SQL> grant dba to username;
+
+　　SQL> conn username/password
+
+　　SQL> select * from user_sys_privs;
+
+　　我们将从创建Oracle用户权限表开始谈起，然后讲解登陆等一般性动作，使大家对Oracle用户权限表有个深入的了解。
+
+　　一、创建
+
+　　sys;//系统管理员，拥有最高权限
+
+　　system;//本地管理员，次高权限
+
+　　scott;//普通用户，密码默认为tiger,默认未解锁
+
+　　二、登陆
+
+　　sqlplus / as sysdba;//登陆sys帐户
+
+　　sqlplus sys as sysdba;//同上
+
+　　sqlplus scott/tiger;//登陆普通用户scott
+
+　　三、管理用户
+
+　　create user zhangsan;//在管理员帐户下，创建用户zhangsan
+
+　　alert user scott identified by tiger;//修改密码
+
+　　四，授予权限
+
+　　1、默认的普通用户scott默认未解锁，不能进行那个使用，新建的用户也没有任何权限，必须授予权限
+
+　　
+
+　　grant create session to zhangsan;//授予zhangsan用户创建session的权限，即登陆权限
+
+　　grant unlimited tablespace to zhangsan;//授予zhangsan用户使用表空间的权限
+
+　　grant create table to zhangsan;//授予创建表的权限
+
+　　grante drop table to zhangsan;//授予删除表的权限
+
+　　grant insert table to zhangsan;//插入表的权限
+
+　　grant update table to zhangsan;//修改表的权限
+
+　　grant all to public;//这条比较重要，授予所有权限(all)给所有用户(public)
+
+　　2、oralce对权限管理比较严谨，普通用户之间也是默认不能互相访问的，需要互相授权
+
+　　
+
+　　grant select on tablename to zhangsan;//授予zhangsan用户查看指定表的权限
+
+　　grant drop on tablename to zhangsan;//授予删除表的权限
+
+　　grant insert on tablename to zhangsan;//授予插入的权限
+
+　　grant update on tablename to zhangsan;//授予修改表的权限
+
+　　grant insert(id) on tablename to zhangsan;
+
+　　grant update(id) on tablename to zhangsan;//授予对指定表特定字段的插入和修改权限，注意，只能是insert和update
+
+　　grant alert all table to zhangsan;//授予zhangsan用户alert任意表的权限
+
+　　五、撤销权限
+
+　　基本语法同grant,关键字为revoke
+
+　　六、查看权限
+
+　　select * from user_sys_privs;//查看当前用户所有权限
+
+　　select * from user_tab_privs;//查看所用用户对表的权限
+
+　　七、操作表的用户的表
+
+　　
+
+　　select * from zhangsan.tablename
+
+　　八、权限传递
+
+　　即用户A将权限授予B，B可以将操作的权限再授予C，命令如下：
+
+　　grant alert table on tablename to zhangsan with admin option;//关键字 with admin option
+
+　　grant alert table on tablename to zhangsan with grant option;//关键字 with grant option效果和admin类似
+
+　　九、角色
+
+　　角色即权限的集合，可以把一个角色授予给用户
+
+　　create role myrole;//创建角色
+
+　　grant create session to myrole;//将创建session的权限授予myrole
+
+　　grant myrole to zhangsan;//授予zhangsan用户myrole的角色
+
+　　drop role myrole;删除角色
+
+
+
+
+
+study
+主要职责
+
+了解oracle数据库的体系结构
+负责数据库管理系统的安装和升级
+•启动和关闭数据库
+•管理和监控数据库用户
+•管理数据库特权
+•管理存储空间
+•建立数据库
+后备和回复数据库
+•
+
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+study
+oracle体系结构
+
+物理结构
+    数据文件、日志文件、控制文件、参数文件
+系统全局区（System Global Area）
+    共享池、数据缓冲区、日志缓冲区
+进  程
+    用户进程、服务器进程、后台进程
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+study
+参数文件
+
+参数文件（Parameter File）是一个文本文件，可直接使用操作系统下的文本编辑器对其内容进行修改。该文件只在建立数据库或启动实例时才被访问，在修改该文件之前必须关闭实例。
+初始参数文件：init.ora
+生成参数文件：initSID.ora config.ora
+参数文件的作用：
+ 确定存储结构的大小。
+ 设置数据库的全部缺省值。
+ 设置数据库的范围。
+ 设置数据库的各种物理属性。
+ 优化数据库性能。
+参数文件中参数的数据类型：
+ 整型
+ 例：DB_BLOCK_SIZE = 2048
+ 字符型
+ 例：DB_NAME = ‘ora7’
+ 逻辑型
+ 例：CHECKPOINT_PROCESS = true
+
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+study
+控制文件
+
+控制文件（Control File）是一个较小的二进制文件，用于描述数据库结构。
+描述信息如下：
+  数据库建立的日期。
+ 数据库名。
+ 数据库中所有数据文件和日志文件的文件名及路径。
+ 恢复数据库时所需的同步信息。
+要点注意：
+  在打开和存取数据库时都要访问该文件。
+ 镜像控制文件。
+ 记录控制文件名及路径的参数为：
+    CONTROL_FILES
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+study
+镜像日志文件
+
+镜像日志文件是为防止日志文件的丢失，在不同磁盘上同时维护两个或多个联机日志文件的副本。
+其特点如下：
+ 每个日志文件组至少包含两个日志文件成员。
+ 每组的成员数目相同。
+ 同组的所有成员同时被修改。
+ 同组的成员大小相同，不同组的成员大小可不同。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+study
+日志开关
+
+日志开关（Log Switch）是为实现日志文件组的循环使用而设置的。出现日志开关的情况如下：
+ 当一个日志文件组被填满时
+ 关闭数据库时
+ DBA手动转移日志开关
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+study
+日志文件
+
+日志文件（Log File）记录所有对数据库数据的修改，以备恢复数据时使用。其特点如下：
+ 每一个数据库至少包含两个日志文件组。
+ 日志文件组以循环方式进行写操作。
+ 每一个日志文件成员对应一个物理文件。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+study
+数据文件
+
+数据文件（Data File）是物理存储ORACLE数据库数据的文件。其特点如下：
+ 每一个数据文件只与一个数据库相联系。
+ 数据文件一旦被建立则不能修改其大小。
+ 一个表空间可包含一个或多个数据文件。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+study
+共享池
+
+实例（ INSTANCE ）
+        是存取和控制数据库的软件机制，它由系统全局区（System Global Area，简称SGA）和后台进程组成。
+SGA是ORACLE系统为实例分配的一组共享缓冲存储区，用于存放数据库数据和控制信息，以实现对数据库数据的管理和操作。
+共享SQL区包括
+ SQL或PL/SQL语句的文本
+ SQL或PL/SQL语句的语法分析形式
+ SQL或PL/SQL语句的执行方案
+共享池（Shared Pool）由共享SQL区和数据字典区组成。参数SHARED_POOL_SIZE 确定共享池的大小。
+数据字典区用于存放数据字典信息行。
+
+
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+study
+数据库缓冲区
+
+数据缓冲存储区（Database Buffer Cache）用于存储从数据文件中读的数据的备份。
+DB_BLOCK_SIZE
+        确定数据块的大小，一般为2K或4K，对于大数据块的数据库，此参数值为物理块的倍数。
+DB_BLOCK_BUFFERS
+        确定数据块的数目。
+数据缓冲存储区分为
+ 脏列表
+        包括被修改过但尚未写到数据文件的缓冲块。
+ LRU（Least Recently Used）列表
+        包括空闲缓冲块、正在存取的缓冲块、已被修改但尚未移到脏列表的缓冲块。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+study
+日志缓冲区
+
+日志缓冲存储区（Log Buffer）以记录项的形式备份数据库缓冲区中被修改的缓冲块，这些记录将被写到日志文件中。
+LOG_BUFFER
+        确定日志缓冲区的大小。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+study
+备份
+
+ORACLE数据库冷备份方案
+1、 备份数据库文件
+首先把待备份的数据库停掉，在命令行下输入：
+sqlplus system/solution@police_pjserver   //连接SQLPLUS
+ 
+connect sys/solution@police_pjserver as sysdba //用SYSDBA用户身份连接
+ 
+shutdown immediate                       //立即关闭当前数据库
+ 
+然后把d:/oracle/oradata 下的要备份的数据库文件拷贝到备份目录。
+同时可以拷贝：d:/ oracle/ora92/database 目录下的 PWD开头的文件到备份目录
+例如：PWDpolice.ora
+Startup                            //启动数据库
+         Total System Global Area 135338868 bytes
+        Fixed Size                   453492 bytes
+        Variable Size             109051904 bytes
+        Database Buffers           25165824 bytes
+        Redo Buffers                 667648 bytes
+        数据库装载完毕。
+        数据库已经打开。
+ 
+2、 在要恢复的ORACLE数据库里新建和备份库SID相同的数据库。
+最好保证两个数据库的安装目录一致。
+然后把新建的数据库停止：
+sqlplus system/solution@police_pjserver   //连接SQLPLUS
+ 
+connect sys/solution@police_pjserver as sysdba //用SYSDBA用户身份连接
+ 
+shutdown immediate                       //立即关闭当前数据库
+ 
+把备份的数据库文件拷贝到相应的目录下。
+如果两个数据库的安装目录不一致，需要修改：
+D:\oracle\admin\orcl\pfile\ init.ora.362007172247
+修改里面的：control_files 项，和备份数据库路径一致，同时把数据库备份文件拷贝到对应的目录。
+3、 启动数据库：
+   startup
+ 提示ORA-01991 pwd文件不可用
+ 删除以前的PWD文件 del del D:\oracle\ora92\DATABASE\PWDora9.ORA
+ 使用orapwd 重新建立pwd文件
+ orapwd file=D:\oracle\ora92\DATABASE\PWDora9.ORA password=oraclepass entries=10
+ oraclepass（oracle sys 用户密码）
+ 
+startup
+ 又提示
+ ORA-01092: ORACLE 例程终止。强行断开连接
+ 查看alter.log 发现
+ ORA-30012: undo tablespace '' does not exist or of wrong type
+ 想起来我以前的undo表空间使用的是undo1而不是默认的UNDOTBS1
+ 然后shutdown immediate;
+ 修改pfile中的
+ undo_tablespace=undo1
+ 然后
+ create spfile from pfile=pfile路径
+ 再次
+ startup
+         Total System Global Area 135338868 bytes
+        Fixed Size                   453492 bytes
+        Variable Size             109051904 bytes
+        Database Buffers           25165824 bytes
+        Redo Buffers                 667648 bytes
+        数据库装载完毕。
+        数据库已经打开。
+ 拷贝成功。
+ 
+ 
+导读：
+第一步，获取源库的参数文件
+第二步，建立对应的日志、跟踪等文件的路径
+第三步，获取源库的控制文件内容并修改
+       Tips：这里有个小技巧，如何获取oracle跟踪文件
+第四步，拷贝源库的数据文件到目标库的对应路径
+       利用oracle10g新增的DBMS_FILE_TRANSFER包来完成数据文件的copy
+       说明：DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','ERP.266.713884285','XUNYIQQTO','ERP.266');
+第五步，建立密码文件
+第六步，启动目标数据库，创建控制文件
+第七步，为新数据库添加临时表空间
+第八步，更改新数据库的DB_UNIQUE_NAME
+第九步，创建SPFILE
+第十步，为新库添加UNDO段
+第十一步，配置网络监听服务
+第十二步，配置/etc/oratab
+ 
+正文：
+第一步，获取源库的参数文件
+SQL> create pfile='/tmp/init_temp.ora' from spfile;
+File created.
+注意修改里面的路径。banping说db_name不要修改，否则无法mount数据库，因为db_name要和数据文件头记录的db_name保持一致
+[root@kk tmp]# vi init_temp.ora
+bkeep.__db_cache_size=838860800
+bkeep.__java_pool_size=16777216
+bkeep.__large_pool_size=16777216
+bkeep.__shared_pool_size=268435456
+bkeep.__streams_pool_size=0
+*.audit_file_dest='/opt/oracle/admin/xunyiqq/adump'
+*.background_dump_dest='/opt/oracle/admin/xunyiqq/bdump'
+*.compatible='10.2.0.1.0'
+*.control_files='+GROUP1/xunyiqq/control01.ctl','+GROUP1/xunyiqq/control02.ctl','+GROUP1/xunyiqq/control03.ctl'
+*.core_dump_dest='/opt/oracle/admin/xunyiqq/cdump'
+*.db_block_size=8192
+*.db_domain=''
+*.db_file_multiblock_read_count=16
+*.db_name='bkeep'
+*.db_recovery_file_dest='+GROUP1'
+*.db_recovery_file_dest_size=2147483648
+*.dispatchers='(PROTOCOL=TCP) (SERVICE=erpoptmXDB)'
+*.job_queue_processes=10
+*.open_cursors=300
+*.pga_aggregate_target=1073741824
+*.processes=150
+*.remote_login_passwordfile='EXCLUSIVE'
+*.sga_target=1147483648
+*.undo_management='AUTO'
+*.undo_tablespace='UNDOTBS1'
+*.user_dump_dest='/opt/oracle/admin/xunyiqq/udump'
+ 
+[root@kk tmp]# cp init_temp.ora /opt/oracle/product/10.2.0/db_1/dbs/initxunyiqq.ora
+ 
+第二步，建立对应的日志、跟踪等文件的路径
+[oracle@kk ~]$ mkdir -p /opt/oracle/admin/xunyiqq/udump
+[oracle@kk ~]$ mkdir -p /opt/oracle/admin/xunyiqq/bdump
+[oracle@kk ~]$ mkdir -p /opt/oracle/admin/xunyiqq/adump
+[oracle@kk ~]$ mkdir -p /opt/oracle/admin/xunyiqq/cdump
+[oracle@kk ~]$ exit
+ 
+第三步，获取源库的控制文件内容并修改
+Tips：这里有个小技巧，如何获取oracle跟踪文件
+SQL> alter database backup controlfile to trace;
+Database altered.
+ 
+SQL> oradebug setmypid
+Statement processed.
+SQL> oradebug tracefile_name
+/opt/oracle/admin/bkeep/udump/bkeep_ora_4126.trc
+SQL> ! cat /opt/oracle/admin/bkeep/udump/bkeep_ora_4126.trc
+ 
+CREATE CONTROLFILE REUSE DATABASE "BKEEP" NORESETLOGS  NOARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 5
+    MAXDATAFILES 100
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '+GROUP1/bkeep/redo01.log'  SIZE 100M,
+  GROUP 2 '+GROUP1/bkeep/redo02.log'  SIZE 100M,
+  GROUP 3 '+GROUP1/bkeep/redo03.log'  SIZE 100M
+-- STANDBY LOGFILE
+DATAFILE
+  '+GROUP1/bkeep/system01.dbf',
+  '+GROUP1/bkeep/undotbs01.dbf',
+  '+GROUP1/bkeep/sysaux01.dbf',
+  '+GROUP1/bkeep/erp01.dbf'
+CHARACTER SET ZHS16GBK
+;
+ 
+注意，这里还是不要修改数据库名，只修改相关文件的路径bkeep--->xunyiqq
+ 
+CREATE CONTROLFILE REUSE DATABASE "BKEEP" NORESETLOGS  NOARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 5
+    MAXDATAFILES 100
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '+GROUP1/xunyiqq/redo01.log'  SIZE 100M,
+  GROUP 2 '+GROUP1/xunyiqq/redo02.log'  SIZE 100M,
+  GROUP 3 '+GROUP1/xunyiqq/redo03.log'  SIZE 100M
+-- STANDBY LOGFILE
+DATAFILE
+  '+GROUP1/xunyiqq/system01.dbf',
+  '+GROUP1/xunyiqq/undotbs01.dbf',
+  '+GROUP1/xunyiqq/sysaux01.dbf',
+  '+GROUP1/xunyiqq/erp01.dbf'
+CHARACTER SET ZHS16GBK
+;
+第四步，拷贝源库的数据文件到目标库的对应路径
+新开一个ssh窗口
+[root@kk ~]# su - oracle
+[oracle@kk ~]$ export ORACLE_SID=+ASM
+[oracle@kk ~]$ asmcmd
+ASMCMD> ls
+GROUP1/
+ASMCMD> cd group1
+ASMCMD> ls
+BKEEP/
+ASMCMD> mkdir XUNYIQQ
+ 
+下面查看group1底下的目录及其目录下的文件。将来这些文件都给它复制过去
+ASMCMD> pwd
++group1/bkeep
+ASMCMD> ls
+CONTROLFILE/
+DATAFILE/
+ONLINELOG/
+PARAMETERFILE/
+TEMPFILE/
+control01.ctl
+control02.ctl
+control03.ctl
+erp01.dbf
+redo01.log
+redo02.log
+redo03.log
+spfilebkeep.ora
+sysaux01.dbf
+system01.dbf
+temp01.dbf
+undotbs01.dbf
+ 
+ASMCMD> cd datafile
+ASMCMD> ls
+ERP.266.713884285
+SYSAUX.264.713884129
+SYSTEM.262.713884099
+UNDOTBS1.263.713884121
+ASMCMD> pwd
++group1/bkeep/datafile
+ 
+Tips：查看表a存在那个表空间里面
+  1  select TABLESPACE_NAME from dba_tables
+  2* where table_name = 'A'
+ 
+TABLESPACE_NAME
+------------------------------
+SYSTEM
+ 
+回到源库上操作
+创建数据库目录
+SQL> create directory BKEEPFROM as '+GROUP1/BKEEP/DATAFILE';     
+ 
+Directory created.
+ 
+SQL> create directory XUNYIQQTO as '+GROUP1/XUNYIQQ/DATAFILE';
+ 
+Directory created.
+ 
+一则报错，一目了然！
+SQL> BEGIN DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','SYSTEM.262.713884099','XUNYIQQTO','SYSTEM.262'); END;
+ 
+*
+ERROR at line 1:
+ORA-19504: failed to create file "+GROUP1/XUNYIQQ/DATAFILE/SYSTEM.262"
+ORA-17502: ksfdcre:4 Failed to create file +GROUP1/XUNYIQQ/DATAFILE/SYSTEM.262
+ORA-15173: entry 'DATAFILE' does not exist in directory 'XUNYIQQ'
+ORA-06512: at "SYS.DBMS_FILE_TRANSFER", line 84
+ORA-06512: at "SYS.DBMS_FILE_TRANSFER", line 193
+ORA-06512: at line 1
+ 
+亡羊补牢，创建xunyiqq目录
+ASMCMD> ls
+BKEEP/
+XUNYIQQ/
+ASMCMD> cd xunyiqq
+ASMCMD> ls
+ASMCMD> mkdir DATAFILE
+ 
+利用oracle10g新增的DBMS_FILE_TRANSFER包来完成数据文件的copy
+SQL> exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','ERP.266.713884285','XUNYIQQTO','ERP.266');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','SYSAUX.264.713884129','XUNYIQQTO','SYSAUX.264');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','SYSTEM.262.713884099','XUNYIQQTO','SYSTEM.262');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','UNDOTBS1.263.713884121','XUNYIQQTO','UNDOTBS1.263');
+ 
+PL/SQL procedure successfully completed.     <==这里要多敲几次回车
+ 
+说明：DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','ERP.266.713884285','XUNYIQQTO','ERP.266');
+其中ERP.266.713884285拷贝到目标位置后不要跟.71388428，否则会报错的。
+查看一下，数据文件copy过来了
+ASMCMD> ls
+ERP.266
+SYSAUX.264
+SYSTEM.262
+UNDOTBS1.263
+ASMCMD> pwd
++group1/xunyiqq/datafile
+ 
+创建其它目录，这些目录其实可以不用创建，（从控制文件内容分析得知！）
+ASMCMD> cd xunyiqq
+ASMCMD> ls
+DATAFILE/
+ASMCMD> mkdir CONTROLFILE
+ASMCMD> mkdir ONLINELOG
+ASMCMD> mkdir PARAMETERFILE
+ASMCMD> mkdir TEMPFILE
+ASMCMD> ls
+CONTROLFILE/
+DATAFILE/
+ONLINELOG/
+PARAMETERFILE/
+TEMPFILE/
+拷贝 redo等文件
+重新建立一下数据库目录
+SQL> drop directory BKEEPFROM;
+Directory dropped.
+SQL> DROP DIRECTORY XUNYIQQTO;
+Directory dropped.
+SQL> create directory BKEEPFROM as '+GROUP1/BKEEP';
+Directory created.
+SQL> create directory XUNYIQQTO as '+GROUP1/XUNYIQQ';
+Directory created.
+SQL> exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','erp01.dbf','XUNYIQQTO','erp01.dbf');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','redo01.log','XUNYIQQTO','redo01.log');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','redo02.log','XUNYIQQTO','redo02.log');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','redo03.log','XUNYIQQTO','redo03.log');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','sysaux01.dbf','XUNYIQQTO','sysaux01.dbf');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','system01.dbf','XUNYIQQTO','system01.dbf');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','temp01.dbf','XUNYIQQTO','temp01.dbf');
+exec DBMS_FILE_TRANSFER.COPY_FILE('BKEEPFROM','undotbs01.dbf','XUNYIQQTO','undotbs01.dbf');
+PL/SQL procedure successfully completed.
+banping：需要注意的是，copy过来的文件并不是文件存储的实际路径，而是按原有的路径组织的，新的文件名只是一个alias而已
+ASMCMD> pwd
++group1/xunyiqq
+ASMCMD> ls -l
+Type  Redund  Striped  Time    Sys  Name
+                               N    CONTROLFILE/
+                               N    DATAFILE/
+                               N    ONLINELOG/
+                               N    PARAMETERFILE/
+                               N    TEMPFILE/
+                               N    control01.ctl => +GROUP1/BKEEP/CONTROLFILE/Current.279.713936659
+                               N    control02.ctl => +GROUP1/BKEEP/CONTROLFILE/Current.280.713936659
+                               N    control03.ctl => +GROUP1/BKEEP/CONTROLFILE/Current.281.713936661
+                               N    erp01.dbf => +GROUP1/BKEEP/DATAFILE/COPY_FILE.272.713936017
+                               N    redo01.log => +GROUP1/BKEEP/ONLINELOG/group_0.273.713936019
+                               N    redo02.log => +GROUP1/BKEEP/ONLINELOG/group_0.274.713936025
+                               N    redo03.log => +GROUP1/BKEEP/ONLINELOG/group_0.275.713936029
+                               N    sysaux01.dbf => +GROUP1/BKEEP/DATAFILE/COPY_FILE.276.713936035
+                               N    system01.dbf => +GROUP1/BKEEP/DATAFILE/COPY_FILE.277.713936057
+                               N    temp01.dbf => +GROUP1/BKEEP/TEMPFILE/TEMPTBS1.282.713961311
+                               N    undotbs01.dbf => +GROUP1/BKEEP/DATAFILE/COPY_FILE.278.713936109
+                               N    undotbs02.dbf => +GROUP1/XUNYIQQ/DATAFILE/UNDOTBS2.283.713963285
+第五步，建立密码文件
+SQL> !
+[oracle@kk ~]$ orapwd file=/opt/oracle/product/10.2.0/db_1/dbs/orapwxunyiqq password=sys entries=5
+第六步，启动目标数据库
+先启动到nomount状态，这时只会用到参数文件
+oracle会先找spfile，然后找pfile。
+[oracle@kk ~]$ export ORACLE_SID=xunyiqq
+[oracle@kk ~]$ sqlplus '/as sysdba'
+SQL*Plus: Release 10.2.0.1.0 - Production on Thu Mar 18 03:38:59 2010
+Copyright (c) 1982, 2005, Oracle.  All rights reserved.
+Connected to an idle instance.
+SQL> startup nomount
+ORACLE instance started.
+ 
+更改数据库到mount状态
+SQL> alter database mount;
+alter database mount
+*
+ERROR at line 1:
+ORA-01102: cannot mount database in EXCLUSIVE mode
+SQL> alter database mount;
+alter database mount
+*
+ERROR at line 1:
+ORA-00205: error in identifying control file, check alert log for more info
+错误1：为什么要先关闭源库呢？
+这是因为二者有相同的db_name，oracle通过一个lk开头的文件来在运行阶段lock某个库，如果不关闭会在alert日志中看到以下错误
+
+ALTER DATABASE   MOUNT
+Thu Mar 18 10:36:41 2010
+sculkget: failed to lock /opt/oracle//product/10.2.0/db_1/dbs/lkBKEEP exclusive
+sculkget: lock held by PID: 6340
+Thu Mar 18 10:36:41 2010
+ORA-09968: unable to lock file
+Linux Error: 11: Resource temporarily unavailable
+我们先关闭bkeep数据库
+SQL> shutdown immediate;
+然后再mount xunyiqq
+SQL> alter database mount;
+alter database mount
+*
+ERROR at line 1:
+ORA-00205: error in identifying control file, check alert log for more info
+ 
+日志文件里面说找不到控制文件等等
+Thu Mar 18 03:40:28 2010
+ORA-00202: control file: '+GROUP1/xunyiqq/control01.ctl'
+ORA-17503: ksfdopn:2 Failed to open file +GROUP1/xunyiqq/control01.ctl
+ORA-15173: entry 'control01.ctl' does not exist in directory 'xunyiqq'
+Thu Mar 18 03:40:28 2010
+ORA-205 signalled during: alter database mount...
+错误2：不到控制文件？？
+BANPING: mount时会找控制文件，没有则会出现如上所示的错误，可以在nomount阶段来建立控制文件，先关闭源库，然后在目标库启动到nomount阶段来建立控制文件
+ 
+注意：创建控制文件是在nomount状态下进行的！
+BANPING: 在创建控制文件的过程中会验证数据文件是否存在，如果不存在则报错
+SQL> CREATE CONTROLFILE REUSE DATABASE "BKEEP" NORESETLOGS  NOARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 5
+    MAXDATAFILES 100
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '+GROUP1/xunyiqq/redo01.log'  SIZE 100M,
+  GROUP 2 '+GROUP1/xunyiqq/redo02.log'  SIZE 100M,
+  GROUP 3 '+GROUP1/xunyiqq/redo03.log'  SIZE 100M
+-- STANDBY LOGFILE
+DATAFILE
+  '+GROUP1/xunyiqq/system01.dbf',
+  '+GROUP1/xunyiqq/undotbs01.dbf',
+  '+GROUP1/xunyiqq/sysaux01.dbf',
+  '+GROUP1/xunyiqq/erp01.dbf'
+CHARACTER SET ZHS16GBK
+;
+ 
+Control file created.
+ 
+SQL> alter database mount;
+alter database mount
+*
+ERROR at line 1:
+ORA-01100: database already mounted
+ 
+SQL> alter database open;
+alter database open
+*
+ERROR at line 1:
+ORA-01113: file 1 needs media recovery
+ORA-01110: data file 1: '+GROUP1/xunyiqq/system01.dbf'
+ 
+接下做介质恢复
+SQL> recover database;
+Media recovery complete.
+BANPING：注意这种情况下启动的数据库会做实例恢复，因为redo和数据文件等都是copy过来的。这样就建立了一个db_name为bkeep，而instance_name和SID为xunyiqq的数据库
+SQL> alter database open;
+Database altered.
+ 
+查看数据库中几个有用的name
+SQL> show parameter db_name;
+ 
+NAME            TYPE     VALUE
+------------------------------------ ----------- ------------
+db_name           string      bkeep
+ 
+SQL> show parameter instance_name;
+ 
+NAME          TYPE        VALUE
+------------------   ----------      ------------------
+instance_name    string        xunyiqq
+ 
+SQL> select count(*) from b;
+ 
+ COUNT(*)
+----------
+   7
+ 
+第七步，为新数据库添加临时表空间
+SQL> select name from v$tablespace;
+ 
+NAME
+------------------------------
+SYSTEM
+UNDOTBS1
+SYSAUX
+ERP
+TEMPTBS1
+ 
+SQL> alter tablespace temptbs1 add tempfile '+GROUP1/XUNYIQQ/temp01.dbf'
+  2  size 100M
+  3  reuse
+  4  autoextend on;
+ 
+Tablespace altered.
+ 
+第八步，更改新数据库的db_unique_name
+BANPING: db_unique_name 的重要作用
+由于现在在同一个主机上有两个相同db_name的数据库，那么如何能同时启动呢，这需要指定参数db_unique_ name来区分开来，这个参数在standby环境也是必须设置的
+ 
+SQL> alter system set db_unique_name=xunyiqq scope=spfile;
+alter system set db_unique_name=xunyiqq scope=spfile
+*
+ERROR at line 1:    <==因为我们刚才启动新数据库时使用的是pfile，所以接下来创建个spfile
+ORA-32001: write to SPFILE requested but no SPFILE specified at startup
+SQL> show parameter spfile
+NAME               TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+spfile                 string
+第九步，创建spfile
+SQL> create spfile from pfile;    <==这个命令重启后生效
+File created.
+SQL> alter system set db_unique_name=xunyiqq scope=spfile;
+alter system set db_unique_name=xunyiqq scope=spfile
+*
+ERROR at line 1:
+ORA-32001: write to SPFILE requested but no SPFILE specified at startup
+SQL> shutdown immediate;
+SQL> startup
+SQL> show parameter spfile;
+NAME      TYPE     VALUE
+------------------------------------ ----------- ------------------------------
+spfile       string      /opt/oracle/product/10.2.0/db_1/dbs/spfilexunyiqq.ora
+SQL> alter system set db_unique_name=xunyiqq scope=spfile;
+System altered.
+接下来启动bkeep数据库。正常！！
+[oracle@kk ~]$ sqlplus '/as sysdba'
+SQL*Plus: Release 10.2.0.1.0 - Production on Thu Mar 18 10:52:10 2010
+Copyright (c) 1982, 2005, Oracle.  All rights reserved.
+Connected to an idle instance.
+SQL> startup
+ORACLE instance started.
+ 
+第十步，为新库添加undo段
+SQL> select ts.name ts_name,d.name d_name   
+  2  from v$tablespace ts,v$datafile d
+  3  where ts.ts#=d.ts#;
+TS_NAME            D_NAME
+------------------    -------------------------------------------
+SYSTEM                  +GROUP1/xunyiqq/system01.dbf
+UNDOTBS1          +GROUP1/xunyiqq/undotbs01.dbf
+SYSAUX              +GROUP1/xunyiqq/sysaux01.dbf
+ERP                      +GROUP1/xunyiqq/erp01.dbf
+SQL> show parameter undo;
+NAME               TYPE      VALUE
+-----------------------     ---------     ---------------
+undo_management      string      AUTO
+undo_retention         integer     900
+undo_tablespace        string      UNDOTBS1
+SQL> create undo tablespace undotbs2 datafile '+GROUP1/XUNYIQQ/undotbs02.dbf' size 100M
+Tablespace created.
+SQL> show parameter undo
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+undo_management                      string      AUTO
+undo_retention                       integer     900
+undo_tablespace                      string      UNDOTBS1
+SQL> alter system set undo_tablespace=undotbs2;
+System altered.
+SQL> show parameter undo;
+NAME                                TYPE     VALUE
+------------------------------------ ----------- ------------------------------
+undo_management                       string      AUTO
+undo_retention                           integer     900
+undo_tablespace                          string      UNDOTBS2
+第十一步，配置网络监听服务
+SQL> !
+[oracle@kk ~]$ cd /opt/oracle/product/10.2.0/db_1/network/admin/
+[oracle@kk admin]$ vi tnsnames.ora
+BKEEP =
+(DESCRIPTION =
+(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.254.99)(PORT = 1521))
+(CONNECT_DATA =
+(SERVER = DEDICATED)
+(SERVICE_NAME = bkeep)
+)
+)
+XUNYIQQ =
+(DESCRIPTION =
+(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.254.99)(PORT = 1521))
+(CONNECT_DATA =
+(SERVER = DEDICATED)
+(SERVICE_NAME = xunyiqq)
+)
+)
+[oracle@kk admin]$ lsnrctl
+LSNRCTL for Linux: Version 10.2.0.1.0 - Production on 18-MAR-2010 11:18:57
+Copyright (c) 1991, 2005, Oracle.  All rights reserved.
+Welcome to LSNRCTL, type "help" for information.
+LSNRCTL> reload
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=IPC)(KEY=EXTPROC1)))
+The command completed successfully
+ 
+第十二步，配置/etc/oratab
+[root@kk ~]# vi /etc/oratab
+--SID--  -----ORACLE_HOME------  --Y/N--
++ASM:/opt/oracle/product/10.2.0/db_1:Y
+xunyiqq:/opt/oracle/product/10.2.0/db_1:Y
+bkeep:/opt/oracle/product/10.2.0/db_1:Y
+这里不是说操作系统启动时会启动实例，而已dbstart和dbshut会使用该配置文件
+[oracle@kk ~]$ locate dbstart
+/opt/oracle/product/10.2.0/db_1/bin/dbstart
+如何为Oracle数据库进行冷备份!
+时间: 2008年11月29日 来源:本站原创 作者: 佚名
+广告位出错，请重新选择广告或是删除当前广告位，广告位ID：#1089 001广告联盟
+冷备份发生在数据库已经正常关闭的情况下，当正常关闭时会提供给我们一个完整的数据库。
+数据库使用的每个文件都被备份下来，这些文件包括：
+☆所有数据文件
+☆所有控制文件
+☆所有联机REDO LOG 文件
+☆INIT.ORA文件(可选)
+值得注意的是冷备份必须是数据库关闭的情况下完成，当数据库开着的时候，执行数据库文件系统备份无效。
+作冷备份一般步骤是：
+1：正常关闭要备份的实例(instance);
+2: 备份整个数据库到一个目录
+3：启动数据库
+1： SQLDBA>connect internal
+SQLDBA>shutdown normal
+2： SQLDBA>! cp
+或
+SQLDBA>!tar cvf /dev/rmt/0 /wwwdg/oracle
+3： SQLDBA>startup
+(三)热备份(ACHIRELOG)
+数据库需要二十四小时运行,而且随时有新的数据加入.数据丢失将影响整个公司.采用archivelog mode物理备份.
+?设置数据库为automatic archivelog mode,
+#su - oracle
+%svrmgrl
+svrmgrl>connect internal
+svrmgrl>startup mount
+svrmgrl>alter database archivelog
+svrmgrl>shutdown
+svrmgrl>exit
+%vi initoracle7.ora
+加入log_archive_start = true # if you want automatic archiving
+log_archive_dest = $ORACLE_HOME/dbs/arch
+log_archive_format = log%s.arc
+%dbstart
+%ps -ef|grep arch
+oracle 1743 1 0 15:20:20 ? 0:00 ora_arch_oracle7
+注：oracle database is in automatic archivelog mode
+?full offline entire database backup, 当数据库初始完成后 这份备份是将来备份的基础。它提供了所有与数据库有关
+的拷贝.
+%dbshut
+%cp /oracle/oradata/oracle7/system.dbf
+/oracle/oradata/oracle7/rbs.dbf
+/oracle/oradata/oracle7/temp.dbf
+/oracle/oradata/oracle7/tools.dbf
+/oracle/oradata/oracle7/users.dbf
+/oraclecle/app/oracle/product/7.3.2/dbs/application.dbf
+/oracle/app/oracle/product/7.3.2/dbs/apptmpsp.dbf
+/oracle/app/oracle/product/7.3.2/dbs/apprlbksp.dbf
+/oracle/oradata/oracle7/redooracle.log
+/oracle/oradata/oracle7/control1.ctl
+/oracle/oradata/oracle7/control2.ctl
+/oracle/oradata/oracle7/control3.ctl
+%dbstart
+注:以上*.dbf文件为数据文件,*.log文件为日志文件,*.ctl文件为控制文件
+%exit
+%tar uvf /dev/rmt/0
+注:如果为oracle 7.2 ,则copy 相应的 data files,relog files,control files.
+6.3、每天做一次 partial online with archiving backups .
+#su - oracle
+%svrmgrl
+%svrmgrl>connect internal
+%svrmgrl>alter tablespace billsp begin backup
+%svrmgrl>alter tablespace billtmpsp begin backup
+%svrmgrl>alter tablespace billrlbksp begin backup
+%svrmgrl>alter tablespace system begin backup
+%svrmgrl>alter tablespace rbs begin backup
+%svrmgrl>alter tablespace temp begin backup
+%svrmgrl>alter tablespace tools begin backup
+%svrmgrl>alter tablespace users begin backup
+%svrmgrl>host cp all datafile to the backup storage. #文件名如第一步中以.dbf结尾的.
+%svrmgrl>alter tablespace billsp end backup
+%svrmgrl>alter tablespace billtmpsp end backup
+%svrmgrl>alter tablespace billrlbksp end backup
+%svrmgrl>alter tablespace system end backup
+%svrmgrl>alter tablespace rbs end backup
+%svrmgrl>alter tablespace temp end backup
+%svrmgrl>alter tablespace tools end backup
+%svrmgrl>alter tablespace users end backup
+
+Oracle数据库冷备份恢复的具体步骤
+【导读】：冷备份数据必须是数据库不在open状态下。
+　　冷备份数据必须是数据库不在open状态下。 以下步骤会给出详细的过程：
+　　◆（1）： 关闭DB ： shutdown immediate；
+　　◆（2）：copy oradata目录下的所有文件， 包括数据文件， 控制文件，redo，等，还需要copy 密码文件 在目录ora92下 的database 中的pwd 文件。全部copy到一个安全目录中。在sql 下可以直接加一个 host 然后使用dos命令。如host copy ……
+　　◆（3）：如果是操作系统的重新安装，只要是同样系统，同样数据库版本，是可以做冷备恢复。一下谈的是系统的重新安装后的步骤。
+　　◆（4）：正常安装oracle软件（之前在pub上一位兄弟说不需要安装oracle就可以搞定，表示怀疑），只需要安装软件，可以不用建实例，建实例的时间也比较长，也没有必要。 软件安装好以后，开始准备恢复。
+　　◆（5）：数据覆盖过去包括pwd文件，放在原来的目录，如果目录有所改变则需要另外建立控制文件，修改pfile。
+　　◆（6）：建立服务：使用oradim 命令 cmd下 oradim -new -sid erp 表示建立一个服务，sid为erp。关于oradim的命令另外给出专门解释。
+　　◆（7）：建立监听： net configuration assintant 来建立，或用脚本建立并且开启。
+　　◆（8）：打开数据库： 用oem也行，cmd下也行。
+　　set oracle_sid=erp;
+　　sqlplus "/as sysdba";
+　　startup;
+　　select * from v$instance;
+　　至此，冷备份恢复成功。即使你现在用oem打开数据库时发现提示找不到sid ，但实际上你已经成功了，此时只需要重启一下的你的服务器就可以了。
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+study
+备份回复
+
+采用Oracle Archive Log模式和非Archive Log模式对备份恢复的影响
+备份的目的在于，当系统或数据库出现问题时，能够快速将数据库进行恢复。对于Oracle数据库，一般有两种备份方式：
+“物理备份”和“逻辑备份”。“物理备份”指的是以copy数据文件方式进行备份；“逻辑备份”指的是用export等方式
+将数据从数据库中抽取出来。物理备份又可以分为冷备份和热备份。以下是各种备份的说明及前提条件。 
+- Cold Backup（冷备份） 主要指在关闭数据库的状态下进行的数据库完全备份，备份内容包括所有数据文件、控制文件
+、联机日志文件、ini文件。  
+- Hot Backup（热备份） 指在数据库处于运行状态下，对数据文件和控制文件进行备份，要使用热备份必须将数据库运
+行在(Archive Log)归档方式下。  
+- Export（逻辑备份）这是最简单的备份方法，可按数据库中某个表、某个用户或整个数据库来导出，并且支持全部、累
+计、增量三种方式。使用这种方法，数据库必须处于打开状态，而且如果数据库不是在restrict状态将不能保证导出数据
+的一致性。
+“物理备份”方式以相当于copy数据文件的方式进行备份，恢复时可以快速以相当于copy的方式将备份的数据copy回来，
+所以备份速度特别是恢复速度非常快。
+如果不采用Archive Log模式运行Oracle数据库，只有两种可用的备份方法：冷备份或export逻辑备份。根据关键业务服
+务器的特点，停下数据库进行冷备份是根本不可能的，因此如果不采用Archive Log，只能进行逻辑备份。
+如果仅采用“逻辑备份”方式，恢复时会有以下两个主要问题： 
+1. 无法恢复到最近时间点的数据。只能恢复到上一次export时的数据状态，当天的数据将丢失。Archive Log模式下的物
+理备份可以用数据文件备份及Archive Log备份，将数据库恢复到数据库失败前的时间点，不会丢失数据。 
+2. 完成恢复可能需要很长时间。恢复只能用import方法进行，所以需要的时间包括： 
+a. create database及所有的tablespace: 以每2分钟初始化一个2G的数据文件来计算，建立一个400G的Oracle数据库需
+要约6.7个小时。 
+b. import。时间较难确定，但保守估计应在10个小时以上（如果import过程中出现问题，恢复时间将延长） 
+3. 恢复时步骤较多，易出现人为故障。
+由于 这些原因，一般备份/恢复时都把export/import的方式做为辅助备份/恢复方式，对一些重要的表进行二级保护。这
+种备份方式也称为“逻辑备份”方式，当某些重要的表被意外删除时可进行逻辑import恢复。
+而对于整个数据库的日常备份/恢复，需要采用“物理备份”方式，即以相当于copy数据文件的方式进行备份，恢复时可
+以快速以相当于copy的方式将备份的数据copy回来。一般物理备份/恢复都采用Oracle RMAN工具来进行。
+下面是“逻辑备份”与“物理备份”在数据库故障时的恢复比较：
+1. Oracle逻辑错误造成无法启动 
+逻辑恢复: 重新create database及各tablespace，import。可恢复到上次export的数据 
+物理恢复: 将所有datafile copy回来，并利用archivelog将数据库recover到故障前的状态 
+2. 某一个datafile故障或丢失 
+逻辑恢复: 重新create database及各tablespace，import。可恢复到上次export的数据 
+物理恢复: 将该datafile copy回来 
+3. 某一个tablespace故障 
+逻辑恢复: 重新create database及各tablespace，import。可恢复到上次export的数据 
+物理恢复: 将该tablespace copy回来 
+4. 意外drop table 
+逻辑恢复: Import 该table 
+物理恢复: 将备份恢复到另一服务器上，export该table，在原数据库中import 
+5. 意外drop user 
+逻辑恢复: Import 该user 
+物理恢复: 将备份恢复到另一服务器上，export该user，在原数据库中import 
+6. 意外drop tablespace 
+逻辑恢复: 情况较复杂，恢复易造成数据库表之间的参照完整性被破坏。在此不做分析 
+物理恢复: 情况较复杂，恢复易造成数据库表之间的参照完整性被破坏。在此不做分析
+在进行数据库的恢复时，一定要了解Oracle数据库的原理，分析故障的原因，然后针对故障的情况进行相应的恢复。例如
+以下情况： 
+- Oracle程序文件损坏？ 
+- control file损坏？ 
+- Online redo log损坏？ 
+- datafile损坏？ 
+- archive log损坏？ 
+- table或其中数据被意外删除？
+不同情况下需要采用的恢复手段都是不尽相同的，需根据损坏的情况进行相应的恢复步骤。
+两种情况： 
+1. 数据库在shutdown状态下： 
+用orapwd重建password文件 
+orapwd file=<ORACLE_HOME>;/dbs/orapw<SID>; password=<your_password>; 
+2. 数据库在open状态下： 
+建orapwd方法同上，但建好后你必须重启动oracle才可以登录进去。但这时svrmgr的connect internal已经进不去了，所
+以，如果是windows环境，stop oracle的service；如果是UNIX，kill pmon进程。 
+然后再重启
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+克隆数据库
+
+
+数据文件具备了，接下来是通过这些文件“克隆”一个数据库，这个工作由cloneDBCreation.sql脚本继续执行，这个脚
+本更为复杂，下面分开介绍一下。
+首先根据指定的数据库名称（测试数据库指定的名称为eygle）创建一个控制文件：
+connect "SYS"/"&&sysPassword" as SYSDBA
+set echo on
+spool C:\oracle\admin\eygle\scripts\cloneDBCreation.log
+Create controlfile reuse set database "eygle"
+MAXINSTANCES 8
+MAXLOGHISTORY 1
+MAXLOGFILES 16
+MAXLOGMEMBERS 3
+MAXDATAFILES 100
+Datafile
+'C:\oracle\oradata\eygle\SYSTEM01.DBF',
+'C:\oracle\oradata\eygle\UNDOTBS01.DBF',
+'C:\oracle\oradata\eygle\SYSAUX01.DBF',
+'C:\oracle\oradata\eygle\USERS01.DBF'
+LOGFILE GROUP 1 ('C:\oracle/oradata/eygle/redo01.log') SIZE 51200K,
+GROUP 2 ('C:\oracle/oradata/eygle/redo02.log') SIZE 51200K,
+GROUP 3 ('C:\oracle/oradata/eygle/redo03.log') SIZE 51200K RESETLOGS;
+然后通过dbms_backup_restore包清空dbid等信息：
+exec dbms_backup_restore.zerodbid(0);
+看到这里再次使用到了dbms_backup_restore包，zeroDbid是包中的一个过程，用于清空数据文件头的部分信息，新的
+dbid在之后的控制文件创建时可以被计算，对于数据库克隆，这是必须的。
+zeroDbid有一个输入参数，即文件号：
+  PROCEDURE zeroDbid(fno       IN   binary_integer);
+当fno==0时，控制文件中包含的所有数据文件头都将被清零，zeroDbid主要用于清除数据文件头的3类信息：Database id
+信息、Checksum信息和Checksum符号位信息。
+继续看这个脚本，清零完成之后，数据库重新启动，控制文件被重新创建，此时新的dbid被计算并最终写入所有数据文件
+：
+shutdown immediate;
+startup nomount pfile="C:\oracle\admin\eygle\scripts\initeygleTemp.ora";
+Create controlfile reuse set database "eygle"
+MAXINSTANCES 8
+MAXLOGHISTORY 1
+MAXLOGFILES 16
+MAXLOGMEMBERS 3
+MAXDATAFILES 100
+Datafile
+'C:\oracle\oradata\eygle\SYSTEM01.DBF',
+'C:\oracle\oradata\eygle\UNDOTBS01.DBF',
+'C:\oracle\oradata\eygle\SYSAUX01.DBF',
+'C:\oracle\oradata\eygle\USERS01.DBF'
+LOGFILE GROUP 1 ('C:\oracle/oradata/eygle/redo01.log') SIZE 51200K,
+GROUP 2 ('C:\oracle/oradata/eygle/redo02.log') SIZE 51200K,
+GROUP 3 ('C:\oracle/oradata/eygle/redo03.log') SIZE 51200K RESETLOGS;
+注意在启动数据库时Oracle使用了一个临时的参数文件initeygleTemp.ora，在这个参数文件的最后一行设置了一个内部
+参数：
+C:\Oracle\admin\eygle.t\scripts>tail -1 initeygleTemp.ora
+_no_recovery_through_resetlogs=true
+_no_recovery_through_resetlogs这个参数的作用是什么呢？可以从数据库中找到一点说明：
+SQL> SELECT x.ksppinm NAME, y.ksppstvl VALUE, x.ksppdesc describ
+  2    FROM SYS.x$ksppi x, SYS.x$ksppcv y
+  3   WHERE x.inst_id = USERENV ('Instance')
+  4     AND y.inst_id = USERENV ('Instance')
+  5     AND x.indx = y.indx
+  6     AND x.ksppinm LIKE '%&par%'
+  7  /
+Enter value for par: no_reco
+old   6:    AND x.ksppinm LIKE '%&par%'
+new   6:    AND x.ksppinm LIKE '%no_reco%'
+NAME                           VALUE DESCRIB
+------------------------------ ----- ----------------------------------------------
+_no_recovery_through_resetlogs FALSE no recovery through this resetlogs operation
+这个参数用于限制恢复能否跨越resetlogs，对于数据库的恢复来说，resetlogs通常意味着不完全恢复，在数据库
+resetlogs打开之后，控制文件中的很多信息被改写，在Oracle 10g之前，如果数据库resetlogs打开，那么将不再能够通
+过当前的控制文件再次进行resetlogs点之前的恢复，而Oracle 10g改变了这个历史。
+在Oracle 10g中，即使通过resetlogs方式打开了数据库，Oracle仍然支持再次从resetlogs时间点之前进行恢复；在
+Clone数据库时，Oracle设置这个参数为True，意思就是不允许再次进行跨越resetlogs时间点的恢复。关于这部分内容，
+将在后面章节中进行更为详细的介绍。
+继续解读这个脚本，接下来Oracle设置restricted session模式，resetlogs打开数据库：
+alter system enable restricted session;
+alter database "eygle" open resetlogs;
+修改global_name，添加临时文件等：
+alter database rename global_name to "eygle";
+ALTER TABLESPACE TEMP ADD TEMPFILE 'C:\oracle\oradata\eygle\TEMP01.DBF' SIZE 20480K REUSE AUTOEXTEND ON
+NEXT 640K MAXSIZE UNLIMITED;
+select tablespace_name from dba_tablespaces where tablespace_name='USERS';
+select sid, program, serial#, username from v$session;
+由于种子数据库的字符集通常与用户要求的不符，接下来Oracle通过内部操作强制更改了字符集、国家字符集（这个内容
+在后面的章节有详细的介绍）：
+alter database character set INTERNAL_CONVERT ZHS16GBK;
+alter database national character set INTERNAL_CONVERT AL16UTF16;
+最后修改用户口令，禁用restricted session模式，这个克隆过程执行完毕：
+alter user sys identified by "&&sysPassword";
+alter user system identified by "&&systemPassword";
+alter system disable restricted session;
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+study
+oracle故障
+
+ 
+故障类别
+在 Oracle 数据库环境中可出现不同类型的故障，包括：
+•语句故障
+•用户进程故障
+•用户错误
+•例程故障
+•介质故障
+•网络故障
+每种类型的故障都要求 DBA 不同程度地介入以便从中有效地进行恢复。在某些情况下，恢复取决于已实施的备份策略的类型。例如，语句故障几乎不需要 DBA 干预，而介质故障则要求 DBA 使用经过测试的恢复策略。
+ 
+语句故障
+在 Oracle 程序中处理语句时如果出现逻辑故障就会导致语句故障。语句故障的类型包括：
+•应用程序中出现逻辑错误。
+•用户试图向表中输入无效数据，可能破坏完整性约束。
+•用户权限不足却试图执行某个操作，例如只有 SELECT 权限却在表中执行插入操作。
+•用户试图创建表，但超出了分配给该用户的限额限制。
+•用户试图对表执行 INSERT 或 UPDATE 操作，导致分配了一个区，但是表空间中的可用空间不足。
+注：如果遇到语句故障，Oracle 服务器或操作系统将返回错误代码和错误消息。失败的 SQL 语句将自动回退，然后控制权将返回给用户程序。应用程序开发人员或 DBA 可使用 Oracle 错误代码来诊断和帮助解决故障。
+ 
+ 
+语句故障解决方法
+出现语句故障后，DBA 进行干预的程度各不相同，这取决于故障的类型，可能包括以下内容：
+•修复应用程序以使逻辑流正确无误。根据您的环境，这可能是应用程序开发人员的任务，而不是 DBA 的任务。
+•修改并重新发出 SQL 语句。这可能也是应用程序开发人员的任务，而不是 DBA 的任务。
+•为用户提供成功完成该语句所必需的最低数据库权限。
+•发出 ALTER USER 命令以更改限额限制。
+•向表空间中添加文件空间。从技术角度讲，DBA 应确保不发生此类情况；但是在某些情况下可能需要添加文件空间。DBA 还可以对数据文件使用 RESIZE 和 AUTOEXTEND 选项。
+•Oracle9i 提供了一种在出现空间分配故障时先挂起、然后恢复执行大型数据库操作的方法。这使得管理员可以采取更正措施，而不是由 Oracle 数据库服务器向用户返回错误。在错误条件得到更正之后，挂起的操作将自动恢复。此功能称为可恢复的空间分配，受影响的语句称为可恢复语句。
+ 
+用户进程故障的原因
+用户进程失败的原因可能有多种；但最常见的原因如下：
+•用户在会话中执行了异常断开操作。例如，用户在连接到客户机-服务器配置环境中的数据库的情况下，关闭了 SQL*Plus 窗口。
+•用户会话被异常终止。一种可能的情况是用户在连接到客户机-服务器配置环境中的数据库时重新引导了客户机。
+•用户程序导致地址异常，从而终止会话。如果在发生异常时，应用程序未对这些异常进行正确处理，则通常会发生这种情况。
+ 
+ 
+用户进程故障和 DBA 操作
+DBA 很少需要执行操作来解决用户进程错误。该用户进程不能继续工作，尽管 Oracle 服务器和其它用户进程会继续正常运行。
+PMON 后台进程
+出现异常终止的用户进程后，PMON 后台进程通常足以清理该用户进程。
+PMON 进程检测到异常终止的服务器进程时，它将回退该异常终止进程的事务处理，并释放它所获得的任何资源和锁。
+ 
+ 
+例程故障
+例程故障的原因可能有多种：
+•由于断电，导致服务器不可用。
+•由于硬件问题（如 CPU 故障或内存损坏）或操作系统崩溃而导致服务器不可用。
+•某个 Oracle 服务器后台进程（DBWn、LGWR、PMON、SMON 或 CKPT）出现故障。
+ 要从例程故障中恢复，DBA 可以：
+•使用 “startup” 命令启动例程。Oracle 服务器将自动恢复，并执行前滚和回退阶段。
+•通过阅读警报日志和在例程故障期间生成的其它所有跟踪文件来调查故障原因。
+ 
+ 
+崩溃恢复
+崩溃恢复和例程恢复将数据库恢复到发生例程故障之前的事务处理一致状态。根据定义，崩溃恢复是对单例程配置中的数据库或 Oracle Real Application Clusters 配置（其中的所有例程都已崩溃）中的数据库执行的恢复；而例程恢复是通过 Oracle Real Application Clusters 配置中的一个活动例程来恢复一个失败的例程。如果需要，可以在数据库打开时，由 Oracle 服务器自动执行崩溃恢复。
+您不必执行任何恢复操作。所有必需的重做信息都由 SMON 来读取。要从这种类型的故障中进行恢复，请启动例程：
+SQL> CONNECT / AS sysdba
+Connected.
+SQL> STARTUP
+. . .
+Database opened.
+数据库打开后，通知用户必须重新输入未提交的所有数据。
+ 
+ 
+介质故障
+介质故障包含对操作数据库所需的文件进行读写操作时产生的物理问题。介质故障是最严重的故障类型，原因是它通常需要 DBA 的干预。
+与介质有关的问题的常见类型
+•包含某一数据库文件的磁盘驱动器出现磁头损坏。
+•对实现正常数据库操作所需的文件进行读写操作时存在物理问题。
+•文件被意外删除。
+ 
+ 
+介质故障解决方法
+经过测试的恢复策略是解决介质故障问题的关键要素。DBA 能够在多大程度上尽量减少由介质故障引起的停机时间和数据损失取决于可用备份的类型。因此，恢复策略取决于以下因素：
+•选择的备份方法以及受到影响的文件。
+•数据库操作的 ARCHIVELOG 模式。如果采用归档，可以应用已归档的重做日志文件来恢复自上次备份以来所提交的数据；如果使用 RMAN，还可以应用增量备份。
+ 
+ 
+DBA 要考虑的问题
+不管您选择什么样的备份策略，获得相应管理层的认同是很重要的。例如，如果贵公司不希望制作文件的物理映像副本，以尽量减少对磁盘空间的占用，那么管理层必须清楚这个决定可能引起的后果。
+在选择备份策略时，应考虑以下一些问题：
+•根据对系统可用性的期望，管理层是否权衡了所选备份策略的利弊？
+•是否有专门的资源来确保成功实施备份和恢复策略？
+•是否已明确了解进行备份和准备恢复的步骤的重要性？
+对业务要求、操作要求和技术要求进行一次全面的分析，向管理层提供支持有效备份和恢复策略所需的信息。
+ 
+ 
+业务影响
+您应该了解停机时间将对业务产生的影响。管理层必须量化停机时间及数据损失的代价，并将其与减少停机时间及尽量减少数据损失所需的成本进行比较。 MTTR：数据库的可用性是 DBA 要考虑的一个主要问题。出现故障后，DBA 应努力缩短平均恢复时间 (MTTR)。此策略可确保数据库的不可用时间尽可能地最短。通过预测可能发生的故障的类型并采取有效的恢复策略，DBA 可以最终达到缩短 MTTR 的目的。 
+MTBF：保护数据库以防止出现各种类型的故障也是 DBA 的一个重要任务。要做到这一点，DBA 必须延长平均故障间隔时间 (MTBF)。DBA 必须了解 Oracle 数据库环境中备份和恢复的结构，并对数据库进行相应配置，才不会经常发生故障。
+演变过程：备份及恢复策略随着业务要求、操作要求和技术要求的变化而逐渐发展。DBA 和相应的管理层都应定期对备份和恢复策略的有效性进行检查，这一点至关重要。
+ 
+ 
+24 小时操作
+备份和恢复总是受到您所提供的业务操作类型的影响，在数据库必须一周 7 天、一天 24 小时连续运行的情况下更是如此。正确的数据库配置对于支持这样的操作要求是必需的，因为它们直接影响数据库环境的技术层面。
+测试备份
+DBA 可以通过制定计划定期测试备份的有效性，来确保他们的策略可以缩短 MTTR 并延长 MTBF。有效的恢复取决于有效的备份。在选择备份策略时，应考虑以下一些问题：
+•当您需要帮助时，是否可以求助于系统管理员、供应商、后备 DBA 以及其他关键人员？
+•您是否可以按安排的时间间隔经常测试备份和恢复策略？
+•备份副本是否存储在其它地方？
+•计划是否被详细记录并得到良好的维护？
+ 
+ 
+数据库易变性
+影响操作要求的其它问题包括数据的易变性和数据库的结构。在选择备份策略时，应考虑以下一些问题：
+•表是否要经常更新？
+•数据是否频繁变更？如果是这样，您就必须比那些数据相对稳定的业务更频繁地进行备份。
+•数据库结构是否经常改变？
+•您添加数据文件的频率如何？
+ 
+ 
+物理映像副本
+某些技术要求由所要求的备份类型决定。例如，如果需要数据文件的物理映像副本，这将显著影响可用存储空间。
+逻辑副本
+创建数据库中对象的逻辑副本对存储要求的影响没有物理映像副本那么显著；然而，由于用户访问数据库时执行逻辑副本，系统资源可能会受到影响。
+数据库配置
+数据库的配置影响执行备份的方式和数据库的可用性。根据数据库配置，系统资源（如支持备份及恢复策略所需的磁盘空间）可能会受到限制。
+ 
+ 
+事务处理量
+事务处理量也会影响系统资源。如果 24 小时（全天候）操作要求定期备份，则会增加系统资源的负担。
+技术要求
+在选择备份策略时，应考虑以下一些问题：
+•您有多少数据？
+•您的计算机的能力及容量是否足以支持备份？
+•数据是否易于重新创建？
+•您是否可以将数据从纯数据文件重新加载到数据库？
+•数据库配置是否能支持从不同类型故障中复原？
+ 
+ 
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+管理用户
+
+创建数据库用户
+确定用户需要在其中存储对象的表空间。
+•确定每个表空间的限额。
+•指定一个缺省表空间与临时表空间。
+•创建用户。
+•向用户授予权限与角色。
+ 
+ 数据库验证：
+CREATE USER aaron
+IDENTIFIED BY soccer
+DEFAULT TABLESPACE data
+DEFAULT TEMPORARY TABLESPACE temp
+QUOTA 15M ON data
+QUOTA 10M ON users
+PASSWORD EXPIRE;
+ 
+操作系统验证
+ CREATE USER aaron
+IDENTIFIED EXTERNALLY
+DEFAULT TABLESPACE USERS
+TEMPORARY TABLESPACE temp
+QUOTA 15m ON data
+PASSWORD EXPIRE;
+ 改变和删除现有数据库用户 
+ 
+•在下列情况下需要修改用户的表空间限额：
+•       当用户所拥有表的增长速度异常快时。
+       当应用程序得到增强而要求额外的表或索引时。
+•       当重新安排对象并将其置入不同的表空间时。
+•修改用户的表空间限额：
+ ALTER USER aaron QUOTA 0 ON USERS;
+ 如果方案中含有对象，请使用 CASCADE 子句删除该方案中的所有对象  DROP USER aaron CASCADE
+ 监视用户信息
+可以通过查询以下视图来获取有关用户的信息：
+•DBA_USERS
+•DBA_TS_QUOTAS
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+ 
+study
+管理权限
+
+ 
+ 
+权限是指执行特定类型的 SQL 语句或访问另一个用户的对象的权利。包括以下权利：
+•连接到数据库
+•创建表
+•从另一用户的表中选择行
+•执行另一用户的已存储过程
+系统权限： 每一系统权限都允许用户执行某一特定的数据库操作或某类数据库操作，例如，创建表空间的权限就是一种系统权限。
+对象权限： 每一对象权限都允许用户对特定对象（如表、视图、序列、过程、函数或程序包）执行特定的操作。
+DBA 的权限控制包括：
+•为用户提供执行某种操作的权限
+•授予和撤消执行系统功能的权限
+•将权限直接授予用户或角色
+•将权限授予所有用户 (PUBLIC)
+ 
+系统权限可分为以下几类：
+•允许执行系统范围操作的权限；如 CREATE SESSION，CREATE TABLESPACE
+•允许管理用户自己方案中的对象的权限；如 CREATE TABLE
+•允许管理任何方案中的对象的权限；如 CREATE ANY TABLE
+可使用 DDL 命令 GRANT 和 REVOKE 控制权限，这两个命令为用户或角色添加和撤消系统权限。
+ 
+ 
+索引(INDEX) CREATE ANY INDEX
+ALTER ANY INDEX
+DROP ANY INDEX  
+表(TABLE) CREATE TABLE
+CREATE ANY TABLE
+ALTER ANY TABLE
+DROP ANY TABLE
+SELECT ANY TABLE
+UPDATE ANY TABLE
+DELETE ANY TABLE
+会话 CREATE SESSION
+(SESSION) ALTER SESSION
+RESTRICTED SESSION
+表空间 CREATE TABLESPACE
+(TABLESPACE) ALTER TABLESPACE
+DROP TABLESPACE
+UNLIMITED TABLESPACE
+ 
+授予系统权限
+使用 SQL 语句 GRANT 为用户授予系统权限。
+被授予者可通过 ADMIN 选项进一步为其他用户授予系统权限。使用 ADMIN 选项授予系统权限时应小心。这样的权限通常只限于安全管理员使用，很少授予其他用户。
+GRANT {system_privilege|role}
+ [, {system_privilege|role} ]...
+TO {user|role|PUBLIC}
+ [, {user|role|PUBLIC} ]...
+[WITH ADMIN OPTION]
+其中：
+system_privilege：指定要授予的系统权限
+Role：指定要授予的角色名
+PUBLIC：将系统权限授予所有用户
+WITH ADMIN OPTION：允许被授予者进一步为其他用户或角色授予权限或角色
+ 
+ 
+SYSDBA 和 SYSOPER 权限
+只有数据库管理员可以使用管理员权限与数据库连接。以 SYSDBA 身份连接可以授予用户不受限制的权限，以便对数据库或数据库中的对象执行任何操作。
+SYSOPER权限： STARTUP， SHUTDOWN， ALTER DATABASE OPEN | MOUNT ， ALTER DATABASE BACKUP CONTROLFILE TO，RECOVER DATABASE ， ALTER DATABASE ARCHIVELOG RESTRICTED SESSION
+SYSDBA 权限： SYSOPER PRIVILEGES WITH ADMIN OPTION ， CREATE DATABASE ， ALTER TABLESPACE BEGIN/END BACKUP RESTRICTED SESSION ， RECOVER DATABASE UNTIL
+ 
+ 
+撤消系统权限
+可以使用 REVOKE SQL 语句撤消系统权限。使用 ADMIN OPTION 授予系统权限的用户可以撤消任何其他数据库用户的权限。撤消者不必是原先授予该权限的那个用户。
+REVOKE {system_privilege|role}
+ [, {system_privilege|role} ]...
+FROM {user|role|PUBLIC}
+ [, {user|role|PUBLIC} ]...
+注：
+•REVOKE 命令只能撤消使用 GRANT 命令直接授予的权限。
+•撤消系统权限可能对一些相关对象有影响。例如，如果将 SELECT ANY TABLE 授予某用户，而该用户已创建了使用其它方案中的表的过程或视图，则撤消该权限将使这些过程或视图无效。
+ 
+ 
+ 
+对象权限
+对象权限是一种对于特定的表、视图、序列、过程、函数或程序包执行特定操作的一种权限或权利。上表列出了各种对象的权限。需要注意的是适用于序列的权限只有 SELECT 和 ALTER。通过指定可更新列的子集可以对 UPDATE、REFERENCES 和 INSERT 权限加以限制。通过用列的子集创建视图并授予对于该视图的 SELECT 权限，则可对 SELECT 权限加以限制。对于同义词的授权会转换为对于该同义词所引用的基表的授权。
+ 
+ 
+授予对象权限
+GRANT { object_privilege [(column_list)]
+ [, object_privilege [(column_list)] ]...
+ |ALL [PRIVILEGES]}
+ON [schema.]object
+TO {user|role|PUBLIC}[, {user|role|PUBLIC} ]...
+[WITH GRANT OPTION]
+其中：
+object_privilege：指定要授予的对象权限
+column_list：指定表或视图列（只在授予 INSERT、REFERENCES 或 UPDATE 权限
+时才指定。）
+ALL：将所有权限授予已被授予 WITH GRANT OPTION 的对象
+ON object：标识将要被授予权限的对象
+WITH GRANT OPTION：使被授予者能够将对象权限授予其他用户或角色
+ 
+使用 GRANT 语句授予对象权限。
+•要授予权限，对象必须在您的方案中，或者您已通过 GRANT OPTION 被授予权限。
+•缺省情况下，如果拥有某个对象，则自动获得对该对象的所有权限。
+•若有安全方面的考虑，则将您的对象权限授予其他用户时应谨慎。
+ 
+撤消对象权限
+REVOKE 语句用来撤消对象权限。要撤消对象权限，撤消者必须是将被撤消的对象权限的原始授予者。
+使用下列命令撤消对象权限：
+REVOKE { object_privilege
+[, object_privilege ]...
+| ALL [PRIVILEGES] }
+ON [schema.]object
+FROM {user|role|PUBLIC}
+[, {user|role|PUBLIC} ]...
+[CASCADE CONSTRAINTS]
+其中： object_privilege：指定将撤消的对象权限
+ALL：撤消已授予用户的所有对象权限
+ON：标识将撤消其对象权限的对象
+FROM：标识将撤消其对象权限的用户或角色
+CASCADE CONSTRAINTS：删除撤消使用 REFERENCES 或 ALL 权限定义的任何引用完整性约束
+限制： 授予者只能对其已经授予权限的用户撤消对象权限。
+ 
+ 
+ 
+撤消与 DML 操作有关的系统权限时，可看到级联效果。例如，如果为某用户授予 SELECT ANY TABLE 权限，并且该用户已经创建了使用某个表的过程，则必须对该用户的方案中包含的所有过程进行重新编译之后，才能使用这些过程。
+如果对象权限是用 WITH GRANT OPTION 授予的，则撤消对象权限也将导致级联效果。
+请仔细阅读下列步骤，它们对这种特性进行了说明。
+情况：
+•通过 GRANT OPTION 授予 Jeff 对于 EMPLOYEES 的 SELECT 对象权限。
+•Jeff 将对于 EMPLOYEES 的 SELECT 权限授予 Emi。
+•之后，撤消 Jeff 的 SELECT 权限。该撤消也对 Emi 产生级联影响。
+ 
+ 
+获取权限信息
+DBA_SYS_PRIVS：列出授予用户和角色的系统权限
+SESSION_PRIVS：列出用户当前可用的权限
+DBA_TAB_PRIVS：列出对于数据库中所有对象的所有授权
+DBA_COL_PRIVS：描述数据库中的所有对象-列授权
+ 
+ 
+•
+ Copyright ©2011 lyt. All Rights Reserved.
+

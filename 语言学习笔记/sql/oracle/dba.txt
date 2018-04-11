@@ -1,0 +1,546 @@
+
+study
+oracle10g
+
+Select Object_name,object_type from user_objects  
+Select Object_name,object_type from all_objects  
+Select Object_name,object_type from sys.dba_objects   select any table权限
+ 
+DBA必须熟悉的、最有用的DBA视图
+DBA必须熟悉的、最有用的DBA视图。
+dba_data_files                            关于数据库文件的信息
+dba_db_links                              数据库中的所有数据库链路
+dba_extents                               数据库中包括所有分区
+dba_free_space                          所有表空间中自由分区
+dba_indexes                              数据库中所有索引的描述
+dba_ind_columns                       在所有表及聚族上压缩索引的列
+dba_objects                               数据库中所有的对象
+dba_rollback_segs                      回滚段的描述
+dba_segments                           为所有数据库段分配的存储空间
+dba_sequences                         数据库中所有顺序书的描述
+dba_synonyms                         数据库中所有同义词
+dba_tables                               数据库中所有表的描述
+dba_tablespaces                      数据库中所有表空间的描述
+dba_tab_columns                     所有表描述、视图以及聚族的列
+dba_tab_grants                       数据库中对象所授的权限
+dba_tab_privs                         数据库中对象所授的权限
+dba_ts_quotas                        所有用户表空间限额
+dba_users                             关于数据库的所有用户信息
+dba_views                             数据库中所有视图
+ 
+ 
+1.系统表
+ORACLE数据库的系统参数都存储在数据库中，可以通过SQLPLUS，以用户SYSYTEM进行查询。几个重要的表或者视图如下：
+v$controlfile：控制文件的信息；
+v$datafile：数据文件的信息；
+v$log： 日志文件的信息；
+v$process：处理器的信息；
+v$session：会话信息；
+v$transaction：事务信息；
+v$resource：资源信息；
+v$sga：系统全局区的信息。
+上面的视图名中的‘v$’,只是视图名字中的字符。类似于上面的视图或表还有很多，位于：
+$ORACLE_HOME/RDBMS/ADMIN/CATALOG.SQL文件中。
+这些视图或表可以在SQLPLUS中用SELECT语句进行查询。
+2.数据字典视图
+表和列
+DBA_TABLES、ALL_TABLES和USER_TABLES显示了有关数据库表的一般信息。
+DBA_TAB_COLUMNS、ALL_TAB_COLUMNS和USER_TAB_COLUMNS显示了每个数据库表的列的信息。
+注意：DBA_OBJECTS、ALL_OBJECTS和USER_OBJECTS显示了模式对象的信息，包括表。
+完整性约束
+DBA_CONSTRAINTS、ALL_CONSTRAINTS和USER_CONSTRAINST显示有关约束的一般信息。
+DBA_CONS_COLUMNS、ALL_CONS_COLUMNS和USER_CONS_COLUMNS显示有关列的相关约束的一般信息。
+视图
+DBA_VIEWS、ALL_VIEWS和USER_VIEWS。
+注意：DBA_OBJECTS、ALL_OBJECTS和USER_OBJECTS显示了模式对象的信息，包括视图。
+序列
+DBA_SEQUENCES、ALL_SEQUENCES和USER_SEQUENCES。
+注意：DBA_OBJECTS、ALL_OBJECTS和USER_OBJECTS显示了模式对象的信息，包括序列。
+同义词
+DBA_SYNONYMS、ALL_SYNONYMS和USER_SYNONYMS。
+注意：DBA_OBJECTS、ALL_OBJECTS和USER_OBJECTS显示了模式对象的信息，包括同义词。
+索引
+DBA_INDEXS、ALL_INDEXS、USER_INDEXS、DBA_IND_COLUMNS、ALL_IND_COLUMNS和USER_IND_COLUMNS。
+用户
+DBA_USERS。
+角色
+DBA_ROLES。
+表空间定额
+DBA_TS_QUOTAS。
+配置表
+DBA_PROFILES。
+表空间
+DBA_TABLESPACES。
+数据文件
+DBA_DATA_FILES。
+段
+DBA_SEGMENTS、USER_SEGMENT。
+回滚段
+DBA_ROLLBACK_SEGS、V$ROLLNAME、V$ROLLSTAT。
+1. 基本的数据库信息
+版本信息：
+SQL> select * from v$version;
+BANNER
+----------------------------------------------------------------
+Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - Prod
+PL/SQL Release 10.2.0.1.0 - Production
+CORE    10.2.0.1.0      Production
+TNS for 32-bit Windows: Version 10.2.0.1.0 - Production
+NLSRTL Version 10.2.0.1.0 - Production
+数据库信息：
+SQL> select name, created, log_mode from v$database;
+NAME      CREATED        LOG_MODE
+--------- -------------- ------------
+TEST      13-9月 -09     ARCHIVELOG
+ 
+2. 自动工作量仓库(AWR) 的基本信息
+自动工作量仓库(AWR)在默认情况下，仓库用小时填充，保留期是7天。
+AWR使用多少空间
+SQL>Select occupant_name,occupant_desc,space_usage_kbytes from v$sysaux_occupants where occupant_name like '%AWR%';
+OCCUPANT_N OCCUPANT_DESC                                        SPACE_USAGE_KBYTES
+---------- --------------------------------------------------   ------------------
+SM/AWR     Server Manageability - Automatic Workload Repository              51200
+ 
+系统上最原始的AWR信息是什么？
+SQL> select dbms_stats.get_stats_history_availability from dual;
+GET_STATS_HISTORY_AVAILABILITY
+---------------------------------------------------------------------------
+21-8月 -09 09.18.15.359000000 上午 +08:00
+什么是AWR信息的保留期？
+SQL> select dbms_stats.get_stats_history_retention from dual;
+GET_STATS_HISTORY_RETENTION
+---------------------------
+                         31
+将AWR信息的保留期更改为15天？
+SQL> EXEC dbms_stats.alter_stats_history_retention(15);
+PL/SQL 过程已成功完成。
+ 
+3. 基本的许可信息
+V$LICENSE视图允许DBA监控系统内任何时候有关数据库数量的所有系统活动的数量。会话警告级别为0表示没有设置init.ora会话警告 参数，所以系统不会显示警告信息。会话最大级别为0表示没有设置init.ora会话最大参数，所以系统不会限制会话的数量。查询V$LICENSE视 图，以查看所允许的最大会话数。也可以在接近最大数时设置警告。
+应该定期执行脚本，以向DBA提供系统一天中实际的会话数量，从而保证正确的许可授权。设置init.ora参数 LICENSE_MAX_SESSIONS = 110，将会话数限制为110。设置init.ora参数LICENSE_SESSIONS_WARNING = 100，系统将向每位在第100个会话之后的用户显示警告信息，这样他们就会通知DBA，系统因遇到问题而关闭(希望能如此)。init.ora参数 LICENSE_MAX_USERS用于设置数据库中可以创建的已命名的用户数。在以下程序清单中，该值为0，所以没有限制。
+SQL> select * from v$license;
+SESSIONS_MAX SESSIONS_WARNING SESSIONS_CURRENT SESSIONS_HIGHWATER  USERS_MAX
+------------ ---------------- ---------------- ------------------ ----------
+           0                0                9                 18          0
+ 
+4. 数据库中已安装的产品项
+查询V$OPTION视图，可以获取您已安装的Oracle产品项。V$VERSION视图将给出已安装的基本产品项的版本。
+SQL> select * from v$option;
+PARAMETER                                                        VALUE
+---------------------------------------------------------------- -----
+Partitioning                                                     TRUE
+Objects                                                          TRUE
+Real Application Clusters                                        FALSE
+Advanced replication                                             TRUE
+Bit-mapped indexes                                               TRUE
+Oracle Data Guard                                                TRUE
+Oracle Label Security                                            FALSE
+Flashback Database                                               TRUE
+Data Mining Scoring Engine                                       FALSE
+Transparent Data Encryption                                      TRUE
+Backup Encryption                                                TRUE
+Unused Block Compression                                         TRUE
+... ...
+5. 内存分配摘要(V$SGA)
+V$SGA视图给出了系统的系统全局区(System Global Area，SGA)内存结构的摘要信息。Data Buffers是在内存中分配给数据的字节数量。它根据init.ora的参数DB_CACHE_SIZE得到。Redo Buffers主要是依据init.ora参数LOG_BUFFER计算得到，每当COMMIT命令提交数据时，它被用于缓存已改变的记录并将它们保存到 重做日志中。访问V$SGA视图可以得到系统的物理内存分配的基本概念，包括在Oracle中为数据、共享池、large池、java池以及日志缓冲区分 配的内存。
+SQL> COLUMN value FORMAT 999,999,999,999
+SQL> select * from  v$sga;
+NAME                            VALUE
+-------------------- ----------------
+Fixed Size                  1,248,576
+Variable Size             100,664,000
+Database Buffers          180,355,072
+Redo Buffers                7,139,328
+如果使用SGA_TARGET-- 内部动态调整大小：
+SQL> select ((select sum(value) from v$sga) -(select current_size from v$sga_dynamic_free_memory)) "
+SGA_TARGET" from dual;
+SGA_TARGET
+----------
+ 289406976
+ 
+6.内存分配的细节(V$SGASTAT)
+在V$视图中，可以查询V$SGASTAT视图来提供有关SGA更详细的内存分配信息。这个视图提供了SGA和内存资源的动态信息(访问数据库时会 出现相应变化)。这个语句非常详细地描述了SGA的尺寸。在V$SGA和V$SGASTAT视图中均包含记录FIXED_SGA、 BUFFER_CACHE和LOG_BUFFER.V$SGASTAT视图可获取Oracle SGA详细的分类列表以及共享池分配中各存储容器的详细信息。
+
+SQL> select * from v$sgastat;
+POOL         NAME                            BYTES
+------------ -------------------------- ----------
+             fixed_sga                     1248576
+             buffer_cache                180355072
+             log_buffer                    7139328
+shared pool  dpslut_kfdsg                      256
+shared pool  hot latch diagnostics              80
+shared pool  ENQUEUE STATS                    8360
+shared pool  transaction                    264528
+shared pool  KCB buffer wait statistic        3352
+shared pool  invalid low rba queue             320
+shared pool  KQF optimizer stats table        2396
+... ...
+ 
+7. 在V$PARAMETER显示init.ora信息
+程序清单中的脚本显示了系统中的init.ora参数。它还提供了有关参数的信息，确定每一个参数的当前值是否就是默认值 (ISDEFAULT=TRUE)。查询V$PARAMETER视图，将得到init.ora参数的当前值。它还显示了哪些init.ora参数已经改动 了原始的默认值：ISDEFAULT = FALSE。它还显示了对于一个给定的会话，只能修改哪些参数(当ISSES_MODIFIABLE = TRUE时)。最后，它显示了在不用关闭和重启数据库可以修改哪些参数(当ISSYS_MODIFIABLE = IMMEDIATE时)；而ISSYS_MODIFIABLE = DEFERRED说明该参数对所有新登录的，但当前未登录会话的用户有效。如果参数ISSYS _MODIFIABLE =FALSE，则说明该实例必须关闭并重启，才能使设置生效。
+SQL>select name, value, isdefault, isses_modifiable,issys_modifiable from v$parameter order by name;
+NAME            VALUE                               ISDEFAULT ISSES ISSYS_MOD
+--------------- ----------------------------------- --------- ----- ---------
+active_instance                                     TRUE      FALSE FALSE
+asm_diskgroups                                      TRUE      FALSE IMMEDIATE
+audit_file_dest D:\ORACLE\ADMIN\TEST\ADUMP          FALSE     FALSE DEFERRED
+audit_sys_opera FALSE                               TRUE      FALSE FALSE
+background_dump D:\ORACLE\ADMIN\TEST\BDUMP          FALSE     FALSE IMMEDIATE
+backup_tape_io_ FALSE                               TRUE      FALSE DEFERRED
+... ...
+8.测定数据的命中率(V$SYSSTAT)
+查询V$SYSSTAT视图(如下程序清单所示)可以查看从内存中读取数据的频率。它提供了数据库中设置的数据块缓存区的命中率。这个信息可以帮助您判断系统何时需要更多的数据缓存(DB_CACHE_SIZE)，或者系统的状态何时调整得不佳(二者均将导致较低的命中率)。通常情况下，您应当确保 读数据的命中率保持在95%以上。将系统的命中率从98%提高到99%，可能意味着性能提高了100%(取决于引起磁盘读操作的语句)。
+SELECT   1
+       - (  SUM (DECODE (NAME, 'physical reads', VALUE, 0))
+          / (  SUM (DECODE (NAME, 'db block gets', VALUE, 0))
+             + (SUM (DECODE (NAME, 'consistent gets', VALUE, 0)))
+            )
+         ) "Read Hit Ratio"
+  FROM v$sysstat;
+Read Hit Ratio
+--------------
+    .993067726
+在Oracle 10g中，也可以直接获得V$SYSMETRIC中的 AWR 信息:
+SQL> select metric_name,value from v$sysmetric where metric_name='Buffer Cache Hit Ratio';
+METRIC_NAME                                                           VALUE
+---------------------------------------------------------------- ----------
+Buffer Cache Hit Ratio                                                  100
+Buffer Cache Hit Ratio                                                  100
+ 
+9.测定数据字典的命中率(V$ROWCACHE)
+可以使用V$ROWCACHE视图(如程序清单所示)来发现对数据字典的调用是否有效地利用了通过init.ora参数 SHARED_POOL_SIZE分配的内存缓存.如果字典的命中率不高，系统的综合性能将大受影响。推荐的命中率是95%或者更高。如果命中率低于这个百分比，说明可能需要增加init.ora参数SHARED_POOL_SIZE。但要记住，在V$SGASTAT视图中看到的共享池包括多个部分，而这 里仅仅就是其中之一。注意：在大幅度使用公共同名的环境中，字典命中率可能难以超过75%，即使共享池的尺寸很大。这是因为Oracle必须经常检查不存 在的对象是否依旧存在。
+SQL>select sum(gets),sum(getmisses),(1 - (sum(getmisses) / (sum(gets)+ sum(getmisses)))) * 100 HitRate from v$rowcache;
+ SUM(GETS) SUM(GETMISSES)    HITRATE
+---------- -------------- ----------
+    370854          11068 97.1020261
+在Oracle 10g中，也可以直接获得V$SYSMETRIC中的AWR信息:
+select metric_name, value from v$sysmetric where metric_name ='Library Cache Hit Ratio';
+METRIC_NAME                                                           VALUE
+---------------------------------------------------------------- ----------------
+Library Cache Hit Ratio                                          98.0281690140845
+Library Cache Hit Ratio                                          98.0281690140845
+ 
+10.测定共享SQL和PL/SQL的命中率(V$LIBRARYCACHE)
+访 问V$LIBRARYCACHE视图可以显示实际使用的语句(SQL和PL/SQL)访问内存的情况。如果init.ora的参数 SHARED_POOL_SIZE设置得太小，内存中就没有足够的空间来存储所有的语句。固定命中率通常应该是95%或更高，而重载的次数不应该超过 1%。查询V$SQL_BIND_CAPTURE视图，看看每个SQL绑定是否太高，是否需要CURSOR_SHARING。
+select sum(pins) "Executions", sum(pinhits) "Hits",((sum(pinhits) / sum(pins)) * 100) "PinHitRatio",sum(reloads) "Misses", ((sum(pins) / (sum(pins)+ sum(reloads))) * 100) "RelHitRatio" from v$librarycache;
+Executions       Hits PinHitRatio     Misses RelHitRatio
+---------- ---------- ----------- ---------- -----------
+    417954     403489  96.5390928       4092  99.0304374
+查询 v$sql_bind_capture，看看 average binds 是否大于15 (issue):
+select  sql_id, count(*) bind_count from v$sql_bind_capture where child_number = 0 group by sql_id having  count(*) > 20order by count(*);
+SQL_ID        BIND_COUNT
+------------- ----------
+9qgtwh66xg6nz         21
+ 
+11.确定需要固定的PL/SQL对象
+碎片化现象造成共享池中的可用空间均成 为许多零散的片段，而没有足够大的连续空间，这是共享池中的普遍现象。消除共享池错误(参阅第4章和第13章以了解更多信息)的关键是理解哪些对象会引起 问题。一旦知道了会引起潜在问题的PL/SQL对象，就可以在数据库启动时固定这个代码(这时共享池是完全连续的)。
+SQL>select name, sharable_mem from v$db_object_cache where sharable_mem > 100000 and type in ('PACKAGE', 'PACKAGE BODY','FUNCTION', 'PROCEDURE') and kept = 'NO';
+NAME              SHARABLE_MEM
+----------------- ------------
+DBMS_BACKUP_RESTO       258495
+DBMS_STATS              131422
+ 
+12.通过V$SQLAREA查找有问题的查询
+V$SQLAREA视图提供了一种识别有潜在问题或者需要优化的SQL语句的方法，从而可通过减少磁盘的访问来优化数据库的综合性能。
+select b.username username, a.disk_reads reads,a.executions exec, a.disk_reads /decode(a.executions, 0, 1,a.executions) rds_exec_ratio,a.command_type, a.sql_text Statement from        v$sqlarea a, dba_users b where a.parsing_user_id = b.user_id and a.disk_reads > 100000 order by a.disk_reads desc;
+ 
+13.检查用户的当前操作及其使用的资源
+将V$SESSION和V$SQLTEXT连接就可以显示目前每一个会话正在执行的SQL语句，如下面的程序清单所示。这在有些时候是极为有用的，例如DBA希望查看某一个给定的时间点上系统究竟执行了哪些操作。
+select a.sid, a.username, s.sql_text from v$session a, v$sqltext s where a.sql_address = s.address and a.sql_hash_value = s.hash_value order by a.username, a.sid, s.piece;
+select a.username, b.block_gets, b.consistent_gets,b.physical_reads, b.block_changes, b.consistent_changes from v$session a, v$sess_io b where a.sid = b.sid order by a.username;
+USERNAME                       BLOCK_GETS CONSISTENT_GETS PHYSICAL_READS
+------------------------------ ---------- --------------- --------------
+DBSNMP                                 27          118917            246
+DBSNMP                               4383          111119            268
+SYSMAN                              45617          123434            660
+SYSMAN                               9416           94902            157
+SYSMAN                                380           37019             47
+SYSTEM                                 11          256588            147
+ 
+14.查找用户正在访问的对象
+通过查询V$ACCESS视图可查看在给定的时间点上用户所访问的所有对象。这有助于查明有问题的对象，在想修改一个特定的对象时也很有用(查找谁在访问它)。然而，当系统有一个很大的共享池和数百个用户时，这个操作的开销将很大。
+select a.sid, a.username, b.owner, b.object, b.type from v$session a, v$access b where a.sid = b.sid;
+ 
+15.使用索引
+Oracle 9i提供了监控索引使用的功能。这个新的视图表示索引是否被引用，但不能反映索引使用的频率。要监控的索引需要单独打开和关闭。可以使用alter index命令来初始化监控工作，然后通过对视图V$OBJECT_USAGE的查询来实现索引的跟踪。
+select * from v$object_usage;
+开始监控索引：
+alter index HRDT_INDEX1 monitoring usage;
+select index_name, table_name, monitoring, used,start_monitoring, end_monitoring from v$object_usage;
+INDEX_NAME  TABLE_NAME MON  USE START_MONITORING    END_MONITORING
+----------- ---------- --- --- ------------------- ------------------
+HRDT_INDEX1 HRS_DETAIL YES NO   10/13/2002 03:11:34
+ 
+16.确定锁定问题
+确定锁定问题将有助于定位正在等待其他某些用户或者某些东西的用户。可以使用这个策略来确定当前被锁定在系统中的用户。这也使DBA们可以确认一个相关的Oracle进程是否真地被锁定了，还是仅仅运行得比较慢。您还能够识别当前的语句是否正在执行锁定用户的操作。
+select  /*+ ordered */ b.username, b.serial#, d.id1, a.sql_text from v$lock d, v$session b, v$sqltext a where b.lockwait = d.kaddr and a.address = b.sql_address and      a.hash_value  = b.sql_hash_value;
+查看系统中是哪个用户造成了前一个用户被锁定的问题
+select  /*+ ordered */ a.serial#, a.sid, a.username, b.id1, c.sql_text from v$lock b, v$session a, v$sqltext c where b.id1 in(select /*+ ordered */ distinct e.id1 from v$lock e, v$session d where d.lockwait= e.kaddr) and a.sid = b.sid and c.hash_value  = a.sql_hash_value and b.request = 0;
+ 
+17. 关闭有问题的会话
+select username, sid, serial#, program, terminal from  v$session;
+alter system kill session '11,18';
+You can't kill your own session though:
+alter system kill session '10,4';
+*ERROR at line 1:ORA-00027: cannot kill current session
+ 
+18.查找使用多会话的用户
+有些时候，用户喜欢使用多会话来一次完成多个任务，但这会引起问题。开发人员也会有同样的问题，如果他开发了一个创建了会派生大量进程的糟糕的应用程序。所有这些都可能降低系统的综合性能。用户名NULL是后台进程。
+SQL> select username, count(*) from v$session group by  username;
+USERNAME                         COUNT(*)
+------------------------------ ----------
+                                       17
+SYSTEM                                  4
+SYSMAN                                  3
+DBSNMP                                  2
+ 
+19.查找磁盘I/O问题
+视图V$DATAFILE、V$FILESTAT和V$DBA_DATA_FILES提供了数据库中所有数据文件和磁盘的文件I/O活动信息。理想情况下，物理的读和写应当平均分布。如果没有合理的配置系统，其综合性能就会受到影响。
+select a.file#, a.name, a.status, a.bytes,b.phyrds, b.phywrts from  v$datafile a, v$filestat b where a.file# = b.file#;
+     FILE# NAME              STATUS       BYTES     PHYRDS    PHYWRTS
+---------- ----------------- ------- ---------- ---------- ----------
+         1 D:\ORACLE\ORADATA SYSTEM   534773760       7732       1506
+         2 D:\ORACLE\ORADATA ONLINE    31457280         54       2778
+         3 D:\ORACLE\ORADATA ONLINE   356515840       2680       7905
+         4 D:\ORACLE\ORADATA ONLINE     5242880         25          3
+ 
+20.查找回滚段的内容
+这个有帮助的查询显示了一个回滚段的实际等待数。可以 显示回滚信息(包括自动撤消)。还可以从程序清单显示的视图中查询Shrink和 wrap信息。查询V$ROLLNAME、V$ROLLSTAT和V$TRANSACTION视图可以提供用户如何使用回滚段和撤消表空间的信息。通常情况下，在一个时间点上不应让多个用户访问同一个回滚段(尽管这是被允许的)。
+select a.name, b.extents, b.rssize, b.xacts,b.waits, b.gets, optsize, status from v$rollname a, v$rollstat b where a.usn = b.usn;
+NAME                 EXTENTS     RSSIZE      XACTS      WAITS       GETS STATUS
+----------------- ---------- ---------- ---------- ---------- ---------- -------
+SYSTEM                     6     385024          0          0        215 ONLINE
+_SYSSMU1$                  3    1171456          0          0       3191 ONLINE
+ 
+21.检查空闲列表是否充足
+如果使用多进程完成大量的插入操作，空闲列表(空闲的数据库数据块的列表)的默认值1可能是不够的。如果没有使用自动空间段管理 (Automatic Space Segment Management，简称ASSM)，您可能需要增加空闲列表，或者空闲列表组。在使用多进程完成大量的插入操作时，应确保有足够的空闲列表和空闲列表 组。空闲列表的默认存储值是1。如果您使用了ASSM，Oracle将为您管理这些参数，但是一个有大量数据交换的事务环境中，在应用ASSM前应经过仔 细的测试。虽然如此，但通常最好使用ASSM。
+select ((A.Count/(B.Value + C.Value))*100)Pct from V$WaitStat A, V$SysStat B, V$SysStat C where  A.Class = 'free list' and B.Statistic# = ( select Statistic# from V$StatName where Name = 'db block gets') and C.Statistic# =  (select Statistic# from V$StatName where Name = 'consistent gets')；
+ 
+22  检查角色和权限设置
+
+根据用户名进行授权的对象级特权
+select b.owner || '.' || b.table_name obj,b.privilege what_granted, b.grantable,a.username from sys.dba_users a, sys.dba_tab_privs b where a.username = b.grantee order by 1,2,3;
+ 
+根据被授权人进行授权的对象级特权
+Select owner || '.' || table_name obj,privilege what_granted, grantable, grantee from sys.dba_tab_privs where not exists(select 'x'from sys.dba_users where username = grantee)order by 1,2,3;
+ 
+根据用户名进行授予的系统级特权
+select b.privilege what_granted,b.admin_option, a.username from sys.dba_users a, sys.dba_sys_privs b where a.username = b.grantee order by 1,2;
+ 
+根据被授权人进行授予的系统级特权
+select privilege what_granted,admin_option, grantee from sys.dba_sys_privs where not exists ( select 'x' from sys.dba_users where username = grantee ) order by 1,2;
+ 
+根据用户名授予的角色
+select b.granted_role ||decode(admin_option, 'YES',' (With Admin Option)',null) what_granted, a.username from sys.dba_users a, sys.dba_role_privs b where a.username = b.grantee order by 1;
+ 
+根据被授权人授予的角色
+select  granted_role ||decode(admin_option, 'YES',' (With Admin Option)', null) what_granted,grantee from sys.dba_role_privs where not exists(select 'x'from sys.dba_users where username = grantee ) order by 1;
+ 
+用户名及已被授予的相应权限
+select a.username,b.granted_role || decode(admin_option,'YES',' (With Admin Option)',null) what_granted from
+sys.dba_users a,sys.dba_role_privs b where   a.username = b.grantee
+UNION
+select a.username,b.privilege || decode(admin_option,'YES',' (With Admin Option)', null) what_granted from
+sys.dba_users a,sys.dba_sys_privs b where a.username = b.grantee
+UNION
+select a.username,b.table_name ||'-' || b.privilege|| decode(grantable,'YES',' (With Grant Option)',null)
+what_granted from sys.dba_users a, sys.dba_tab_privs b where a.username = b.granteeorder by 1;
+ 
+查询用户名及相应的配置文件、默认的表空间和临时表空间
+Select username, profile, default_tablespace,temporary_tablespace, created from sys.dba_users order by username;
+ 
+23.等待事件V$视图
+ 在Oracle 10g中V$SESSION_WAIT中的所有等待事件列现在都在V$SESSION中。因此，确保查询等待信息的 V$SESSION，因为它是一个更快的视图。V$ACTIVE_SESSION_HISTORY (ASH)将许多重要统计数据合并为一个视图或一个报表(ASH报表)。
+马上该谁等待--查询V$SESSION_WAIT / V$SESSION
+select event, sum(decode(wait_time,0,1,0)) "Waiting Now",sum(decode(wait_time,0,0,1)) "Previous Waits",count(*) "Total" from v$session_wait group by event order by count(*);
+马上该谁等待；SPECIFIC Waits--查询V$SESSION_WAIT
+SELECT /*+ ordered */ sid, event, owner, segment_name, segment_type,p1,p2,p3 FROM v$session_wait sw, dba_extents de WHERE de.file_id = sw.p1 AND sw.p2 between de.block_id and de.block_id+de.blocks - 1 AND (event = 'buffer busy waits' OR event = 'write complete waits') AND p1 IS NOT null ORDER BY event,sid;
+谁在等待 - 最后10 个等待数--查询V$SESSION_WAIT_HISTORY
+SELECT /*+ ordered */ sid, event, owner, segment_name, segment_type,p1,p2,p3 FROM v$session_wait sw, dba_extents de WHERE de.file_id = sw.p1 AND sw.p2 between de.block_id and de.block_id+de.blocks - 1 AND (event = 'buffer busy waits' OR event = 'write complete waits') AND p1 IS NOT null ORDER BY event,sid;
+查找P1, P2, P3代表什么--查询 V$EVENT_NAME
+select event#,name,parameter1 p1,parameter2 p2,parameter3 p3 from v$event_name where name in ('buffer busy waits', 'write complete waits');
+会话开始后的所有等待数--查询 V$SESSION_EVENT
+select sid, event, total_waits, time_waited, event_id from  v$session_event where  time_waited > 0 order by time_waited;
+类的所有会话等待数--查询V$SESSION_WAIT_CLASS
+select sid, wait_class, total_waits from  v$session_wait_class;
+系统启动后的所有等待数--查询V$SYSTEM_EVENT
+select  event, total_waits, time_waited, event_id from v$system_event where time_waited > 0 order  by time_waited;
+类的系统等待数--查询V$SYSTEM_WAIT_CLASS
+select wait_class, total_waits from  v$system_wait_class order by total_waits desc;
+类的系统等待数--查询V$ACTIVE_SESSION_HISTORY
+--In the query below, the highest count session is leader in non-idle wait events.
+select session_id,count(1) from v$active_session_history group by session_id order by 2;
+--In the query below, find the SQL for the leader in non-idle wait events.
+select c.sql_id, a.sql_text from v$sql a, (select sql_id,count(1) from v$active_session_history b where sql_id is not null group by sql_idorder by 2 desc ) c where rownum <= 5 order by rownum;
+Set serveroutput on
+Field_name tablename.columnname%type引用列类型
+ 
+PL/SQL语言
+    如果不使用PL/SQL语言，oracle一次只能处理一条SQL语句。每条SQL语句都导致客户（client）向服务器(server)调用，从而在性能上产生很大的开销，尤其是在网络操作中。如果使用PL/SQL,一个块中的语句作为一个组，导致客户向服务器的一次调用，减少网络转输。
+PL/SQL块结构
+　　PL/SQL是一种块结构的语言，组成PL/SQL程序的单元是逻辑块，一个PL/SQL 程序包含了一个或多个逻辑块，每个块都可以划分为三个部分。与其他语言相同，变量在使用之前必须声明，PL/SQL提供了独立的专门用于处理异常的部分，下面描述了PL/SQL块的不同部分：
+　　声明部分(Declaration section)
+　　声明部分包含了变量和常量的数据类型和初始值。这个部分是由关键字DECLARE开始，如果不需要声明变量或常量，那么可以忽略这一部分；需要说明的是游标的声明也在这一部分。
+　　执行部分(Executable section)
+　　执行部分是PL/SQL块中的指令部分，由关键字BEGIN开始，所有的可执行语句都放在这一部分，其他的PL/SQL块也可以放在这一部分。
+　　异常处理部分(Exception section)
+　　这一部分是可选的，在这一部分中处理异常或错误，对异常处理的详细讨论我们在后面进行。
+　　PL/SQL块语法
+ [DECLARE]
+---declaration statements
+BEGIN
+---executable statements
+[EXCEPTION]
+---exception statements
+END 
+　　PL/SQL块中的每一条语句都必须以分号结束，SQL语句可以使多行的，但分号表示该语句的结束。一行中可以有多条SQL语句，他们之间以分号分隔。每一个PL/SQL块由BEGIN或DECLARE开始，以END结束。
+   注释由--标示。
+PL/SQL块的命名和匿名
+　　PL/SQL程序块可以是一个命名的程序块也可以是一个匿名程序块。匿名程序块可以用在服务器端也可以用在客户端。
+　　命名程序块可以出现在其他PL/SQL程序块的声明部分，这方面比较明显的是子程序，子程序可以在执行部分引用，也可以在异常处理部分引用。
+　　PL/SQL程序块可背独立编译并存储在数据库中，任何与数据库相连接的应用程序都可以访问这些存储的PL/SQL程序块。ORACLE提供了四种类型的可存储的程序：
+　　　. 函数
+　　　. 过程
+　　　. 包
+　　　. 触发器
+　　函数
+　　函数是命名了的、存储在数据库中的PL/SQL程序块。函数接受零个或多个输入参数，有一个返回值，返回值的数据类型在创建函数时定义。定义函数的语法如下：
+ FUNCTION name [{parameter[,parameter,...])] RETURN datatypes IS
+[local declarations]
+BEGIN
+execute statements
+[EXCEPTION
+exception handlers]
+END [name]
+　　过程
+　　存储过程是一个PL/SQL程序块，接受零个或多个参数作为输入(INPUT)或输出(OUTPUT)、或既作输入又作输出(INOUT)，与函数不同，存储过程没有返回值，存储过程不能由SQL语句直接使用，只能通过EXECUT命令或PL/SQL程序块内部调用，定义存储过程的语法如下：
+ PROCEDURE name [(parameter[,parameter,...])] IS
+[local declarations]
+BEGIN
+execute statements
+[EXCEPTION
+exception handlers ]
+END [name]
+ 　　包(package)
+　　包其实就是被组合在一起的相关对象的集合，当包中任何函数或存储过程被调用，包就被加载入内存中，包中的任何函数或存储过程的子程序访问速度将大大加快。
+包由两个部分组成：规范和包主体(body),规范描述变量、常量、游标、和子程序，包体完全定义子程序和游标。
+　　触发器(trigger)
+　　触发器与一个表或数据库事件联系在一起的，当一个触发器事件发生时，定义在表上的触发器被触发。
+PL/SQL块的定义部分
+变量声明语法：
+    标识符 [constant] 数据类型 [not null] [:=默认值或PL/SQL表达式]
+注意的几点:
+1、加上关键字CONSTANT，则表示所定义的标识符为一个常量，必须为它赋初值。
+2、如果定义的标识符不能为空，则必须加关键字NOT NULL，并赋初值。
+3、“:=”为赋值操作符。
+附加数据类型:
+    PL/SQL提供了SQL没有的附加数据类型。除一般的ORACLE SQL数据类型外，PL/SQL还可以使用这些数据类型对变理进行说明:
+1、BOOLEAN：可用预定义的常量TRUE、FALSE或NULL对一个布尔变量赋值。
+2、binary_integer（二进制整数):数值范围在 -2,147,483,647到2,147,483,647之间。
+3、NATURAL（自然数）:数值范围在0到2,147,483,647之间。
+4、POSITIVE(正整数):数值范围在1到2,147,483,647之间。
+5、%TYPE：可说明一个变量的数据类型与某一指定列的数据类型相同。
+6、%ROWTYPE: 用这种数据类型可以说明一个复合变量，与某一特定有中的一行相同。
+变量声明分标量型变量声明和组合变量（复合变量）声明。标量型变量是指其内部没有成员的变量。
+组合型变量：
+组合型变量内部包含若干个成员，每个成员由标量型变量或组合型变量组成。
+定义组合型变量的语法如下：
+type <类型名> is record
+(<域名1> {<标量型数据类型> | <record类型>}[not null],
+<域名2> {<标量型数据类型> | <record类型>}[not null],
+…….);
+<标识符> <类型名>;
+注：在运行些PL/SQL块前，应先运行Set serveroutput on
+ 
+PL/SQL块的可执行部分
+    可执行部分可以包含变量赋值语句、数据查询、数据操纵和事务控制语句。如select、insert、update、delete、commit、rollback等语句。而不能使用CREATE，ALTER，DROP，GRANT，REVOR等数据定义或数据控制命令。
+给标量型变量赋值
+teacher_name:=‘liu’;
+给record类型变量赋值语法:
+<record名.域名>:=<pl/sql表达式>;
+在运用select语句查询时注意查询的结果只能有一条，如果返回的查询结果多于一条或没有找到任何数据，则会产生异常。
+
+PL/SQL流程控制
+主要有三种：
+条件控制
+循环控制
+跳转控制
+ 
+条件控制
+
+有两种形式:
+1、 IF_THEN_ELSE语句
+语法格式:
+if 条件 then
+语句1；
+语句2;
+…… else
+语句n;
+语句n+1;
+…… end if;
+2、IF_THEN_ELSE_IF语句
+语法格式:
+IF 条件1 THEN
+语句1;
+语句2;
+……Elsif 条件2 THEN
+语句3;
+语句4;
+[ELSIF 条件 n THEN
+……]
+[ELSE
+语句n+1
+……]
+END IF
+
+循环控制语句
+有四种类型：
+FOR循环  直到型循环  当型循环  简单循环 
+ 
+FOR循环
+语法格式：
+For 计数器 in [reverse] 下界..上界
+Loop
+语句1;
+语句2;
+……END LOOP;
+注意:
+ 计数器是有于控制循环资数的变量，它不需显式地在变量定义部分进行定义。§
+系统默认时，计数器从下界往上界递增记数，如果在关键字IN后加上REVERSE则表示计数器从上界到下界递增记数。§
+计数器变量只能在循环体内部使用，不能在循环体外使用。§
+ 
+直到型循环
+特点：先执行循环体，后判断条件。
+语法格式：
+Loop
+<语句1>
+<……>
+Exit [when 条件]
+<语句 n>
+<……>
+End loop;
+ 
+当型循环
+特点：先判断条件，后执行循环体。
+语法格式:
+While <条件> loop
+<语句1>
+<……>
+End loop;
+
+ 
+跳转语句
+语法格式：
+<<标号>>
+……Goto 标号
+有几项原则:
+可以实现同一块中语句之间的跳转
+可以从子块跳至父块,但不能从父块跳至子块
+不能从IF语句体外跳入IF语句内。
+不能从循环体外跳入循环体内。
+不能从子程序外部跳入到子程序内
+循环语句的嵌套
+即一个循环语句中还可以包括其它的循环语句。
+ 
+PL/SQL允许在一个块中包含子块，下段程序中列出了一个匿名的块，它包含另一个子块，该子块有自己的说明部分。
+ Copyright ©2011 lyt. All Rights Reserved.

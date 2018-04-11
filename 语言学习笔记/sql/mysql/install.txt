@@ -1,0 +1,49 @@
+查看是否已安装
+rpm -qa|grep mysql -i 
+
+安装的时候遇到这个错误：
+/usr/local/mysql3306/bin/mysqld: error while loading shared libraries: libaio.so.1: cannot open shared object file: No such file or directory
+需要安装 sudo apt-get install libaio-dev
+ 
+
+1.mysqladmin shutdown 注意必须指定user $ mysqladmin shutdown -u root -p
+2./tmp/mysql.sock文件的作用是什么?ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/tmp/mysql.sock' (2)
+这个文件是用于socket连接的文件。 也就是只有你的守护进程启动起来这个文件才存在。 
+但是你的mysql程序（这个程序是客户端，服务器端时mysqld）可以选择是否使用mysql.sock文件来连接（因为这个方法只适合在Unix主 机上面连接本地的mysqld），对于非本地的任何类型的主机。这些在MySQL的手册（包括晏子翻译的中文版本，覆盖3.23/4.0版本）都有说明。 只要看看就可以明白。 
+3./etc/my.cnf  这个文件可以从 mysql/support-files/ copy过来。ln -s  /mysql/support-files/my-smal.cnf /etc/my.cnf
+
+
+配置 /etc/my.cnf 文件
+[mysqld]
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+
+[mysql.server]
+user=mysql
+basedir=/var/lib
+
+[safe_mysqld]
+err-log=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid 
+
+
+启动mysql
+sudo ./safe_mysqld &
+
+
+mkdir cnf
+cp mysql-test/include/default_my.cnf cnf/
+./bin/mysqld_safe --defaults-file=cnf/default_my.cnf --datadir=data  --socket=mysql.sock --skip-grant-tables &
+
+
+
+MySQL 安装  linux rpm 安装 rpm -i rpmfile
+
+使用 root 用户登录系统,安装以下软件。
+MySQL MySQL 数据库服务器，用于管理数据库与表，控制用户访问，以及处理 SQL 查询。
+MySQL-client MySQL 客户端程序，实现用户与服务器的连接与交互功能。
+MySQL-devel 编译使用 MySQL 的其他程序的过程中会用到的一些库及头文件。
+MySQL-shared MySQL 客户端的共享库。
+MySQL-bench 用于MySQL 服务器的基准测试与性能测试工具。
+这里列出的 MySQL RPM 都是基于 Linux 的 SuSE 分发版系统构建的，但它们一般也能轻松地运行在其他 Linux 变种系统上。
+

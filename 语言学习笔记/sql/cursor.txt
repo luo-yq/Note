@@ -1,0 +1,50 @@
+
+
+/*滚动游标*/
+/*定义只读游标*/
+declare author_csr1 scroll cursor  for
+select au_fname,au_lname from authors where state='CA'
+order by au_fname,au_lname
+ 
+/*定义变量*/
+declare @lname varchar(20),@fname varchar(20)
+
+/*打开游标*/
+open author_csr1
+/*数据集中的最后一行*/
+fetch last from author_csr1
+/*当前游标所在行的上一行*/
+fetch prior from author_csr1
+/*提取数据集中的第四行*/
+fetch absolute 4 from author_csr1
+/*提取当前行的前两行*/
+fetch relative -2 from author_csr1
+
+/*数据集中的第一行*/
+fetch first from author_csr1
+/*关闭游标*/
+close author_csr1
+/*释放游标*/
+deallocate author_csr1
+ 
+
+
+/*使用游标更新数据*/
+/*定义游标*/
+declare title_csr1 cursor  for
+select title,price from titles where type='business' for update of price
+/*打开游标*/
+open title_csr1
+/*使用游标提取第一行数据*/
+fetch title_csr1
+while @@fetch_status=0
+begin
+    update titles set price=price*1.5 where current of title_csr1
+    fetch title_csr1
+end
+/*关闭游标*/
+close title_csr1
+/*释放游标*/
+deallocate title_csr1
+ Copyright ©2010 lyt. All Rights Reserved.
+

@@ -1,0 +1,59 @@
+ORACLE数据库冷备份方案
+1、 备份数据库文件
+首先把待备份的数据库停掉，在命令行下输入：
+sqlplus system/solution@police_pjserver   //连接SQLPLUS
+connect sys/solution@police_pjserver as sysdba //用SYSDBA用户身份连接
+shutdown immediate                       //立即关闭当前数据库
+ 
+然后把d:/oracle/oradata 下的要备份的数据库文件拷贝到备份目录。
+同时可以拷贝：d:/ oracle/ora92/database 目录下的 PWD开头的文件到备份
+目录
+例如：PWDpolice.ora
+Startup                            //启动数据库
+         Total System Global Area 135338868 bytes
+        Fixed Size                   453492 bytes
+        Variable Size             109051904 bytes
+        Database Buffers           25165824 bytes
+        Redo Buffers                 667648 bytes
+        数据库装载完毕。
+        数据库已经打开。
+ 
+2、 在要恢复的ORACLE数据库里新建和备份库SID相同的数据库。
+最好保证两个数据库的安装目录一致。
+然后把新建的数据库停止：
+sqlplus system/solution@police_pjserver   //连接SQLPLUS
+connect sys/solution@police_pjserver as sysdba //用SYSDBA用户身份连接
+shutdown immediate                       //立即关闭当前数据库
+ 
+把备份的数据库文件拷贝到相应的目录下。
+如果两个数据库的安装目录不一致，需要修改：D:\oracle\admin\orcl\pfile\ init.ora.362007172247
+修改里面的：control_files 项，和备份数据库路径一致，同时把数据库备份文件拷贝到对应的目录。
+
+3、 启动数据库：
+   startup
+ 提示ORA-01991 pwd文件不可用
+ 删除以前的PWD文件 del del D:\oracle\ora92\DATABASE\PWDora9.ORA
+ 使用orapwd 重新建立pwd文件
+ orapwd file=D:\oracle\ora92\DATABASE\PWDora9.ORA password=oraclepass
+entries=10
+ oraclepass（oracle sys 用户密码）
+ 
+startup
+ 又提示
+ ORA-01092: ORACLE 例程终止。强行断开连接
+ 查看alter.log 发现
+ ORA-30012: undo tablespace '' does not exist or of wrong type
+ 想起来我以前的undo表空间使用的是undo1而不是默认的UNDOTBS1
+ 然后shutdown immediate;
+ 修改pfile中的 undo_tablespace=undo1
+ 然后 create spfile from pfile=pfile路径
+ 再次
+ startup
+         Total System Global Area 135338868 bytes
+        Fixed Size                   453492 bytes
+        Variable Size             109051904 bytes
+        Database Buffers           25165824 bytes
+        Redo Buffers                 667648 bytes
+        数据库装载完毕。
+        数据库已经打开。
+ 拷贝成功。

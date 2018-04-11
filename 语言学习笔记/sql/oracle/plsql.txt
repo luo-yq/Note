@@ -1,0 +1,4198 @@
+
+PL-SQL
+PL/SQL块中只能直接嵌入SELECT,DML(INSERT,UPDATE,DELETE)以及事务控制语句(COMMIT,ROLLBACK,SAVEPOINT),而不能直接嵌入DDL语句(CREATE,ALTER,DROP)和DCL语句(GRANT,REVOKE)
+ 
+1.检索单行数据
+ 
+  1.1使用标量变量接受数据
+  v_ename emp.ename%type;
+  v_sal   emp.sal%type;
+  select ename,sal into v_ename,v_sal from emp where empno=&no;
+ 
+  1.2使用记录变量接受数据
+  type emp_record_type is record(
+  ename emp.ename%type,sal emp.sal%type);
+  emp_record emp_record_type;
+  select ename,sal into emp_record from emp where empno=&no;
+ 
+  1.3嵌入SELECT语句注意事项:
+  使用SELECT INTO语句时,必须要返回一条数据,并且只能返回一条数据
+ 
+  no_date_found:
+  select into没有返回数据
+  too_many_rows:
+  select into返回多条数据
+ 
+  where子句使用注意事项:
+  使用的变量名不能与列名相同,否则触发TOO_MANY_ROWS例外.
+ 
+ 
+2.操纵数据
+  2.1使用VALUES子句插入数据
+  v_deptno dept.deptno%type;
+  v_dname dept.dname%type;
+  v_deptno:=no;
+  v_dname:='&name';
+  insert into dept (deptno,dname) values(v_deptno,v_dname);
+ 
+  2.2使用子查询插入数据
+  v_deptno emp.deptno%type:=&no;
+  insert into employee select * from emp where deptno=v_deptno;
+ 
+  2.3更新数据
+  使用表达式更新列值
+  v_deptno dept.deptno%type:=no;
+  v_loc dept.loc%type:='&loc';
+  update dept set loc=v_loc where deptno=v_deptno;
+ 
+  2.4使用子查询更新列值
+  v_ename emp.ename%type:='&name';
+  update emp set (sal,comm) = (select sal,comm from emp where ename=v_ename) where job = (select job from emp where ename=v_ename)
+ 
+  2.5删除数据
+  使用变量删除数据
+  v_deptno dept.deptno%type:=&no;
+  delete from dept where deptno=v_deptno;
+ 
+  2.6使用子查询删除数据
+  v_ename emp.ename%type:='&name';
+  delete from emp where deptno=(select deptno from emp where ename=v_ename);
+ 
+ 
+3.SQL游标
+  游标是指向上下文区的指针,包括隐含游标(SQL游标)和显式游标两种类型
+  SQL游标用于处理SELECT INTO ,INSERT,UPDATE以及DELETE语句.
+  显式游标用于处理多行的SELECT语句
+  SQL游标包括:SQL%FOUND,SQL%NOTFOUND,SQL%ROWCOUNT,SQL%ISOPEN等四种属性
+ 
+  3.1 SQL%ISOPEN:执行时,会隐含的打开和关闭游标.因此该属性的值永远都是FALSE
+ 
+  3.2 SQL%FOUND:用于确定SQL语句执行是否成功.当SQL有作用行时,为TRUE,否则为FALSE
+  v_deptno emp.deptno%type:=&no;
+  update emp set sal=sal*1.1 where deptno=v_deptno;
+  if sql%found then dbms_output.put_line('执行成功');  else dbms_output.putline('失败'); endif
+ 
+  3.3 sql%notfound:确定SQL语句执行是否成功,当SQL有作用行时,为false,否则为true
+ 
+  3.4 sql%rowcount:返回SQL语句所作用的总计行数
+  v_deptno emp.deptno%type:=&no;
+  update emp set sal=sal*1.1 where deptno=v_deptno;
+  dbms_output.put_line('修改了'||sql%rowcount||'行');
+ 
+ 
+4.事务控制语句
+  事务控制语句包括COMMIT,ROLLBACK以及SAVEPOINT等三种语句
+ 
+  v_sal emp.sal%type:=&salary;
+  v_ename emp.ename%type:='&name';
+  update emp set sal=v_sal where ename=v_ename;
+  commit;
+ exception
+    when others then
+      rollback;
+ 
+  insert into temp values(1);
+  savepoint a1;
+  insert into temp values(2);
+  savepoint a2;
+  insert into temp values(3);
+  savepoint a3;
+  rollback to a2;
+  commit;
+ 
+ 
+5.控制结构
+  条件分支语句
+ 
+  5.1简单条件判断
+  v_sal number(6,2);
+  select sal into v_sal from emp where lower(ename)=lowe('&&name');
+  if v_sal<2000 then update emp set sal=v_sal+200 where lower(ename)=lower('&name')
+  end if
+ 
+  5.2二重条件分支
+  v_comm number(6,2);
+  select comm into v_comm from emp where empno=&&no;
+  if v_comm<>0 then update emp set comm=v_comm+100 where empno=&no;
+  else update emp set comm=200 where empno=&no;
+  end if
+ 
+  5.3多重条件分支
+  v_job varchar2(10);
+  v_sal number(6,2);
+  select job,sal into v_job,v_sal from emp where empno=&&no;
+  if v_job='president' then update emp set sal=v_sal+1000 where empno=&no;
+  elseif v_job='manager' then update emp set sal=v_sal+500 where empno=&no;
+  else update emp set sal=v_sal+200 where empno=&no;
+  end if;
+ 
+ 
+  5.4 CASE语句:
+  在CASE语句中使用单一选择符进行等值比较
+  declare
+   v_deptno emp deptno%type;
+  begin
+   v_deptno:=&no;
+   case v_deptno
+        when 10 then update emp set comm=100 where deptno=v_deptno;
+        when 20 then update emp set comm=80  where deptno=v_deptno;
+        when 30 then update emp set comm=50  where deptno=v_deptno;
+   else
+        dbms_output.put_line("不存在');
+   end case;
+   end;
+ 
+   5.5 在CASE语句中使用多种条件比较
+   declare
+     v_sal emp.sal%type;
+     v_ename emp.ename%type;
+   begin
+     select ename,sal into v_ename,v_sal from emp where empno=&no;
+     case
+       when v_sal<1000 then update emp set comm=100 where ename=v_ename;
+       when v_sal<2000 then update emp set comm=80  where ename=v_ename;
+       when v_sal<6000 tehn update emp set comm=50  where ename=v_ename;
+     end case;
+   end;
+ 
+ 
+   5.6循环语句
+   有基本循环,WHILE循环,FOR循环
+  
+   基本循环:一定要包含EXIT语句,定义循环控制变量
+   create table temp(cola int);
+   declare
+     i int:=1;
+   begin
+     loop
+       insert into temp values(i);
+       exit when i=10;
+        i:=i+1;
+     end loop;
+  end;
+ 
+  5.7 WHILE循环:定义循环控制变量,并在循环体内改变循环控制变量的值
+  declare
+    i int:=1;
+  begin
+    while i<=10 loop
+      insert into temp values(i);
+      i:=i+1;
+    end loop;
+  end;
+ 
+  5.8 for循环:使用FOR循环时,ORACLE会隐含定义循环控制变量.
+  for counter in[reverse]
+  lower_bound..upper_bound loop
+    statement1;
+    statement2;
+    .......
+  end loop;
+  5.9 counter是循环控制变量,并且该变量由ORACLE隐含定义,不需要显示定义;lower_bound和upper_bound分别对应循环控制变量的上下界值.默认情况下,FOR循环,每次会自动增一,指定REVERSE选项时,每次循环控制变量会减一
+  begin
+    for i in reverse 1..10 loop
+      insert into temp values(i);
+    end loop;
+  end;
+ 
+ 
+  5.10嵌套循环和标号:通过在嵌套循环中使用标号,可以区分内层循环和外层循环,并且可以在内层循环中直接退出外层循环
+  declare
+    result int;
+    begin
+    <<outer>>
+    for i in 1..100 loop
+    <<inter>>
+    for j in 1..100 loop
+    result:=i*j;
+    exit outer when result=1000;
+    exit when result=500;
+    end loop inner;
+    dbms_ouput.put_line(result);
+    end loop outer;
+    dbms_output.put_line(result);
+    end;
+ 
+   
+6.顺序控制语句
+  PL/SQL不仅提供了条件分支语句和循环控制语句,而且还提供了顺序控制语句GOTO和NULL.一般情况下不使用
+  
+  6.1 GOTO:用于跳转到特定标号处去执行语句. 
+  GOTO LABEL_NAME;
+ 
+  declare
+    i int :=1;
+  begin
+    loop
+      insert into temp values(i);
+      if i=10 then
+         goto end_loop
+      end if;
+      i:=i+1;
+   end loop;
+   <<end_loop>>
+   dbms_output.put_line('循环结束');
+   end;
+ 
+ 
+   6.2 null:不会执行任何操作,并且会直接将控制传递到下一条语句.
+   declare
+     v_sal emp.sal%type;
+     v_ename emp.ename%type;
+   begin
+     select ename,sal into v_ename,v_sal from emp where empno=&no;
+     if v_sal<3000 then update emp set comm=sal*0.1 where ename=v_ename;
+     else
+       null;
+     end if;
+   end;
+ 
+  
+7.复合数据类型
+  7.1定义PL/SQL记录
+ 
+  自定义PL/SQL记录:需要定义PL/SQL记录类型和记录变量,identifier用于指定记录变量名
+ 
+  type type_name is record(
+       field_declaration[,
+       field_declaration]...
+  );
+  identifier type_name;
+ 
+  declare
+    type emp_record_type is record(
+         name emp.ename%type,
+         salary em.sal%type,
+         dno emp.deptno%type);
+    emp_record emp_record_type;
+ 
+ 
+    使用%rowtype属性定义记录变量:可以基于表或视图定义记录变量
+    当使用%ROWTYPE属性定义记录变量时,记录成员个数,名称,类型与表或视图列的个数，名称,类型完全相同.
+    dept_record dept%rowtype;
+    emp_record emp%rowtype;
+ 
+  
+    在select into 语句中使用PL/SQL 记录
+    在select into 语句中使用记录变量
+    set serveroutput on
+    declare
+      type emp_record_type is record(
+           name emp.ename%type,
+           salary em.sal%type,
+           dno emp.deptno%type);
+      emp_record emp_record_type;
+    begin
+      select ename,sal,deptno into emp_record from emp where empno=&no;
+      dbms_output.put_line(emp_record.name);
+    end;
+ 
+    7.2在select into 语句中使用记录成员
+    declare
+      type emp_record_type is record(
+           name emp.ename%type,
+           salary emp.sal%type,
+           dna emp.deptno%type);
+      emp_record emp_record_type;
+    begin
+      select ename,sal into emp_record.name,emp_record.salary from emp where empno=&no;
+      dbms_output.put_line(emp_record.name);
+    end;
+ 
+ 
+    7.3在insert语句中使用PL/SQL记录
+    在VALUES子句中使用记录变量
+    declare
+      dept_record dept%rowtype;
+    begin
+      dept_record.deptno:=50;
+      dept_record.dname:='administrator';
+      dept_record.loc:='beijing';
+      insert int dept values dept_record;
+    end;
+ 
+    在VALUES子句中使用记录成员
+    declare
+      dept_record dept%rowtype;
+    begin
+      dept_record.deptno:=60;
+      dept_record.dname:='sales';
+      insert into dept (deptno,dname) values (dept_record.deptno,dept_record.dname);
+    end;
+ 
+    7.4在UPDATE语句中使用PL/SQL记录
+    在SET子句中使用记录变量
+    declare
+      dept_record dept%rowtype;
+    begin
+      dept_record.deptno:=30;
+      dept_record.dnama:='sales';
+      dept_record.loc:='shanghai';
+      update dept set row=dept_record where deptno=30;
+   end;
+ 
+   在SET子句中使用记录成员
+   declare
+     dept_record dept%rowtype;
+   begin
+     dept_record.loc:='guangzhou';
+     update dept set loc=dept_record.loc where deptno=10;
+   end;
+ 
+ 
+   7.5在DELETE语句中使用PL/SQL记录:只能在DELETE语句中的WHERE子句中使用记录成员
+   declare
+     dept_record dept%rowtype;
+   begin
+     dept_record.deptno:=50;
+     delete from dept where deptno=dept_record.deptno;
+   end;
+ 
+ 
+ 
+8.pl/sql集合
+  处理单行单列数据,可以使用标量变量,处理单行多列的数据，可以使用PL/SQL记录
+  处理单列多行数据,可以使用PL/SQL集合
+ 
+  PL/SQL集合类型类似于高级语言数组的一种复合数据类型
+  包括:索引表(PL/SQL表),嵌套表(NESTED TABLE),变长数组(VARRAY)三种
+ 
+  8.1 索引表:PL/SQL表 元素个数没有限制,并且下标可以是负值
+  定义索引表:
+      type type_name is table of element_type [not null] index by key_type;
+      identifier type_name;
+ 
+  在索引表中使用BINARY_INTEGER和PLS_INTEGER
+  set serveroutput on
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+  begin
+    select ename into ename_table(-1) from emp where empno=&no;
+    dbms_output.put_line('雇员名:'||ename_table(-1));
+  end;
+ 
+  在索引表中使用VARCHAR2
+  set serveroutput on
+  declare
+    type area_table_type is table of number index by varchar2(10);
+    area_table area_table_type;
+  begin
+    area_table('北京'):=1;
+    area_table('上海'):=2;
+    area_table('广州'):=3;
+    dbms_output.put_line('第一个元素:'||area_table.first);
+    dbms_output.put_line('最后一个元素:'||area_table.last);
+  end;
+ 
+  8.2 嵌套表:元素个数从1开始,并且元素个数没有限制
+  定义嵌套表:
+      type type_name is table of element_type;
+      identifier type_name;
+  
+      declare
+        type ename_table_type is table of emp.ename%type;
+        ename_table ename_table_type:=ename_table_type('A','A');
+ 
+ 
+  在PL/SQL块中使用嵌套表:使用嵌套表变量时,必须首先使用构造方法初始化嵌套表变量,然后才能在块内引用嵌套表元素
+  declare
+    type ename_talbe_type is table of emp.ename%type;
+    ename_talbe ename_table_type;
+  begin
+    ename_table:=ename_table_type('mary','mary','mary');
+    select ename into ename_table(2) from emp where empno=&no;
+    dbms_output.put_line('雇员名:'||ename_table(2));
+  end;
+ 
+ 
+  在表列中使用嵌套表:
+  在表列中使用嵌套表类型,必须首先使用CREATE TYPE命令建立嵌套表类型.
+  当使用嵌套表类型作为表列的数据类型时,必须要为嵌套表列指定专门的存储表
+  create type phone_type is table of varchar2(20);
+  /
+  create table employee(
+     id number(4),name varchar2(10),sal number(6,2),
+     phone phone_type
+  )nested table phone store as phone_table;
+ 
+  8.3 在PL/SQL块中为嵌套表列插入数据
+  当定义嵌套表类型时,ORACLE自动为该类型生成相应的构造方法.当为嵌套表列插入数据时,需要使用嵌套表的构造方法
+  begin
+    insert into employee values(1,'scott',800,phone_type('0471-3456788','13804711111'));
+  end;
+ 
+  在PL/SQL块中检索嵌套表列的数据
+  当在PL/SQL块中检索嵌套表列的数据时,需要定义嵌套表类型的变量接受其数据.
+  set serveroutput on
+  declare
+    phone_table phone_type;
+  begin
+    select phone into phone_table from employee where id=1;
+    for i in 1..phone_table.count loop
+    dbms_output.put_line('电话:'||phone_table(i));
+    end loop;
+  end;
+ 
+ 
+  8.4 在pl/sql块中更新嵌套表列的数据
+  更新嵌套表列的数据时,首先需要定义嵌套表变量,并使用构造方法初始化变量,然后才可在执行部分使用UPDATE语句更新数据
+  declare
+    phone_table phone_type:=phone_type('0471-3456788','13804711111','0471-2233066','13056278568');
+  begin
+    update employee set phone=phone_talbe where id=1;
+  end;
+ 
+ 
+  8.5变长数组(varray)
+  VARRAY也是一种用于处理PL/SQL数组的数据类型, 它也可以做为表列的数据类型使用.
+  元素下标以1开始,并且元素的最大个数是有限制的
+  定义VARRAY的语法:
+      type type_name is varray(size_limite) of element_type [not mull];
+      identifier type_name;
+  当使用VARRAY元素时,必须要使用其构造方法初始化VARRAY元素.
+ 
+  declare
+    type ename_table_type is varrar(20) of emp.ename%type;
+    ename_talbe ename_table_type:=ename_table_type('A','A');
+ 
+  8.6 在PL/SQL块中使用VARRAY
+  必须首先使用其构造方法来初始化VARRAY变量,然后才能在PL/SQL块内引用VARRAY元素
+  declare
+    type ename_table_type is varray(20) of emp.ename%type;
+    ename_table ename_table_type:=ename_table_type('mary');
+  begin
+    select ename into ename_table(1) from emp where empno=&no;
+    dbms_output.put_line('雇员名:'||ename_table(1));
+  end;
+ 
+  在表列中使用varray
+  要在表列中引用该数据类型,则必须使用CREATE TYPE命令建立VARRAY类型
+  create type phone_type is varray(20) of varchar2(20);
+  /
+  create table employee(
+    id number(4),name varchar2(10),
+    sal number(6,2),phone phone_type);
+  在PL/SQL块中操纵VARRAY列的方法与操纵嵌套表列的方法完全相同.嵌套表列元素个数没有限制,而VARRAY列的元素个数是有限制的.
+ 
+ 
+  PL/SQL记录表
+  PL/SQL变量处理单行单列数据
+  PL/SQL记录处理单行多列数据
+  PL/SQL集合处理多行单列数据
+  PL/SQL记录表处理多行多列数据
+ 
+  8.7 PL/SQL记录表结合了PL/SQL记录和PL/SQL集合的优点
+  declare
+    type emp_talbe_type is table of emp%rowtype index by binary_integer;
+    emp_table emp_table_type;
+  begin
+    select * into emp_table(1) from emp where empno=&no;
+    dbms_output.put_line('雇员姓名:'||emp_table(1).ename);
+    dbms_output.put_line('雇员姓名:'||emp_table(1).sal);
+  end;
+ 
+  8.8 多级集合
+  多级集合是指嵌套了集合类型的集合类型
+ 
+  在PL/SQL块中使用多级VARRAY:实现多维数组功能
+  定义二维VARRAY(10,10):
+  declare
+    type a1_varray_type is varray(10) of int;--定义一维VARRAY
+    type na1_varray_type is varray(10) of a1_varray_type;--定义二维VARRAY集合
+    --初始化二维集合变量
+    nv1 nal_varray_type:=nal_varray_type(
+        a1_varray_type(58,100,102),
+        a1_varray_type(55,6,73),
+        a1_varray_type(2,4);
+    begin
+      dbms_output.put_line('显示二维数组所有元素');
+      for i in 1..nv1.count loop
+          for j in 1..nv1(i).count loop
+              dbms_output.put_line('nvl('||i||','||j||')='||nvl(i)(j));
+          end loop;
+      end loop;
+   end;
+ 
+  在PL/SQL块中使用多级嵌套表
+  如果多维数组的元素个数没有限制,那么可以在嵌套表类型中嵌套另一个嵌套表类型
+ 
+  8.9 二维嵌套表
+  declare
+    type a1_table_type is table of int;--定义一维嵌套表
+    type nal_table_type is table of a1_table_type;--定义二维嵌套表集合
+    --初始化二维集合变量
+    nvl nal_table_type:=nal_table_type(
+        a1_table_type(2,4),
+        a1_table_type(5,73));
+  begin
+    dbms_output.put_line('显示二维数组所有元素');
+    for i in 1..nvl.count loop
+       for j in 1..nvl(i).count loop
+           dbms_output.put_line('nvl('||i||','||j||')='||nvl(i)(j));
+       end loop;
+    end loop;
+  end
+ 
+  在PL/SQL块中使用多级索引表
+  二维索引表:
+  declare
+    type a1_table_type is table of int index by binary_integer;
+    type nal_table_type is table of al_table_type index by binary_integer;
+    nvl nal_table_type;
+  begin
+    nvl(1)(1):=10;
+    nvl(1)(2):=5;
+    nvl(2)(1):=100;
+    nvl(2)(2):=50;
+    dbms_output.put_line('显示二维数组所有元素');
+    for i in 1..nvl.count loop
+       for j in 1..nvl(i).count loop
+          dbms_output.put_line('nvl('||i||','||j||')='||nvl(i)(j));
+       end loop;
+    end loop;
+  end;
+ 
+ 
+  8.10集合方法:ORACLE提供的用于操纵集合变量的内置函数或过程,其中EXISTS,COUNT,LIMIT,FIRST,NEXT,FRIOR和NEXT是函数
+           而EXTEND,TRIM和DELETE则是过程
+  集合方法只能在PL/SQL语句中使用,不能在SQL语句中使用.
+  集合方法EXTEND和TRIM只适用于嵌套表和VARRAY,而不适合于索引表
+ 
+  1.EXISTS:用于确定集合元素是否存在
+  declare
+    type ename_table_type is table of emp.ename%type;
+    ename_table ename_table_type;
+  begin
+    if ename_table.exists(1) then
+       ename_table(1):='SCOTT';
+    else
+       dbms_output.put_line('必须初始化集合元素');
+    end if;
+  end;
+ 
+  2.COUNT:用于返回当前集合变量中的元素总个数.
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+  begin
+    ename_table(-5):='scott';
+    ename_table(1):='smith';
+    ename_table(5):='mary';
+    ename_table(10):='blake';
+    dbms_output.put_line('集合元素总个数:'||ename_table.count);
+  end;
+ 
+  3.LIMIT:用于返回集合元素的最大个数.因为嵌套表和索引表的余数个数没有限制,返回NULL
+        对于VARRAY来说，该方法返回VARRAY所允许的最大元素个数
+  declare
+    type ename_table_type is varray(20) of emp.ename%type;
+    ename_table ename_table_type:=ename_table_type('mary');
+  begin
+    dbms_output.put_line('集合元素的最大个数:'||ename_table.limit);
+  end;
+ 
+  4.FIRST和LAST:FIRST用于返回集合变量第一个元素的下标,而LAST方法则用于返回集合变量最后一个元素的下标
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+  begin
+    ename_table(-5):='scott';
+    ename_table(1):='smith';
+    ename_table(5):='mary';
+    ename_table(10):='blake';
+    dbms_output.put_line('第一个元素:'||ename_table.first);
+    dbms_output.put_line('最后一个元素:'||ename_table.last);
+  end;
+ 
+  5.FRIOR和NEXT:PRIOR返回当前集合元素的前一个元素的下标,而NEXT方法则用于返回当前集合元素的后一个元素的下标
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+  begin
+    ename_table(-5):='scott';
+    ename_table(1):='smith';
+    ename_table(5):='mary';
+    ename_table(10):='blake';
+    dbms_output.put_line('元素5的前一个元素:'||ename_table.prior(5));
+    dbms_output.put_line('元素5的后一个元素:'||ename_table.next(5));
+  end;
+ 
+  6.EXTEND:用于扩展集合变量的尺寸,并为它们增加元素.只适用于嵌套表和VARRAY.
+         三种调用格式:EXTEND,EXTEND(N),EXTEND(N,I):添加N个元素,值与第I个元素相同
+  declare
+    type ename_table_type is varray(20) of varchar2(10);
+    ename_table ename_table_type;
+  begin
+    ename_table:=ename_table_type('mary');
+    ename_table.extend(5,1);
+    dbms_output.put_line('元素个数:'||ename_table.count);
+  end;
+ 
+  7.TRIM:用于从集合尾部删除元素,有TRIM和TRIM(N)两种调用格式.
+       只适用于嵌套表和VARRAY
+  declare
+    type ename_table_type is table of varchar2(10);
+    ename_table ename_table_type;
+  begin
+    ename_table:=ename_table_type('a','a','a','a','a');
+    ename_table.trim(2);
+    dbms_table.put_line('元素个数:'||ename_table.count);
+  end;
+ 
+  8.DELETE:删除结合元素,但该方法只适用于嵌套表和索引表,不适用于VARRAY.
+         有DELETE,DELETE(N),DELETE(M,N)三种调用方式.
+         DETELE(M,N)删除集合变量从M到N之间的所有元素
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+  begin
+    ename_table(-5):='scott';
+    ename_table(1):='smith';
+    ename_table(5):='mary';
+    ename_table(10):='blake';
+    ename_table.delete(5);
+    dbms_output.put_line('元素总个数:'||ename_table.count);
+  end;
+ 
+ 
+  8.11集合赋值
+  使用嵌套表和VARRAY时,通过执行INSERT,UPDATE,FETCH,SELECT赋值语句,可以将一个集合的数据赋值给另一个集合.
+  当给嵌套表赋值时,还可以使用SET,MULTISET UNION,MULTISET INTERSECT,MULTISET EXCEPT等集合操作符
+  SET:用于取消嵌套表中的重复值.
+  MULTISET UNION:取得两个嵌套表的并集(DISTINCT)
+  MULTISET INTERSECT:用于取得两个嵌套表的交集.
+  NULTISET EXCEPT:用于取得两个嵌套表的差集
+ 
+  1.将一个集合的数据赋值个另一个集合
+    源集合和目标集合的数据类型必须完全一致.
+  declare
+    type name_varray_type is varray(4) of varchar2(10);
+    name_array1 name_varray_type;
+    name_array2 name_varray_type;
+  begin
+    name_array1:=name_array_type('scott','smith');
+    name_array2:=name_array_type('a','a','a','a');
+    dbms_output.put_line('name_array2的原数据:');
+    for i in 1..name_array2.count loop
+       dbms_output.put_line(' '||name_array2(i));
+    end loop;
+    dbms_output.new_line;
+    name_array2:=name_array1;
+    dbms_output.put('name_array2的新数据:');
+    for i in 1..name_array2.count loop
+       dbms_output.put(' '||name_array2(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+ 
+  2.给集合赋NULL值:清空集合变量的所有数据(集合方法DETELE,TRIM也可以)
+  declare
+    type name_varray_type is varray(4) of varchar2(10);
+    name_array name_varray_type;
+    name_empty name_varray_type;
+  begin
+    name_array:=name_varray_type('scott','smith');
+    dbms_output.put_line('name_array的原有元素个数:'||name_array.count);
+    name_array:=name_empty;
+    if name_array is null then     
+       dbms_output.put_line('name_array的现有元素个数:0');
+    end if;
+  end;
+ 
+  3.使用集合操作符给嵌套表赋值
+   
+    1.使用SET操作符:用于取消特定嵌套表中的重复值.
+  declare
+    type nt_table_type is table of number;
+    nt_table nt_table_type:=nt_table_type(2,4,3,1,2);
+    result nt_table_type;
+  begin
+    result:=set(nt_table);
+    dbms_output.put('result:');
+    for i in 1..result.count loop
+      dbms_output.put(' '||result(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+    2.使用MULTISET UNION操作符:取得两个嵌套表的并集.结果集中会包含重复值
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3);
+    nt2 nt_table_type:=nt_table_type(3,4,5);
+    result nt_table_type;
+  begin
+    result:=nt1 multiset union nt2;
+    dbms_output.put('result:');
+    for i in 1..result.count loop
+      dbms_output.put(' '||result(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+  3.使用MULTISET UNION DISTINCT操作符:用于取得两个嵌套表的并集,并取消重复结果.
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3);
+    nt2 nt_table_type:=nt_table_type(3,4,5);
+    result nt_table_type;
+  begin
+    result:=nt1 multiset union distinct nt2;
+    dbms_output.put('result:');
+    for i in 1..result.count loop
+      dbms_output.put(' '||result(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+  4.使用MULTISET INTERSECT操作符:用于取得两个嵌套表的交集
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3);
+    nt2 nt_table_type:=nt_table_type(3,4,5);
+    result nt_table_type;
+  begin
+    result:=nt1 multiset intersect nt2;
+    dbms_output.put('result:');
+    for i in 1..result.count loop
+      dbms_output.put(' '||result(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+  5.使用MULTISET EXCEPT操作符:取得两个嵌套表的差集.在NT1中存在,但在NT2中不存在
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3);
+    nt2 nt_table_type:=nt_table_type(3,4,5);
+    result nt_table_type;
+  begin
+    result:=nt1 multiset except nt2;
+    dbms_output.put('result:');
+    for i in 1..result.count loop
+       dbms_output.put(' '||result(i));
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+  8.4比较集合
+  函数cardinality用于返回嵌套表变量的元素个数  
+  操作符SUBMULTISET OF用于确定一个嵌套表是否为另一个嵌套表的子集
+  操作符MEMBER OF用于检测特定数据是否为嵌套表元素
+  操作符IS A SET用于检测嵌套表是否包含重复的元素值
+  操作符IS EMPTY用于检测嵌套表是否为NULL.
+ 
+  1.检测集合是否为NULL
+  declare
+    type name_table_type is table of varchar2(10);
+    name_table name_table_type;
+  begin
+    if name_table is empty then
+       dbms_output.put_line('name_table未初始化');
+    end if;
+  end;
+ 
+  2.比较嵌套表是否相同
+  使用比较符=和!=检测两个嵌套表是否相同.不能比较VARRAY和索引表
+  declare
+    type name_table_type is table of varchar2(10);
+    name_table1 name_table_type;
+    name_table2 name_table_type;
+  begin
+    name_table1:=name_table_type('scott');
+    name_table2:=name_table_type('smith');
+    if name_table1=name_table2 then
+      dbms_output.put_line('两个嵌套表完全相同');
+    else
+      dbms_output.put_line('两个嵌套表数值不同');
+    end if;
+  end;
+ 
+  3.在嵌套表上使用集合操作符
+    在嵌套表上使用ANSI集合操作符CARDINALITY,MEMBER OF, IS A SET.不适用于VARRAY和索引表
+    使用函数CARDINALITY
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3,1);
+  begin
+    dbms_output.put_line('元素个数:'||cardinality(nt1));
+  end;
+ 
+    使用操作符SUBMULTISET OF:用于确定一个嵌套表是否为另一个嵌套表的子集.
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3);
+    nt2 nt_table_type:=nt_table_type(1,2,3,4);
+  begin
+    if nt1 submultiset of nt2 then
+       dbms_output.put_line('nt1是nt2的子集);
+    end if;
+  end;
+ 
+  使用操作符MEMBER OF :用于检测特定数据是否为嵌套表的元素.
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3,5);
+    v1 number:=&v1;
+  begin
+    if v1 member of nt1 then
+      dbms_output.put_line('v1是nt1的元素');
+    end if;
+  end;
+ 
+  使用操作符IS A SET:用于检测嵌套表是否包含重复的元素值
+  declare
+    type nt_table_type is table of number;
+    nt1 nt_table_type:=nt_table_type(1,2,3,5);
+  begin
+    if nt1 is a set then
+      dbms_output.put_line('嵌套表NT1无重复值');
+    end if;
+  end;
+ 
+ 
+ 
+ 
+  8.5批量绑定
+  当在select,insert,update,delete语句上处理批量数据时,通过批量绑定,可以极大的加快数据处理速度,提高应用程序性能
+  批量绑定是使用BULK COLLECT子句和FORALL语句来完成的
+  BULK COLLECT 子句用于取得批量数据,该子句只能用于SELECT语句,FETCH语句和DML返回子句
+  FORALL只适用于执行批量的DML操作
+ 
+  1.不使用批量绑定
+  declare
+    type id_table_type is table of number(6) index by binary_integer;
+    type name_table_type is table of varchar2(10) index by binary_integer;
+    id_table id_table_type;
+    name_table name_table_type;
+    start_time number(10);
+    end_time number(10);
+  begin
+    for i in 1..5000 loop
+       id_table(i):=i;
+       name_table(i);='name'||to_char(i);
+    end loop;
+    start_time:=dbms_utility.get_time;
+    for i in 1..id_table.count loop
+        insert into demo values(id_table(i),name_table(i));
+    end loop;
+    end_time:=dbms_utility.get_time;
+    dbms_output.put_line('总计时间(秒):'||to_char((end_time-start_time)/100));
+  end;
+ 
+  2.使用批量绑定
+   declare
+    type id_table_type is table of number(6) index by binary_integer;
+    type name_table_type is table of varchar2(10) index by binary_integer;
+    id_table id_table_type;
+    name_table name_table_type;
+    start_time number(10);
+    end_time number(10);
+  begin
+    for i in 1..5000 loop
+       id_table(i):=i;
+       name_table(i);='name'||to_char(i);
+    end loop;
+    start_time:=dbms_utility.get_time;
+    forall i in 1..id_table.count
+       insert into demo values(id_table(i),name_table(i));
+    end_time:=dbms_utility.get_time;
+    dbms_output.put_line('总计时间(秒):'||to_char((end_time-start_time)/100));
+  end;
+ 
+ 
+  8.6 FORALL语句
+  执行批量insert,update,delete操作时,使用forall语句,FORALL不是循环语句
+  oracle9i当使用FORALL语句时,必须具有连续的元素
+  oracle10g通过使用indices of和values of子句,可以使用不连续的集合元素.
+  forall三种执行语法:
+  forall index in lower_bound..upper_bound sql_statement;
+  forall index in indices of collection [between lower_bond.and.upper_bound] sql_statement;
+  forall index in values of index_collection sql_statement;
+ 
+  1.在insert语句上使用批量绑定
+  declare
+    type id_table_type is table of number(6) index by binary_integer;
+    type name_table_type is table of varchar2(10) index by binary_integer;
+    id_table id_table_type;
+    name_table name_table_type;
+  begin
+    for i in 1..10 loop
+      id_table(i):=i;
+      name_table(i):='name'||to_char(i);
+    end loop;
+    forall i in 1..id_table.count
+        insert into demo values(id_table(i),name_table(i));
+  end;
+ 
+  2.在update语句上使用批量绑定
+   declare
+    type id_table_type is table of number(6) index by binary_integer;
+    type name_table_type is table of varchar2(10) index by binary_integer;
+    id_table id_table_type;
+    name_table name_table_type;
+  begin
+    for i in 1..5 loop
+      id_table(i):=i;
+      name_table(i):='n'||to_char(i);
+    end loop;
+    forall i in 1..id_table.count
+       update demo set name=name_table(i) where id=id_table(i);
+  end;
+ 
+  3.在DELETE语句上使用批量绑定
+  declare
+    type id_table_type is table of number(6) index by binary_integer;
+    id_table id_table_type;
+  begin
+    for i in 1..3 loop
+      id_table(i):=i;
+    end loop;
+    forall i in 1..id_table.count
+      delete from demo where id=id_table(i);
+  end;
+ 
+  4.在FORALL语句中使用部分集合元素
+  declare
+    type id_table_type is table of number(6) index by binary_integer;
+    id_table id_table_type;
+  begin
+    for i in 1..10 loop
+      id_table(i):=11-i;
+    end loop;
+    forall i in 8..10
+       insert into demo (id) values (id_table(i));
+  end;
+ 
+  5.在FORALL语句上使用INDECES OF子句:用于跳过NULL集合元素
+  declare
+    type id_table_type is table of number(6);
+    id_table id_table_type;
+  begin
+    id_table:=id_table_type(1,null,3,null,5);
+    forall i in indices of id_table
+       delete from demo where id=id_table(i);
+  end;
+ 
+  6.在FORALL语句上使用VALUES OF子句
+  create table new_demo as select * from demo where 1=0
+  declare
+    type id_table_type is table of demp.id%type;
+    type name_table_type is table of demo.name%type;
+    id_table id_table_type;
+    name_table name_table_type;
+    type index_pointer_type is table of pls_integer;
+    index_pointer index_pointer_type;
+  begin
+    select * bulk collect into id_table,name_table from demo;
+    index_pointer:=index_pointer_type(6,8,10);
+    forall i in values of index_pointer
+        insert into new_demo values(id_table(i),name_table(i));
+  end;
+ 
+  7.使用SQL%BULK_ROWCOUNT属性:专门为FORALL语句提供,用于取得在执行批量绑定操作时第i个元素所作用的行数
+  declare
+    type dno_table_type is table of number(3);
+    dno_table dno_table_type:=dno_table_type(10,20);
+  begin
+    forall i in 1..dno_table.count
+       update emp set sal=sal*1.1 where deptno=dno_table(i);
+       dbms_output.put_line('第2个元素更新的行数:'||sql%bulk_rowcount(2));
+  end;
+ 
+ 
+  8.7 BULK COLLECT子句
+  用于取得批量数据，只适用于select into 语句,fetch into 语句和DML返回子句
+  可将批量数据存放到PL/SQL集合变量中
+  1.在select into 语句中使用BULK COLLECT 子句:可以一次将SELECT语句的多行结果检索到集合变量中
+  declare
+    type emp_table_type is table of emp%rowtype index by binary_integer;
+    emp_table emp_table_type;
+  begin
+    select * bulk collect into emp_table from emp where deptno=&no;
+    for i in 1..emp_table.count loop
+       dbms_output.put_line('雇员姓名:'||emp_table(i).ename);
+    end loop;
+  end;
+ 
+  2.在DML的返回语句中使用BULK COLLECT子句
+  为了取得DML操作所改变的数据,可以使用RETURNING子句.
+  declare
+    type ename_table_type is table of emp.ename%type;
+    ename_table ename_table_type;
+  begin
+    delete from emp where deptno=&no;
+      returning ename bulk collect into ename_table;
+    dbms_output.put('雇员名');
+    for i in 1..ename_table.count loop
+       dbms_output.put(ename_table(i)|| ' ');
+    end loop;
+    dbms_output.new_line;
+  end;
+ 
+ 
+ 
+ 
+9.使用游标
+  9.1当在PL/SQL块中执行查询语句SELECT和数据操纵语句DML时,ORACLE会为其分配上下文区(CONTEXT AREA),游标指上下文区指针
+  对于数据操纵语句和单行SELECT INTO语句来说,ORACLE会为他们分配隐含游标.
+  使用显示游标处理多行数据,也可使用SELECT..BULK COLLECT INTO 语句处理多行数据.
+ 
+  1.显示游标
+    定义游标
+    cursor cursor_name is select_statement;
+  2.打开游标:执行对应的SELECT语句并将SELECT语句的结果暂时存放到结果集中.
+    open cursor_name;
+  3.提取数据
+    打开游标后,SELECT语句的结果被临时存放到游标结果集中,使用FETCH语句只能提取一行数据
+    通过使用FETCH..BULK COLLECT INTO语句每次可以提取多行数据
+    fetch cursor_name into variable1,varibale2,...;
+    fetch cursor_name bulk collect into collect1,collect2,...[limit rows];
+  4.关闭游标
+    close cursor_name;
+ 
+  9.2显示游标属性
+    用于返回显示游标的执行信息,包括%isopen,%found,%notfound,%rowcount
+  1.%isopen:确定游标是否打开 if cl%isopen then ... else  open c1; end if;
+  2.%found:检查是否从结果集中提取到了数据
+    loop
+      fetch c1 into var1,var2;
+      if c2%found then ... else exit;
+    end loop;
+  3.%notfound
+    loop
+       fetch c1 into var1,var2;
+       exit when c2%notfound;
+       ...
+    end loop;
+  4.%rowcount:返回当前行为止已经提取到的实际行数
+    loop
+      fetch c1 into my_ename,my_deptno;
+      if c1%rowcount>10 then
+      ...
+      end if;
+      ...
+    end loop;
+ 
+  9.3显示游标使用示例
+  1.在显示游标中使用fetch..into语句:只能处理一行数据,除非用循环语句
+  declare
+    cursor emp_cursor is select ename,sal from emp where deptno=10;
+    v_ename emp.ename%type;
+    v_sal emp.sal%type;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into v_ename,v_sal;
+      exit when emp_cursor%notfound;
+      dbms_output.put_line(v_ename||': '||v_sal);
+   end loop;
+   close emp_cursor;
+  end;
+ 
+  2.在显示游标中,使用FETCH..BALK COLLECT INTO语句提取所有数据
+  declare
+    cursor emp_cursor is select ename from emp where deptno=10;
+    type ename_table_type is table of varchar2(10);
+    ename_table ename_table_type;
+  begin
+    open emp_cursor;
+    fetch emp_cursor bulk collect into ename_table;
+    for i in 1..ename_table.count loop
+        dbms_output.put_line(ename_table(i));
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  3.在显示游标中使用FETCH..BULK COLLECT INTO ..LIMIT语句提取部分数据
+  declare
+    type name_array_type is varray(5) of varchar2(10);
+    name_array name_array_type;
+    cursor emp_cursor is select ename from emp;
+    rows int:=5;
+    v_count int:=0;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor bulk collect into name_array limit rows;
+      dbms_output.pur('雇员名');
+      for i in 1..(emp_currsor%rowcount-v_count) loop
+        dbms_output.put(name_array(i)||' ');
+      end loop;
+      dbms_output.new_line;
+     v_count:=emp_cursor%rowcount;
+     exit when emp_cursor%notfound;
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  4.使用游标属性
+  declare
+    cursor emp_cursor is select ename from emp where deptno=10;
+    type ename_table_type is table of varchar2(10);   
+    ename_table ename_table_type;
+  begin
+    if not emp_cursor%isopen then
+       open emp_cursor;
+    end if;
+    fetch emp_cursor bulk collect into ename_table;
+    dbms_output.put_line('提取的总计行数:'||emp_cursor%rowcount);
+    close emp_cursor;
+  end;
+ 
+  5.基于游标定义记录变量
+  declare
+    cursor emp_cursor is select ename,sal from emp;
+    emp_record emp_cursor%rowtype;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into emp_record;
+      exit when emp_cursor%notfound;
+      dbms_output.put_line('雇员名:'||emp_record.ename||',雇员工资:'||emp_record.sal);
+    end loop;
+  end;
+ 
+ 
+  9.4参数游标
+  定义参数游标时,游标参数只能指定数据类型,而不能指定长度.
+  cursor cursor_name(parameter_name datatype) is select_statment;
+  declare
+    cursor emp_cursor(no number) is select ename from emp where deptno=no;
+    v_ename emp.ename%type;
+  begin
+    open emp_cursor(10);
+    loop
+      fetch emp_cursor into v_ename;
+      exit when emp_cursor%notfound;
+      dbms_output.put_line(v_ename);
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  9.5使用游标更新或删除数据
+  要通过游标更新或删除数据,在定义游标时必须要带有FOR UPDATE子句
+  cursor cursor_name(parameter_name datetype) is select_statement for update [of column_reference] [nowait];
+  for update子句用于在游标结果集数据上家行共享锁,防止其他用户在相应行执行DML操作
+  of子句确定哪些表要加锁,没有OF子句,则在所引用的全部表上加锁
+  nowait子句用于指定不等待锁
+  必须在UPDATE后DELETE语句中引用WHERE CURRENT OF子句
+  update table_name set column=.. where current of cursor_name;
+  delete table_name where current of cursor_name;
+ 
+ 
+  1.使用游标更新数据
+  declare
+    cursor emp_cursor is select ename,sal from emp for update;
+    v_ename emp.ename%type;
+    v_sal emp.sal%tyep;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into v_ename,v_oldsal;
+      exit when emp_cursor%notfound;
+      if v_oldsal<2000 then
+         update emp set sal=sal+100 where current of emp_cursor;
+      end if;
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  2.使用游标删除数据
+  declare
+    cursor emp_cursor is select ename,sal,deptno from emp for update;
+    v_ename emp.ename%type;
+    v_oldsal emp.sal%type;
+    v_deptno emp.deptno%type;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into v_ename,v_oldsal,v_deptno;
+      exit when emp_cursor%notfound;
+      if v_deptno=30 then
+         delete from emp where current of emp_cursor;
+      end if;
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  3.使用OF子句在特定表上加行共享锁
+  declare
+    cursor emp_cursor is select ename,sal,dname,emp.deptno from emp,dept where emp.deptno=dept.deptno
+    for update of emp.deptno;
+    emp_record emp_cursor%type;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into emp_record;
+      exit when emp_cursor%notfound;
+      if emp_record.deptno=30 then
+         update emp set sal=sal+100 where current of emp_cursor;
+      end if;
+      dbms_output.put_line('雇员名:'||emp_record.ename||',工资:'||emp_record.sal||',部门名:'||emp_record.dname);
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  4.使用nowait子句
+  通过在FOR UPDATE子句中指定NOWAIT语句,可以避免等待锁.若已经被作用行加锁,则提示错误信息
+  declare
+    cursor emp_cursor is select ename,sal from emp for update nowait;
+    v_ename emp.ename%type;
+    v_oldsal emp.sal%type;
+  begin
+    open emp_cursor;
+    loop
+      fetch emp_cursor into v_ename,v_sal;
+      exit when emp_cursor%notfound;
+      if v_oldsal<2000 then
+        update emp set sal=sal+100 where current of emp_cursor;
+      end if;
+    end loop;
+    close emp_cursor;
+  end;
+ 
+ 
+ 
+  9.6游标FOR循环
+  使用FOR循环时,ORACLE会隐含的打开游标,提取游标数据并关闭游标
+  for record_name in cursor_name loop
+      statement1;
+      statement2;
+      ...
+  end loop;
+  每循环一次提取一次数据，在提取了所有数据后,自动退出循环并隐含的关闭游标
+  1.使用游标FOR循环 
+  declare
+    cursor emp_cursor is select ename,sal from emp;
+  begin
+    for emp_record in emp_cursor loop
+      dbms_output.put_line('第'||emp_curosr%rowcount||'个雇员: '||emp_record.ename);
+    end loop;
+  end;
+ 
+  2.在游标FOR循环中直接使用子查询
+  begin
+    for emp_record in (select ename,sal from emp) loop
+      dbms_output.put_line(emp_record.ename);
+    end loop;
+  end;
+ 
+  9.7使用游标变量
+  PL/SQL的游标变量中存放着指向内存地址的指针.
+ 
+  1.游标变量使用步骤
+    包括定义游标变量,打开游标,提取游标数据,关闭游标等四个阶段
+  1.1定义ref cursor类型和游标变量
+  type ref_type_name is ref cursor [return return_type];
+  cursor_varibale ref_type_name;
+  当指定RETURN子句时,其数据类型必须是记录类型,不能在包内定义游标变量
+  1.2打开游标
+  open cursor_variable for select_statement;
+  1.3提取游标数据
+  fetch cursor_varibale into variable1,variable2,...;
+  fetch cursor_varibale bulk collect into collect1,collect2,...[limit rows]
+  1.4关闭游标变量
+  close cursor_varibale;
+ 
+  2.游标变量使用示例
+  2.1在定义FEF CURSOR类型时不指定RETURN子句
+  在打开游标时可以指定任何的SELECT语句
+  declare
+    type emp_cursor_type is ref cursor;
+    emp_cursor emp_cursor_type;
+    emp_record emp%rowtype;
+  begin
+    open emp_cursor for select * from emp where deptno=10;
+    loop
+      fetch emp_cursor into emp_record;
+      exit when emp_cursor%notfound;
+      dbms_output.put_line('第'||emp_curosr%rowcount||'个雇员: '||emp_record.ename);
+    end loop;
+    close emp_cursor;
+  end;
+ 
+  2.2在定义REF CURSOR类型时指定RETURN子句
+  在打开游标时SELECT语句的返回结果必须与RETURN子句所指定的记录类型相匹配.
+  declare
+    type emp_record_type is record(name varchar2(10),salary number(6,2));
+    type emp_cursor_type is ref cursor return emp_record_type;
+    emp_cursor emp_cursor_type;
+    emp_record emp_record_type;
+  begin
+    open emp_cursor for select ename,sal from emp where deptno=20;
+    loop
+      fetch emp_cursor into emp_record;
+      exit when emp_cursor%notfound;
+      dbms_output.put_line('第'||emp_curosr%rowcount||'个雇员: '||emp_record.ename);
+    end loop;
+    close emp_cursor;
+  end;
+ 
+ 
+ 
+  9.7使用CURSOR表达式
+  CURSOR表达式用于返回嵌套游标
+  结果集不仅可以包含普通数据,而且允许包含嵌套游标的数据
+  cursor(subquery)
+ 
+  declare
+    type refcursor is ref cursor;
+    cursor dept_cursor(no number) is select a.dname,cursor(select ename,sal from emp where deptno=a.deptno)
+    from dept a where a.deptno=no;
+    empcur refcursor;
+    v_dname dept.dname%type;
+    v_ename emp.ename%type;
+    v_sal emp.sal%type;
+  begin
+    open dept_cursor(&no);
+    loop
+      fetch dept_cursor into v_danme,empcur;
+      exit when dept_cursor%notfound;
+      dbms_output.put_line('部门名:'||v_dname);
+      loop
+        fetch empcur into v_ename,v_sal;
+        exit when empcur%notfound;
+        dbms_output.put_line('雇员名:'||v_ename||',工资:'||v_sal);
+      end loop;
+    end loop;
+    close dept_cursor;
+  end;
+ 
+ 
+ 
+   
+  10开发子程序:过程和函数
+  过程:执行特定操作
+  函数:用于返回特定数据
+  
+  10.1过程
+  语法:create [or replace] procedure procedure_name(argument1 [model] datatype1,arguement2 [mode2],...)
+       is [as]
+       pl/sql block;
+ 
+  1.建立过程:不带任何参数
+  create or replace procecdure out_time
+  is
+  begin
+    dbms_output.put_line(systimestemp);
+  end;
+  2.调用过程
+  set serveroutput on
+  exec out_time
+ 
+  set serveroutput on
+  call out_time();
+ 
+  3.建立过程:带有IN参数
+  create or replace procedure add_employee
+  (eno number,name varchar2,sal number,job varchar2 default 'clerk',dno number)
+  is
+  e_integrity exception;
+  pragma exception_init(e_integrity,-2291);
+  begin
+    insert into imp(empno,ename,sal,job,deptno) valres(eno,name,sal,job,dno);
+  exception
+    when dup_val_on_index then
+      raise_application_error(-20000,'雇员号不能重复');
+    when e_integrity then
+      raise_application_error(-20001,'部门不存在');
+  end;
+ 
+  exec add_employee(1111,'clark',2000,'manager',10)
+ 
+  4.建立过程:带有OUT参数
+  create or replace procedure query_employee
+  (eno number,name out varchar2,salary out number)
+  is
+  begin
+    select ename,sal into name,salary from emp where empno=eno;
+  exception
+    when no_date_found then
+      raise_application_error(-20000,'该雇员不存在');
+  end;
+  当在应用程序中调用该过程时,必须要定义变量接受输出参数的数据
+  sql>var name varchar2(10)
+      var salary number
+      exec query_employee(7788,:name,:salary)
+      print name salary
+ 
+ 
+  5.建立过程:带有IN OUT参数(输入输出参数)
+  create or replace procedure compute
+  (num1 in out number,num2 in out number)
+  is
+    v1 number;
+    v2 number;
+  begin
+    v1:num1/num2;
+    v2:mod(num1,num2);
+    num1:=v1;
+    num2:=v2;
+  end;
+ 
+  sql>var n1 number
+      var n2 number
+      exec :n1:=100
+      exec :n2:=30
+      exec ecmpute(:n1,:n2)
+      print n1 n2
+ 
+  6.为参数传递变量和数据
+    位置传递,名称传递,组合传递三种
+    1.位置传递:在调用子程序时按照参数定义的顺序为参数指定相应的变量或数值
+      exec add_dept(40,'sales','new york');
+      exec add_dept(10);
+    2.名称传递:在调用子程序时指定参数名,并使用关联符号=>为其提供相应的数值或变量
+      exec add_dept(dname=>'sales',dno=>50);
+      exec add_dept(dno=>30);
+    3.组合传递:同时使用位置传递和名称传递
+      exec add_dept(50,loc=>'new york');
+      exec add_dept(60,dname=>'sales',loc=>'new york');
+ 
+  7.查看过程原代码
+    oracle会将过程名,源代码以及其执行代码存放到数据字典中.执行时直接按照其执行代码执行
+    可查询数据字典(user_source)
+    select text from user_source where name='add_dept';
+ 
+    删除过程
+    drop procedure add_dept;
+ 
+  
+ 
+  10.2函数
+  用于返回特定函数
+  语法:create [or replace] function function_name
+              (argument1 [mode1] datatype1,
+               argument2 [mode2] datatype2,
+               .....)
+       return datatype       --函数头部必须要带有RETURN子句,至少要包含一条RETURN语句
+       is|as  pl/sql block;
+  
+  1.建立函数:比带任何参数
+  create or replace function get_user
+  return varchar2
+  is
+    v_user varchar2(100);
+  begin
+    select username into v_user from user_users;
+    return v_user;
+  end;
+ 
+  2.使用变量接受函数返回值
+    sql>var v1 varchar2(100)
+        exec :v1:=get_user
+        print v1
+    在SQL语句中直接调用函数
+    select get_user from dual;
+    使用DBMS_OUTPUT调用函数
+    set serveroutput on
+    exec dbms_output.put_line('当前数据库用户:'||ger_user)
+ 
+  3.建立函数:带有IN参数
+    create or replace function get_sal(name in varchar2)
+    return number
+    as
+      v_sal emp.sal%type;
+    begin
+      select sal into v_sal from emp where upper(ename)=upper(name);
+      return v_sal;
+    exception
+      when no_data_found then
+        raise_application_error(-20000,'该雇员不存在');
+    end;
+ 
+  4.建立函数:带有out参数
+  create or replace function get_info(name varchar2,title out varchar2)
+  return varchar2
+  as
+    deptname dept.dname%type;
+  begin
+    select a.job,b.dname into title,deptname from emp a,dept b and a.deptno=b.deptno
+    and upper(a.ename)=upper(name);
+    return deptname
+  exception
+    when no_data_found then
+      raise_application_error(-20000,'该雇员不存在');
+  end;
+ 
+  sql>var job varchar2(20)
+      var dname varchar2(20)
+      exec :dname:=get_info('scott',:job)
+      print danme job
+ 
+  5.建立函数:带有IN OUT参数
+  create or replace function result(num1 number,num2 in out number)
+  return number
+  as
+    v_result number(6);
+    v_remainder number;
+  begin
+    v_result:=num1/num2;
+    v_remainder:=mod(num1,num2);
+    num2:=v_remainder;
+    return v_result;
+  exception
+    when zero_divide then
+      raise_application_error(-20000,'不能除0');
+  end;
+ 
+  sql>var result1 number
+      var result2 number
+      exec :result2:=30
+      exec :result1:=result(100,:result2)
+      print result result2
+ 
+  6.函数调用限制
+  SQL语句中只能调用存储函数(服务器端),而不能调用客户端的函数
+  SQL只能调用带有输入参数,不能带有输出,输入输出函数
+  SQL不能使用PL/SQL的特有数据类型(boolean,table,record等)
+  SQL语句中调用的函数不能包含INSERT,UPDATE和DELETE语句
+ 
+  7.查看函数院源代码
+  oracle会将函数名及其源代码信息存放到数据字典中user_source
+  set pagesize 40
+  select text from user_source where name='result';
+  8.删除函数
+  drop function result;
+ 
+ 
+ 
+  10.3管理子程序
+  1.列出当前用户的子程序
+  数据字典视图USER_OBJECTS用于显示当前用户所包含的所有对象.(表,视图,索引,过程,函数,包)
+  sql>col object_name format a20
+      select object_name,created,status from user_objects where object_type in ('procedure','function')
+     
+  2.列出子程序源代码
+  select text from user_source where name='raise_salsry';
+ 
+  3.列出子程序编译错误
+  使用SHOW ERRORS命令确定错误原因和位置
+  show errors procedure raise_salary
+ 
+  使用数据字典视图USER_ERRORS确定错误原因和位置
+  col text format a50
+  select line||'/'||position as "line/col",text error from user_errors where name='raise_salary';
+ 
+  4.列出对象依赖关系
+  使用数据字典视图USER_DEPENDENCIES确定直接依赖关系
+  select name,type from user_dependencies where referenced_name='emp';
+ 
+  使用工具视图DEPTREE和IDEPTREE确定直接依赖和间接依赖关系
+  先运行SQL脚本UTLDTREE.SQL来建立这两个视图和过程DEPTREE_FILL,然后调用DEPTREE_FILL填充这两个视图
+  sql>@%oracle_home%\rdbms\admin\utldtree
+      exec deptree_fill('TABLE','scott','emp')
+  执行后会将直接或间接依赖于SCOTT.EMP表的所有对象填充到视图DEPTREE和IDEPTREE中.
+      select nested_level,name,type from deptree;
+      select * from ideptree
+ 
+  5.重新编译子程序
+  当修改了被引用对象的结构时,就会将相关依赖对象转变为无效(INVALID)状态。
+  alter table emp add remark varchar2(10);
+  select object_name,object_type from user_objects where status='invalid';
+  为了避免子程序的运行错误,应该重新编译这些存储对象
+  alter procedure add_employee compile;
+  alter view dept10 compile;
+  alter function get_info compile;
+ 
+ 
+ 
+ 
+  11.开发包
+  包用于逻辑组合相关的PL/SQL类型,项和子程序,由包规范和包体组成
+  1.建立包规范:包规范是包与应用程序之间的接口,用于定义包的公用组件,包括常量,变量,游标,过程,函数等
+  create [or replace] package package_name
+  is|as
+     public type and item declarations
+     subprogram specificationsend package_name;
+ 
+  create or replace package emp_package is
+    g_deptno number(3):=30;
+    procedure add_employee(eno number,name varchar2,salary number,dno number default g_deptno);
+    procedure fire_employee(eno number);
+    function get_sal(eno number) return number;
+  end emp_package;
+ 
+  2.建立包体:用于实现包规范所定义的过程和函数
+  create [or replace] package body package_name
+  is|as
+     private type and item declarations
+     subprogram bodies
+  end package_name;
+ 
+  create or repalce package body emp_package is
+ 
+    function validate_deptno(v_deptno number)
+      return boolean
+    is
+      v_temp int;
+    begin
+      select 1 into v_temp from dept where deptno=v_deptno;
+      return true;
+    exception
+      when no_date_found then
+        return false;
+    end;
+ 
+ 
+    procedure add_employee(eno number,name varchar2,salary number,dno number default g_deptno)
+    is
+    begin
+      if validate_deptno(dno) then
+         insert into emp(empno,ename,sal,deptno) values(eno,name,salsry,dno);
+      else
+         raise_application_error(-20010,'不存在该部门');
+      end if;
+    exception
+      when dup_val_on_index then
+         raise_application_error(-20012,'该雇员已存在');
+    end;
+ 
+ 
+    procedure fire_employee(eno number) is
+    begin
+      delete from emp where empno=eno;
+      if sql%notfound then
+         raise_application_error(-20012,'该雇员不存在');
+      end if;
+    end;
+   
+    function get_sal(eno number) return number
+    is
+      v_sal emp.sal%type;
+    begin
+      select sal into v_sal from emp where empno=eno;
+      return v_sal;
+    exception
+      when no_data_found then
+        raise_application_error(-20012,'该雇员不存在');
+    end;
+  end emp_package;
+ 
+  3.调用包组件
+  3.1在同一个包内调用包组件
+  create or replace package body emp_package is
+ 
+  procedure add_employee(eno number,name vauchar2,salary number,dno number default g_deptno)
+  is
+  begin
+    if validate_deptno(dno) then
+       insert into emp(empno,ename,sal,deptno) values(eno,name,salary,dno);
+    else
+       raise_application_error(-20010,'该部门不存在')
+    end if;
+    exception
+      when dup_val_on_index then
+       raise_application_error(-20011,'该雇员已存在')
+    end;
+    .........
+ 
+  3.2调用包公用变量
+  exec emp_package.g_deptno:=20
+  3.3调用包公用过程
+  exec emp_package.add_employee(1111,'mary',2000)
+  3.4调用包公用函数
+  var salary number
+  exec :salary:=emp_package.get_sal(7788)
+  print salary
+  3.5以其他用户身份调用包公用组件
+  conn system/manager
+  exec scott.emp_package.add_employee(1115,'scott',1200)
+  exec scott.emp_package.fire_employee(1115)
+  3.6调用远程数据库包的公用组件
+  exec emp_package.add_employee@orasrv(1116,'scott',1200)
+ 
+  4.查看源代码:存放在数据字典USER_SCOURCE中
+  select text from user_source where name='emp-package' and type='package';
+  5.删除包
+  drop package emp_package;
+ 
+ 
+  6.使用包重载
+  重载(overload)是指多个具有相同名称的子程序
+  1.建立包规范  
+  同名的过程和函数必须具有不同的输入参数,同名函数返回值的数据类型必须完全相同
+  create or replace package overload is
+    function get_sal(eno number) return number;
+    function get_sal(name varchar2) return number;
+    procedure file_employee(eno number);
+    procedure file_employee(name varchar2);
+  end;
+ 
+  2.建立包体
+  必须要给不同的重载过程和重载函数提供不同的实现代码
+  create or replace package body overload is
+  
+    function get_sal(eno number) return number
+    is
+      v_sal emp.sal%type;
+    begin
+      select sal into v_sal from emp where empno=eno;
+      return v_sal;
+    exception
+      when no_data_found then
+        raise_application_error(-20020,'该雇员不存在');
+    end;
+ 
+    function get_sal(name varchar2) return  number
+    is
+      v_sal emp.sal%type;
+    begin
+      select sal into v_sal from emp where upper(ename)=upper(name);
+      return v_sal;
+    exception
+      when no_data_found then
+        raise_application_error(-20020,'该雇员不存在');
+    end;
+ 
+    procedure fire_employee(eno number) is
+    begin
+      delete from emp where empno=no;
+      if sql%notfound then
+        raise_application_error(-20020,'该雇员不存在');
+      end if;
+    end;
+ 
+    procedure fire_employee(name varchar2) is
+    begin
+      delete from emp where upper(ename)=upper(name);
+      if sql%notfound then
+        raise_application_error(-20020,'该雇员不存在');
+      end if;
+    end;
+  end;
+ 
+  3.调用重载过程和重载函数
+  var sal1 number
+  var sal2 number
+  exec :sal1:=overload.get_sal('scott')
+  exec :sal2:=overload.get_sal(7685)
+  exec overload.fire_employee(7369)
+  exec overload.fire_employee('scott')
+ 
+  7.使用包构造过程
+  类似于高级语言中的构造函数和构造方法
+  1.建立包规范
+  包的构造过程用于初始化包的全局变量.
+  create or replace package emp_package is
+    minsal number(6,2);
+    maxsal number(6,2);
+    procedure add_employee(eno number,name varchar2,salary number,dno number);
+    procedure upd_sal(eno number,salary number);
+    procedure upd_sal(name varchar2,salary number);
+  end;
+ 
+  2.建立包体
+  包的构造过程没有任何名称,它是实现了包的其他过程后,以BEGIN开始,END结束的部分
+  create or replace package body emp_package is
+   
+    procedure add_employee(eno number,name varchar2,salary number,dno number)
+    is
+    begin
+    if salary between minsal and maxsal then
+      insert into emp (empno,ename,sal,deptno) values(eno,name,salary,dno);
+    else
+      raise_application_error(-20001,'工资不在范围内');
+    end if;
+    exception
+      when dup_val_on_index then
+        raise_application_error(-20002,'该雇员已经存在');
+    end;
+ 
+    procedure upd_sal(eno number,salary number) is
+    begin
+      if salary between minsal and maxsal then
+         update emp set sal=salary where empno =eno;
+         if sql%notfound then
+           raise_application_error(-20003,'不存在雇员号');
+         end if;
+      else
+         raise_application_errpr(-20001,'工资不在范围内');
+      end if;
+   end;
+   procedure upd_sal(name varchar2,salary number) is
+   begin
+     if salary between minsal and maxsal then
+        update emp set sal=salary where upper(ename)=upper(name);
+        if sql%notfound then
+            raise_application_error(-20004,'不存在该雇员名');
+        end if;
+     else
+        raise_application_error(-20001,'工资不在范围内');
+     end if;
+   end;
+  begin
+    select mi(sal),max(sal) into minsal,maxsal from emp ;
+  end;
+ 
+  调用包公用组件:构造过程只调用一次
+  exec emp_package.add_employee(1111,'mary',3000,20)
+  exec emp_package.upd_sal('mary',2000)
+ 
+ 
+ 
+  8.使用纯度级别
+  在SQL中引用包的公用函数，该公用函数不能包含DML语句(insert,update,delete),也不能读写远程包的变量
+  为了对包的公用函数加以限制,在定义包规范时,可以使用纯度级别(purity level)限制公用函数
+  语法:pragma restrict_references (function_name,wnds[,wnps][,rnds][,rnps]);
+  wnds:用于限制函数不能修改数据库数据(禁止DML)
+  wnps:用于限制函数不能修改包变量(不能给包变量赋值)
+  rnds:用于限制函数不能读取数据库数据(禁止SELECT操作)
+  rnps:用于限制函数不能读取包变量(不能将包变量赋值给其他变量)
+ 
+  1.建立包规范
+  create or replace package purity is
+    minsal number(6,2);
+    maxsal number(6,2);
+    function max_sal return number;
+    function min_sal return number;
+    pragma restrict_references(max_sal,wnps);--不能修改
+    pragma restrict_references(min_sal,wnps);
+  end;
+ 
+  2.建立包体
+  create or replace package body purity is
+   function max_sal return number
+   is
+   begin
+     return maxsal;
+   end;
+  
+   function min_sal return number
+   is
+   begin
+     return minsal;
+   end;
+  
+   begin
+     select min(sal),max(sal) into minsal,maxsal from emp;
+   end;
+ 
+   3.调用包的公用函数
+   var minsal number
+   var maxsal number
+   exec :minsal:=purity.minsal()
+   exec :maxsal:=purity.maxsal()
+   print minsal maxsal
+ 
+  
+ 
+ 
+  12.触发器
+  存放在数据库中，并被隐含执行的存储过程.
+  可基于表和视图的DML(INSERT,UPDATE,DELETE),系统事件(启动,关闭,登陆数据库)和DDL操作建立触发器.
+  触发器由触发事件,触发条件,触发操作三部分组成
+  1.1触发事件
+  启动和关闭数据库,ORACLE错误消息,用户登录和断开会话,特定表或视图的DML操作,在任何方案上的DDL语句
+ 
+  1.2.触发条件(可选)
+  指使用WHEN子句指定一个BOOLEAN表达式,返回为TRUE时,触发
+ 
+  1.3.触发操作
+  指包含SQL语句和其他执行代码的PL/SQL块.
+  触发器的代码大小不能超过32K.(可使用CALL语句调用存储过程)
+  出发器只能包含SELECT,INSERT,UPDATE,DELETE语句,不能包含DDL语句(CREATE,ALTER,DROP)和事务控制语句(COMMIT,ROLLBACK,SAVEPOINT)
+ 
+ 
+  2.建立DML触发器
+  当建立DML触发器时,需要指定触发时机(BEFORE,AFTER),触发事件(INSERT,UPDATE,DELETE),表名,触发类型,触发条件,操作.
+  2.1触发时机
+  指定触发器的触发时间,之前(BEFORE),之后(AFTER)
+  2.2触发事件
+  指定导致触发器执行的DML操作,也即INSERT,UPDATE,DELTE操作
+  2.3表名
+  必须指定DML操作所对应的表
+  2.4触发类型
+  指定触发事件发生后,需要执行几次触发操作,默认执行一次触发器代码
+  如果指定行触发类型,则会在每个被作用行上执行一次触发器代码
+  2.5触发条件
+  指定执行触发器代码的条件
+  当编写DML触发器时,只允许在行触发器上指定触发条件
+  2.6触发操作
+  指定触发器执行代码.(若使用PL/SQL,JAVA,或外部存储过程,可直接使用CALL调用相应过程)   
+  2.7DML触发器触发顺序
+  DML触发器在单行数据上的触发顺序
+  对于单行数据而言,无论是语句触发器,还是行触发器,触发器代码实际只被执行一次,顺序为:
+  before语句,before行,dml操作,after行,after语句
+ 
+  DML触发器在多行数据上的触发顺序
+  对于多行数据而言,语句触发器只被执行一次,而行触发器在每个作用行上都执行一次
+ 
+ 
+  3.语句触发器
+  当执行DML操作时会自动执行触发器的相应代码.
+  使用语句触发器时,不能记录列数据的变化
+  语法:create [or replace] trigger trigger_name
+       timing event1 [or event2 or event3]
+       on table_name
+       pl/sql block
+  3.1建立BEFORE语句触发器
+  create or replace trigger tr_sec_emp
+  before insert or update or delete on emp
+  begin
+    if to_char(sysdate,'DY','nls_date_language=AMERICAN') IN ('SAT','SUN') THEN
+       raise_application_error(-20001,'不能在休息日改变雇员信息');
+    end if;
+  end;
+ 
+  3.2使用条件谓词:inserting,updating,deleting是该操作时返回TRUE,否则FALSE
+  create or replace trigger tr_sec_emp
+  before insert or update or delete on emp
+  begin
+    if to_char(sysdate,'DY','nls_date_language=AMERICAN') IN ('SAT','SUN') THEN
+      CASE
+        WHEN INSERTING THEN
+          raise_application_error(-20001,'不能在休息日增加雇员');
+        WHEN UPDATING THEN
+          raise_application_error(-20002,'不能在休息日更新雇员');
+        WHEN DELETING THEN
+          raise_application_error(-20003,'不能在休息日解雇雇员');
+      end case;
+    end if;
+  end;
+ 
+ 
+  4.建立AFTER语句触发器
+  为了审计DML操作,或者在DML操作之后执行汇总运算.(计算INSERT,UPDATE,DELETE的操作次数)
+  create table audit_table(name varchar2(20),ins int,upd int,del int,starttime date,endtime date);
+ 
+  create or replace trigger tr_audit_emp
+  after insert or update or delete on emp
+  declare
+    v_temp int;
+  begin
+    select count(*) into v_temp from audit_table where name='emp';
+    if v_temp=0 then
+       insert into audit_table values('emp',0,0,0,sysdate,null);
+    end if;
+    case
+      when inserting then update audit_table set ins=ins+1,endtime=sysdate where name='emp';
+      when updating then update audit_table set upd=upd+1,endtime=sysdate where name='emp';
+      when deleting then update audit_table set del=del+1,endtime=sysdate where name='emp';
+    end case;
+  end;
+ 
+  5.行触发器
+  执行DML操作时,每作用一行就触发一次的触发器.审计数据变化时,可以使用行触发器
+  create [or replace] trigger trigger_name
+  timing event1 [or event2 or event3]
+  on table_name
+  [referencing old as old |new as new]
+  for each row
+  [when condition]
+  pl/sql block;
+ 
+  5.1建立BEFORE行触发器
+  create or relpace trigger tr_emp_sal
+  before update of sal on emp
+  for each row
+  begin
+    if :new.sal<:old.sal then
+       raise_application_error(-20010,'工资只涨不降');
+    end if ;
+  end;
+ 
+  5.2建立AFTER行触发器
+  为了审计DML操作数据变化，则应该使用AFTER行触发器
+  create table audit_emp_change(name varchar2(10),oldsal number(6,2),newsal number(6,2),time date);
+ 
+  create or replace trigger tr_sal_change
+  after update of sal on emp
+  for each row
+  declare
+    v_temp int;
+  begin
+    select count(*) into v_temp from audit_emp_change where name=:old.ename;
+      if v_temp=0 then
+         insert into audit_emp_change values(:old.ename,:old.sal,:new,sal,sysdate);
+      else
+         update audit_emp_change set oldsal=:old.sal,newsal=:new.sal,time=sysdate where name=:old.ename;
+      end if;
+  end;
+ 
+  5.3限制行触发器
+  使用行触发器时,默认情况下会在每个被作用行上执行一次触发器代码,为了使得在特定条件下执行行触发器代码,就需要使用WHEN子句对触发器加以限制
+  create or replace trigger tr_sal_change
+  after update of sal on emp
+  for each row
+  when (old.job='salesman')
+  declare
+    v_temp int;
+  begin
+    select count(*) into v_temp from audit_emp_change where name=:old.ename;
+    if v_temp=0 then
+       insert into audit_emp_change values(:old.ename,:old.sal,:new.sal,sysdate);
+    else
+       update audit_emp_change set oldsal=:old.sal,newsal=:new.sal,time=sysdate where name=:old.ename;
+    end if;
+  end;
+ 
+  5.4DML触发器使用注意事项
+  编写DML触发器时,不能从触发器所对应的基表中读取数据.建立时不会出现错误,但在执行相应触发操作时会显示错误信息
+ 
+  6.使用DML触发器
+  DML触发器可以用于实现数据安全保护,数据审计,数据完整性,参照完整性,数据复制等
+  6.1控制数据安全
+  在服务器级控制数据安全是通过授予和收回对象权限来完成的.
+  conn scott/tiger
+  grant select,insert,update,delete on emp to smith;
+ 
+  create or replace trigger tr_emp_time
+  before insert or update or delete on emp
+  begin
+    if to_char(sysdate,'hh24') not between '9' and '17' then
+       raise_application_error(-20101,'非工作时间');
+    end if;
+  end;
+ 
+  6.2实现数据审计
+  审计可以用于监视非法和可疑的数据库活动.ORACLE数据库本身提供了审计功能
+  对EMP表上的DML操作进行审计
+  audit insert,update,delete on emp by access;
+  只能审计SQL操作,写入到数据字典中,而不会记载数据变化.为了审计SQL操作引起的数据变化,使用DML触发器
+  create or replace trigger tr_sal_change
+  after update of sal on emp
+  for each row
+  declare
+    v_temp int;
+  begin
+    select count(*) into v_temp from audit_emp_change where name=:old.ename;
+    if v_temp=0 then
+       insert into audit_emp_change values(:old.ename,:old.sal,:new.sal,sysdate);
+    else
+       update audit_emp_change set oldsal=:old.sal,newsal=:new.sal,time=sysdate where name=:old.ename;
+    end if;
+  end;
+ 
+  6.3实现数据完整性
+  数据完整性用于确保数据库数据满足特定的商业逻辑或企业规则.
+  CHECK约束:alter table emp add constraint ck_sal check (sal>=800);
+  create or replace trigger tr_check_sal
+  before update of sal on emp
+  for each row
+  when (new.sal<old.sal or new.sal>1.2*old.sal)
+  begin
+    raise_application_error(-20931,'工资只升不降,并且升幅不能超过20%');
+  end;
+ 
+  6.4实现参照完整性
+  指若两个表之间具有主从关系(即主外键关系),当删除主表数据时,必须确保相关的从表数据已经被删除.
+  当修改主表的主键列数据时,必须确保相关从表数据已经被修改.为了实现级联删除，可在定义外部键约束时指定ON DELETE CASCADE关键字
+  alter table emp add constraint fk_deptno foreign key (deptno) references dept(deptno) on delete cascade;
+ 
+  实现级联更新,可以使用触发器
+  create or replace trigger tr_update_cascade
+  after update of deptno on dept
+  for each row
+  begin
+    update emp set deptno=:new.deptno where deptno=:old.deptno;
+  end;
+ 
+  7.建立INSTEAD OF触发器
+  对于简单视图可直接执行INSERT,UPDATE,DELETE操作,但对于复杂视图,不允许直接执行DML操作
+  具有集合操作符:UNION,UNION ALL,INTERSECT,MINUS
+  具有分组函数:MIN,MAX,SUM,AVG,COUNT等
+  具有GROUP BY ,CONNECT BY ,START WITH等子句
+  具有DISTINCT关键字
+  具有连接查询
+  为了在具有以上情况的复杂视图上执行DML操作，必须要基于视图建立INSTEAD-OF触发器
+  在建立了INSTEAD-OF触发器之后,就可以基于复杂视图执行INSERT,UPDATE,DELETE语句
+  注意事项:
+      INSTEAD OF选项只适用于视图
+      当基于视图建立触发器时,不能指定BEFORE和AFTER选项
+      在建立视图时没有指定WITH CHECK OPTION选项
+      当建立INSTEAD OF触发器时,必须指定FOR EACH ROW选项
+ 
+  7.1建立复杂DEPT_EMP
+  create or replace view dept_emp as select a.deptno,a.dname,b.empno,b.ename from dept a,emp b where a.deptno=b.deptno;
+  不允许执行DML操作
+ 
+  7.2建立INSTEAD-OF触发器
+  为了在复杂视图上执行DML操作,必须要基于复杂视图来建立INSTEAD-OF触发器
+  create or replace trigger tr_instead_of_dept_emp
+  instead of insert on dept_emp
+  for each row
+  declare
+    v_temp int;
+  begin
+    select count(*) into v_temp from dept where deptno=:new.deptno;
+    if v_temp=0 then
+       insert into dept (deptno,dname) values(:new.deptno,:new.dname);
+    end if;
+    select count(*) into v_temp from emp where empno=:new.empno;
+    if v_temp=0 then
+       insert into emp(empno,ename,deptno) values(:new.empno,:new.ename,:new.deptno);
+    end if;
+  end;
+  当建立INSTEAD-OF触发器之后,就可以在复杂视图DEPT_EMP上执行INSERT操作了
+  insert into dept_emp values(50,'admin','1223','mary');
+  insert into dept_emp values(10,'admin','1224','bake');
+ 
+ 
+ 
+ 
+  8.建立系统事件触发器
+  基于ORACLE系统事件(logon,startup)所建立的触发器,跟踪系统或数据库变化的机制
+ 
+  8.1常用事件属性函数
+  ora_client_ip_address:返回客户端IP地址
+  ora_database_name:返回当前数据库名
+  ora_des_encrypted_password:用于返回DES加密后的用户口令
+  ora_dict_obj_name:用于返回DDL操作所对应的数据库对象名
+  ora_dict_obj_list(name_list out ora_name_list_t):返回在事件中被修改的对象名列表
+  ora_dict_obj_owner:返回DDL操作所对应的对象的所有者名
+  ora_dict_obj_owner_list(owner_list out ora_name_list_t):返回在事件中被修改对象的所有者列表
+  ora_dict_obj_type:返回DDL操作所对应的数据库对象的类型
+  ora_grantee(user_list out ora_name_list_t):返回授权事件的授权者
+  ora_instance_num:返回例程号
+  ora_is_alter_column(column_name in varchar2):用于检测特定列是否被修改
+  ora_is_creating_nested_table:用于检测是否正在建立嵌套表
+  ora_is_drop_column(column_name in varchar2):用于检测特定列是否被删除
+  ora_is_servererror(error_number):用于检测是否返回特定oracle错误
+  ora_login_user:返回登录用户名
+  ora_sysevent:用于返回触发触发器的系统事件名
+ 
+  8.2建立例程启动和关闭触发器(特权用户)
+  记载例程启动和关闭的事件和时间
+  conn sys/oracle as sysdba
+  create table event_table(event varchar2(30),time date);
+ 
+  create or replace trigger tr_startup
+  after startup on database
+  begin
+    insert into event_table values(ora_sysevent,sysdate);
+  end;
+ 
+  create or replace trigger tr_shutdown
+  before shutdown on database
+  begin
+    insert into event_table values(ora_sysevent,sysdate);
+  end;
+ 
+  shutdown
+  shutup
+ 
+  8.3建立登录和退出触发器
+  记载用户登陆和退出事件.
+  conn sys/oracle as sysdba
+  create table log_table(username varchar2(20),logon_time date,logoff_time date,address varchar2(20));
+ 
+  create or replace trigger tr_logon
+  after logon on database
+  begin
+    insert into log_table (username,logon_time,address) values(ora_login_user,sysdate,ora_client_ip_address);
+  end;
+ 
+  create or replace trigger tr_logoff
+  before logoff on database
+  begin
+    insert into log_table (username,logoff_time,address) values(ora_login_user,sysdate,ora_client_ip_address);
+  end;
+ 
+  conn scott/tiger@orc1
+  conn system/manager@orc1
+  conn sys/oracle@orc1 as sysdba
+ 
+  8.4建立DDL触发器 
+  记载系统所发生的DDL事件(CREATE,ALTER,DROP等)
+  conn sys/oracle as sysdba
+  create table event_ddl(event varchar2(20),username varchar2(10),owner varchar2(10),objname varchar2(20),objtype varchar2(10),time date);
+ 
+  create or replace trigger tr_ddl
+  after ddl on scott.schema
+  begin
+    insert into event_ddl values(ora_sysevent,ora_login_user,ora_dict_obj_owner,ora_dict_obj_name,ora_dict_obj_type,sysdate);
+  end;
+ 
+  conn scott/tiger
+  create table temp(cola int);
+  drop table temp
+ 
+  9.管理触发器
+  9.1显示触发器信息:在数据字典中USER_TRIGGERS
+  conn scott/tiger
+  select trigger_name,status from user_triggers where table_name='emp';
+ 
+  9.2禁止触发器
+  使触发器临时失效,处于ENABLE状态,则会触发
+  alter trigger tr_check_sal disable;
+ 
+  9.3激活触发器
+  使触发器重新生效
+  alter trigger tr_check_sal enable;
+ 
+  9.4禁止或激活表的所有触发器
+  alter table emp disable all triggers
+  alter table emp enable all triggers
+ 
+  9.5重新编译触发器
+  使用ALTER TABLE命令修改表结构时,会使得触发器转变为INVALID状态,需要重新编译触发器,才能继续生效
+  alter trigger tr_check_sal compile;
+ 
+  9.6删除触发器
+  drop trigger tr_check_sal
+ 
+ 
+ 
+  10.开发动态SQL
+  在PL/SQL块中编写动态SQL语句时,需要将SQL语句存放到字符串变量中,而且SQL可以包含占位符
+  1.动态SQL处理方法
+  1.1使用EXECUTE IMMEDIATE语句
+  可处理DDL语句(CREATE,ALTER,DROP),DCL语句(GRANT,REVOKE),DML语句(INSERT,UPDATE,DELETE)以及单行SELECT语句
+  不能用于处理多行查询语句
+ 
+  1.2使用OPEN-FOR,FETCH和CLOSE语句
+  为了处理动态的多行查询操作,必须要使用OPEN-FOR语句打开游标,使用FETCH循环提取数据,CLOSE关闭游标
+ 
+  1.3使用批量动态SQL
+ 
+  2.处理非查询语句:DDL,DCL,DML
+  语法:execute immediate dynamic_string
+       [into (define_variable[,define_variable]...|record)]
+       [using [in|out|in out] bind_argument [,[in|out|in out] bind_argument]...]
+       [(returning | return) into bind_argument[,bind_argument]...]
+ 
+  2.1使用EXECUTE IMMEDIATE处理DDL操作
+  EXECUTE IMMEDIATE后面只需要带有DDL语句,不需要INTO 和USING子句
+ 
+  create or replace procedure drop_table(table_name varchar2)
+  is
+    sql_statement varchar2(100);
+  begin
+    sql_statement:='drop table '||table_name;
+    execute immediate sql_statement;
+  end;
+ 
+  exec drop_table('worker');
+ 
+  2.2使用EXECUTE IMMEDIATE处理DCL操作
+  conn system/manager
+  create or replace procedure grant_sys_priv(priv varchar2,username varchar2)
+  is
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='grant '||priv||' to '||username;
+    execute immediate sql_stat;
+  end;
+ 
+  exec grant_sys_priv('create session','scott')
+ 
+  2.3使用EXECUTE IMMEDIATE处理DML操作
+  如果DML语句包含有占位符,那么在EXECUTE IMMEDIATE语句之后必须要带有USING子句
+  如果DML语句带有RETURNING子句,那么在EXECUTE IMMEDIATE语句之后需要带有RETURNING INTO子句
+ 
+  2.4处理无占位符和RETURNING子句的DML语句
+  declare
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='update emp set sal=sal*1.1 where deptno=30';
+    execute immediate sql_stat;
+  end;
+ 
+  2.5处理包含占位符的DML语句:要使用USING子句
+  declare
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='update emp set sal=sal*(1+:percent/100)'||' where deptno=:dno';
+    execute immediate sql_stat using &1,&2;
+  end;
+ 
+  2.6处理包含RETURNING子句的DML语句:必须使用RETURNING INTO子句接受返回数据
+  当直接使用EXECUTE IMMEDIATE处理带有RETURNING子句的DML时,只能处理作用在单行上的DML语句
+  如果DML语句作用在多行上,则必须要使用BULK子句
+  declare
+    salary number(6,2);
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='update emp set sal=sal*(1+percent/100)'||' where empno=:eno returning sal into :salary';
+    execute immediate sal_stat using &1,&2 returning into salary;
+    dbms_output.put_line('新工资:'||salary);
+  end;
+ 
+  2.7使用EXECUTE IMMEDIATE处理单行查询:需要使用INTO子句接受返回数据
+  declare
+    sql_stat varchar2(100);
+    emp_record emp%rowtype;
+  begin
+    sql_stat:='select * from emp where empno=:enp';
+    execute immediate sql_stat into emp_record using &1;
+    dbms_output.put_line('雇员'||emp_record.ename||'的工资为'||emp_record.sal);
+  end;
+ 
+ 
+  3.处理多行查询语句
+  使用EXECUTE IMMEDIATE只能处理单行查询语句.
+  为了动态的处理SELECT语句所返回的多行数据,需要使用OPEN-FOR ,FETCH ,CLOSE语句
+ 
+  3.1定义游标变量
+  动态处理多行查询需要使用游标变量来完成
+  type cursortype is ref cursor;
+  cursor_variable cursortype;
+  3.2打开游标变量
+  open cursor_variable for dynamic_string [using bind_argument[,bind_argument]...];
+  3.3循环提取数据
+  fetch cursor_variable into {var1[,var2]...|record_var};
+  3.4关闭游标变量
+  close cursor_variable
+  3.5多行查询示例
+  declare
+    type empcurtyp is ref cursor;
+    emp_cv empcurtyp;
+    emp_record emp%rowtype;
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='select * from emp where deptno=:dno';
+    open emp_cv for sql_stat using &dno;
+    loop
+      fetch emp_cv into emp_record;
+      exit when emp_cv%notfound;
+      dbms_output.put_line('雇员名:'||emp_record.ename||',工资:'||emp_record.sal);
+    end loop;
+    close emp_cv;
+  end;
+ 
+ 
+  4.在动态ＳＱＬ中使用BULK子句
+  三种语句支持BULK子句:EXECUTE IMMEDIATE,FETCH,FORALL
+  1在EXECUTE IMMEDIATE语句中使用动态BULK子句(处理多行查询语句)
+  execute immediate dynamic_string
+  [bulk collect into define_variable[,define_variable...]]
+  [using bind_argument[,bind_argument...]]
+  [[returning | return]
+  bulk collect into return_variable[,return_variable...]];
+ 
+  1.1使用BULK子句处理DML语句返回子句
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    type sal_table_type is table of emp.sal%type index by binary_integer;
+    ename_table ename_table_type;
+    sal_table sal_table_type;
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='update emp set sal=sal*(1+:percent/100)'||' where deptno=:dno'||' returning ename,sal into :name,:salary';
+    execute immediate sql_stat using &percent,&dno returning bulk collect into ename_table,sal_table;
+    for i in 1..ename_table.count loop
+      dbms_output.put_line('雇员'||ename_table(i)||'的新工资为'||sal_table(i));
+    end loop;
+  end;
+ 
+  1.2使用BULK子句处理多行查询
+  declare
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='select ename from emp where deptno=:dno';
+    execute immediate sql_stat bulk collect into ename_table using &dno;
+    for i in 1..ename_table.count loop
+      dbms_output.put_line(ename_table(i));
+    end loop;
+  end;
+ 
+  2.在FETCH语句中使用BULK子句
+  默认情况下FETCH语句每次只能提取单行数据,为了处理所有数据,需要使用循环语句.通过引入BULK,一次就可以提取所有数据
+  fetch dynamic_cursor bulk collect into define_variable[,define_variable...];
+ 
+  declare
+    type empcurtyp is ref cursor;
+    emp_cv empcurtyp;
+    type ename_table_type is table of emp.ename%type index by binary_integer;
+    ename_table ename_table_type;
+    sql_stat varchar2(100);
+  begin
+    sql_stat:='select ename from emp where job=:title';
+    open emp_cv for sql_stat using '&job';
+    fetch emp_cv bulk collect into ename_table;
+    for i in 1..ename_table.count loop
+      dbms_output.put_line(ename_table(i));
+    end loop;
+    close emp_cv;
+  end;
+ 
+ 
+  3.在FORALL语句中使用BULK子句
+  FORALL只使用于动态的INSERT,UPDATE,DELETE语句,而不适合于动态的SELECT语句,并且FORALL语句要和EXECUTE IMMEDIATE语句结合使用
+  forall index in lower bound..upper bound
+     execute immediate dynamic_string
+     using bind_argument |bind_argument(index)
+     [,bind_argument| bind_argument(index)]...
+     [(returning | return) bulk collect into bind_argument[,bind_argument...]];
+ 
+  declare
+    type ename_table_type is table of emp.ename%type;
+    type sal_table_type is table of emp.sal%type;
+    ename_table ename_table_type;
+    sal_table sal_table_type;
+    sql_stat varchar2(100);
+  begin
+    ename_table:=ename_table_type('scott','smith','clark');
+    sql_stat:='update emp set sal=sl*1.1 where ename=:1'||' returning sal into :2';
+    forall i in 1..ename_table.count
+       execute immediate sql_stat using ename_table(i) returning bulk collect into sal_table;
+    for j in 1..ename_table.count loop
+      dbms_output.put_line('雇员'||ename_table(j)||'的新工资'||sal_table(j));
+    end loop;
+ end;
+ 
+ 
+ 
+ 
+  11.对象类型
+  1.1对象类型组件
+  对象类型包括属性和方法.
+  1.2对象类型和对象实例
+  对象实例OBJECT INSTANCE是对象类型的具体实现,对应于现实世界的具体对象
+  1.3构造对象类型
+  对象类型包括对象类型规范和对象类型体两部分
+  1.4对象类型属性
+  必须要提供属性名和数据类型
+  对象类型属性不能使用以下数据类型:LONG,LONG RAW,ROWID,UROWID,PL/SQL特有类型,不能指定对象属性的默认值,也不能指定NOT NULL选项
+  1.5对象类型方法
+  用于描述对象所要执行的操作
+  定义方法:可以定义构造方法,MEMBER方法,STATIC方法,MAP方法以及ORDER方法
+ 
+  构造方法CONSTRUCT METHOD:
+  用于初始化对象并返回对象实例,类似于JAVA语言的构造方法
+  构造方法是与对象类型同名的函数,其默认参数是对象类型的所有属性
+ 
+  MEMBER方法
+  用于访问对象实例的数据
+  当使用MEMBER方法时,可以使用内置参数SELF访问当前对象实例
+  只能由对象实例调用,而不能由对象类型调用.
+  object_type_instance.method();
+ 
+  STATIC方法:
+  用于访问对象类型,在对象类型上执行全局操作,而不需要访问特定对象实例的数据
+  只能由对象类型调用,而不能由对象实例调用
+ 
+  MAP方法:
+  是对象类型的一种可选方法,可以将对象实例影射为标量类型数据(DATE,NUMBER,VARCHAR2),然后根据该标量类型数据可以排序对象实例,对象类型最多只能定义一个MAP方法
+ 
+  ORDER方法:
+  MAP方法可以在多个对象实例之间进行排序,而ORDER方法只能比较两个对象实例的大小.
+  定义对象类型时,最多只能定义一个ORDER方法
+  MAP方法和ORDER方法不能同时定义,如果不需要比较对象实例,则不需要定义MAP和ORDER方法
+ 
+ 
+  2.对象表OBJECT TABLE
+  指包含对象类型列的表,对象表至少会包含一个对象类型列.
+  ORACLE包含行对象和列对象两种对象表    
+  行对象是指直接基于对象类型所建立的表,而列对象则是包含多个列的对象表
+  行对象:create table employee of employee_type;
+  列对象:create table department(
+                dno number,dname varchar2(10),
+                employee employee_type);
+  3.对象类型继承:TYPE INHERITANCE
+  指一个对象类型继承另一个对象类型
+ 
+  4.REF数据类型
+  REF是指向行对象的逻辑指针,是ORACLE的一种内置数据类型
+  建表时通过使用REF引用行对象,可以使不同表共享相同对象,从而降低内存占用.
+  ref table department(dno number(2),dname varchar2(10),emp ref employee_type);
+ 
+  11.2建立和使用简单对象类型
+  建立对象类型规范的语法：
+  create or replace type type_name as object(
+    attribute1 datatype[,attribute2 datatype,...],
+    [member|static method1 spec,member|static method2 spec,..]);
+ 
+  建立对象类型体的语法:
+  create or replace type body type_name as
+    member|static method1 body;
+    member|static method2 body;
+    ....]
+ 
+  1.建立和使用不包含任何方法的对象类型
+  对象类型可以不包含任何方法
+  create or replace type person_type1 as object(
+    name varchar2(10),gender varchar2(2),birthdate date);
+ 
+  1.1建立行对象
+  行对象是指直接基于对象类型所建立的表
+  create table person_tab1 of person_typ1;
+ 
+  为行对象插入数据
+  begin
+    insert into person_tab1 values('马丽','女','11-1月-76');
+    insert into person_tab2 values(person_type1('王名','男','11-12月-76);--使用对象类型的构造方法来插入数据
+  end;
+ 
+  检索行对象数据
+  必须要使用函数VALUE取得行对象数据,并检索到对象类型变量中
+  declare
+    person person_typ1;
+  begin
+    select value(p) into person from person_tab1 p where p.name='&name';
+    dbms_output.put_line('性别:'||person.gender);
+    dbms_output.put_line('出生日期:'||person.birthdate);
+  end;
+ 
+  更新行对象数据
+  如果按照对象属性更新数据,则必须要为行对象定义别名.
+  begin
+    update person_tab1 p set p.birthdate='11-2月-76' where p.name='马丽';
+  end;
+ 
+  删除行对象数据
+  如果按照对象属性删除数据,则必须要为行对象定义别名
+  begin
+    delete from person_tab1 p where p.name='马丽';
+  end;
+ 
+  1.2建立列对象
+  create table employee_tab1(
+    eno number(6),person person_typ1,sal number(6,2),job varchar2(10));
+ 
+  为列对象employee_tab1插入数据
+  begin
+    insert into empoyee_tab1(eno,sal,job,person) value1,2000,'高级钳工',person_typ1('王名','男','11-1月-76');
+  end;
+ 
+  检索对象类型列的数据
+  检索列对象的对象类型列数据时可以直接将对象实例数据检索到对象类型变量中
+  declare
+    employee person_typ1;
+    salary number(6,2);
+  begin
+    select person,sal into employee,salary from employee_tab1 where eno=&no;
+    dbms_output.put_line('雇员名:'||employee.name);
+    dbms_output.put_line('雇员工资:'||salary);
+  end;
+ 
+  更新对象列数据
+  更新列对象的对象列数据时必须要为列对象定义别名,并且引用对象属性(列对象别名.对象类型列名.对象属性名)
+  begin
+    update employee_tab  p set p.person.birthdate='&newdate' where p.person.name='&name';
+  end;
+ 
+  依据对象属性删除数据
+  依据对象属性删除列数据时必须要为对象表定义别名,并且引用对象属性(列对象别名.对象类型列名.对象属性名)
+ 
+ 
+ 
+  2.建立和使用包含MEMBER方法的对象类型
+  MEMBER方法用于访问对象实例的数据,如果在对象类型中需要访问特定对象实例的数据,则必须要定义MEMBER方法.
+  MEMBER方法只能由对象实例调用,而不能由对象类型调用.
+  create or replace type person_typ2 as object(
+    name varchar2(10),gender varchar2(2),biethdate date,address varchar2(100),
+    member procedure change_address(new_addr varchar2),
+    member function get_info feturn varchar2);
+ 
+  在建立类型规范时定义了MEMBER方法,所以必须要通过对象类型体实现这些方法.
+  create or replace type body person_typ2 is 
+    member procedure change address(new_addr varchar2)
+    is
+    begin
+      address:=new_addr;
+    end;
+    member function get_info return varchar2
+    is
+      v_info varchar2(100);
+    begin
+      v_info:='姓名'||name||',出生日期:'||birthdate;
+      return v_info;
+    end;
+  end;
+ 
+  使用对象类型
+  create table employee_tab2(
+    eno number(6),person person_typ2,sal number(6,2),job varchar2(10));
+    insert into employee_tab2(eno,sal,job,person) vaules(1,2000,''高级焊工',person_typ2('王名','男','11-1月-76','福州市'));
+    insert into employee_tab2(eno,sal,job,person) values(2,1500,'质量检查员',person_typ2('马丽','女','11-1月-76','福州市'));
+ 
+  调用对象方法
+  declare
+    v_person person_typ2;
+  begin
+    select person into v_person from employee_tab2 where eno=&&no;
+    v_person.change_address('福清');
+    update employee_tab2 set person=v_person where eno=&no;
+    dbms_output.put_line(v_person.get_info);
+  end;
+ 
+  3.建立和使用包含STATIC方法的对象类型
+  static方法用于访问对象类型,在对象类型上执行全局操作
+  STATIC方法只能由对象类型访问,不能由对象实例访问
+  建立类型规范:
+  create or replace type person_typ3 as object(
+    name varchar2(10),gender varchar2(2),
+    birthdate date,regdate date,
+    static function getdate return date,
+    member function get_info return varchar2);
+ 
+  建立对象类型体:
+  create or replace type body person_typ3 is
+    static function getdate return date is
+    begin
+      return sysdate;
+    end;
+    member function get_info return varchar2
+    is
+    begin
+      return '姓名:'||name||',注册日期:'||regdate;
+    end;
+  end;
+ 
+  使用对象类型及其STATIC方法和MEMBER方法
+  create table employee_tab3(
+    eno number(6),person person_typ3,sal number(6,2),job varchar2(10));
+ 
+  在对象类型上使用STATIC方法:对象类型调用
+  begin
+    insert into employee_tab3(eno,sal,job,person) values(&no,&salary,'&title',person_typ3("&name','&sex','&birthdate',person_typ3.getdate()));
+ 
+  使用MEMBER方法:实例对象调用
+  declare
+    v_person person_typ3;
+  begin
+    select person into v_person from employee_tab3 where eno=&no;
+    dbms_output.put_line(v_person.get_info());
+  end;
+ 
+ 
+  4.建立和使用包含MAP方法的对象类型
+  MAP方法用于将对象实例映射为标量数值(NUMBER,DATE,VARCAHR2等)
+  为了排序多个对象实例的是数据,可以在建立对象类型时定义MAP方法
+  一个对象类型最多只能定义一个MAP方法,并且MAP方法和ORDER方法不能同时使用
+  建立对象类型规范:
+  create or replace type person_typ4 as object(
+    name varchar2(10),gender varchar2(2),birthdate date,
+    map member function getage return varchar2);
+ 
+  建立对象类型体:
+  create or replace type body person_typ4 is
+    map member function getage return varchar2
+    is
+    begin
+      return trunc((sysdate-birthdate)/365);
+    end;
+  end;
+ 
+  使用对象类型和方法:
+  create table employee_tab4(
+    eno number(6),person person_typ4,sal number(6,2),job varchar2(10));
+  insert into employee_tab4(eno,sal,job,person) values (1,1500,'图书管理员',person_typ4('马丽','女','11-1月-76'));
+  insert into employee_tab4(eno,sal,job,person) values (2,1500,'图书管理员',person_typ4('马丽','女','11-1月-76'));
+  insert into employee_tab4(eno,sal,job,person) values (3,1500,'图书管理员',person_typ4('马丽','女','11-1月-76'));
+ 
+  使用MAP方法getage比较对象实例的方法
+  declare
+    type person_table_type is table of person_typ4;
+    person_table person_table_type;
+    v_temp varchar2(100);
+  begin
+    select person bulk collect into person_table from employee_tab4;
+    if person_table(1).getage()>person_table(2).getage() then
+       v_temp:=preson_table(1).name||'比'||person_table(2).name||'大';
+    else
+       v_temp:=preson_table(1).name||'比'||person_table(2).name||'小';
+    end if;
+    dbms_output.put_line(v_temp);
+  end;
+ 
+ 
+  5.建立和使用包含ORDER方法的对象类型
+  order方法用于比较两个对象实例的大小.
+  一个对象类型最多只能包含一个ORDER方法,并且OREDER方法不能与MAP方法同时使用
+  建立对象类型规范:
+  create or replace type person_typ5 as object(
+    name varchar2(10),gender varchar2(2),birthdate date,
+    order member functon compare( p person_typ5) return int);
+ 
+  建立对象类型体:
+  create or replace type body person_typ5 is
+    order member function compare(p person_typ5) return int
+    is
+    begin
+      case
+        when birthdate>p.birthdate then return 1;
+        when birthdate=p.birthdate then return 0;
+        when birthdate<p.birthdate then return -1;
+      end case;
+    end;
+  end;
+ 
+  使用对象类型及其方法
+  create table employee_tab5(
+    eno number(6),person person_typ5,sal number(6,2),job varchar2(10));
+  insert into employee_tab5(eno,sal,job,person) values(1,1500,'图书管理员',person_typ5('马丽','女','11-1月-76));
+  insert into employee_tab5(eno,sal,job,person) values(2,1500,'图书管理员',person_typ5('马丽','女','11-1月-76));
+ 
+  使用ORDER方法比较不同对象实例的数据
+  declare
+    type person_table is table of person_typ5;
+    person_table person_table_type;
+    v_temp varchar2(100);
+  begin
+    select person bulk collect into person_table from employee_tab5;
+    if person_table(1),compare(person_table(2))=1 then
+       v_temp:=person_table(1).name||'比'||person_table(2).name||'大';
+    else
+       v_temp:=person_table(1).name||'比'||person_table(2).name||'小';
+    end if;
+    dbms_output.put_line(v_temp);
+  end;
+ 
+ 
+  6.建立和使用自定义构造方法的对象类型
+  当自定义构造方法时,构造方法的名称必须要与对象类型的名称完全相同,并且必须要使用CONSTRUCTOR FUNCTION关键字定义构造方法
+  建立对象类型以及构造方法:
+  create or replace type person_typ6o as object(
+    name varchar2(10),gender varchar2(2),birthdate date,
+    constructor function person_typ6(name varchar2) return selfas result,
+    constructor function person_typ6(name varchar2,gender varchar2) return self as result,
+    constructor function person_typ6(name varchar2,gender varchar2,birthdate date) return self as result);
+ 
+  建立对象类型体实现其构造方法:
+  create or replace type body person_typ6 is
+    constructor function person_typ6(name varchar2) return self as result
+    is
+    begin
+      self.name:=name;
+      self.gender:='女';
+      self.birthdate:=sysdate;
+      return;
+    end;
+    constructor function person_typ6(name varchar2,gender varchar2) return self as result
+    is
+    begin
+      self.name:=name;
+      self.gender:=gender;
+      self.birthdate:=sysdate;
+      return;
+    end;
+    constructor function person_typ6(name varchar2,gender varchar2,birthdate date) return self as result
+    is
+    begin
+      self.name:=name;
+      self.gender:=gender;
+      self.birthdate:=birthdate;
+      return;
+    end;
+  end;
+ 
+  使用各种构造方法为其插入数据:
+  create table employee_tab6(eno number(6),person person_typ6,sal number(6,2),job varchar2(10));
+    insert into employee_tab6(eno,sal,job,person) values(1,1500,'图书管理员',person_typ6('马丽'));
+    insert into employee_tab6(eno,sal,job,person) values(1,1500,'图书管理员',person_typ6('马丽','男'));
+    insert into employee_tab6(eno,sal,job,person) values(1,1500,'图书管理员',person_typ6('马丽'.'男','11-1月-76'));
+ 
+ 
+  12.3.建立和使用复杂对象类型
+  复杂对象类型是指与其他对象类型具有关联关系的对象类型
+  1.对象类型嵌套
+  建立对象类型
+  create or replace type addr_typ7 as object(
+    state varchar2(20),city varchar2(20),
+    street varchar2(50),zipcode varchar2(6),
+    member function get_addr return varchar2);
+ 
+  建立对象类型体实现该方法:
+  create or replace type body addr_typ7 as
+    member function get_addr return varchar2 is
+    begin
+      return state||city||street;
+    end;
+  end;
+ 
+  建立对象类型(嵌套):
+  create or replace type person_typ7 as object(
+    name varchar2(10),gender varchar2(2),birthdate date,address addr_typ7,
+    member function get_info return varchar2);
+ 
+  建立对象类型体:
+  create or replace type body person_typ7 as
+    member fucntion get_info return varchar2
+    is
+    begin
+      return '姓名:'||name||',家庭住址:'||address.get_addr();
+    end;
+  end;
+ 
+  建立操纵对象表:
+  create table employee_tab7(
+    eno number(6),person person_typ7,sal number(6,2),job varchar2(10));
+ 
+  操纵对象表
+  在PLS/SQL块中为对象表插入数据
+  begin
+    insert into employee_tab7(eno,sal,job,person) values(1,1500,'图书管理员',person_typ7('马丽','女','11-1月-76',addr_typ7('内蒙古','呼和浩特','囫囵路10','010010')));
+    insert into employee_tab7(eno,sal,job,person) values(2,1500,'图书管理员',person_typ7('马丽','女','11-1月-76',addr_typ7('内蒙古','呼和浩特','囫囵路20','010010')));
+  end;
+ 
+  在PL/SQL块中更新对象列数据
+  declare
+    v_pserson person_typ7;
+  begin
+    select person into v_person from employee_tab7 where eno=&&no;
+    v_person.address.street:='&street';
+    update employee_tab7 set person=v_person where eno=&no;
+  end;
+ 
+  在PL/SQL块中检索对象列数据
+  declare
+    v_person person_typ7;
+  begin
+    select person into v_person from employee_tab7 where eno=&no;
+    dbms_output.put_line(v_person.get_info);
+  end;
+ 
+  在PL/SQL块中删除对象表数据
+  begin
+    delete from employee_tab7 where eno=&no;
+  end;
+ 
+  2.参照对象类型
+  指在建立对象表时使用REF定义表列,REF实际是指向行对象数据的逻辑指针
+  通过使用REF定义表列,可以使得一个对象表引用另一个对象表(行对象)的数据,从而节省磁盘空间和内存空间
+  建立对象类型:
+  create or replace type person_typ8 as object(
+    name varchar2(10),gender varchar2(2),birchdate date,address varchar2(50),
+    member function get_info return varchar2);
+ 
+  建立对象类型体:
+  create or replace type body person_typ8 as
+    member function get_info return varchar2
+    is
+    begin
+      return '姓名:'||name||',家庭住址:'||address;
+    end;
+  end;
+ 
+  建立行对象并追加数据
+  create table person_tab8 of person_typ8;
+    insert into person_tab8 values('马丽','女','11-1月-76','内蒙古呼和浩特10号');
+    insert into person_tab8 values('王名','男','11-1月-76','内蒙古呼和浩特11号');
+ 
+ 
+  对象表引用对象表(REF)
+  建立对象表(引用表)
+  create table employee_tab8(
+    eno number(6),person ref person_typ8,sal number(6,2),job varchar2(10));
+ 
+  操纵对象表
+  为对象表出入数据
+  引用行对象表时,需要使用函数REF(),其返回值实际是指向相应数据行的指针
+  begin
+    insert into employee_tab8 select 1,ref(a),2000,'图书管理员' from person_tab8 a where a.name = '马丽';
+    insert into employee_tab8 select 1,ref(a),2000,'图书管理员' from person_tab8 a where a.name = '王名';
+  end;
+ 
+  检索REF对象列数据
+  为了取得行对象的相应数据,必须要使用DEREF函数取得REF列所对应的实际数据
+  declare
+    v_person person_typ8;
+  begin
+    select deref(person) into v_person from employee_tab8 where eno=&no;
+    dbms_output.put_line(v_person.get_info);
+  end;
+ 
+  更新REF对象列数据
+  要修改其列所引用的数据,就必须修改相应的行对象
+  declare
+    v_person person_typ8;
+  begin
+    select deref(person) into v_person from employee_tab8 where eno=&no;
+    v_person.address:='&address';
+    update person_tab8 set address=v_person.address where name=v_person.name;
+  end;
+ 
+  删除对象表数据
+  begin
+    delete from employee_tab8 where eno=&no;
+  end;
+ 
+ 
+ 
+  3.对象类型继承
+  指一个对象类型继承另一个对象类型,并且对象类型继承由父类型和子类型组成
+  父类型用于定义不同对象类型的公用属性和方法,而子类型不仅继承了父类型的公用属性和方法,而且还可具有自己的私有属性和方法.
+  使用对象类型继承时,在定义父类型时必须要指定NOT FINAL 选项,如果不指定该选项,默认为FINAL,表示该对象类型不能被继承
+ 
+  建立父对象类型:
+  create or replace type person_typ9 as object(
+    name varchar2(10),gender varchar2(2),birthdate date,address varchar2(50),
+    member function get_info return varchar2) not final;
+ 
+  建立对象类型体:
+  create or replace type body person_typ9 as
+    member function get_info return varchar2
+    is
+    begin
+      return '姓名:'||name||',家庭住址:'||address;
+    end;
+  end;
+ 
+  建立子对象类型(继承):
+  create or replace type employee_typ9 under person_typ9(
+   eno number(6),sal number(6,2),job varchar2(10),
+   member function get_other return varchar2);
+ 
+  建立对象类型体(私有方法):
+  create or replace type body employee_typ9 as
+    member function get_other return varchar2
+    is
+    begin
+      return '雇员名称:'||name||',工资:'||sal;
+    end;
+  end;
+ 
+  建立对象表并插入数据
+  sql>create table employee_tab9 of employee_typ9;
+  sql>insert into employee_tab9 values('马丽','女','01-11月-76','呼和浩特15号',2,2000,'高级钳工');
+  sql>insert into employee_tab9 values('王名','男','01-11月-76','呼和浩特15号',2,2000,'高级钳工');   
+ 
+  使用对象方法输出数据
+  declare
+    v_employee employee_typ9;
+  begin
+    select value(a) into v_employee from employee_tab9 a where a.eno=&no;
+    dbms_output.put_line(v_employee.get_info);
+    dbms_output.put_line(v_employee.get_other);
+  end;
+ 
+ 
+  4.维护对象类型
+  显示对象类型信息  执行CREATE TYPE 命令建立对象类型时,ORACLE会将对象类型的信息存放到数据字典中(USER_TYPES)
+  select type_name,attributes,final from user_types;
+  desc person_typ1
+ 
+  增加和删除对象类型属性
+　如果已经基于对象类型建立了对象类型或对象表，那么在对象类型增加或删除属性时必须要带有ＣＡＳＣＡＤＥ关键字
+  alter type preson_typ1 add attribute address varchar2(50) cascade
+  alter type person_typ1 drop attrbute birthdate cascade;
+ 
+  增加和删除对象类型方法
+  alter type person_typ1 add member function get_info return varchar2 cascade;
+  create or replace type body person_typ1 as
+    member function get_info return varchar2 is
+    begin
+      return '雇员名:'||name||',家庭住址:'||address;
+    end;
+  end;
+ 
+ 
+ 
+  13.处理例外
+ 
+ 
+  1.例外分类:预定义例外,非预定义例外,自定义例外三种
+  2.例外处理:
+  传递例外:如果在例外处理部分EXCEPTON没有捕捉例外,ORACLE会将例外传递到调用环境.
+  捕捉并处理例外:使用例外处理部分完成
+  exception
+    when exception1 [or exception2...] then
+    statement1;
+    statement2;
+    .....
+    when ....
+    ...
+    when others then    --必须是例外处理部分的最后一条子句
+    statement1;
+    ...
+  
+  2.处理预定义例外
+  常用预定义例外
+  2.1access_into_null:ora-06530错误.在引用对象属性之前,必须首先初始化对象,否则触发例外
+  2.2case_not_found:ora-06592.在编写CASE语句时,如果在WHEN子句中没有包含必须的条件分支,并且没有包含ELSE子句,就会触发
+  undef no
+  declare
+    v_sal emp.sal%type;
+  begin
+   select sal into v_sal from emp where empno=&&no;
+   case
+     when v_sal<1000 then
+       update emp set sal=sal+100 where empno=&no;
+     when v_sal<2000 then
+       update emp set sal=sal+150 where empno=&no;
+     when v_sal<3000 then
+       update emp set sal=sal+200 where empno=&no;
+   end case;
+   exception
+     when case_not_found then
+     dbms_output.put_line('在CASE语句中缺少与'||v_sal||'相关的条件');
+   end;
+ 
+  2.3collection_is_null:ora-06531
+  在给集合元素(嵌套表和VARRAY类型)赋值前,必须首先初始化集合元素,否则触发例外
+  declare
+    type ename_table_type is table of emp.ename%type;
+    ename_table ename_table_type;
+  begin
+    select ename into ename_table(2) from emp where empno=&no;
+    dbms_output.put_line('雇员名:||ename_table(2);
+    exception
+      when collection_null then
+        dbms_output.put_line('必须使用构造方法初始化集合元素');
+  end;
+ 
+  2.4cursor_already_open:ora-06511
+  当重新打开已经打开的游标时,会隐含的触发例外.已经使用OPEN打开了显示游标,并执行FOR循环,就会隐含的触发该例外
+  declare
+    cursor emp_cursor is select ename,sal from emp;
+  begin
+    open emp_cursor;
+    for emp_record in emp_cursor loop
+      dbms_output.put_line(emp_record.ename);
+    end loop;
+    exception
+      when cursor_already_open then
+      dbms_output.put_line('游标已打开');
+  end;
+ 
+  2.5DUP_VAL_ON_INDEX:ORA-00001
+  当在唯一索引所对应的列上键入重复值时,触发例外
+  begin
+    update dept set deptno=&new_no where deptno=&old_no;
+    exception
+      when dup_val_on_index then
+        dbms_output.put_line('在DEPTNO列上不能出现重复值');
+  end;
+ 
+  2.6invalid_cursor:ora-01001
+  当试图在不合法的游标上执行操作时,会隐含的触发例外.要从未打开的游标提取数据,或者关闭未打开的游标,则触发例外
+  declare
+    cursor emp_cursor is select ename,sal from emp;
+    emp_record emp_cursor%rowtype;
+  begin
+    fetch emp_cursor into emp_record;
+    close emp_cursor;
+  exception
+    when invalid_cursor then
+      dbms_output.put_line('请检查游标是否已经打开');
+  end;
+ 
+  2.7invalid_number:ora-01722
+  当内嵌SQL语句不能有效的将字符转变成数字时,会隐含触发例外
+  begin
+    update emp set sal=sal+'1oo';
+  exception
+    when invalid_number then
+      dbms_output.put_line('输入的数字值不正确');
+  end;
+ 
+  2.8no_date_found:ora-01403
+  当执行SELECT INTO 未返回行,或者引用了索引表未初始化的元素时,会隐含触发例外
+  declare
+    v_sal emp.sal%type;
+  begin
+    select sal into v_sal from emp where lower(ename)=lower('&name');
+  exception
+    when no_data_found then
+      dbms_output.put_line('不存在该雇员');
+  end;
+ 
+  2.9too_many_rows:ora-01422
+  当执行select into 语句时,如果返回超过一行,则会触发例外
+  declare
+    v_ename emp.ename%type;
+  begin
+    select ename into v_ename from emp where sal=&sal;
+  exception
+    when too_many_rows then
+      dbms_output.put_line('返回多行');
+  end;
+ 
+  2.10zero_divide:ora-01476
+  如果使用数字值除0,则会隐含触发例外
+  declare
+    num1 int:=100;
+    num2 int:=0;
+    num3 number(6,2);
+  begin
+    num3:=num1/num2;
+  exception
+    when zero_divide then
+      dbms_output.put_line('分母不能为0');
+  end;
+ 
+  2.11subscript_beyond_count:ora-06533
+  当使用嵌套表或VARRAY元素时,如果元素下标超出了嵌套表或VARRAY元素的范围,则回隐含的触发例外
+  declare
+    type emp_array_type is varray(20) of varchar2(10);
+    emp_output.put_line(emp_array(3));
+  begin
+    emp_array:=emp_array_type('scott','maray');
+    dbms_output.put_line(emp_array(3));
+  exception
+    when subscript_beyond_count then
+      dbms_output.put_line('超出下标范围');
+  end;
+ 
+  2.12subscript_outside_limit:ora-06532
+  当使用嵌套表或VARRAY元素时,如果元素下标为负值,则会隐含触发例外
+  declare
+    type emp_array_type is varray(20) of varray2(10);
+    emp_array emp_array_type;
+  begin
+    emp_array:=emp_array_type('scott','mary');
+    dbms_output.put_line(emp_array(-1);
+  exception
+    when subscript_outside_limit then
+      dbms_output.put_line('嵌套表和VARRAY下标不能为负值');
+  end;
+ 
+  2.13value_error:ora-06502
+  如果变量长度不足以容纳实际数据,则会隐含的出发例外
+  declare
+    v_ename varchar2(5);
+  begin
+    select ename into v_ename from emp where empno=&no;
+    dbms_output.put_line(v_ename);
+  exception
+    when value_error then
+      dbms_output.put_line('变量尺寸不足');
+  end;
+ 
+  2.14其他预定义例外
+  login_denied:ora-01017连接数据库时,提供了不正确的用户名和口令
+  not_logged_on:ora-01012没有连接到数据库
+  program_error:ora-06501存在PL/SQL内部问题,可能需要重新安装数据字典和PL/SQL系统包
+  rowtype_mismatch:ora-06504宿主游标变量和PL/SQL游标变量的返回类型不兼容
+  self_is_null:ora-30625使用对象类型时,如果在NULL实例上调用成员方法,则会隐含触发例外
+  storage_error:ora-06500如果超出内存或者内存被损坏
+  sys_invalid_rowid:ora-01410当字符串转变为ROWID时,必须使用有效的字符串,否则触发例外
+  timeout_on_resource:ora-00051ORACLE在等待资源时出现超时错误
+ 
+  3.处理非预定义例外
+  使用预定义例外,只能处理21个ORACLE错误.
+  使用非预定义例外包括三步:
+  在定义部分定义例外名,然后在例外和ORACLE错误之间建立关联,最终在例外处理部分捕捉并处理例外.
+  当定义ORACLE错误和例外之间的关联关系时,需要使用伪过程EXCEPTION_INIT
+  declare
+    e_integrity exception;
+    pragma exception_init(e_integrity,-2291);
+  begin
+    update emp set deptno=&dno where empno=&eno;
+  exception
+    when e_integrity then
+      dbms_output.put_line('该部门不存在');
+  end;
+ 
+ 
+ 
+  4.处理自定义例外
+  自定义例外与ORACLE错误没有任何关联
+  与预定义和非预定义不同,自定义例外必须显示触发
+  declare
+    e_integrity exception;
+    pragma exception_init(e_integrity,-2291);
+    e_no_employee exception;
+  begin
+    update emp set deptno=&dno where empno=&eno;
+    if sql%notfound then
+       raise e_no_employee;
+    end if;
+    exception
+      when e_integrity then
+        dbms_output.put_line('该部门不存在');
+      when e_no_employee then
+        dbms_output.put_line('该雇员不存在');
+  end;
+ 
+ 
+ 
+ 
+  5.使用例外函数
+  函数SQLCODE用于取得ORACLE错误号,而SQLERRM则用于取得与之相关的错误信息
+  通过在存储过程.函数.包中使用RAISE_APPLICATION_ERROR可以自定义错误号和错误消息
+  5.1SQLCODE和SQLERRM
+  undef v_sal
+  declare
+    v_ename emp.ename%type;
+  begin
+    select ename into v_ename from emp where sal=&&v_sal;
+    dbms_output.put_line('雇员名:'||v_ename);
+  exception
+    when no_data_found then
+      dbms_output.put_line('不存在工资为:'||&v_sal||'的雇员');
+    when others then
+      dbms_output.put_line('错误号:'||SQLCODE);
+      dbms_output.put_line('错误号:'||sqlerrm);
+  end;
+ 
+  5.2raise_application_error
+  用于在PL/SQL应用程序中自定义错误消息
+  该过程只能在数据库端的子程序(过程,函数,包,触发器)中使用,不能在匿名快和客户端的子程序中使用.
+  raise_application_error(error_number,message[,[true|false]]);
+  error_number:必须在-20000和-20999之间的负整数.MESSAGE不能超过2048字节
+  TRUE:该错误会被放在先前错误堆栈中,FALSE:则会替换先前所有错误.
+  create or replace procedure raise_comm(eno number,commission number)
+  is
+    v_comm emp.comm%type;
+  begin
+    select comm into v_comm from emp where empno=eno;
+    if v_comm is null then
+       raise_application_error(-20001,'该雇员无补助');
+    end if;
+  exception
+    when no_data_found then
+      dbms_output.put_line('该雇员不存在');
+  end;
+ 
+  6.pl/sql编译警告
+  6.1PL/SQL警告分类:
+  severe:该警告用于检查可能出现的不可预料结果或错误结果,例如参数的别名问题
+  performance:用于检查可能出现的不可预料结果或错误结果,例如参数的别名问题
+  inforamational:用于检查子程序中的死代码
+  all:该关键字用于检查所有警告(severe,perforamce,informational)
+ 
+  6.2控制PL/SQL警告消息
+  为了使数据库在编译PL/SQL子程序时发出警告消息,需设置初始化参数PLSQL_WARNINGS.
+  初始化PLSQL_WARNINGS不仅可在系统级或会话级设置,也可在ALTER PROCEDURE命令中进行设置激活或禁止
+  alter system set plsql_warnings='enable:all';
+  alter session set plsql_warnings='enable:performance';
+  alter procedure hello compile plsql_warnings='enable:performance';
+  alter session set plsql_warnings='disable:all';
+  alter session set plsql_warnings='enable:severe','disable:performance','error:06002';
+ 
+  当激活或禁止PL/SQL编译警告时,不仅可以使用ALTER SYSTEM,ALTER SESSION,ALTER PROCEDURE命令,还可使用PL/SQL系统包DBMS_WARNINGS
+  SQL>call dbms_warning.set_warning_setting_string('enable:all','session');
+ 
+  7.使用PL/SQL编译警告
+  检测死代码
+  为了检测该子程序是否包含死代码,必须首先激活警告检查,然后重新编译子程序,最后使用SHOW ERRORS命令显示警告错误
+  alter session set plsql_warnings='enable:informational';
+  alter prodedure dead_code compile;
+  show errors
+ 
+  检测引起性能问题的代码
+  编写PL/SQL子程序时,如果数值与变量的数据类型不符合,ORACLE会隐含的转换数据类型,但因为数据类型转换会影响子程序性能,所以在编写PL/SQL子程序时应该尽可能避免性能问题.
+  create or replace procedure update_sal(name varchar2,salary varchar2)
+  is
+  begin
+    upodate emp set sal=salary where ename=name;
+  end;
+  为了检测该子程序是否会引起性能问题,应首先激活警告检查,然后重新编译子程序,最后再使用SHOW ERRORS显示警告错误
+  alter session set plsql_warnings='enable:performance';
+  alter procedure update_sal compile;
+  show errors
+ 
+ 
+ 
+ 
+  
+  14.使用LOB对象(large object)
+  LOB类型专门用于存储大对象的数据,包括大文本,图形/图象,视频剪切等大数据
+  1.LOB类型
+  oracle将lob分为两种:内部lob和外部lob
+  内部lob包括:clob,blob和nclob三种类型,被存储在数据库中，并且支持事务操作
+  外部LOB只有BFILE一种类型,该类型的数据被存储在操作系统OS文件中,并且不支持事务操作.
+  CLOB/NCLOB用于存储用于存储大批量字符数据,BLOB用于存储大批量二进制数据,BFILE则存储着指向OS文件的指针
+  1.1.使用LOB列时,如果数据小于4000字节,则与其他列相邻存放(行内),如果数据大于4000字节,则数据被存放到专门的LOB段中(行外)
+  1.2.临时LOB
+  编写PL/SQL应用程序时,可以使用临时LOB.临时LOB相当于局部变量,与数据库表无关,并且只能又当前应用程序建立和使用
+  当在SQL语句中使用临时LOB时,他们只能作为输入宿主变量使用,可在WHERE子句，VALUES子句和SET子句中使用临时LOB,而不能在INTO子句中使用临时LOB
+ 
+  2.DBMS_LOG包
+  2.1常量
+  DBMS_LOB包定义了一些常量,这些常量可以在PL/SQL应用程序中直接引用.
+  file_readonly constant binary_integer:=0;
+  lob_readonly constant binary_integer:=0;
+  lobmaxsize constant integer:=4294967295;
+  call constant pls_integer:=12;
+  session constant pls_integer:=10;
+  2.2过程APPEND
+  用于将源LOB变量的内容添加到目标LOB变量的尾部.
+  该过程只适用与内部LOB类型(BLOB CLOB),不适合BFILE类型
+  dbms_lob.append(dest_lob in out nocopy blob,src_lob in blob);
+  dbms_lob.append(dest_lob in out nocopy character set any_cs,src_lob in clob character set dest_lob%charset);
+  dest_lob用于指定目标LOB变量,SRC_LOB用于指定源LOB变量.
+  declare
+    dest_lob clob;
+    src_lob clob;
+  begin
+    src_lob:='中国';
+    dest_lob:='你好, ';
+    dbms_lob.append(dest_lob,src_lob);
+    dbms_output.put_line(dest_lob);
+  end;
+ 
+  3.过程CLOSE
+  用于关闭已经打开的LOB,不仅使用于CLOB,NCLOB和BLOB类型,也使用于BFILE类型
+  dbms_lob.close(lob_loc in out nocopy blob/clob/bfile);
+ 
+  4.函数compare
+  用于比较两个LOB的全部内容或部分内容.不仅适用于CLOB,NCLOB,BLOB类型,也适用于BFILE类型
+  只能用于比较同类型的LOB变量
+  dbms_lob.compare(lob_1 in blob/clob/bfile,lob_2 in blob/clob/bfile,amount in integer:=4294967295,
+                   offset_1 in integer:=1,offset_2 in integer:=1) return integer;
+  lob_1指定第一个LOB变量,lob_2指定第二个lob变量,amount指定字符个数(CLOB)或字节个数(BLOB)
+  offset_1指定第一个LOB的起始比较位置,offset_2指定第二个LOB的起始位置
+  比较结果相同,则返回O,如果比较不同,则返回一个非0的整数
+  declare
+    dest_lob clob;
+    src_lob clob;
+  begin
+    src_lob:='中国';
+    dest_lob:='&content';
+    if dbms_lob.compare(src_lob,dest_lob)=0 then
+       dbms_output.put_line('内容相同');
+    else
+       dbms_output.put_line('内容不同');
+    end if;
+  end;
+ 
+  5.过程copy
+  用于将源LOB变量的部分或全部内容复制到目标LOB变量中,只适用于内部LOB类型(CLOB,NCLOB,BLOB),不适用BFILE类型
+  dbms_lob.copy(
+       dest_lob in out nocopy blob/clob/nclob, 
+       src_lob in blob/clob/nclob,
+       anount in integer,
+       dest_offset in integer:=1,   指定要复制到目标LOB变量的起始位置
+       src_offset in integer:=1);   指定源LOB变量中开始复制的起始位置
+ 
+ 
+  declare
+    dest_lob clob;
+    src_lob clob;
+    amount int;
+  begin
+    src_lob:='中国';
+    dest_lob:='你好, ';
+    amount:=dbms_lob.getlength(src_lob);
+    dbms_lob.copy(dest_lob,src_lob,amout,3);
+    dbms_output.put_line(dest_lob);
+  end;
+ 
+ 
+  6.过程CREATETEMPORARY
+  用于建立临时LOB,只适用于内部LOB类型(BLOB/CLOB/NCLOB),但不适用于BFILE类型.建立在用户的临时表空间
+  dbms_lob.createtemporary(
+      lob_loc in out nocopy blob/clob/nclob,
+      cache in boolean,dur in pls_integer:=10);
+  LOB_LOC指定LOB定位符,CACHE指定是否要将LOB读取到缓冲区,DUR指定何时清除临时LOB(10:会话结束清除临时LOB,12:调用结束清除临时LOB)
+  declare
+    src_lob clob;
+  begin
+    dbms_lob.createtemporary(src_lob,true);
+  end;
+ 
+  7.过程ERASE
+  用于删除LOB变量的全部内容或部分内容,只适用内部LOB类型(BLOB/CLOB/NCLOB),而不适用于BFILE类型
+  DBMS_LOB.ERASE(
+      lob_loc in out nocopy blob/clob/nclob,
+      amount in out nocopy integer,
+      offset in integer:=1);  --指定开始删除内容的起始位置
+ 
+  declare
+    src_lob clob;
+    offset int;
+    amount int;
+  begin
+    src_lob:='欢迎使用PL/SQL编程指南';
+    amount:=10;
+    offset:=5;
+    dbms_lob.erase)src_lob,amount,offset);
+    dbms_output.put_line(src_lob);
+  end;
+ 
+  8.过程fileclose
+  用于关闭已经打开的BFILE定位符所指向的OS文件
+     dbms_lob.fileclose (file_loc in out nocopy bfile);
+  file_loc用于指定BFILE定位符
+  9.过程FILECOLSEALL
+  用于关闭当前会话已经打开的所有BFILE文件
+     dbms_lob.filecloseall
+  10.函数FILEEXISTS
+  用于确定BFILE定位符所指向的OS文件是否存在
+      dbms_lob.fileexists(file_loc in bfile) return integer;
+  如果文件存在,则返回1,如果文件不存在,则返回0
+  declare
+    file1 bfile;
+  begin
+    file1:=bfilename('G','readme.doc);
+    if dbms_lob.fileexists(file1)=0 then
+       dbms_output.put_line('文件不存在');
+    else
+       dbms_output.put_line('文件存在');
+    end if;
+  end;
+ 
+  11.过程FILEGETNAME
+  用于取得BFILE定位符所对应的目录别名和文件名.
+      dbms_lob.filegetname(file_loc in bfile,dir_alias out varchar2,filename out varchar2);
+  dir_alias用于取得BFILE定位符所对应的目录别名,FILENAME取得BFILE定位符所对应的文件名.
+  declare
+    dir_alias varchar2(20);
+    filename varchar2(50);
+    file_loc bfile;
+  begin
+    select filename into file_loc from bfile_table where fno=&no;
+    dbms_lob.filegetname(file_loc,dir_alias,filename);
+    dbms_output.put_line('目录别名:'||dir_alias);
+    dbms_output.put_line('文件名:'||filename);
+  end;
+ 
+  12函数fileeisopen
+  用于确定BFILE所对应的OS文件是否已经打开
+    dbms_lob.fileisopen(file_loc in bfile) return integer;
+  如果已经被打开,则返回1,否则返回0
+  declare
+    file1 bfile;
+  begin
+    file1:=bfilename('G','readme1.doc');
+    if dbms_lob.fileisopen(file1)=0 then
+       dbms_output.put_line('文件未打开');
+    else
+       dbms_output.put_line('文件已经打开');
+    end if;
+  end;
+ 
+  13.过程FILEOPEN
+  用于打开BFILE所对应的OS文件
+  dbms_lob.fileopen(
+     file_loc in out nocopy bfile,
+     open_mode in binary_integer:=file_readonly);
+  open_mode用于指定文件的打开模式,OS文件只能以只读方式打开.
+  declare
+    file1 bfile;
+  begin'
+    file1:=bfilename('G','readme.doc');
+    if dbms_lob.fileexists(file1)=1 then
+       dbms_lob.fileopen(file1);
+       dbms_output.put_line('文件已经被打开');
+    end if;
+    dbms_lob.fileclose(file1);
+  end;
+ 
+  14.过程freetemporary
+  用于释放在默认临时表空间中的临时LOB
+      dbms_lob.freetemporary(
+         lob_loc in out nocopy blob/clob/nclob);
+  LOB_LOC指定LOB定位符
+  declare
+    src_lob clob;
+  begin
+    dbms_lob.createtemporary(src_lob,true);
+    src_lob:='中国';
+    dbms_lob.freetemporary(src_lob);
+  end;
+ 
+  15函数GETCHUNKSIZE
+  当建立包含CLOB列或BLOB列的表时,通过指定CHUNK参数可以指定操作LOB需要分配的字节数(数据块的整数倍).
+  通过使用函数GETCHUNKSIZE可以取得CHUNK参数所对应的值
+  dbms_lob.getchunksize(lob_loc in blob/clob/nclob) return integer;
+ 
+  declare
+    src_lob clob;
+    chunksize int;
+  begin
+    src_lob:='中国';
+    chunksize:=dbms_lob.getchunksize(src_lob);
+    dbms_output.put_line('chunk 尺寸:'||chunksize);
+  end;
+ 
+  16.函数getlength
+  用于取得LOB数据的实际长度.适用于CLOB和BLOB.BFILE类型
+  dbms_lob.getlength(lob_loc blob/clob/nclob) return integer;
+  declare
+    file1 bfile;
+    length int;
+  begin
+    file1:=bfilename('G','readme.doc');
+    length:=dbms_lob.getlength(file1);
+    dbms_output.put_line('文件长度:'||length);
+  end;
+ 
+  17.函数instr    
+  用于返回特定样式数据在LOB中从某偏移位置开始第N次出现时的具体位置,适合于BLOB,CLOB,BFILE类型
+  dbms_lob.instr(lob_loc in blob/clob/nclob/bfile,pattern in raw/varchar2,
+                 offset in integer:=1,nth in integer:=1) return integer;
+  pattern指定要搜索的字符串或二进制数据,OFFSET指定搜索的起始位置,NTH指定第N次的出现次数
+  declare
+    src_lob clob;
+    location int;
+    offset int;
+    occurence int;
+  begin
+    src_lob:='中国中国中国中国中国';
+    offset:=2;
+    occurence:=2;
+    location:=dbms_lob.instr(src_lob,'中国',offset,occurence);
+    dbms_output.put_line('从第'||offset||'字符开始,中国第'||occurence||'次出现的具体位置:'||location);
+  end;
+ 
+  18.函数isopen
+  用于确定LOB是否已经被打开,适用于BLOB,CLOB,BFILE类型
+  dbms_lob.isopen(lob_loc in blob/clob/bfile) return integer;
+  已经打开返回1,否则返回0
+  declare
+    src_lob clob;
+  begin
+    src_lob:='中国,中国,伟大的中国');
+    if dbms_lob.isopen(src_lob)=0 then
+       dbms_lob.open(src_lob,1);
+    end if;
+    dbms_lob.close(src_lob);
+  end;
+ 
+  19.函数istemporary
+  用于确定LOB定位符是否为临时LOB
+  dbms_lob.istemporary(lob_loc in blob/clob/nclob) return integer;
+  是临时LOB,则返回1,否则返回0
+  declare
+    src_lob clob;
+  begin
+    if dbms_lob.istemporary(src_lob)=1 then
+       dbms_output.put_line('已经是临时LOB');
+    else
+       dbms_output.put_line('临时LOB需要建立');
+       dbms_lob.createtemporary(src_lob,true);
+    end if;
+    dbms_lob.freetemporary(src_lob);
+  end;
+ 
+  20.过程LOADFROMFILE
+  用于将BFILE的部分或者全部内容复制到目标LOB变量(CLOB,BLOB)中
+  dbms_lob.loadfromfile(dest_lob in out nocopy blob/clob,
+                        src_file in bfile,amount in integer,
+                        dest_offset in integer:=1,src_offset in integer:=1);
+  src_file指定BFILE定位符,数据装载时不进行字符集转换.
+  declare
+    src_lob bfile;
+    dest_lob clob;
+    amount int;
+  begin
+    src_lob:=bfilename('g','a.txt');
+    dbms_lob.createtemporary(dest_lob,true);
+    dbms_lob.fileopen(src_lob,0);
+    amount:=dbms_lob.getlength(src_lob);
+    dbms_lob.loadfromfile(dest_lob,src_lob,amount);
+    dbms_lob.fileclose(src_lob);
+    dbms_lob.freetemporary(dest_lob);
+  end;
+ 
+  21.过程LOADBLOBFROMFILE
+  将BFILE数据装载到BLOB中,并且在装载后可以取得新的偏移位置
+  dbms_lob.loadblobfromfile(dest_lob in out nocopy blob,src_bfile in bfile,
+                            amount in integer,dest_offset in out integer,src_offset in out integer);
+  src_bfile指定BFILE定位符,DEST_OFFSET(IN)指定目标LOB的起始位置,DEST_OFFSET(OUT)取得装载后的偏移位置
+  SRC_OFFSET(IN)指定BFILE定位符的起始位置,SRC_OFFSET(OUT)取得BFILE读取完成后的偏移位置.
+  declare
+    src_lob bfile;
+    dest_lob blob;
+    amount int;
+    src_offset int:=1;
+    dest_offset int:=1;
+  begin
+    src_lob:=bfilename('G','a.txt');
+    dbms_lob.createtemporary(dest_lob,true);
+    dbms_lob.fileopen(src_lob,0);
+    amount:=dbms_lob.getlength(src_lob);
+    dbms_lob.loadblobfromfile(dest_lob,src_lob,amount,dest_offset,src_offset);
+    dbms_lob.fileclose(src_lob);
+    dbms_lob.freetemporary(dest_lob);
+    dbms_output.put_line('新的偏移位置:'||dest_offset);
+  end;
+ 
+  22.过程loadclobfromfile
+  将BFILE数据装载到CLOB中.当使用该过程装载到CLOB中,可以指定字符集ID号,并进行字符集转换.
+  dbms_lob.loadclobfromfile(
+                            dest_lob in out nocopy clob,
+                            src_bfile in bfile,amout in integer,
+                            dest_offset in out integer,
+                            src_offset in out integer,
+                            src_csid in number,                   --指定源文件的字符集ID号
+                            lang_context in out integer,          --指定语言上下文(IN)取得先前装载语言上下文(OUT)
+                            warning out integer);
+  declare
+    src_lob bfile;
+    dest_lob clob;
+    amount int;
+    src_offset int:=1;
+    csid int:=0;
+    lc int:=0;
+    warning int;
+  begin
+    src_lob:=bfilename('G','a.txt');
+    dbms_lob.createtemporary(dest_lob,true);
+    dbms_lob.fileopen(src_lob,0);
+    amount:=dbms_lob.getlength(src_lob);
+    dbms_lob.loadclobfromfile(dest_lob,src_lob,amount,dest_offset,src_offset,csid,lc,warning);
+    dbms_lob.fileclose(src_lob);
+    dbms_output.put_line(dest_lob);
+    dbms_lob.freetemporary(dest_lob);
+  end;
+ 
+  23.过程OPEN
+  在打开LOB时指定LOB的读写模式.只读(DBMS_LOB.LOB_READONLY)  读写(DBMS_LOB.LOB_READWRITE)
+  使用于BLOB,CLOB,BFILE
+  dbms_lob.open(lob_loc in out nocopy blob/clob/bfile,open_mode in binary_integer);
+ 
+  declare
+    src_lob clob;
+    v1 varchar2(100):='中国';
+    amount int;
+  begin
+    amount:=length(v1);
+    dbms_lob.createtemporary(src_lob,true);
+    dbms_lob.open(src_lob,dbms_lob.lob_readwrite);
+    dbms_lob.write(src_lob,amount,1,v1);
+    dbms_lob.colse(src_lob);
+    dbms_output.put_line(src_lob);
+    dbms_lob.freetemporary(src_lob);
+  end;
+ 
+  24.过程READ
+  用于将LOB数据读取到缓冲区,适用于BLOB,CLOB,BFILE
+  DBMS_LOB.READ(LOB_LOC IN BLOB/CLOB/BFILE,AMOUT IN OUT NOCOPY BINARY_INTEGER,
+                OFFSET IN INTEGER,BUFFER OUT RAW/VARCHAR2);
+  declare
+    src_lob clob:='伟大的中国';
+    amount int;
+    buffer varchar2(200);
+    offset int:=1;
+  begin
+    amount:=dbms_lob.getlength(src_lob);
+    dbms_lob.open(src_lob,dbms_lob.lob_readonly);
+    dbms_lob.read(src_lob,amount,offset,buffer);
+    dbms_output.put_line(buffer);
+    dbms_lob.close(src_lob);
+  end;
+ 
+  25.函数SUBSTR
+  用于返回LOB中从指定位置开始的部分内容,适用BLOB,CLOB,BFILE
+  dbms_lob.substr(lob_loc in blob/clob/bfile,aount in integer:=32767,offet in integer:=1) return raw;
+  declare
+    src_lob clob:='中国,中国，伟大的中国';
+    amount int;
+    v1 varchar2(200);
+    offset int;
+  begin
+    amount:=10;
+    offset:=4;
+    v1:=dbms_lob.substr(src_lob,amout,offset);
+    dbms_output.put_line(v1);
+  end;
+ 
+  26.过程trim
+  用于截断LOB内容到指定长度,只适用BLOB和CLOB,不适用于BFILE
+  dbms_lob.trim(lob_loc in out nocopy blob/clob/nclob,newlen in integer);
+  newlen用于指定截断后的LOB长度
+  declare
+    src_lob clob:='中国,中国,伟大的中国';
+    amount int;
+  begin
+    amout:=5;
+    dbms_lob.trim(src_lob,amout);
+    dbms_output.put_line(src_lob);
+  end;
+ 
+  27过程write
+  用于将缓冲区数据写入到LOB中的特定位置,只适用BLOB,CLOB,不适用BFILE
+  dbms_lob.write(lob_loc in out nocopy blob/clob,amout in binary_integer,
+                 offset in integer,buffer in raw/varchar2);
+  buffer用于指定要写入的内容
+  declare
+    src_lob clob:='我的祖国';
+    amount int;
+    offset int;
+    buffer varchar2(100):=',伟大的中国':
+  begin
+    offset:=dbms_lob.getlength(src_lob)+1
+    amount:=length(buffer);
+    dbms_lob.write(src_lob,amout,offset,buffer);
+    dbms_output.put_line(src_lob);
+  end;
+ 
+  28.过程WRITEAPPEND
+  用于将缓冲区数据写人到LOB尾部,只适用于BLOB,CLOB,不适用BFILE
+  DBMS_LOB.WRITEAPPEND(LOB_LOC IN OUT NOCOPY BLOB/CLOB/NCLOB,AMOUT IN BINARY_INTEGER,BUFFER IN RAW);
+ 
+  declare
+    src_lob clob:='我的祖国';
+    amount int;
+    buffer varchar2(100):=',伟大的中国';
+  begin
+    amount:=length(buffer);
+    dbms_lob.writepaaend(src_lob,amount,buffer);
+    dbms_output.put_line(src_lob);
+  end;
+ 
+ 
+ 
+ 
+  14.3访问LOB
+  1.建立包含CLOB列的表
+  create table lob_example1(id number(6) primary key,name varchar2(10),resume clob);
+ 
+  2.初始化CLOB列
+  使用函数EMPTY_CLOB()初始化CLOB列,分配了LOB定位符
+  insert into lob_example1 values(1,'王名',empty_clob());
+  insert into lob_example1 values(2,'马丽',empty_clob());
+  commit;
+ 
+  3.更新CLOB列的数据
+  write  writeappend
+  如果要更新CLOB列的数据,那么在检索CLOB列时就必须带有FOR UPDATE子句
+  declare
+    lob_loc clob;
+    text varchar2(200);
+    amount int;
+    offset int;
+  begin
+    select resume into lob_loc from lob_example1 where id=&id for update;
+    offset:=dbms_lob.getlength(lob_loc)+1;
+    text:='&resume';
+    amount:=length(text);
+    dbms_lob.write(lob_loc,amount,offset,text);
+    commit;
+  end;
+ 
+  4.读取CLOB列的数据
+  为了读取CLOB列的所有数据,应该使用循环方式进行处理(READ)
+  declare
+    lob_loc clob;
+    buffer varchar2(200);
+    amount int;
+    offset int;
+  begin
+    select resume into lob_loc from lob_example1 where id=&id;
+    offset:=6;
+    amount:=dbms_lob.getlength(lob_loc);
+    dbms_lob.read(lob_loc,amount,offset,buffer);
+    dbms_output.put_line(buffer);
+  end;
+ 
+  5.将文本内容写入到CLOB列
+  为了避免字符集问题,建议使用LOADCLOBFROMFILE
+  declare
+    lobloc clob;
+    fileloc bfile;
+    amount int;
+    src_offset int:=1;
+    dest_offset int:=1;
+    csid int:=0;
+    lc int:=0;
+    warning int;
+  begin
+    fileloc:=bfilename('G','马丽.txt');
+    dbms_lob.fileopen(fileloc,0);
+    amount:=dbms_lob.getlength(fileloc);
+    select resume into lobloc from lob_example1 where id=2 for update;
+    dbms_lob.loadclobfromfile(lobloc,fileloc,amount,dest_offset,src_offset,csid,lc,warning);
+    dbms_lob.fileclose(fileloc);
+    commit;
+  end;
+ 
+ 
+  6.将clob列内容写入到文本文件
+  要将CLOB列的内容写入到文本文件时,不仅需要使用DBMS_LOB包读取CLOB列的内容,而且需要使用UTL_FILE包建立文本文件并写入内容
+  declare
+    lobloc clob;
+    amount int;
+    offset int:=1;
+    buffer varchar2(2000);
+    handle UTL_FILE.FILE_TYPE;
+  begin
+    select resume into lobloc from lob_example1 where id=&id;
+    amount:=dbms_lob.getlength(lobloc);
+    dbms_lob.read(lobloc,amount,offset,buffer);
+    handle:=utl_file.fopen('user_dir','a.txt','w',2000);
+    utl_file.put_line(handle,buffer);
+    utl_file.fclose(handle);
+ 
+  14.4.访问BLOB(二进制数据)
+  1.建立包含BLOB列的表
+  create table lob_example2(id number(6) primary key,name varchar2(10),photo blob);
+ 
+  2.初始化BLOB列
+  使用函数EMPTY_BLOB()初始化BLOB列
+  insert into lob_example2 values(1,'王名',empty_blob());
+  insert into lob_example2 values(2,'马丽',empty_blob());
+  commit;
+ 
+  3.将二进制文件内容写入到BLOB列
+  loadblobfromfile
+  declare
+    lobloc blob;
+    fileloc bfile;
+    amount int;
+    src_offset int:=1;
+    dest_offset int:=1;
+  begin
+    select photo into lobloc from lob_example2 where id=&id for update;
+    fileloc:=bfilename('G','&filename');
+    dbms_lob.fileopen(fileloc,0);
+    amount:=dbms_lob.getlength(fileloc);
+    dbms_lob.loadblobfromfile(lobloc,fileloc,amount,dest_offset,src_offset);
+    dbms_lob.fileclose(fileloc);
+    commit;
+  end;
+ 
+  4.读取BLOB列数据
+  因为BLOB列中存放着二进制数据,当读取数据时应该使用RAW变量接受其数据READ
+  declare
+    lobloc blob;
+    buffer raw(2000);
+    amount int;
+    offset int:=1;
+  begin
+    select photo into lobloc from lob_example2 where id=&id;
+    amount:=dbms_lob.getlength(lobloc);
+    dbms_lob.read(lobloc,amount,offset,buffer);
+  end;
+  读取到BUFFER中,如果大小大于2000字节,需要使用循环方式读取数据.
+ 
+  5.将BLOB列的内容写入到二进制文件
+  不仅需要使用DBMS_LOB包读取BLOB列的内容,而且需要使用UTL_FILE包建立二进制文件并写入内容
+  declare
+    lobloc blob;
+    amount int;
+    offset int:=1;
+    buffer raw(1000);
+    handle utl_file.file_type;
+  begin
+    select photo into lobloc from lob_example2 where id=&id;
+    amount:=dbms_lob.getlength(lobloc);
+    dbms_lob.read(lobloc,amount,offset,buffer);
+    handle:=utl_file.fopen('user_dir','a.bmp','w',1000);
+    utl_file.put_raw(handle,buffer);  ---写入到文本文件
+    utl_file.fclose(handle);
+  end;
+ 
+  14.5访问BFILE
+  BFILE存放着指向OS文件的指针,所对应的OS文件内容只能读取,不能修改.
+  当ORACLE数据库中使用BFILE类型访问OS文件时,必须首先建立DIRECTORY对象,而建立DIRECTORY对象则要求用户必须具有CREATE ANY DIRECTORY权限.
+  conn system/manager
+  grant create any directory to scott;
+  conn scott/tiger
+  create directory bfile_dir as 'G:\BFILE_EXAMPLE';
+  当建立DIRECTTORY对象时,一定要确保OS目录已经存在.  1.建立包含BFILE列的表
+  create table lob_example3(
+    id number(6) primary key,name varchar2(10),resume bfile);
+  2.初始化BFILE列
+  使用函数BFILENAME()来初始化BFILE列
+  当使用BFILENAME()函数时,DIRECTORY对象必须使用大写格式
+  insert into lob_example3 values(1,'王名',bfilename('BFILE_DIR','王名.TXT'));
+  insert into lob_example3 values(2,'马丽',bfilename('BFILE_DIR','王丽.TXT'));
+  3.读取BFILE列的内容
+  使用DBMS_LOB包的READ过程,应该使用RAW变量接受其读出的数据
+  declare
+    buffer raw(2000);
+    amount int;
+    offset int;
+    lobloc bfile;
+  begin
+    select resume into lobloc from lob_example3 where id=&id;
+    dbms_lob.fileopen(lobloc,0);
+    amount:=dbms_lob.getlength(lobloc);
+    offset:=1;
+    dbms_lob.read(lobloc,amount,offset,buffer);
+    dbms_lob.fileclose(lobloc);
+  end;
+ 
+ 
+ 
+                                     
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+自定义类型
+
+ORACLE 数据库指定字段类型一览
+VARCHAR2(4000 CHAR) : 存储4000个汉字
+VARCHAR2(4000 BYTE) : 存储4000个字符（数字，英文） 2000个汉字
+1、查询用户创建的表有哪些
+DECLARE
+  CURSOR CUR_ITERATOR IS SELECT TABLE_NAME FROM USER_TABLES;
+  INT_CNT INT DEFAULT 0;
+BEGIN
+  FOR CUR_01 IN CUR_ITERATOR LOOP
+    DBMS_OUTPUT.PUT_LINE(CUR_01.TABLE_NAME);
+    INT_CNT := INT_CNT +1;
+  END LOOP;
+  DBMS_OUTPUT.PUT_LINE(INT_CNT);
+END;
+/
+2、为数据库当前用户所有的表添加字段
+DECLARE
+  CURSOR CUR_ITERATOR IS SELECT TABLE_NAME FROM USER_TABLES WHERE TABLE_NAME LIKE '';
+  INT_CNT INT DEFAULT 0;
+BEGIN
+  FOR CUR_01 IN CUR_ITERATOR LOOP
+    DBMS_OUTPUT.PUT_LINE(CUR_01.TABLE_NAME);
+    EXECUTE IMMEDIATE 'ALTER TABLE ' || CUR_01.TABLE_NAME || ' ADD       CLOUMN_NAME VARCHAR2(4000 CHAR)';
+    EXECUTE IMMEDIATE 'COMMENT COLUMN ON  ' || CUR_01.TABLE_NAME ||             '.CLOUMN_NAME  IS' || '''注释''';
+    INT_CNT := INT_CNT +1;
+    DBMS_OUTPUT.PUT_LINE(INT_CNT);
+  END LOOP;
+END;
+/
+3、这个删除当前用户的所有对象(表、视图、触发器、存储过程、函数)
+　　DECLARE
+　　TYPE name_list IS TABLE OF VARCHAR2(40);
+　　TYPE type_list IS TABLE OF VARCHAR2(20);
+　　Tab_name name_list:=name_list();
+　　Tab_type type_list:=type_list();
+　　sql_str VARCHAR2(500);
+　　BEGIN
+　　sql_str := 'select uo.object_name,uo.object_type from user_objects uo where uo.object_type not in(''INDEX'',''LOB'') order by uo.object_type desc';
+　　EXECUTE IMMEDIATE sql_str BULK COLLECT INTO tab_name,tab_type;
+　　FOR i IN Tab_name.FIRST.. Tab_name.LAST LOOP
+　　sql_str := 'DROP ' || Tab_type(i) || ' ' || Tab_name(i);
+　　EXECUTE IMMEDIATE sql_str;
+　　END LOOP;
+　　END;
+
+ Copyright ©2010 lyt. All Rights Reserved.
+
+
+
+
+
+ 
+study
+复合数据类型
+
+1.   自定义记录变量
+type type_name is record(
+field_declaration
+[,field_declaration]…
+);
+Identifier type_name;
+2.   全表列记录变量（无用列多时耗内存，建议用自定义记录变量）
+Identifier table_name/view_name%rowtype
+Select into选择列与记录成员的顺序个数类型完全匹配。
+Select … into type_name …
+Select … into type_name.field …
+3. pl/sql集合类型
+（一）、假设有一个关于动物饲养员的表，希望其中具有他们饲养的动物的信息。用一个嵌套表，就可以在同一个表中存储饲养员和其饲养的全部动物的信息。
+　　1、创建类型animal_ty：此类型中，对于每个动物都包含有一个记录，记载了其品种、名称和出生日期信息。
+CREATE TYPE animal_ty AS OBJECT (  breed varchar2(25),
+name varchar2(25),
+birthdate date
+);
+2、创建animals_nt：此类型将用作一个嵌套表的基础类型。
+CREATE TYPE animal_nt as table of animal_ty;
+3、创建表breeder：饲养员的信息表
+create table breeder(breedername varchar2(25),
+animals animal_nt
+)nested table animals store as animals_nt_tab;
+animals_nt_tab是nested table数据存储的表名,可任意取
+4、向嵌套表中插入记录
+insert into breeder values('mary',
+animal_nt(
+animal_ty('dog','butch',sysdate),
+animal_ty('dog','rover', sysdate),
+animal_ty('dog','julio', sysdate )
+)
+);
+insert into breeder values('jane',
+animal_nt(
+animal_ty('cat','an', sysdate),
+animal_ty('cat','jame', sysdate),
+animal_ty('cat','killer', sysdate)
+)
+);
+commit;
+5、查询嵌套表
+select name,birthdate from table(select animals from breeder);------- select animals from breeder返回多条数据报错
+select name,birthdate from table(select animals from breeder where breedername=’mary’)where breed=’dog’;
+(二）、定义数组
+[create]type type_name is table of varchar2（20）
+    Create table table_name(field type_name,…);
+    Insert into table_name(field) values(type_name(‘’,‘’…))
+(三)、变长数组
+[create]Type t_name is varray(size_limit)of element_type[not null];
+    Identifier t_name;
+    element_type——普通varchar2（20），列类型table.column%type
+PL/SQL三种集合类型的比较
+集合是指在一个程序变量中包含多个值。PL/SQL提供的集合类型如下：
+Associative Array:
+TYPE t IS TABLE OF something INDEX BY PLS_INTEGER;
+Nested Table:
+TYPE t IS TABLE OF something;
+VARRAY:
+TYPE t IS VARRAY (123) OF something;
+三种集合的各自使用范围 
+       前提是在PL/SQL中希望某种类型的多个值，并且希望使用myarray[n]的形式访问。
+范围：SQL or PL/SQL
+       最大的区别是首先需要确定使用范围，SQL和PL/SQL时两种不同的语言。PL/SQL是SQL的过程性语言。Associative Arrays仅存在于PL/SQL中。因此：
+       ·只能在PL/SQL中使用的是：Associative Array；
+       ·可以在SQL中使用：Nested Table, VARRAY；
+       同时需要注意的是：在SQL中创建一个类型和PL/SQL中声明一个类型是不同的。
+SQL中创建的集合类型
+       集合是SQL的一部分，不需要到PL/SQL中就可以使用它们：
+       CREATE TYPE VARCHAR2_TT AS TABLE OF VARCHAR2(100)
+/
+SELECT column_value AS val
+FROM   TABLE(VARCHAR2_TT('Apple','Banana','Apricot'))
+WHERE  column_value NOT LIKE 'A%';
+ 
+VAL
+--------------------
+Banana
+在以上的例子中，我们创建了一个集合类型，并在查询中使用，完全在SQL中。这种形式创建的类型可以在任何查询和PL/SQL程序中使用。其他用户使用需要GRANT EXECUTE ON type_name TO other_account授权。
+PL/SQL中声明的集合类型
+       在PL/SQL中，可以使用SQL中创建的集合类型，或者本地声明自己的类型。在PL/SQL中声明可以更加灵活的自定义包中专用的类型，允许声明他们使用%TYPE和%ROWTYPE引用特定的表的列，如TABLE OF emp.empno%TYPE。不过这仅仅是PL/SQL中的特征，不能在SQL中使用，甚至可以定义自己的类型，然后生命那种类型的集合。如下：
+DECLARE
+    TYPE stats_rec IS RECORD
+    ( batch_step      batch_log.step_name%TYPE
+    , elapsed_time    INTERVAL DAY(0) TO SECOND(0)
+    , rows_processed  PLS_INTEGER );
+ 
+    TYPE stats_tt IS TABLE OF stats_rec; -- a locally-defined nested table collection type
+由于仅在PL/SQL中使用, SQL并不知道：
+CREATE OR REPLACE PACKAGE testtypes AS
+    TYPE varchar2_tt IS TABLE OF VARCHAR2(100);
+END testtypes;
+/
+ 
+Package created.
+ 
+SELECT column_value AS val
+FROM   TABLE(testtypes.VARCHAR2_TT('Apple','Banana','Apricot'))
+WHERE  column_value NOT LIKE 'A%';
+ 
+FROM   TABLE(testtypes.VARCHAR2_TT('Apple','Banana','Apricot'))
+       *
+ERROR at line 2:
+ORA-22905: cannot access rows from a non-nested table item
+可以使用以下查询查看所有类型：
+SELECT ct.owner, ct.type_name, ct.elem_type_name, ct.length
+FROM   all_coll_types ct
+     , all_types ot
+WHERE  ct.coll_type = 'TABLE'
+AND    ot.type_name(+) = ct.elem_type_name
+AND    ot.owner(+) = ct.elem_type_owner
+AND    ot.type_name IS NULL
+ORDER BY ct.owner, ct.type_name;
+Associative Arrays特征
+       如果在PL/SQL中只需要声明和填充，那么关联数组将是一种方便的方法。不需要独立的CREATE OR REPLACE TYPE，不需要初始化，不需要扩展，可以随意的放入各种值，如下：
+DECLARE
+    TYPE number_index_by_string IS TABLE OF NUMBER INDEX BY VARCHAR2(30);
+    TYPE string_index_by_number IS TABLE OF dept.loc%TYPE INDEX BY PLS_INTEGER;
+ 
+    v_country_codes  NUMBER_INDEX_BY_STRING;
+    v_countries      STRING_INDEX_BY_NUMBER;
+BEGIN
+    v_country_codes('Ukraine') := 380;
+    v_country_codes('UAE')     := 971;
+    v_country_codes('UK')      := 44;
+    v_country_codes('USA')     := 1;
+ 
+    v_countries(380)  := 'Ukraine';
+    v_countries(971)  := 'UAE';
+    v_countries(44)   := 'UK';
+    v_countries(1)    := 'USA';
+END;
+       需要注意的是，在number_index_by_string中使用了INDEX BY VARCHAR2(30)，这使我们通过v_country_codes('UK')引用数组的UK元素。这是数组的唯一特征。关联数组没有构造体。也就是不能使用myarray := mytype(2,4,6,37)进行一次性填充四个值。
+PL/SQL集合类型相对于SQL集合类型
+       可以在PL/SQL中声明任何类型。
+       主要区别如下：
+范围
+意义
+集合类型
+PL/SQL
+只能在PL/SQL中声明，没有"CREATE OR REPLACE TYPE". SQL 中不能使用。
+不需要初始化和扩展，只需要分配值给特定的元素，甚至不需要元素顺序。
+可以选择"index by" - PLS_INTEGER, BINARY_INTEGER或VARCHAR2.
+没有构造体，必须显示分配值。不能在查询中作为一个表处理，如SELECT * FROM TABLE(myarray)
+Associative Array
+SQL ,PL/SQL
+可以在PL/SQL中声明或者使用"CREATE OR REPLACE TYPE"；
+使用前必须初始化：myarray mytype := mytype();
+具有构造体，可以使用mytype('x','y','z');分配值；
+必须进行扩展以增加元素，myarray.EXTEND;
+在查询中可以作为表处理SELECT * FROM TABLE(myarray) (如果使用CREATE TYPE创建).
+Nested Table
+VARRAY
+VARRAYs的缺点
+       可以看到，VARRAYs和Nested Tables的描述基本相同，并且两种类型都可以在SQL和PL/SQL的TABLE()中使用。VARRAYs的一些不具有的特征在nested table中可以使用的包括：
+       ·集合函数，如CARDINALITY，COLLECT，POWERMULTISET，等；
+       ·多重集条件，如IS A SET, MEMBER OF，SUBMULTISET；
+       ·多重集操作符，如MULTISET INTERSECT；
+       如：
+DECLARE
+    my_array VARCHAR2_TT :=
+        VARCHAR2_TT('Apple','Apple','Orange','Banana');
+BEGIN
+    IF my_array IS A SET THEN
+        DBMS_OUTPUT.PUT_LINE('No duplicates found');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Collection contains duplicates');
+    END IF;
+END;
+ 
+Collection contains duplicates
+再如：
+DECLARE
+    my_array VARCHAR2_TT :=
+        VARCHAR2_TT('Apple','Apple','Orange','Banana');
+BEGIN
+    IF 'Orange' MEMBER OF my_array THEN
+        DBMS_OUTPUT.PUT_LINE('"Orange" exists in the collection');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('"Orange" does not exist in the collection');
+    END IF;
+END;
+ 
+"Orange" exists in the collection
+ 
+ 
+DECLARE
+    my_array1 VARCHAR2_TT :=
+        VARCHAR2_TT('Apple','Orange','Cherry','Banana');
+ 
+    my_array2 VARCHAR2_TT :=
+        VARCHAR2_TT('Orange','Kumquat','Grape','Banana');
+ 
+    my_array3 VARCHAR2_TT := my_array1 MULTISET INTERSECT my_array2;
+BEGIN
+    FOR i IN my_array3.FIRST..my_array3.LAST LOOP
+        DBMS_OUTPUT.PUT_LINE(my_array3(i));
+    END LOOP;
+END;
+ 
+Orange
+Banana
+       从上面，我们可以看到使用集合的各种特征，可以节约很多代码。
+       再看VARRAY，如下：
+CREATE TYPE varchar2_vtt AS VARRAY(100) OF VARCHAR2(100)
+/
+ 
+Type created.
+ 
+ 
+DECLARE
+    my_array VARCHAR2_VTT :=
+        VARCHAR2_VTT('Apple','Apple','Orange','Banana');
+BEGIN
+    IF my_array IS A SET THEN
+        DBMS_OUTPUT.PUT_LINE('No duplicates found');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Collection contains duplicates');
+    END IF;
+END;
+ 
+IF my_array IS A SET THEN
+   *
+ERROR at line 5:
+ORA-06550: line 5, column 8:
+PLS-00306: wrong number or types of arguments in call to 'IS A SET'
+ORA-06550: line 5, column 5:
+PL/SQL: Statement ignored
+       在10G中的所有集合函数，多集合条件，操作符都不可以在VARRAYs下使用。
+ 
+相关的集合函数：
+       CARDINALITY：返回嵌套表中元素的数量，返回NUMBER或NULL；
+COLLECT：根据输入的列创建一个嵌套表，然后使用CAST函数得到结果集；
+CAST(COLLECT(phone_numbers) AS phone_book_t)；
+POWERMULTISET：使用一个嵌套表作为输入，并返回一个不包含空元素的嵌套表：
+CAST(POWERMULTISET(cust_address_ntab) AS cust_address_tab_tab_typ)
+POWERMULTISET_BY_CARDINALITY
+SET：取出嵌套表中的重复值；
+ 
+ Copyright ©2011 lyt. All Rights Reserved.

@@ -1,0 +1,1451 @@
+它的所有数据都存储在数据文件中(*.dbf),所以只要文件够大,SQL    Server的存储容量是可以扩大的.
+SQL Server 2000 数据库有三种类型的文件：
+主要数据文件
+主要数据文件是数据库的起点，指向数据库中文件的其它部分。每个数据库都有一个主要数据文件。主要数据文件的推荐文件扩展名是 .mdf。
+次要数据文件
+次要数据文件包含除主要数据文件外的所有数据文件。有些数据库可能没有次要数据文件，而有些数据库则有多个次要数据文件。次要数据文件的推荐文件扩展名是 .ndf。
+日志文件
+日志文件包含恢复数据库所需的所有日志信息。每个数据库必须至少有一个日志文件，但可以不止一个。日志文件的推荐文件扩展名是 .ldf。
+select @@connections,@@max_connections
+select @@version
+print @@error 
+if @@error<>0
+ begin 
+  print '输入无效'
+ end
+ 
+数据(Data) 描述事物的符号
+数据库(DB 即Database) 数据存放的地方，数据的仓库
+数据库管理系统(DBMS) 用于管理数据库的计算机软件
+RDBMS关系数据库管理系统SQL SERVER 2000
+ORDBMS对象关系数据库管理系统SQL SERVER 2000  ORACLE
+数据库系统(DBS 即Database System) 狭义上讲由数据库、数据库管理系统和用户组成广义地说还包括硬件、操作系统、应用程序和维护人员等
+与以往sql server相比SQL Server 2000的特性 与Internet集成，可伸缩性和易用性，企业级数据库功能，易于安装、部署和使用，数据仓库(啤酒和纸尿裤)
+SQL SERVER 的应用结构:目前数据库系统的开发一般是基于Client/Server(C/S)模式，这样的系统结构有3个部分：服务器Server、客户端Client、和网络
+SQL Server 2000提供了不同的版本，主要有：
+SQL Server 2000企业版，SQL Server 2000标准版，SQL Server 2000个人版，SQL Server 2000开发版
+企业管理器：SQL Server 提供的客户端组件之一，SQL Server中最常使用的管理工具，按照模块化管理的原则，对所有的服务器按组进行分类。
+在企业管理器中可以完成的操作：
+管理SQL Server服务器，建立和管理数据库，建立和管理表、视图、存储过程等数据库对象，
+备份和恢复数据库，设置任务调度和报警，管理用户帐号……
+SQL Server安装了六个数据库：
+master数据库记录SQL Server系统的所有系统级别信息。
+tempdb数据库保存所有的临时表和临时存储过程。
+model数据库是为用户创建数据库提供的模板。
+msdb数据库供SQL Server代理程序调度警报和作业以及记录各种操作。
+northwind和pubs是示例数据库
+查询分析器：SQL Server中最常用的客户端组件之一，是一个图形用户界面，用以交互地设计和测试T-SQL语句、批处理和脚本
+查询分析器提供：
+用于键入T-SQL的自由格式的文本编辑器
+在T-SQL语法中，使用不同的颜色，增强代码的可读性
+通过对象浏览器和对象搜索工具，可以轻松地查找数据库中的对象和对象结构
+通过模板加快创建SQL Server对象的速度
+用于分析存储过程的交互式调试工具……
+认证模式: 仅WINDOWS验证模式
+          混合验证模式:Windows身份验证和SQL身份验证
+快捷键：
+F1：联机丛书
+F5：执行查询
+Ctrl+ F5:执行分析
+F8：对象浏览器显示 / 隐藏
+Ctrl+Shift+Insert：创建模块
+运行命令:
+Isqlw   或    isqlw.exe   查询分析器
+services.msc              服务
+服务管理器的运行之一: 管理工具→服务→MSSQLSERVER
+ORACLE的服务器占用很大内存一般设为手动开启状态
+服务器注册:  本机的表达方式:LOCAL  .  和本机计算机名称
+ 
+数据类型
+在 Microsoft® SQL Server™ 中，每个列、局部变量、表达式和参数都有一个相关的数据类型， SQL Server 提供系统数据类型集。
+可以定义用户定义的数据类型，其是系统提供的数据类型的别名。有关用户定义的数据类型的更多信息，请参见 sp_addtype 和创建用户定义的数据类型。
+当两个具有不同数据类型、排序规则、精度、小数位数或长度的表达式通过运算符进行组合时：
+通过将数据类型的优先顺序规则应用到输入表达式的数据类型来确定所得值的数据类型。有关更多信息，请参见数据类型的优先顺序。
+如果结果数据类型为 char、varchar、text、nchar、nvarchar 或 ntext，则结果值的排序规则由排序规则的优先顺序规则决定。有关更多信息，请参见排序规则的优先顺序。
+结果的精度、小数位数及长度取决于输入表达式的精度、小数位数及长度。有关更多信息，请参见精度、小数位数和长度。
+
+SQL Server 为 SQL-92 兼容性提供了数据类型同义词
+bigint从 -2^63到 2^63-1 的整型数据（所有数字）。
+int从 -2^31  到 2^31 - 1  的整型数据（所有数字）。
+smallint从 -2^15  到 2^15 - 1的整数数据。
+tinyint从 0 到 255 的整数数据。
+bit 1 或 0 的整数数据。
+decimal从 -10^38 +1 到 10^38 –1 的固定精度和小数位的数字数据。
+numeric功能上等同于 decimal。
+money货币数据值介于 -2^63  与 2^63 - 1  之间，精确到货币单位的千分之十。
+smallmoney货币数据值介于 -2^31 与 +2^31- 1之间，精确到货币单位的千分之十。
+float从 -1.79E + 308 到 1.79E + 308 的浮点精度数字。
+real从 -3.40E + 38 到 3.40E + 38 的浮点精度数字。
+datetime从1753年1月1日到 9999年12月31日的日期和时间数据，精确到3.33毫秒。
+smalldatetime从1900年1月1日到 2079年6月6日的日期和时间数据，精确到分钟。
+char固定长度的非 Unicode 字符数据，最大长度为 8,000 个字符。
+varchar可变长度的非 Unicode 数据，最长为 8,000 个字符。
+text可变长度的非 Unicode 数据，最大长度为 2^31 - 1 (2,147,483,647) 个字符。
+nchar固定长度的 Unicode 数据，最大长度为 4,000 个字符。
+nvarchar可变长度 Unicode 数据，其最大长度为 4,000 字符。sysname 是系统提供用户定义的数据类型，在功能上等同于 nvarchar(128)，用于引用数据库对象名。
+ntext可变长度 Unicode 数据，其最大长度为 2^30 - 1 (1,073,741,823) 个字符。
+binary固定长度的二进制数据，其最大长度为 8,000 个字节。占用n+4个字节的空间.
+varbinary可变长度的二进制数据，其最大长度为 8,000 个字节。
+image可变长度的二进制数据，其最大长度为 2^31 - 1 (2,147,483,647) 个字节。
+cursor游标的引用。
+sql_variant一种存储 SQL Server 支持的各种数据类型（text、ntext、timestamp 和 sql_variant 除外）值的数据类型。
+table一种特殊的数据类型，存储供以后处理的结果集。
+timestamp数据库范围的唯一数字，每次更新行时也进行更新。
+uniqueidentifier全局唯一标识符 (GUID)。
+
+ 
+ 
+数据完整性指的是存储在数据库中的数据的一致性和准确性。
+数据完整性分类   实体完整性，域完整性，参照完整性，用户自定义完整性
+
+
+CREATE DATABASE database_name
+[ON {[PRIMARY]
+(NAME=logical_file_name,
+FILENAME=’os_file_name’
+[, SIZE=size]
+[, MAXSIZE={maxsize|UNLIMITED}]
+[, FILEGROWTH=growth_increment]
+)}[,…]
+]
+[LOG ON
+{(NAME=logical_file_name,
+FILENAME=’os_file_name’
+[, SIZE=size]
+[, MAXSIZE={maxsize|UNLIMITED}]
+[, FILEGROWTH=growth_increment]
+)}[,…n]
+]
+
+ 
+ 
+CREATE TABLE table_name
+(column_name data_type [NULL | NOT NULL] | [IDENTITY[(seed, increment)]
+| column_name AS computed_column_expression
+| table_constraint
+[,…])
+ 
+约束：
+主键约束：PRIMARY KEY CONSTRAINT
+定义表的主键，它可以唯一地标识一行，不允许重复,且不许为NULL。每个表只能定义一个PRIMARY KEY约束，可以定义在一列或多列上。
+ [CONSTRAINT  constraint_name]
+PRIMARY  KEY  [CLUSTERED | NONCLUSTERED] {(column_name [,…])}
+默认约束：DEFAULT CONSTRAINT
+[CONSTRAINT  constraint_name]  DEFAULT  constraint_expression  [ FOR  column_name]
+条件约束：CHECK  CONSTRAINT
+[CONSTRAINT constraint_name] CHECK(logical_expression)
+唯一约束：UNIQUE  CONSTRAINT一个表中可以有多个UNIQUE约束，可以插入NULL
+[CONSTRAINT constraint_name]UNIQUE [CLUSTERED | NONCLUSTERED]{(column_name [,…])}
+外键约束：FOREIGN  KEY  CONSTRAINT定义表之间的一致性关系，用于强制参照完整性，定义了对同一个表或其他表的列的引用，这些列具有PRIMARY KEY或者UNIQUE约束，
+  外键约束中被引用的表为主表，建表等操作先主后从，删表先从后主
+[CONSTRAINT  constraint_name ][ FOREIGN KEY ] [(column_name [,…])]
+REFERENCES  ref_table [ ( ref_column_name [，…])]
+[ON DELETE {CASCADE | NO ACTION}]
+[ON UPDATE {CASCADE | NO ACTION}]
+列约束内嵌在列的声明中定义，作为列定义的一部分只作用于此列本身。
+表级约束作为表定义的一部分，可以作用于多个列，且必须将多列约束定义为单独的表元素。
+两者只是在声明进语法不同,处理方式相同,涉及到多列的必须作为表级约束处理
+级联更新[ON UPDATE {CASCADE | NO ACTION}]
+级联删除[ON DELETE {CASCADE | NO ACTION}]
+CASCADE选项允许对已定义UNIQUE或PRIMARY KEY约束的列值进行任何更改，列值会自动把这些更改传送给外键值。
+NO ACTION选项则限制任何试图删除或更新由其他表的外键引用的关键字的操作。NO ACTION是默认选项
+ 
+ALTER  TABLE  table_name  DROP  CONSTRAINT  constraint_name [,…]
+ALTER  TABLE  table_name  ADD  CONSTRAINT  相应约束定义
+ 
+ALTER  TABLE table_name
+{ALTER  COLUMN  column_name new_data_type
+| ADD column_name data_type
+|ADD CONSTRAINT ….
+| DROP {COLUMN column_name | [CONSTRAINT] constraint_name} [,…]
+}
+DROP TABLE table_name [,…]
+DROP DATABASE database_name [,…]
+ 
+ 
+ 
+ 
+SQL（Structured Query Language）:结构化查询语句  IBM推出DB2 
+SQL语言结构简洁，功能强大，简单易学
+SQL的优点：
+非过程的语言
+统一的语言：SQL语言可用于所有的DB活动模型，包括系统管理员，数据库管理员，应用程序员，决策支持系统人员以及许多其他类型的终端用户。
+SQL提供的命令：
+1.       查询数据
+2.       在表中插入，修改和删除记录
+3.       建立，修改和删除数据对象
+4.       控制对数据和数据对象的存取
+5.       保证数据库的一致性和完整性
+是所有关系数据库的公共语言
+SQL的4个部分
+  Ⅰ. DDL（Data Definition Language）数据定义语言 用来定义数据的结构      create  drop  alter 
+  Ⅱ. DCL （Data Control Language）数据控制语言 控制数据库组件的存取许可，存取权限        grant  revoke
+  Ⅲ.DML ( Data Manipulation Language) 数据操纵语言 操纵数据库中的数据      insert  update  delete 
+  Ⅳ.DQL ( Data Query Language) 数据查询语言 查询数据库中的数据   select
+SQL表示符
+  1~128个字符组成  首字母必须为a _ z  A_Z  _  #   首字母后面为字母，数字和下线
+SQL保留字
+  Update   insert  into  identity   select  use  from   grant     references    drop
+  Between  in    not    null    delete      primary key
+注释   ——双连字符        /* 正斜线-星号字符对 */
+ 
+ 
+--数据库library
+USE  master                                        
+DROP  DATABASE  library                    ——只能在maser数据库中删除没有应用的数据库
+CREATE  DATABASE  library                 ——创建数据库
+ON
+PRIMARY (  NAME=lib,                        ——逻辑名
+           FILENAME='e:\lib.mdf,              ——物理名   主要文件.mdf  次要文件 .ndf
+           SIZE=1,                           ——文件初始大小kb  mb  %比  默认mb
+           MAXSIZE=10,                     
+           FILEGROWTH=2 ')
+           LOG  ON  ( NAME=lib,                      
+           FILENAME='e:\lib.ldf,               ——事务日志文件 .ndf
+           SIZE=1 )                            ——默认为数据库文件总大小的25%
+--library中创建表
+USE  library                                  ——必须为批处理的开头
+ 
+/*创建订单管理数据库*/
+USE  master
+GO
+DROP  DATABASE  Ordermanager                
+CREATE  DATABASE  ordermanager
+USE  ordermanager
+/*插入数据*/
+INSERT  INTO  [order]  VALUES(1011,'2007/9/16','2007/10/21',32.20,'王宏','北京西直门大街18号')
+SELECT  *  FROM  [order]
+/*更新数据库*/
+UPDATE  [order]  SET  price=price*1.3
+UPDATE  [order]  SET  peoplename='谢天华',address='河北唐山煤医道78号' WHERE orderid=1202
+DELETE  FROM  [order]                                ——删除表数据，存储日志，标识列值不还原
+DELETE  FROM  [order]  WHERE  表达式1  逻辑运算符 表达式2
+DELETE  FROM  [order]  WHERE  表达式1  算术运算符 表达式2
+TRUNCATE  TABLE  [order]                             ——删除表数据，不存储日志，标识列值还原
+DROP  TABLE  [order]                                  ——删除表结构
+INSERT [INTO] table_name [(column1,column2,…)] VALUES ( values1,values2,…)
+UPDATE table_name SET column1=expression1[,column2=expression2,…][WHERE search_condition]
+DELETE FROM table_name [WHERE search_condition]
+TRUNCATE TABLE table_name
+DELETE、TRUNCATE和DROP的不同
+ 
+ 
+SQL Server提供的聚合函数
+sum(表达式)    返回表达式中所有数值的总和，忽略空值
+avg(表达式)    返回表达式中所有数值的平均值，忽略空值
+Min(表达式)    返回表达式中所有数值的最小值，忽略空值
+Max(表达式)    返回表达式中所有数值的最大值，忽略空值
+Count(表达式)   返回满足SELECT语句中指定的条件的记录条数
+Count(*)        返回查询到的记录数
+ 
+ 
+SELECT 列名1[，列名2…列名n]FROM 表名;
+SELECT  [TOP  n  |  TOP  n  PERCENT] 列名1  [，列名2…列名n]  FROM 表名
+SELECT  列名1 [，列名2…列名n]   FROM 表名 ORDER BY  表达式 [ASC | DESC]
+SELECT 列名1 [，列名2…列名n]  FROM 表名  WHERE  表达式 比较操作符 表达式
+SELECT 列名1[，列名2…列名n]FROM 表名WHERE 表达式 [NOT] BETWEEN 表达式1 AND 表达式2
+SELECT 列名1[，列名2…列名n]FROM 表名WHERE 表达式 [NOT] IN （表达式1，表达式2[，…表达式n]）
+SELECT 列名1[，列名2…列名n]FROM 表名WHERE 表达式 [NOT] LIKE 条件
+ 
+            Like通配符
+%（百分号）   表示从0~n个任意字符
+_ （下划线）   表示单个的任意字符
+[]（方括号）    表示方括号中列出的任意一个字符
+[^]             任意一个没有在方括号中列出的字符
+ 
+SELECT 列名1[，列名2…列名n]FROM 表名GROUP BY 列名1 HAVING 表达式
+在使用GROUP BY进行分组查询时，可以在SELECT列表中指定的项目是有限制的。SELECT语句中仅允许以下几项：
+分组列。
+为每个分组返回一个值的表达式，例如用一个列名作为参数的聚合函数。
+常量
+SELECT  COUNT（DISTINCT 列名）FROM 表名
+ 
+SELECT [ ALL | DISTINCT ] 列名1 别名，列名2 别名…FROM 表1 别名…[WHERE 条件表达式]
+[ GROUP  BY 列名]  [ HAVING 条件表达式]  [ ORDER BY 列名 [ ASC | DASC ] ]
+ 
+SELECT 列名 FROM 表名 WHERE 表达式 比较运算符（子查询）
+SELECT 列名 FROM 表名 WHERE  列名 [NOT]  IN（子查询）
+SELECT 列名1 FROM 表名 WHERE 表达式 运算符 ALL | ANY（子查询）
+SELECT 列名 FROM 表名 WHERE [NOT] EXISTS（子查询）
+SELECT 列名 FROM 表1  [INNER] JOIN  表2  ON 表1.列 = 表2.列
+SELECT 列名 FROM 表1，表2  WHERE 表1.列 = 表2.列
+SELECT 列名 FROM 表1  <LEFT|RIGHT |FULL>  [OUTER]  JOIN 表2ON 表1.列 = 表2.列
+SELECT 列名 FROM 表1  CROSS  JOIN 表2
+SELECT 列名 FROM 表1 ，表2  SELECT 列名INTO 新表 FROM 源表
+ 
+CREATE VIEW [<owner>.]view_name[(column[,…])][WITH ENCRYPTION]AS select_statement
+[WITH CHECK OPTION]
+ALTER VIEW [<owner>.]view_name[(column[,…])][WITH ENCRYPTION]AS select_statement
+    [WITH CHECK OPTION]
+DROP VIEW view_name
+CREATE [UNIQUE][CLUSTERED|NONCLUSTERED] INDEX index_name
+ON table|view (column [ASC|DESC][,…])
+ [WITH
+    PAD_INDEX |
+    FILLFACTOR = fillfactor |
+    DROP_EXISTING |
+]
+DROP INDEX table.index|view.index [ ,... ]
+DBCC DBREINDEX ( ['table_name' [ , index_name [ , fillfactor ] ] ] )  
+BEGIN TRAN [SACTION][transaction_name][WITH MARK ['description']]
+COMMIT TRAN [SACTION][transaction_name]
+ROLLBACK TRAN [SACTION][transaction_name|@variablename|savepointname]
+SAVE TRAN [SACTION][ savepoint_name | @savepoint_variable]
+变量
+变量是SQL Server中由系统或用户定义并可以赋值的实体。
+变量的类型有
+全局变量
+全局变量由系统定义和维护，其名称以@@字符开头
+局部变量
+局部变量由用户定义和赋值，其名称以@字符开头
+ @@CONNECTIONS      返回服务器上次启动以来连接或试图连接的次数。
+@@CPU_BUSY     返回服务器上次启动以来 CPU 的工作时间，单位为毫秒。
+@@CURSOR_ROWS       返回连接上最后打开的游标中当前存在的合格行的数量。
+@@DATEFIRST      返回 SET DATEFIRST 参数的当前值。(每周的第一天)
+@@DBTS      为当前数据库返回当前 timestamp 数据类型的值。
+@@ERROR        返回最后执行的 Transact-SQL 语句的错误代码。
+@@FETCH_STATUS       返回被 FETCH 语句执行的最后游标的状态
+@@IDENTITY     返回最后插入的标识值。
+@@IDLE       返回服务器上次启动后闲置的时间，单位为毫秒。
+@@IO_BUSY       返回 服务器上次启动后用于执行输入和输出操作的时间，单位为毫秒。
+@@LANGUAGE       返回当前使用的语言名。
+@@LOCK_TIMEOUT       返回当前会话的当前锁超时设置，单位为毫秒。
+@@MAX_CONNECTIONS     返回服务器上允许的同时用户连接的最大数。
+@@NESTLEVEL      返回当前存储过程执行的嵌套层次（初始值为 0）。
+@@SERVERNAME      返回本地服务器名称。
+@@SERVICENAME      返回该计算机上SQL服务的名称。
+@@TIMETICKS       返回一刻度的微秒数。
+@@TRANCOUNT      返回当前连接的活动事务数。
+@@VERSION       返回SQL Server 当前安装的日期、版本和处理器类型。
+DECLARE @variable_name datatype [,@variable_name datatype,…]
+SELECT @local_variable = expression [ , @local_variable = expression … ] SET @local_variable = expression
+PRINT 'any ASCII text' | @local_variable | @@FUNCTION | string_expr
+BEGIN
+    sql_statement|statement_block
+END
+IF Boolean_expression   sql_statement | statement_block
+[ ELSE    sql_statement | statement_block  ]
+ 
+CASE input_expression
+    WHEN when_expression THEN result_expression
+       [ ...n ]
+    [ ELSE else_result_expression ]
+END 别名
+ 
+WHILE Boolean_expression
+sql_statement | statement_block
+[ BREAK ]
+ sql_statement | statement_block
+[ CONTINUE ]
+GOTO flag
+…
+flag:
+sql_statement CONVERT (data_type[(length)], expression [, style])
+ABS(num_expr)     返回给定数字表达式的绝对值。
+CEILING(num_expr)     返回大于或等于所给数字表达式的最小整数。
+FLOOR(num_expr)      返回小于或等于所给数字表达式的最大整数。
+POWER(num_expr,y)       返回所给数字表达式值的指定次幂的值。
+ROUND(num_expr,length)     返回数字表达式并四舍五入为指定的长度或精度。
+SIGN(num_expr)       返回给定表达式的正 (+1)、零 (0) 或负 (-1) 号。
+SQRT(num_expr)        返回给定表达式的平方根。
+DATEADD(datepart,num,date)       在向指定日期加上一段时间的基础上，返回新的 datetime 值。
+DATEDIFF(datepart,date1,date2)      返回跨两个指定日期的日期和时间边界数。
+DATENAME(datepart,date)       返回代表指定日期的指定日期部分的字符串
+DATEPART(datepart,date)        返回代表指定日期的指定日期部分的整数。
+GETDATE()          返回当前系统日期和时间。
+YEAR(date)       返回表示指定日期中的年份的整数。
+MONTH(date)      返回代表指定日期月份的整数。
+DAY(date)        返回代表指定日期的天的日期部分的整数。
+Year  yy,yy   yy            Quarter qq   q             Month  mm  m
+Dayofyear dy y              Day  dd  d               Week  wk ww
+星期   dw     Hour  hh      Minute  mi  n     Second ss  s       Millisecond  ms
+LOWER( character_expression )      将大写字符数据转换为小写字符数据后返回字符表达式。
+UPPER( character_expression )      返回将小写字符数据转换为大写的字符表达式。
+LEFT(character_expression, integer_expression )    返回从字符串左边开始指定个数的字符。
+RIGHT(character_expression, integer_expression )  
+返回字符串中从右边开始指定个数的 integer_expression 字符。
+REPLACE('string_expression1', 'string_expression2', 'string_expression3' )   
+用第三个表达式替换第一个字符串表达式中出现的所有第二个给定字符串表达式。
+REPLICATE(character_expression , integer_expression )       以指定的次数重复字符表达式。
+STUFF(character_expression, start,length,character_expression )
+删除指定长度的字符并在指定的起始点插入另一组字符。
+SUBSTRING(expression , start , length)      返回字符、binary、text 或 image 表达式的一部分。
+DB_ID([‘database_name’])          返回数据库标识号。
+DB_NAME([database_id])         返回数据库名。
+OBJECT_ID(‘obj_name’)         返回数据库对象标识号。
+OBJECT_NAME(obj_id)        返回数据库对象名。
+COL_LENGTH('table','column')      返回列的定义长度（以字节为单位）。
+COL_NAME(table_id,col_id)        返回数据库列的名称，该列具有相应的表标识号和列标识号。
+ 
+AVG(expr)列值的平均值。该列只能包含数字数据。
+COUNT(expr), COUNT(*)
+列值的计数（如果将列名指定为 expr）或是表或组中所有行的计数（如果指定 *）。COUNT(expr) 忽略空值，但 COUNT(*) 在计数中包含空值。
+MAX(expr)     列中最大的值（文本数据类型中按字母顺序排在最后的值）。忽略空值。
+MIN(expr)      列中最小的值（文本数据类型中按字母顺序排在最前的值）。忽略空值。
+SUM(expr)     列值的合计。该列只能包含数字数据。
+ 
+DECLARE cursor_name [ INSENSITIVE ] [ SCROLL ] CURSOR
+FOR select_statement
+[ FOR { READ ONLY | UPDATE [ OF column_name [ ,...n ] ] } ]
+OPEN { { [ GLOBAL ] cursor_name } | cursor_variable_name }
+FETCH
+        [ [ NEXT | PRIOR | FIRST | LAST
+                | ABSOLUTE { n | @nvar }
+                | RELATIVE { n | @nvar }
+            ]
+            FROM
+        ]
+{ { [ GLOBAL ] cursor_name } | @cursor_variable_name }
+[ INTO @variable_name [ ,...n ] ]
+CLOSE { { [ GLOBAL ] cursor_name } | cursor_variable_name }
+Deallocate [global] 游标名
+@@FETCH_STATUS：返回被FETCH语句执行的最后游标的状态，而不是任何当前被连接打开的游标的状态。
+ 
+ 
+ 
+0         FETCH 语句成功。
+-1         FETCH 语句失败或此行不在结果集中。
+-2          被提取的行不存在。
+sp_databases        列出服务器上的所有的数据库
+sp_helpdb          报告有关指定数据库或所有数据库的信息
+sp_renamedb         更改数据库的名字
+sp_tables         当前数据库中可查询的对象的列表
+sp_columns        返回某个表中的列的信息
+sp_help         查看某个表的所有信息
+sp_helpconstraint         查看某个表的约束
+sp_helpindex          查看某个表的索引
+sp_stored_procedures       查看当前库中的所有存储过程
+sp_password             添加或修改登录账户的密码
+ 
+ 
+CREATE procedure procedure_name[;number]
+    [{@parameter data_type}[=default][output]]
+    [，．．．ｎ]
+    [with {RECOMPILE|ENCRYPTION|RECOMPILE,ENCRYPTION}]
+    [FOR REPLICATION]
+    AS
+    select_statement [...n]
+exec[ute] procedure_name
+    [@parameter=]{value|@variable[output][default]}
+    [,．．．ｎ]  
+    [WITH RECOMPILE]
+ALTER procedure procedure_name
+    [{@parameter data_type}[=default][output]]
+    [，．．．ｎ]
+    [with {RECOMPILE|ENCRYPTION|RECOMPILE,ENCRYPTION}] [FOR REPLICATION]
+    AS     
+    select_statement
+Drop procedure procedure_name [ ,...n ]
+CREATE TRIGGER trigger_name 
+ON { table | view } 
+[ WITH ENCRYPTION ] 
+{
+    { {FOR|AFTER | INSTEAD OF } { [ INSERT ] [ , ] [ UPDATE ] [ , ] [ DELETE ] }
+        AS
+        [ { IF UPDATE ( column )
+        [ { AND | OR } UPDATE ( column ) ]
+        [ ...n ]
+        } ] 
+        sql_statement [ ...n ] 
+    }
+sp_addlogin [ @loginame = ] 'login'
+    [ , [ @passwd = ] 'password' ]
+    [ , [ @defdb = ] 'database' ]
+    [ , [ @deflanguage = ] 'language' ]
+sp_revokelogin [ @loginame = ] 'login'
+sp_droplogin [ @loginame = ] 'login'
+sp_grantlogin [@loginame =] ‘login‘
+sp_denylogin [ @loginame = ] 'login'
+ 
+sp_password [ [ @old = ] 'old_password' , ]
+    { [ @new =] 'new_password' }
+    [ , [ @loginame = ] 'login' ]
+GRANT 语句 [...] TO 安全用户[ ... ]
+GRANT 权限 [,...]
+ON 表或视图[(列[,...])]|ON存储过程|ON用户自定义函数
+TO安全账户[,...]
+DENY 语句 [...] TO 安全账户 [... ]
+DENY 权限 [,...]
+ON 表或视图[(列[,...])]|ON存储过程|ON用户自定义函数
+TO安全账户[,...]
+REVOKE 语句 [...] FROM 安全账户 [... ]
+REVOKE 权限[,...]
+ON表或视图[(列[,...])]|ON存储过程| ON用户自定义函数
+FROM安全账户[,...]
+sp_addumpdevice [@devtype=]’device_type’,
+    [@logicalname=]’logical_name’,
+    [@physicalname=]’physical_name’
+l 各参数的含义如下：
+Ø [@devtype=]’device_type’：指出备份设备的类型。device_type参数的值可以为disk、tape和pipe中的一种。
+Ø [@logicalname=]’logical_name’：指出备份设备的逻辑名，用于SQL Server管理备份设备。
+Ø [@physicalname=]’physical_name’：指出备份设备的物理名。
+BACKUP DATABASE database_name
+TO <backup_device> [,…n]
+    [WITH
+    [NAME=backup_set_name]
+    [[,] DESCRIPTION=’TEXT’]
+    [[,] {INIT|NOINIT}]
+    ]
+Ø database_name 数据库名称 。
+Ø backup_device 指定备份操作时要使用的逻辑或物理备份设备，使用“备份设备类型=设备名”的形式。
+Ø DESCRIPTION=’text’ 指定描述备份集的自由格式文本。
+Ø INIT 指定应重写所有备份集，但是保留媒体头。如果指定了INIT，将重写那个设备上的所有现有的备份集数据。
+Ø NOINIT 表示备份集将追加到指定的磁盘或磁带设备上，以保留现有的备份集。NOINIT是默认设置。 
+BACKUP DATABASE database_name
+TO <backup_device> [,…n]
+    WITH DIFFERENTIAL,
+    [NAME=backup_set_name]
+    [[,] DESCRIPTION=’TEXT’]
+    [[,] {INIT|NOINIT}]
+    ]
+Ø WITH DIFFERENTIAL 表示指定本次备份是差异备份。
+l 差异备份是以上一次的全库备份为基础的，因此一个差异备份无法进行数据库的恢复。对一个有全库备份和差异备份的数据库进行恢复时，需要经过两个步骤：先恢复最新的全库备份，然后再恢复最后一次的差异备份。
+BACKUP LOG database_name
+TO <backup_device> [,…n]
+    [WITH
+    [NAME=backup_set_name]
+    [[,] DESCRIPTION=’TEXT’]
+    [[,] {INIT|NOINIT}]
+]
+Ø WITH LOG 表示指定本次备份是日志备份。
+l 单独使用日志备份无法恢复数据库，如果一个数据库既有全库备份也有差异备份和日志备份，则恢复步骤为：先恢复最新的全库备份，再恢复最后一次的差异备份，然后依次恢复最后一次差异备份以后进行的日志备份。
+BACKUP DATABASE database_name
+< file_or_filegroup > [,…n]
+TO <backup_device> [,…n]
+WITH OPTIONS
+ 
+Ø database_name 指定要备份的数据库名称。
+Ø file_or_filegroup 指定要备份的文件或文件组。如果是文件，则用“FILE=逻辑文件名”表示；如果是文件组，则用“FILEGROUP=逻辑文件组名”表示。
+Ø backup_device指定备份操作时要使用的逻辑或物理备份设备。
+Ø WITH OPTIONS 指定备份选项，与前几种备份类型相同
+RESTORE DATABASE database_name
+[FROM <backup_device> [,…n]
+[WITH
+    FILE=file_number
+    [[,] {NORECOVERY | RECOVERY}]
+    [[,] REPLACE]
+]
+ 
+Ø database_name 指定将整个数据库还原到的数据库。
+Ø backup_device 指定还原操作要使用的逻辑或物理备份设备，使用“备份设备类型=设备名”的形式。可以是下列一种或多种：DISK、TYPE或PIPE。
+Ø FILE=file_number 指定从设备上的第几个备份中恢复。
+Ø NORECOVERY | RECOVERY 表示恢复操作是否回滚所有未曾提交的事务。
+Ø REPLACE 指定恢复操作是否将原来的数据库或数据文件、文件组删除并替换掉。
+RESTORE LOG database_name
+[FROM <backup_device> [,…n]
+[WITH
+    FILE=file_number
+    [[,] {NORECOVERY | RECOVERY}]
+    [[,] STOPAT=datetime]
+]
+STOPAT=date_time 使用事务日志进行恢复时，指定将数据库恢复到指定时刻的状态。
+DTS（Data Transformation Service）是SQL Server提供的数据传输服务。SQL Server 2000数据转换服务使用户可以将来自完全不同数据源的数据析取、转换并合并到单个或多个目的
+EXEC SP_DETACH_DB dbname
+EXEC SP_ATTACH_DB [@dbname=]’dbname’,
+[@filenamen=]’filename_n’
+[,…16]
+--1.在student数据库中查询查找同时选修了01和03课程的学生的学号
+ 
+        --自联接
+    select s1.studid from grade as s1 join grade s2 on s1.studid=s2.studid
+    where s1.courseid='01' and s2.courseid='03'
+ 
+ 
+ 
+    --求交集
+    select studid from (select studid from grade where courseid='01') AS s1
+    where EXISTS (select studid from grade where courseid='03' and studid=s1.studid)
+ 
+    select studid from grade where courseid ='01'
+    and studid in( select distinct studid from grade where courseid='03')
+ 
+ 
+    select bb.studid from
+    (select studid from grade where courseid='01')as aa
+    join (select studid from grade where courseid='03')as bb
+    on aa.studid=bb.studid
+ 
+    select studid from (select studid from grade where courseid='01') as g1
+    where studid in
+    (select studid from (select studid from grade where courseid='03')as g2
+    where g1.studid = g2.studid)
+   
+ 
+    --用group by做
+    select studid from grade
+    where courseid='01'or courseid='03'
+    group by studid
+    having count(*)>1
+   
+ 
+--2.在student数据库中查询姓名,课程名称的成绩
+ 
+    select student.studname,course.coursename,grade.grade from student
+    join grade on student.studid=grade.studid
+    join course on grade.courseid=course.courseid
+ 
+    select studname,coursename,grade from student,course,grade
+    where student.studid=grade.studid and course.courseid=grade.courseid
+ 
+--3.在student数据库中查询未选修C语言的学生的学生信息
+ 
+    select * from student where not exists
+    (select * from grade where grade.studid=student.studid
+    and courseid=(select courseid from course where coursename='C语言'))
+ 
+    select *from student where studid not in
+    (select studid from grade where courseid in(select courseid from course where coursename='C语言'))
+ 
+--4.在student 数据库中查找选修了“计算机基础”课程且成绩在80分以上的学生学号，姓名，课程名及成绩
+ 
+    select student.studid,studname,course.coursename,grade
+    from student join grade on student.studid=grade.studid
+    join course on grade.courseid=course.courseid
+    where  coursename='计算机基础' and grade>80
+   
+    select student.studid,studname,coursename,grade from student,course,grade
+    where coursename='计算机基础' and grade>80 and student.studid=grade.studid and course.courseid=grade.courseid
+ 
+   
+    select studname,grade.studid,coursename,grade
+    from student
+    join grade
+    on grade.studid=student.studid
+    and grade>80
+    join course
+    on course.courseid=grade.courseid
+    and coursename='计算机基础'
+ 
+--5.在student 数据库中查找各专业的学生数
+ 
+    select coursename,studid into #new from course join grade
+    on course.courseid=grade.courseid
+    select coursename,count(studid) from #new group by coursename
+ 
+    select (select coursename from course where courseid=grade.courseid),count(*) from grade
+group by courseid
+ 
+select coursename,count(*) from grade,course
+where course.courseid=grade.courseid
+group by coursename
+   
+   
+ 
+ 
+--6.在student 数据库中查找各门课程的最高分，最低分及平均分
+ 
+    select coursename,max(grade) AS 最高分,min(grade) 最低分,avg(grade) 平均分 from course INNER JOIN grade
+    ON course.courseid=grade.courseid group by coursename
+ 
+    select (select coursename from course where course.courseid=grade.courseid) as coursename,
+    max(grade) as 最高分,min(grade)as 最低分,avg(grade)as 平均分
+    from grade
+    group by courseid
+ 
+select coursename ,max(grade) 最高分,min(grade) '最低分',avg(grade) [平均分]
+    from course
+    join grade
+    on grade.courseid=course.courseid
+    group by coursename
+   
+    select coursename,grade  into #class from course join grade
+    on course.courseid=grade.courseid
+    select coursename,max(grade)[最 高 分],min(grade)[最 低 分],avg(grade)[平 均 分]
+    from #class group by coursename
+ 
+SELECT语句的基本搜索条件：（WHERE子句）
+1：比较测试（=,<>,!=,<,>,<=,>=）
+    如：WHERE price>10
+2：范围测试（BETWEEN...AND...）
+    如：WHERE price BETWEEN 10 AND 20
+3：组成员测试（IN）
+    如：WHERE state IN('CA','MI')
+4：模式匹配测试（LIKE）,与通配符字符一起使用
+    如：WEHRE state LIKE '%A'
+   注意转义字符的使用：如想查询产品名称开头3字母是A%B的产品，其中%不是通配符，这时候就需要使用转义字符
+    如：WHERE proname LIKE 'A$%B%' ESCAPE '$' ,这个语句中的第一个%不是通配符，而第二个是通配符
+5：空值测试（IS NULL）
+    如 WHERE price IS NULL
+ 
+复合搜索条件：将基本搜索条件与AND NOT OR一起使用
+ 
+按照计算列排序：SELECT empname,basesale+prize FROM emp ORDER BY 2 DESC
+ 
+查询语句的处理原则（执行顺序）：
+一：单表
+1. 从FROM子句中的表开始
+2. 如果有一条WHERE子句，应用它的搜索条件到表的每一条记录，保留为TRUE的那些记录，去掉为FALSE或NULL的记录
+3. 对每个保留的记录，计算选择列表中每项的值，以生成一条查询结果记录，对于每个字段引用，则使用当前记录中该字段的值
+4. 如果使用了DISTINCT，则消除所生成的查询结果中的重复记录
+5. 如果有ORDER BY子句，则对查询结果进行排序
+ 
+UNION的使用：
+ 
+1. 两个查询必须有相同数目的字段
+2. 两个查询中对应字段的数据类型必须相同（兼容不行吗，测试一下）
+3. 两个查询中的字段名可以不一样
+4. 两个查询中都不能包含ORDER BY子句，但是可以对UNION后的结果进行排序
+    如：SELECT cola,colb FROM ta union  SELECT colC,cold FROM tb ORDER BY 1,2
+5. 多个查询的联合,可以加（），先联合哪个是完全等效的,
+        如：A UNION (B UNION C)
+       (A UNION B) UNION C
+       (A UNION C) UNION B
+  但如果是UNION和UNION ALL联用，则结果可能不一样
+ 
+ 
+--复制部分行
+select * into girls from student where studsex='女'
+ 
+--复制部分列
+select studid,studname,studsex into stu1 from student
+ 
+select * from stu1
+ 
+select * from girls
+--全表备份
+select * into studbak from student
+ 
+--只复制表的结构
+select * into stu2 from student where 1=2
+ 
+select * from stu2
+  
+
+
+视图
+
+--列别名可以写在视图名的后面
+drop view v_emp
+go
+create view v_emp([员 工 编 号],[姓 名],[职 位])
+as
+select emp_id,fname,job_id from employee
+   --查看视图的结构
+EXEC sp_help v_emp
+   --查看视图定义的文本
+exec sp_helptext v_emp
+--加密
+create view v_emp([员 工 编 号],[姓 名],[职 位])
+with encryption
+as
+select emp_id,fname,job_id from employee
+select * from v_emp
+--查看视图定义的文本,看不到了
+exec sp_helptext v_emp
+--with check option选项的作用
+--先演示不加该选项的
+create view v_titles
+as
+select title_id,title,price
+from titles 
+where price>20
+--创建后更新可以成功
+update v_titles set price=10 where title_id='PS1372'
+--再看添加该选项后
+alter view v_titles
+as
+select title_id,title,price
+from titles 
+where price>20
+with check option
+--表达式列必须有别名
+create view v_t
+as
+select title_id,title,price,price*2 [2倍的价格] from titles
+--以上创建视图的代码如果没有[2倍的价格]会报错
+--基本和表一样,对视图的各种操作实际上最终会转化为对基表的操作
+--如果通过视图所进行的DML操作,违反了基表的某些约束,则DML语句不会成功
+--如果表中的某列有非空约束,但是通过视图添加数据时没有为该列赋值,则不能添加成功
+create table t_a
+(
+tid int,
+tname nvarchar(20) not null
+)
+insert into t_a values(1,'a')
+drop view v_a
+go
+create view v_a
+as
+select tid from t_a
+insert into v_a values(4) --报错
+--视图的使用与表相同
+ 
+
+
+select into 与insert ...select 
+
+ select into 与insert ...select 
+--在查询的基础上创建新表  select into
+select title_id,title into aa from titles
+--批量插入数据 insert ...select 
+insert into aa select title_id,title from titles
+select * from aa order by title_id
+/*******************使用SELECT INTO语句*********************/
+
+--复制部分行
+select * into girls from student where studsex='女'
+--复制部分列
+select studid,studname,studsex into stu1 from student
+select * from stu1
+select * from girls
+--全表备份
+select * into studbak from student
+--只复制表的结构
+select * into stu2 from student where 1=2
+select * from stu2
+ 
+
+
+函数
+
+select getdate()
+select year(getdate())
+select month(getdate())
+select day(getdate())
+select datepart(year,getdate())
+select datepart(month,getdate())
+select datepart(day,getdate())
+select datepart(d,getdate())
+select datepart(yy,getdate())
+select datepart(m,getdate())
+select datediff(d,getdate()+2007,getdate())
+select dateadd(d,2007,getdate())
+select datepart(dayofyear,getdate())
+select datename(year,getdate())
+select abs(-11)
+select sqrt(55)
+select right('  jaj fa',5)
+select left('  jaj fa',5)
+select upper('  jaj fa')
+select replace(' 哈都是 jaj fa','a','才')
+select replicate('dr',54)
+select stuff('是感受哈哈哈哈哈哈哈哈哈',3,0,'dhjdsadf')
+select substring('4556453',2,5)
+功能：判断其第一个参数的值是否为null，如果是的话，返回第二个参数的值；如果不为null，返回第一个参数的值
+语法：isnull(par1,par2)
+ 
+
+删除重复行
+
+--删除重复行
+select distinct * into #temp from A 
+truncate table a
+insert into  a select * from  #temp
+ 
+
+简单查询
+
+--IN 和OR
+select * from authors
+where state='CA' or state='MI' or state='IN'
+SELECT * FROM authors
+where state in ('CA','MI','IN')
+
+--聚合函数的三种用法
+SELECT count(price) FROM titles
+select count(*) from titles --建议使用主键列代替
+select count(distinct type) from titles
+
+--列别名的三种用法，及含特殊字符的列别名
+select avg(price) as '平 均 价 格' from titles
+select avg(price) "平 均 价 格" from titles
+select [平 均 价 格]=avg(price) from titles
+
+--分组查询
+select type,max(price) from titles 
+group by type
+having type in('BUSINESS','psychology')
+--用下面的写法也可以
+select type,max(price) from titles 
+where type in('BUSINESS','psychology')
+group by type
+--但是如果条件中用到聚合函数则不能代替
+--如果要查询最高价格高于20的书的类别和每类的最高价格
+select type,max(price) from titles 
+group by type
+having max(price)>20 --正确写法
+select type,max(price) from titles 
+where max(price)>20 --错误写法
+group by type
+--查询出每个班的平均成绩
+SELECT classid,AVG(score) FROM t_score GROUP BY classid
+--查询出平均成绩不及格的班的班级编号及其平均成绩
+SELECT classid,AVG(score) FROM t_score GROUP BY classid
+HAVING AVG(score)<60
+--查询出平均成绩及格的班的班级编号及其最高成绩
+SELECT classid,MAX(score) FROM t_score GROUP BY classid
+HAVING AVG(score)>60
+--查询出平均成绩及格的班的班级编号及其平均成绩,并按其平均分数进行降序排序
+SELECT classid,avg(score) FROM t_score GROUP BY classid
+HAVING AVG(score)>60
+ORDER BY AVG(score) DESC 
+ 
+
+
+高级查询
+--总结: (1)合并多个表中数据的方法有三种：子查询，联接，联合
+--      (2)子查询有两种：嵌套子查询(比较运算符，比较运算符+[ALL，ANY，SOME],IN，)，相关子查询(EXISTS)
+--      (3)子查询返回结果的限制：a: 比较运算符：单列单值
+--                              b: （比较运算符+ALL、ANY）或IN：单列多值
+--                              c: EXISTS: 多列多值
+
+/*******************子查询*********************/
+/*********嵌套子查询*************/
+--单列单值: WHERE 列名 比较运算符 (子查询)
+select * from student
+where ingrade>(select ingrade from student where studname='张宏')
+
+--单列多值: WHERE 列名 [NOT] IN (子查询)
+select coursename from course where courseid in(select distinct courseid from grade where grade>90)
+--单列多值: WHERE 列名 比较运算符 ANY|ALL (子查询): IN可以看成其中的特例
+select * from student where class<>'信息系' and studbirthday>any 
+(select studbirthday from student where class='信息系')
+
+/*********相关子查询*************/
+--多列多值: WHERE [NOT] EXIST (子查询)
+select studname from student 
+where exists(select * from grade where grade.studid=student.studid and courseid='01')
+--以上需求还可以用下面的写法来实现
+select studname from student where studid = any
+(select studid from grade where courseid ='01')
+select studname from student where studid in
+(select studid from grade where courseid ='01')
+select studname from student s,grade g
+where s.studid=g.studid and courseid ='01'
+select studname from student s
+inner join grade g
+on s.studid=g.studid and courseid ='01'
+/*******************联接查询*********************/
+--内联接:两种写法
+select student.studid,studname,courseid,grade
+from student,grade
+where student.studid=grade.studid
+select student.studid,studname,courseid,grade
+from student inner join grade
+on student.studid=grade.studid
+--三个表的内联接,多表的话类推
+select student.studid,studname,coursename,grade
+from student inner join grade
+on student.studid=grade.studid
+inner join course
+on course.courseid=grade.courseid
+
+--外联接
+select student.studid,studname,courseid,grade
+from student left join grade
+on student.studid=grade.studid
+select student.studid,studname,courseid,grade
+from student right join grade
+on student.studid=grade.studid
+select student.studid,studname,courseid,grade
+from grade right join student
+on student.studid=grade.studid
+select student.studid,studname,courseid,grade
+from grade full join student
+on student.studid=grade.studid
+--自联接
+select s1.* from student as s1
+join student s2
+on s2.studname='杨菲菲' and s1.studsex=s2.studsex
+where s1.studname!='杨菲菲'
+select * from student
+where studsex=(select studsex from student where studname='杨菲菲')
+and studname!='杨菲菲'
+
+select * from grade
+select * from course 
+--交叉联接
+select * from course cross join grade
+select * from course,grade
+--1.在student数据库中查询查找同时选修了01和03课程的学生的学号
+        --自联接
+ select s1.studid from grade as s1 join grade s2 on s1.studid=s2.studid
+ where s1.courseid='01' and s2.courseid='03'
+ --求交集
+ select studid from (select studid from grade where courseid='01') AS s1 
+ where EXISTS (select studid from grade where courseid='03' and studid=s1.studid)
+ select studid from grade where courseid ='01'
+ and studid in( select distinct studid from grade where courseid='03')
+
+ select bb.studid from
+ (select studid from grade where courseid='01')as aa
+ join (select studid from grade where courseid='03')as bb
+ on aa.studid=bb.studid
+ select studid from (select studid from grade where courseid='01') as g1
+ where studid in
+ (select studid from (select studid from grade where courseid='03')as g2
+ where g1.studid = g2.studid)
+ 
+ --用group by做
+ select studid from grade
+ where courseid='01'or courseid='03'
+ group by studid
+ having count(*)>1
+ 
+--2.在student数据库中查询姓名,课程名称的成绩
+ select student.studname,course.coursename,grade.grade from student 
+ join grade on student.studid=grade.studid 
+ join course on grade.courseid=course.courseid
+ select studname,coursename,grade from student,course,grade
+ where student.studid=grade.studid and course.courseid=grade.courseid
+--3.在student数据库中查询未选修C语言的学生的学生信息
+ select * from student where not exists 
+ (select * from grade where grade.studid=student.studid 
+ and courseid=(select courseid from course where coursename='C语言'))
+ select *from student where studid not in
+ (select studid from grade where courseid in(select courseid from course where coursename='C语言'))
+--4.在student 数据库中查找选修了“计算机基础”课程且成绩在80分以上的学生学号，姓名，课程名及成绩
+ select student.studid,studname,course.coursename,grade 
+ from student join grade on student.studid=grade.studid 
+ join course on grade.courseid=course.courseid 
+ where  coursename='计算机基础' and grade>80
+ 
+ select student.studid,studname,coursename,grade from student,course,grade
+ where coursename='计算机基础' and grade>80 and student.studid=grade.studid and course.courseid=grade.courseid
+
+ select studname,grade.studid,coursename,grade
+ from student
+ join grade
+ on grade.studid=student.studid
+ and grade>80
+ join course
+ on course.courseid=grade.courseid
+ and coursename='计算机基础'
+--5.在student 数据库中查找各专业的学生数
+ select coursename,studid into #new from course join grade
+ on course.courseid=grade.courseid
+ select coursename,count(studid) from #new group by coursename
+ select (select coursename from course where courseid=grade.courseid),count(*) from grade
+group by courseid
+select coursename,count(*) from grade,course
+where course.courseid=grade.courseid
+group by coursename
+ 
+ 
+
+--6.在student 数据库中查找各门课程的最高分，最低分及平均分
+ select coursename,max(grade) AS 最高分,min(grade) 最低分,avg(grade) 平均分 from course INNER JOIN grade 
+ ON course.courseid=grade.courseid group by coursename
+ select (select coursename from course where course.courseid=grade.courseid) as coursename,
+ max(grade) as 最高分,min(grade)as 最低分,avg(grade)as 平均分
+ from grade
+ group by courseid
+select coursename ,max(grade) 最高分,min(grade) '最低分',avg(grade) [平均分]
+ from course
+ join grade
+ on grade.courseid=course.courseid
+ group by coursename
+ 
+ select coursename,grade  into #class from course join grade
+ on course.courseid=grade.courseid
+ select coursename,max(grade)[最 高 分],min(grade)[最 低 分],avg(grade)[平 均 分]
+ from #class group by coursename
+
+
+ 
+
+
+
+自动生成INSERT语句的存储过程
+
+--这是一个可以将表中的数据自动生成INSERT语句的存储过程
+--有个BUG，如果是自动增长列，数据也会被插入
+--在查询分析器中执行完成后，可以从执行结果中复制出SQL脚本。
+IF OBJECT_ID('spGenInsertSQL','P') IS NOT NULL 
+DROP PROC spGenInsertSQL
+GO
+CREATE   proc spGenInsertSQL (@tablename varchar(256))
+as
+begin
+declare @sql varchar(8000)
+declare @sqlValues varchar(8000)
+set @sql =' ('
+set @sqlValues = 'values (''+'
+select @sqlValues = @sqlValues + cols + ' + '','' + ' ,@sql = @sql + '[' + name + '],'
+  from
+      (select case
+                when xtype in (48,52,56,59,60,62,104,106,108,122,127)  --如果是数值型或MOENY型    
+                     then 'case when '+ name +' is null then ''NULL'' else ' + 'cast('+ name + ' as varchar)'+' end'
+                when xtype in (58,61) --如果是datetime或smalldatetime类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'convert(varchar,'+ name +',120)'+ '+'''''''''+' end'
+               when xtype in (167) --如果是varchar类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'replace('+ name+','''''''','''''''''''')' + '+'''''''''+' end'
+                when xtype in (231) --如果是nvarchar类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+'''N'''''' + ' + 'replace('+ name+','''''''','''''''''''')' + '+'''''''''+' end'
+                when xtype in (175) --如果是CHAR类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+''''''''' + ' + 'cast(replace('+ name+','''''''','''''''''''') as Char(' + cast(length as varchar)  + '))+'''''''''+' end'
+                when xtype in (239) --如果是NCHAR类型
+                     then 'case when '+ name +' is null then ''NULL'' else '+'''N'''''' + ' + 'cast(replace('+ name+','''''''','''''''''''') as Char(' + cast(length as varchar)  + '))+'''''''''+' end'
+                else '''NULL'''
+              end as Cols,name
+         from syscolumns
+        where id = object_id(@tablename)
+      ) T
+set @sql ='select ''INSERT INTO ['+ @tablename + ']' + left(@sql,len(@sql)-1)+') ' + left(@sqlValues,len(@sqlValues)-4) + ')'' from '+@tablename
+--print @sql
+exec (@sql)
+end
+GO
+--验证各种类型：
+drop table test
+create table test
+(
+id int identity(1,1) primary key, 
+testdate datetime default getdate(),
+testvarchar varchar(2),
+testnvarchar nvarchar(2),
+testchar char(2),
+testnchar nchar(2)
+)
+go
+insert into test values(getdate(),'ab','中','cd','中国')
+go
+exec spGenInsertSQL test
+--经试验，61表示的是DATETIME类型，网上原来的存储过程用的是CAST，后来我改成了CONVERT，这样可以更加灵活地控制输出的日期格式
+--在SYSCOLUMNS表中，每种数据类型都用一个数字来表示，其具体的含义可以参阅SYSTYPES表
+
+
+
+
+外键约束
+
+--在创建列级约束时给约束起名字
+create table tt
+(
+tid int constraint pk_tt_tid primary key,
+tname varchar(20)
+)
+--外键约束的创建，也有三种方式
+drop table class
+drop table stu
+--班级表
+create table class
+(
+classid int primary key,
+classname nvarchar(20)
+)
+--第一种方式和第二种方式（表级约束和列级约束）
+--学生表
+create table stu
+(
+stuid int primary key,
+stuname nvarchar(20) not null,
+--clsid int foreign key references class(classid)
+clsid int,
+--constraint fk_stu_clsid foreign key (clsid) references class(classid)
+)
+--第三种方式，以修改表的方式实现
+alter table stu
+add constraint fk_stu_clsid foreign key (clsid) references class(classid)
+on update cascade on delete cascade
+--启用级联更新和级联删除
+alter table stu
+drop constraint fk_stu_clsid
+alter table stu
+add constraint fk_stu_clsid foreign key (clsid) references class(classid)
+on update cascade on delete cascade
+--演示在多列上创建外键，要求其参照的主表必须是联合主键
+create table t1
+(
+t1id1 int not null,
+t1id2 int not null,
+primary key (t1id1,t1id2)
+)
+create table t2
+(
+t2id int primary key,
+t1id1 int,
+t1id2 int,
+foreign key(t1id1,t1id2) references t1(t1id1,t1id2)
+)
+--如果创建主表时这样写则不行
+create table t1
+(
+t1id1 int not null primary key,
+t1id2 int not null unique,
+)
+ 
+
+
+抛异常函数
+
+1. RAISERROR函数的使用
+RAISERROR ('数据插入失败', 16, 1)
+16表示用户定义的与消息关联的严重级别。用户可以使用从 0 到 18 之间的严重级别。
+1表示有关错误调用状态的信息。从 1 到 127 的任意整数，默认为 1。
+使用此函数产生的错误信息可以在客户端（前台应用程序）中得到
+
+
+
+大小写问题
+
+默认情况下，SQL Server不区分大小写，如果数据表TEST的TNAME列中有数据“abcd”和“Abcd”，如果使用查询语句：select * from test  where  tname  like 'a%'，则查询的结果会把上面的两条记录都查询出来，这一点上和Oracle有区别.
+
+ 
+
+ 可以通过设置排序规使其区分大小写，可以分别在创建数据库、修改数据库、创建表的字符型列（char\varchar\nchar
+
+\nvarchar等）时指定排序规则来实现。如
+
+create database test  COLLATE  Chinese_PRC_CS_AS   --这样创建的数据库中区分大小写
+
+alter database test  COLLATE  Chinese_PRC_CS_AS   --修改后的数据库中区分大小写
+
+Create table test(tid int primary key,tname varchar(20) collate chines_prc_cs_as) --这样创建的tname列在使用SELECT 语句时就可以区分大小写了。
+
+ 
+--查看所有的排序规则
+SELECT *
+FROM fn_helpcollations()
+=======================================================
+select * from 表 where 字段=值
+                                                              --不区分大小写
+select * from 表 where 字段 collate Chinese_PRC_CS_AS = 值     --区分大小写
+如：select * from t2 where tname COLLATE CHINESE_PRC_CS_AS like 'A%'
+ 
+默认情况下是：chinese_prc_ci_as
+ 
+CI     指定不区分大小写，CS     指定区分大小写。
+AI     指定不区分重音，AS     指定区分重音。
+
+
+
+动态sql
+
+执行动态sql语句
+sp_executesql系统存储过程
+语法：sp_executesql [@stmt =] stmt[{, [@params =] N'@parameter_name  data_type [,...n]' }{, [@param1 =] 'value1' [,...n] }]
+sp_executesql N'select * from titles where type=@type and price>@price',N'@type char(12),@price money',@type='business',@price=10
+--创建一个表，表的名字是"t_当前日期",如：t_20090808
+declare @date varchar(10)
+set @date=convert(varchar,getdate(),112)
+declare @str nvarchar(200)
+set @str='if object_id(''t_'+@date+''',''U'') is not null '
+set @str=@str+'drop table t_'+@date
+set @str=@str+' create table t_'+@date+'(tid int)'
+--print @str
+--exec(@str)
+exec sp_executesql @str
+ 
+
+
+
+ 
+
+
+数据库基础
+
+警告：如同ORDER BY子句一样，强制服务器返回互不相同的值也会增加运行开销。不得不花费一些时间来完成这项工作。因此，不是必须的时候不要使用关键字DISTINCT。
+索引（有待深入理解）
+对于包含索引的数据库，SQL Sever需要一个可观的额外空间。例如，要建立一个聚簇索引，需要大约１.２倍于数据大小的空间。
+索引有两种类型：聚簇索引和非聚簇索引。在聚簇索引中，索引树的叶级页包含实际的数据：记录的索引顺序与物理顺序相同。在非聚簇索引中，叶级页指向表中的记录：记录的物理顺序与逻辑顺序没有必然的联系。
+聚簇索引非常象目录表，目录表的顺序与实际的页码顺序是一致的。非聚簇索引则更象书的标准索引表，索引表中的顺序通常与实际的页码顺序是不一致的。一本书也许有多个索引。例如，它也许同时有主题索引和作者索引。同样，一个表可以有多个非聚簇索引。
+    通常情况下，你使用的是聚簇索引，但是你应该对两种类型索引的优缺点都有所理解。
+    每个表只能有一个聚簇索引，因为一个表中的记录只能以一种物理顺序存放。通常你要对一个表按照标识字段建立聚簇索引。但是，你也可以对其它类型的字段建立聚簇索引，如字符型，数值型和日期时间型字段。
+    从建立了聚簇索引的表中取出数据要比建立了非聚簇索引的表快。当你需要取出一定范围内的数据时，用聚簇索引也比用非聚簇索引好。例如，假设你用一个表来记录访问者在你网点上的活动。如果你想取出在一定时间段内的登录信息，你应该对这个表的DATETIME型字段建立聚簇索引。
+    对聚簇索引的主要限制是每个表只能建立一个聚簇索引。但是，一个表可以有不止一个非聚簇索引。实际上，对每个表你最多可以建立249个非聚簇索引。你也可以对一个表同时建立聚簇索引和非聚簇索引。
+    假如你不仅想根据日期，而且想根据用户名从你的网点活动日志中取数据。在这种情况下，同时建立一个聚簇索引和非聚簇索引是有效的。你可以对日期时间字段建立聚簇索引，对用户名字段建立非聚簇索引。如果你发现你需要更多的索引方式，你可以增加更多的非聚簇索引。
+    非聚簇索引需要大量的硬盘空间和内存。另外，虽然非聚簇索引可以提高从表中取数据的速度，它也会降低向表中插入和更新数据的速度。每当你改变了一个建立了非聚簇索引的表中的数据时，必须同时更新索引。因此你对一个表建立非聚簇索引时要慎重考虑。如果你预计一个表需要频繁地更新数据，那么不要对它建立太多非聚簇索引。另外，如果硬盘和内存空间有限，也应该限制使用非聚簇索引的数量。
+这两种类型的索引都有两个重要属性：你可以用两者中任一种类型同时对多个字段建立索引（复合索引）；两种类型的索引都可以指定为唯一索引。
+1．非聚簇索引：CREATE INDEX mycolumn_index ON mytable (myclumn)
+注意：蓝色必填，索引名字
+2．如果你需要改变一个索引的类型，你必须删除原来的索引并重建一个。建立了一个索引后，你可以用下面的SQL语句删除它：
+DROP INDEX mytable.mycolumn_index
+聚簇索引：可以使用关键字CLUSTERED。
+CREATE CLUSTERED INDEX mycolumn_clust_index ON mytable(mycolumn)
+（旧版本：如果表中有重复的记录，当你试图用这个语句建立索引时，会出现错误。但是有重复记录的表也可以建立索引；你只要使用关键字ALLOW_DUP_ROW把这一点告诉SQL Sever即可：CREATE CLUSTERED INDEX mycolumn_cindex ON mytable(mycolumn)
+                     WITH ALLOW_DUP_ROW）
+3．要对一个表建立唯一索引，可以使用关键字UNIQUE。对聚簇索引和非聚簇索引都可以使用这个关键字。这里有一个例子：
+CREATE UNIQUE COUSTERED INDEX myclumn_cindex ON mytable(mycolumn)
+4．要建立一个对多个字段的索引──复合索引──在索引建立语句中同时包含多个字段名。下面的例子对firstname和lastname两个字段建立索引：
+CREATE INDEX name_index ON username(firstname,lastname)
+添加 修改 删除数据
+你可以使用INSERT语句向文本型字段中插入数据。但是，如果你需要输入很长的字符串，你应该使用WRITETEXT语句（旧版本）。
+如果你在INSERT 语句中只指定两个字段和数据会怎么样呢？换句话说，你向一个表中插入一条新记录，但有一个字段没有提供数据。在这种情况下，有下面的四种可能：
+1．如果该字段有一个缺省值，该值会被使用。
+2．如果该字段可以接受空值，而且没有缺省值，则会被插入空值。
+3．如果该字段不能接受空值，而且没有缺省值，就会出现错误。
+4．最后，如果该字段是一个标识字段，那么它会自动产生一个新值。当你向一个有标识字段的表中插入新记录时，只要忽略该字段，标识字段会给自己赋一个新值。
+向一个有标识字段的表中插入新记录后，你可以用SQL变量@@identity来访问新记录
+的标识字段的值。考虑如下的SQL语句：
+INSERT mytable (first_column) VALUES(‘some value’)
+INSERT anothertable(another_first,another_second)
+         VALUES(@@identity,’some value’)
+如果表mytable有一个标识字段，该字段的值会被插入表anothertable的another_first字段。这是因为变量@@identity总是保存最后一次插入标识字段的值。(查询最后一个)
+注意：SET IDENTITY_INSERT 表名 Off ，当 IDENTITY_INSERT 设置为 OFF 时，不能向表 'book' 中的标识列插入显式值。 
+      SET IDENTITY_INSERT 表名 on, 当 IDENTITY_INSERT 设置为 ON 时，必须指定表 'book' 中标识列的显式值。
+删除：要从表中删除一个或多个记录，需要使用SQL DELETE语句。你可以给DELETE 语句提供WHERE 子句。WHERE子句用来选择要删除的记录。
+DELETE mytable WHERE first_column=’goodby’ OR second_column=’so long’
+如果你不给DELETE 语句提供WHERE 子句，表中的所有记录都将被删除。如果你想删除应该表中的所有记录，应使TRUNCATE TABLE语句。当你使用TRUNCATE TABLE语句时，记录的删除是不作记录的。也就是说，这意味着TRUNCATE TABLE 要比DELETE快得多。
+注意：你可以对文本型字段使用UPDATE语句。但是，如果你需要更新很长的字符串，应使用UPDATETEXT语句。
+ 
+Insert和select、update
+有一个方法可以使INSERT 语句一次添加多个记录。
+INSERT mytable (first_column,second_column)
+SELECT another_first,another_second
+FROM anothertable
+WHERE another_first=’Copy Me!’
+这个语句从anothertable拷贝记录到mytable.只有表anothertable中字段another_first的值为’Copy Me！’的记录才被拷贝。
+如果你需要拷贝整个表，你可以使用SELECT  INTO 语句。
+SELECT * INTO newtable FROM mytable
+你也可以指定只有特定的字段被用来创建这个新表。
+SELECT first_column INTO newtable
+FROM mytable
+WHERE second_column=’Copy Me!’
+假设你想从一个表中删除一个字段。使用SELECT INTO 语句，你可以创建该表的一个拷贝，但不包含要删除的字段。这使你既删除了该字段，又保留了不想删除的数据。
+如果你想改变一个字段的数据类型，你可以创建一个包含正确数据类型字段的新表。创建好该表后，你就可以结合使用UPDATE语句和SELECT 语句，把原来表中的所有数据拷贝到新表中。通过这种方法，你既可以修改表的结构，又能保存原有的数据。
+ 
+转换数据：在需要的时候可以把大部分数值从一种类型转换为另一种类型。
+假设你想从一个MONEY型字段中取出所有的值，并在结果后面加上字符串“US Dollars”。你需要使用函数CONVERT（）
+SELECT CONVERT(CHAR(8),price)+ ‘US Dollars’ FROM orders
+函数CONVERT（）带有两个变量。第一个变量指定了数据类型和长度。第二个变量指定了要进行转换的字段。在这个例子中，字段price被转换成长度为8个字符的CHAR型字段。字段price要被转换成字符型，才可以在它后面连接上字符串’US Dollars’。
+当向BIT型，DATETIME型，INT型，或者NUMERIC型字段添加字符串时，你需要进行同样的转换操作。例如，下面的语句在一个SELECT语句的查询结果中加入字符串’The vote is’，该SELECT语句返回一个BIT型字段的值:
+SELECT ‘The vote is’+CONVERT(CHAR(1),vote) FROM opinion
+下面是这个语句的结果示例：
+The vote is 1
+The vote is 1
+The vote is 0
+ 
+操作字符串数据
+6．注意：如果你想匹配百分号或下划线字符本身，你需要把它们括在方括号中。如果你想匹配连字符(-)，应把它指定为方括号中的第一个字符。如果你想匹配方括号，应把它们也括在方括号中。例如，下面的语句返回所有其描述中包含百分号的站点：
+    SELECT site_name FROM site_directory WHERE site_desc LIKE ‘%[%]%’
+ 
+Microsoft SQL 有两个允许你按照发音来匹配字符串的函数（没实际操作过）
+1．函数SOUNDEX（）给一个字符串分配一个音标码
+如果你建立一个Internet目录，你也许想增加一个选项，允许访问者按照站点名的发音来搜索站点，而不是按名字的拼写。考虑如下的语句：
+SELECT site_name FROM site_directory
+                 WHERE DIFFERENCE(site_name , ‘Microsoft’>3)
+这个语句使用函数DEFFERENCE（）来取得其名字的发音与Microsoft非常相似的站点。函数DIFFERENCE（）返回一个0到4之间的数字。如果该函数返回4，表示发音非常相近；如果该函数返回0，说明这两个字符串的发音相差很大。
+ 
+2．函数DIFFERENCE（）按照发音比较两个字符串
+你可以用函数SOUNDEX（）来返回函数DIFFERENCE（）所使用的音标码。
+SELECT site_name ‘site name’,SOUNDEX(site_name) ‘sounds like’
+这个语句选取字段site_name的所有数据及其音标码。下面是这个查询的结果：
+site name                     sounds like
+……………………………………………………………….
+Yahoo                         Y000
+Mahoo                         M000
+Microsoft                     M262
+Macrosoft                     M262
+Minisoft                      M521
+Microshoft                    M262
+Zicrosoft                     Z262
+ 
+如果你仔细看一下音标码，你会注意到音标码的第一个字母与字段值的第一个字母相同。
+函数DIFFERENDE（）比较两个字符串的第一个字母和所有的辅音字母。该函数忽略任何元音字母（包括y），除非一个元音字母是一个字符串的第一个字母。
+不幸的是，使用SOUNDEX（）和DIFFERENCE()有一个欠缺。WHERE子句中包含这两个函数的查询执行起来效果不好。因此，你应该小心使用这两个函数。
+删除空格
+函数LTRIM（）去除应该字符串前面的所有空格
+函数RTRIM（）去除一个字符串尾部的所有空格。
+SELECT RTRIM(site_name) FROM site_directory
+在这个例子中，如果任何一个站点的名字尾部有多余的空格，多余的空格将从查询结果中删去。
+你可以嵌套使用这两个函数，把一个字符串前后的空格同时删去：
+SELECT LTRIM(RTRIM(site_name)) FROM site_directory
+日期和时间
+1．通过函数GETDATE（），你可以获得当前的日期和时间。例如，语句SELECT GETDATE()返回如下的结果：
+    NOV 30 1997 3:29AM
+函数GETDATE（）可以用来作为DATEDIME（）型字段的缺省值。这对插入记录时保存当时的时间是有用的。例如，假设有一个表用来保存你站点上的活动日志。每当有一个访问者访问到你的站点时，就在表中添加一条新记录，记下访问者的名字，活动，和进行访问的时间。要建立一个表，其中的记录包含有当前的日期和时间，可以添加一个DATETIME型字段，指定其缺省值为函数GETDATE（）的返回值，就象这样：
+CREATE TABLE site_log (
+       username VARCHAR(40),
+       useractivity VARCHAR(100),
+       entrydate DATETIME DEFAULT GETDATE())
+ 
+函数GETDATE（）的返回值在显示时只显示到秒。实际上，SQL Sever内部时间可以精确到毫秒级（确切地说，可以精确到3.33毫秒）。
+要得到不同格式的日期和时间，你需要使用函数CONVERT（）。例如，当下面的这个语句执行时，显示的时间将包括毫秒：
+SELECT CONVERT(VARCHAR(30),GETDATE(),9)
+注意例子中数字9的使用。这个数字指明了在显示日期和时间时使用哪种日期和时间格式。当这个语句执行时，将显示如下的日期和时间：
+Nov 30 1997 3:29:55:170AM
+在函数CONVERT（）中你可以使用许多种不同风格的日期和时间格式。表11.1显示了所有的格式。
+表11.1  日期和时间的类型
+类型值            标准             输出
+   0                 Default           mon dd yyyy hh:miAM
+   1                 USA               mm/dd/yy
+   2                 ANSI              yy.mm.dd
+   3                 British/French    dd/mm/yy
+   4                 German            dd.mm.yy
+   5                 Italian           dd-mm-yy
+   6                 -                 dd mon yy
+   7                 -                 mon dd,yy
+   8                 -                 hh:mi:ss
+9                                         Default + milliseconds--mon dd yyyy
+hh:mi:ss:mmmAM(or )
+   10                USA              mm-dd-yy
+   11                JAPAN            yy/mm/dd
+   12                ISO              yymmdd
+   13                Europe           Default + milliseconds--dd mon yyyy
+                                       hh:mi:ss:mmm(24h)
+   14                 -                hh:mi:ss:mmm(24h)
+ 
+   类型0，9，和13总是返回四位的年。对其它类型，要显示世纪，把style值加上100。类型13和14返回24小时时钟的时间。类型0，7，和13返回的月份用三位字符表示（用Nov代表November）.
+ 
+对表11.1中所列的每一种格式，你可以把类型值加上100来显示有世纪的年（例如，00年将显示为2000年）。例如，要按日本标准显示日期，包括世纪，你应使用如下的语句：
+SELECT CONVERT（VARCHAR（30），GETDATE（），111）
+   在这个例子中，函数CONVERT（）把日期格式进行转换，显示为1997/11/30
+2．当你分析表中的数据时，你也许希望取出某个特定时间的数据。你也许对特定的某一天中――比如说2000年12月25日――访问者在你站点上的活动感兴趣。要取出这种类型的数据，你也许会试图使用这样的SELECT语句：
+SELECT * FROM weblog WHERE entrydate=’12/25/20000’
+这个SELECT语句不会返回正确的记录――它将只返回日期和时间是12/25/2000 12:00:00:000AM的记录。换句话说，只有刚好在午夜零点输入的记录才被返回。
+问题是SQL Sever将用完整的日期和时间代替部分日期和时间。例如，当你输入一个日期，但不输入时间时，SQL Sever将加上缺省的时间“12：00：00：000AM”。当你输入一个时间，但不输入日期时，SQL Sever将加上缺省的日期“Jan 1 1900”。
+要返回正确的记录，你需要适用日期和时间范围。有不止一种途径可以做到这一点。例如，下面的这个SELECT 语句将能返回正确的记录：
+SELECT * FROM weblog
+WHERE  entrydate>=”12/25/2000” AND entrydate<”12/26/2000”
+这个语句可以完成任务，因为它选取的是表中的日期和时间大于等于12/25/2000 12:00:00:000AM并小于12/26/2000 12:00:00:000AM的记录。换句话说，它将正确地返回2000年圣诞节这一天输入的每一条记录。
+另一种方法是，你可以使用LIKE来返回正确的记录。通过在日期表达式中包含通配符“％”，你可以匹配一个特定日期的所有时间。这里有一个例子：
+SELECT * FROM weblog WHERE entrydate LIKE ‘Dec 25 2000%’
+这个语句可以匹配正确的记录。因为通配符“％”代表了任何时间。
+使用这两种匹配日期和时间范围的函数，你可以选择某个月，某一天，某一年，某个小时，某一分钟，某一秒，甚至某一毫秒内输入的记录。但是，如果你使用LIKE 来匹配秒或毫秒，你首先需要使用函数CONVERT（）把日期和时间转换为更精确的格式（参见前面“转换日期和时间”一节）。
+五种常用的字段类型：字符型，文本型，数值型，逻辑性和日期型。
+字符型：
+1．VARCHAR类型可以存储的字符串最长为255个字符，存放可变长度的字符串信息。
+2．CHAR指定了这个字段应该是固定长度的字符串。
+3．VARCHAR型和CHAR型数据的这个差别是细微的，但是非常重要。假如你向一个长度为四十个字符的VARCHAR型字段中输入数据Bill Gates。当你以后从这个字段中取出此数据时，你取出的数据其长度为十个字符——字符串Bill Gates的长度。
+现在假如你把字符串输入一个长度为四十个字符的CHAR型字段中，那么当你取出数据时，所取出的数据长度将是四十个字符。字符串的后面会被附加多余的空格。
+VARCHAR型字段的另一个突出的好处是它可以比CHAR型字段占用更少的内存和硬盘空间。当你的数据库很大时，这种内存和磁盘空间的节省会变得非常重要。
+文本型：
+使用文本型数据，你可以存放超过二十亿个字符的字符串
+无论何时，只要你能避免使用文本型字段，你就应该不适用它。文本型字段既大且慢，滥用文本型字段会使服务器速度变慢。文本型字段还会吃掉大量的磁盘空间。
+警告：一旦你向文本型字段中输入了任何数据（甚至是空值），就会有2K的空间被自动分配给该数据。除非删除该记录，否则你无法收回这部分存储空间。
+ 
+数值型：
+1．INT型数据的表数范围是从-2，147，483，647到2，147，483，647的整数。
+2．为了节省内存空间，你可以使用SMALLINT型数据。SMALLINT 型数据可以存储从-32768到32768的整数。这种数据类型的使用方法与INT型完全相同。
+3．如果你实在需要节省空间，你可以使用TINYINT型数据。同样，这种类型的使用方法也与INT型相同，不同的是这种类型的字段只能存储从０到255的整数。TINYINT型字段不能用来存储负数。
+注意：INYINT型数据只占用一个字节；一个INT型数据占用四个字节。
+4．NUMERIC型数据使你能表示非常大的数——比INT型数据要大得多。一个NUMERIC型字段可以存储从-1038到1038范围内的数。NUMERIC型数据还使你能表示有小数部分的数。当定义一个NUMERIC型字段时，你需要同时指定整数部分的大小和小数部分的大小。这里有一个使用这种数据类型的例子：
+CREATE TABLE numeric_data (bignumber NUMERIC(28,0), fraction NUMERIC (5,4) )
+一个NUMERIC型数据的整数部分最大只能有28位，小数部分的位数必须小于或等于整数部分的位数，小数部分可以是零。
+5．MONEY型数据可以存储从-922，337，203，685，477.5808到922，337，203，685，477.5807的钱数。如果你需要存储比这还大的金额，你可以使用NUMERIC型数据。
+SMALLMONEY型数据只能存储从-214，748.3648到214，748.3647 的钱数。
+SMALLMONEY型来代替MONEY型数据，以节省空间。
+注意：除了numeric可以指定列宽之外，其他数据型不能指定列宽。
+ 
+存储逻辑值：
+BIT型字段只能取两个值：0或1。这里有一个如何使用这种字段的例子：
+CREATE  TABLE  opinion (visitor VARCHAR(40),good BIT)
+这个表可以用来存放对你的网点进行民意调查所得的信息。访问者可以投票表示他们是否喜欢你的网点。如果他们投YES，就在BIT型字段中存入1。反之，如果他们投NO，就在字段中存入0。
+注意：在你创建好一个表之后，你不能向表中添加BIT型字段。如果你打算在一个表中包含BIT型字段，你必须在创建表时完成。
+ 
+存储日期和时间：
+为了能够存储日期和时间，你需要使用DATETIME型数据，如下例所示：
+CREATE  TABL visitorlog( visitor VARCHAR (40), arrivaltime DATETIME ,
+                               departuretime  DATETIME)
+这个表可以用来记录访问者进入和离开你网点的时间和日期。一个DATETIME型的字段可以存储的日期范围是从1753年１月１日第一毫秒到9999年12月31日最后一毫秒。
+如果你不需要覆盖这么大范围的日期和时间，你可以使用SMALLDATETIME型数据。它与DATETIME型数据同样使用，只不过它能表示的日期和时间范围比DATETIME型数据小，而且不如DATETIME型数据精确。一个SMALLDATETIME型的字段能够存储从1900年１月１日到2079年６月６日的日期，它只能精确到秒。
+注意：不能指定列宽。
+字段属性：控制空值，缺省值和标识值
+注意：BIT型数据不能是空值。一个这种类型的字段必须取0或者１。
+缺省值：默认值，保存时自动生成默认值。在创建一个表时指定缺省值，使用表达式DEFAULT。
+标识字段：
+每个表可以有一个也只能有一个标识字段。一个标识字段是唯一标识表中每条记录的特殊字段。为了建立一个标识字段，你只需在字段定义后面加上表达式IDENTITY即可。你只能把NUMERIC型或INT型字段设为标识字段，
+技巧：建立一个标示字段时，注意使用足够大的数据类型。例如你使用TINYINT型数据，那么你只能向表中添加255个记录。如果你预计一个表可能会变得很大，你应该使用NUMERIC型数据。
+ 
+五种类型的集合函数:统计记录数目,平均值,最小值,最大值,求和
+统计记录数目：函数COUNT（）也许是最有用的集合函数。
+假如你想知道有不同名字的作者的数目。你可以通过使用关键字DISTINCT来得到该数目。
+SELECT COUNT(DISTINCT au_lname) FROM authors
+如果名字’Ringer’出现了不止一次，它将只被计算一次。关键字DISTINCT 决定了只有互不相同的值才被计算。
+通常，当你使用COUNT（）时，字段中的空值将被忽略。一般来说，这正是你所希望的。但是，如果你仅仅想知道表中记录的数目，那么你需要计算表中所有的记录─不管它是否包含空值。
+SELECT COUNT(*) FROM authors
+注意函数COUNT（）没有指定任何字段。这个语句计算表中所有记录所数目，包括有空值的记录。因此，你不需要指定要被计算的特定字段。
+函数COUNT（）在很多不同情况下是有用的。例如，假设有一个表保存了对你站点的质量进行民意调查的结果。这个表有一个名为vote的字段，该字段的值要么是0，要么是1。0表示反对票，1表示赞成票。要确定赞成票的数量，你可以所有下面的SELECT 语句：
+SELECT COUNT(vote) FROM opinion_table WHERE vote=1
+ 
