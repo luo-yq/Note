@@ -3,6 +3,9 @@
 管理
 ## 创建主题（4个分区，2个副本）
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic test
+
+
+
 查询
 
 ## 查询集群描述
@@ -32,9 +35,13 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --n
 
 ## 高级点的用法
 bin/kafka-simple-consumer-shell.sh --brist localhost:9092 --topic test --partition 0 --offset 1234  --max-messages 10
+
+
+
 平衡leader
-
 bin/kafka-preferred-replica-election.sh --zookeeper zk_host:port/chroot
-kafka自带压测命令
 
+
+
+kafka自带压测命令
 bin/kafka-producer-perf-test.sh --topic test --num-records 100 --record-size 1 --throughput 100  --producer-props bootstrap.servers=localhost:9092

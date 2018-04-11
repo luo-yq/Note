@@ -1,3 +1,22 @@
+
+
+
+
+集群修改内容
+##server.properties修改
+broker.id=0
+listeners=PLAINTEXT://:9092
+port=9092
+log.dirs=/tmp/kafka-logs/9092
+zookeeper.connect=localhost:2181
+##zookeeper.properties修改
+dataDir=/tmp/zookeeper/2181
+clientPort=2181
+
+
+
+
+
 集群.txt
 1.zookeeper集群  搭建在110， 111,112  
   

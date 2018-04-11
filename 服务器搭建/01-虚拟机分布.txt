@@ -1,1 +1,10 @@
-01-虚拟机分布.txt
+所有虚拟机 jdk1.8
+
+
+101： tomcat8，mysql5.7   1G
+102： tomcat8，mysql5.7   1G
+103： tomcat8，mysql5.7   1G
+
+111： Kafka，RabbitMq，Activemq   3G
+112： Redis，Memcachedb，FTPServer，MongoDB，ELK，zookeeper  2G
+

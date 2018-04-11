@@ -1,1 +1,22 @@
-09-实例.txt
+;定义方法
+(defn sayhelloto [name]
+   (println "Hello", name)
+
+   ) 
+(sayhelloto "world")
+(let [first-letter (first "sfafal")]
+(println first-letter))
+(println (str "afaf" "afha"))
+(println (* 10 20.0))
+(println (== 10.0 10))
+(def ^:dynamic last-letter 1)
+(println last-letter)
+
+(defn f3[]
+	(binding [last-letter (last "sfafal")]
+(println last-letter)))
+(def v2 (sorted-map :k1 :v1,:k2 :v2,:k3 :v3))
+(def v2 (hash-map :k1 :v1,:k2 :v2,:k3 :v3))
+
+(f3)
+
