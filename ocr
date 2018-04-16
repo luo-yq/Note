@@ -2,3 +2,42 @@
 
 brew install tess
 wget https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata
+
+
+#首先安装依赖的leptonica库：
+
+cd /opt
+wget http://www.leptonica.com/source/leptonica-1.72.tar.gz
+tar -xvf leptonica-1.72.tar.gz  
+cd leptonica-1.72
+./configure && make && make install
+
+#编译tesseract了，所用版本 3.04，编译需要automake、libtool，直接用yum安装就可以了。
+
+cd /opt
+
+wget https://github.com/tesseract-ocr/tesseract/archive/3.04.00.tar.gz
+mv 3.04.00  Tesseract3.04.00.tar.gz
+tar -xvf Tesseract3.04.00.tar.gz  
+cd tesseract-3.04.00/
+./autogen.sh
+./configure
+make && make install
+ 
+#下载安装英文，中文繁体，中文简体 识别库。
+
+cd /opt
+
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/chi_sim.traineddata 
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/chi_tra.traineddata
+                      
+cp/mv *.traineddata /usr/local/share/tessdata/
+
+
+convert -negate card.jpg card.tif
+tesseract card.jpg ./a  -psm 3 -l chi_sim+eng    
+tesseract card.tif ./b  -psm 3 -l chi_sim+eng    
+
+cat a.txt
+cat b.txt     
