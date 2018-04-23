@@ -22,7 +22,12 @@ localhost:bin lyt1987$ ./mysqldump -u root -p archive > ~/Downloads/new.sql
 test中悬挂程序
         Thread.currentThread().join();
 
+ 
+X-Frame-Options是一个HTTP标头（header），用来告诉浏览器这个网页是否可以放在iFrame内。例如：
 
+X-Frame-Options: DENY
+X-Frame-Options: SAMEORIGIN
+X-Frame-Options: ALLOW-FROM http://caibaojian.com/
 
 
 
