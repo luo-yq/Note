@@ -1,0 +1,9 @@
+#!/bin/sh
+
+#启动svn服务
+#svnserve -d -r /Users/lyt1987/Desktop/svn
+
+svn checkout http://host:port/repopath --username=liyongtao --password=860830 downloaddir
+cd downloaddir
+svn update
+svn commit -m ""

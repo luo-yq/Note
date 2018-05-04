@@ -1,0 +1,123 @@
+
+用途
+1.能够对HTTP和FTP服务器进行压力和性能测试， 也可以对任何数据库进行同样的测试（通过JDBC）。
+2.完全的可移植性和100% 纯java。
+3.完全 Swing 和轻量组件支持（预编译的JAR使用 javax.swing.*)包。
+4.完全多线程 框架允许通过多个线程并发取样和 通过单独的线程组对不同的功能同时取样。
+5.精心的GUI设计允许快速操作和更精确的计时。
+6.缓存和离线分析/回放测试结果。
+
+
+
+如何将上一个请求的结果作为下一个请求的参数
+　　在压力测试的时候，经常要将几个流程串联起来才能将程序测试通过。如：我现在用户首先要登录，获得我登录的凭证（tokenId），之后我的请求其他的资源的时候需要带上这个凭证。才能识别你是否是合法的用户。
+1）、创建一个线程租
+2）、创建一个获取凭证的请求(HTTP请求)
+3）、创建后置处理器
+　　 JMeter GUI 视图中右击该采样器打开右键菜单 -> 添加 -> 后置处理器 -> 正则表达式提取器，打开"正则表达式提取器"会话页面并编辑其内容如下：
+　　后置处理器是当这个请求返回后要做得事情，我这里是要从返回的内容中将我们要的tokenId获取出来。这里使用“正则表达式提取器”，用正则表达式，将我们要的内容获取出来。
+
+4）、正则表达式提取器配置
+	引用名称是下个请求将要引用到的变量名；
+	正则表达式是提取你想要内容的正则表达式，小括号()表示提取，也就是说对于你想要提取的内容需要用它括起来；
+	模板是使用提取到的第几个值。因为可能有多个值匹配，所以要使用模板。从 1 开始匹配，依次类推。这里只有一个，所以填写 $1$ 即可；
+	匹配数字表示如何取值。0 代表随机取值，1 代表全部取值。这里只有一个，填 1 即可；
+	缺省值表示参数没有取到值的话，默认给它的值。一般不填。
+	这个请求返回的数据如下：
+
+	{"message":"success","statusCode":200,"registerDay":"20","tokenId":"bf1017bc1bb495ae31764b306a3422885f5"}
+ 
+　　我们现在要获取的是上面这个json字符串中tokenId的值，即   bf1017bc1bb495ae31764b306a3422885f5  。
+5）、添加下一个请求
+　　在这个请求中，我们要将上面的tokenId作为一个参数一并发送。
+　　同上2）、添加一个http请求（线程租右键——》添加——》Sampler——》HTTP请求）
+
+6）、添加查看结果树
+7）、执行后，即可通过”查看结果树“查询
+
+
+
+测试邮件需要添加包到JMeter 的 classpath ： javaMail,activation
+为了测试一个使用SSL加密(HPPS)的web服务器,JMeter 需要一个提供SSL实现 (例如 Sun的 JavaSecure Sockets Extension - JSSE)。包含需要的加密包到 JMeter 的 classpath 。 同样,通过注册 SSL 提供者更新 jmeter.properties 。
+Apache SOAP 需要 mail.jar 和 activation.jar. 你需要下载并拷贝两个 jar 文件到你 jmeter/lib 目录.
+
+JMeter Classpath
+JMeter 自动从在它的/lib 和 /lib/ext 目录中的 jar 包发现类。如果你开发新的 JMeter 组件,你可以压 缩它们成jar包并拷贝到 JMeter 的 /lib/ext 目录。JMeter 将会自导发现在这里的任何jar包的JMeter 组 件。如果你不想把扩展 jar 包放到 lib/ext 目录,可以在 jmeter.properties 中定义 search_paths 属性。 不要使用 lib/ext 给那些有用的 jar 包;它仅仅是存放 JMeter 组件。
+
+
+
+1. 启动jmeter
+./bin/jmeter
+2.
+添加线程组：用户数，发起频率，发起数量，测试遇到错误的处理方式
+--监听器--各种输出结果
+线程组--配置元件--cookie,cache,各类请求的默认值
+线程组--sampler--各类请求
+
+
+
+
+
+
+jmeter 是通过 jndi 来获得 jms 中相关对象的，如 ConnectionFactory 和 Destination，所以在 jmeter 的 classpath 中需要添加一个 jndi.properties 属性文件，用于配置jndi。 创建jndi.properties文件，包含如下内容：
+
+cd /Users/lyt1987/Desktop/macDevelopEnviroment/apache-jmeter-2.13/bin
+
+vi jndi.properties
+
+java.naming.factory.initial = org.apache.activemq.jndi.ActiveMQInitialContextFactory    
+java.naming.provider.url = tcp://110.249.155.242:2219  
+#指定connectionFactory的jndi名字，多个名字之间可以逗号分隔。    
+#以下为例：    
+#对于topic，使用(TopicConnectionFactory)context.lookup("connectionFactry")    
+#对于queue，(QueueConnectionFactory)context.lookup("connectionFactory")    
+connectionFactoryNames = connectionFactory    
+    
+#注册queue，格式：    
+#queue.[jndiName] = [physicalName]    
+#使用时：(Queue)context.lookup("jndiName")，此处是MyQueue    
+queue.MyQueue = ActiveMQ.headLine.syncEntity.queue.dev    
+    
+#注册topic，格式：    
+# topic.[jndiName] = [physicalName]    
+#使用时：(Topic)context.lookup("jndiName")，此处是MyTopic    
+topic.MyTopic = ActiveMQ.Advisory.Consumer.Topic.cacheupdate    
+
+1、把jndi.properties放到jmeter的启动jar包中：
+可以直接将jndi.properties文件拖入jar包中；也可以执行如下操作，打开命令行窗口，并定位到 JMETER_HOME/bin 目录，运行如下命令 ：
+
+jar uf ApacheJMeter.jar jndi.properties
+
+
+
+2、添加activemq-all-5.2.0.jar包到Jmeter的lib库：
+将ACTIVE_HOME/activemq-all-5.2.0.jar文件复制到JMETER_HOME/lib目录中，jmeter在测试jms的时候会使用到activemq提供的jms的实现类，这些类并没有随jmeter一起分发，需要把这些类添加到jmeter的classpath中。
+
+
+
+3、启动Jmeter测试JMS：
+添加线程组及JMS的sampler，有三种方式的JMS消息：
+
+1）Point-to-Point
+
+右键》添加》sampler》JMS point-to-point 添加一个队列的界面
+
+
+
+
+
+注：如果不写Receive queue，则不会有消费者。
+
+
+
+2）Publisher
+基本值同Point-to-Point，不同点在于Destination,填写JMS的topic目的地
+若在ActiveMQ中Topics的名字为example.MyTopic
+则jndi.properties文件中定义的topic如下：
+topic.MyTopic = example.MyTopic
+则Destination填写topic.后面的MyTopic
+
+
+3）Subscriber
+基本值同Publisher，不同在于可以根据需要填写Client ID,JMS Selector进行消息过滤
+

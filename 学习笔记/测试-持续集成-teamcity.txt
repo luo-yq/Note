@@ -1,0 +1,5 @@
+
+http://localhost:8180/teamcity
+创建用户 teamcity/teamcity
+
+ 

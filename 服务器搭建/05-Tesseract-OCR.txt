@@ -1,0 +1,124 @@
+
+
+
+
+
+
+
+
+Linux安装
+
+
+
+
+
+mac 安装
+sudo port install tesseract
+sudo port install tesseract-<langcode>
+
+
+
+
+
+brew install tesseract
+
+brew install tessreact --with-training-tools
+
+brew install --all-languages --with-training-tools tesseract 
+
+
+
+
+windows安装
+
+ pacman -S mingw-w64-{i686,x86_64}-tesseract-ocr
+ pacman -S mingw-w64-tesseract-ocr-osd mingw-w64-{i686,x86_64}-tesseract-ocr-eng
+
+
+
+语言包下载
+https://github.com/tesseract-ocr/tessdata
+
+
+
+第三方工具下载地址如jTessBoxEditor	
+
+https://github.com/tesseract-ocr/tesseract/wiki/AddOns
+
+
+
+注意:  jTessBoxEditor 的启动脚本类名大小写错了
+
+
+
+测试
+Running Tesseract
+
+Tesseract is a command-line program, so first open a terminal or command prompt. The command is used like this:
+
+  tesseract imagename outputbase [-l lang] [-psm pagesegmode] [configfile...]
+So basic usage to do OCR on an image called 'myscan.png' and save the result to 'out.txt' would be:
+
+  tesseract myscan.png out
+Or to do the same with German:
+
+  tesseract myscan.png out -l deu
+It can even be used with multiple languages traineddata at a time eg. English and German:
+
+  tesseract myscan.png out -l eng+deu
+Tesseract also includes a hOCR mode, which produces a special HTML file with the coordinates of each word. This can be used to create a searchable pdf, using a tool such as Hocr2PDF. To use it, use the 'hocr' config option, like this:
+
+  tesseract myscan.png out hocr
+You can also create a searchable pdf directly from tesseract ( versions >=3.03):
+
+  tesseract myscan.png out pdf
+
+
+
+
+
+
+
+
+
+brew install tess
+wget https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata
+
+
+#首先安装依赖的leptonica库：
+
+cd /opt
+wget http://www.leptonica.com/source/leptonica-1.72.tar.gz
+tar -xvf leptonica-1.72.tar.gz  
+cd leptonica-1.72
+./configure && make && make install
+
+#编译tesseract了，所用版本 3.04，编译需要automake、libtool，直接用yum安装就可以了。
+
+cd /opt
+
+wget https://github.com/tesseract-ocr/tesseract/archive/3.04.00.tar.gz
+mv 3.04.00  Tesseract3.04.00.tar.gz
+tar -xvf Tesseract3.04.00.tar.gz  
+cd tesseract-3.04.00/
+./autogen.sh
+./configure
+make && make install
+ 
+#下载安装英文，中文繁体，中文简体 识别库。
+
+cd /opt
+
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/chi_sim.traineddata 
+wget --no-check-certificate https://github.com/tesseract-ocr/tessdata/raw/master/chi_tra.traineddata
+                      
+cp/mv *.traineddata /usr/local/share/tessdata/
+
+
+convert -negate card.jpg card.tif
+tesseract card.jpg ./a  -psm 3 -l chi_sim+eng    
+tesseract card.tif ./b  -psm 3 -l chi_sim+eng    
+
+cat a.txt
+cat b.txt     

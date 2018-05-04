@@ -1,0 +1,64 @@
+cd /usr/local
+wget http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.81/bin/apache-tomcat-7.0.81.tar.gz
+#wget http://apache.fayea.com/tomcat/tomcat-7/v7.0.81/bin/apache-tomcat-7.0.81.tar.gz
+tar -zxv -f apache-tomcat-7.0.81.tar.gz // 解压压缩包
+rm -rf apache-tomcat-7.0.81.tar.gz // 删除压缩包
+mv apache-tomcat-7.0.81 tomcat
+
+#开放端口
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --reload
+
+
+
+
+rpm -qa | grep java
+rpm -e --nodeps java-1.7.0-openjdk-1.7.0.51-2.4.5.5.el7.x86_64
+rpm -e --nodeps java-1.7.0-openjdk-headless-1.7.0.51-2.4.5.5.el7.x86_64
+
+
+
+jdk 安装配置 ，tar包
+
+linux下安装jdk，步骤如下
+
+   1：下载jdk包
+   2：把jdk文件保存至Linux下目录/opt/java 
+   4：配置环境变量： $ sudo vi /etc/profile                               
+
+JAVA_HOME=/opt/java/jdk1.7.0_76
+PATH=$JAVA_HOME/bin:$PATH
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export JAVA_HOME
+export PATH
+export CLASSPATH
+   5：运行$ source /etc/profile，使配置环境生效
+
+   6：运行$ java -version 看是否生效。若出现jdk版本号，则安装并配置环境变量成功
+
+
+
+tomcat:
+   /sbin/iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
+   /sbin/iptables -I INPUT -p tcp --dport 2121 -j ACCEPT
+
+
+
+
+ln -s /opt/java/jdk1.8.0_73/bin/java /usr/bin/java
+
+
+
+
+
+
+
+
+
+tomcat 安装
+	tar -zxvf apache-tomcat-6.0.29.tar.tar -C /usr/local/         (解压到/usr/local)
+	ln -s /usr/local/apache-tomcat-6.0.29/ /usr/local/tomcat
+	启动tomcat
+	cd /usr/local/tomcat/bin/
+	./startup.sh   (注意：点代表当前目录下)
+	测试http://127.0.0.1:8080/

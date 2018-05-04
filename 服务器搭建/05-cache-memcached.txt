@@ -1,0 +1,219 @@
+
+
+
+1、MemCache是项目的名称
+2、MemCached是MemCache服务器端可以执行文件的名称
+
+XMemCached具有效率高、IO非阻塞、资源耗费少、支持完整的协议、允许设置节点权重、允许动态增删节点、支持JMX、支持与Spring框架集成、使用连接池、可扩展性好等诸多优点
+
+###安装
+ 
+cd libevent-2.0.21-stable  
+sudo ./configure --prefix=/usr/local/libevent-2.0.21  
+sudo make  
+sudo make install  
+
+cd memcached-1.4.17  
+sudo ./configure --prefix=/usr/local/memcached-1.4.17 --with-libevent=/usr/local/libevent-2.0.21  
+sudo make  
+sudo make install  
+
+###运行memcached
+
+-vv 参数调式模式
+sudo ./memcached -p 11211 -m 64 -u root -vv  
+ 
+-d 守护进程模式
+sudo ./memcached -p 11211 -m 64 -u root -d  
+
+
+###参数介绍
+# ./memcached -d -m 200 -u root -l 192.168.1.91 -p 12301 -c 1000 -P /tmp/memcached.pid 
+相关解释如下： 
+-d选项是启动一个守护进程， 
+-m是分配给Memcache使用的内存数量，单位是MB，这里是200MB 
+-u是运行Memcache的用户，如果当前为 root 的话，需要使用此参数指定用户。 
+-l是监听的服务器IP地址，如果有多个地址的话，我这里指定了服务器的IP地址192.168.1.91 
+-p是设置Memcache监听的端口，我这里设置了12301，最好是1024以上的端口 
+-c选项是最大运行的并发连接数，默认是1024，这里设置了256 
+-P是设置保存Memcache的pid文件，我这里是保存在 /tmp/memcached.pid 
+
+
+“-d”参数需要进行进一步的解释
+-d install 安装memcached
+-d uninstall 卸载memcached
+-d start 启动memcached服务
+-d restart 重启memcached服务
+-d stop 停止memcached服务
+-d shutdown 停止memcached服务
+
+
+
+空间分配
+1、MemCache将内存空间分为一组slab
+2、每个slab下又有若干个page，每个page默认是1M，如果一个slab占用100M内存的话，那么这个slab下应该有100个page
+3、每个page里面包含一组chunk，chunk是真正存放数据的地方，同一个slab里面的chunk的大小是固定的
+4、有相同大小chunk的slab被组织在一起，称为slab_class
+
+MemCache中的value过来存放的地方是由value的大小决定的，value总是会被存放到与chunk大小最接近的一个slab中，放slab的时候，首先slab要申请内存，申请内存是以page为单位的，所以在放入第一个数据的时候，无论大小为多少，都会有1M大小的page被分配给该slab。申请到page后，slab会将这个page的内存按chunk的大小进行切分，这样就变成了一个chunk数组，最后从这个chunk数组中选择一个用于存储数据。
+
+
+如果slab中没有chunk可以分配了，如果MemCache启动没有追加-M（禁止LRU，这种情况下内存不够会报Out Of Memory错误），
+那么MemCache会把这个slab中最近最少使用的chunk中的数据清理掉，然后放上最新的数据。针对MemCache的内存分配及回收算法，总结三点：
+
+1、MemCache的内存分配chunk里面会有内存浪费，88字节的value分配在128字节（紧接着大的用）的chunk中，就损失了30字节，但是这也避免了管理内存碎片的问题
+2、MemCache的LRU算法不是针对全局的，是针对slab的
+3、应该可以理解为什么MemCache存放的value大小是限制的，因为一个新数据过来，slab会先以page为单位申请一块内存，申请的内存最多就只有1M，所以value大小自然不能大于1M了
+
+
+MemCache的数据存放在内存中：
+1、访问数据的速度比传统的关系型数据库要快
+2、MemCache的数据存放在内存中同时意味着只要MemCache重启了，数据就会消失
+
+再总结MemCache的特性和限制
+1、MemCache中可以保存的item数据量是没有限制的，只要内存足够
+2、MemCache单进程在32位机中最大使用内存为2G，这个之前的文章提了多次了，64位机则没有限制
+3、Key最大为250个字节，超过该长度无法存储
+4、单个item最大数据是1MB，超过1MB的数据不予存储
+5、MemCache服务端是不安全的，比如已知某个MemCache节点，可以直接telnet过去，并通过flush_all让已经存在的键值对立即失效
+6、不能够遍历MemCache中所有的item，因为这个操作的速度相对缓慢且会阻塞其他的操作
+7、MemCache的高性能源自于两阶段哈希结构：1.在客户端，通过Hash算法根据Key值算出一个节点；2.在服务端，通过一个内部Hash算法，查找真正的item并返回给客户端。从实现看，MemCache是一个非阻塞的、基于事件的服务器程序
+8、MemCache设置添加某一个Key值的时候，传入expiry为0表示这个Key值永久有效，这个Key值也会在30天之后失效
+
+
+
+
+
+
+
+cd /usr/local/memcached-1.4.25/bin
+./memcached -d -m 200 -u root -l 127.0.0.1 -p 12301 -c 1000 -P /tmp/memcached.pid 
+telnet 127.0.0.1 12301
+version  查看版本
+flush_all 清空所有键值，但不会删除items，所以此时MemCache依旧占用内存
+add name 0 60 5  --添加  名字  标志  超时s  大小   添加一个Key值，没有则添加成功并提示STORED，有则失败并提示NOT_STORED
+在新的一行根据大小输入值
+replace name  0 60 5  --修改属性或值  名字  标志  超时s  大小  	按照相应的Key值替换数据，如果Key值不存在则会操作失败 
+在新的一行根据大小输入值
+set name  0 60 5  --修改属性或值  名字  标志  超时s  大小     无条件地设置一个Key值，没有就增加，有就覆盖，操作成功提示STORED
+在新的一行根据大小输入值
+get name    返回Key对应的Value值
+stats	返回MemCache通用统计信息（下面有详细解读）
+stats items	返回各个slab中item的数目和最老的item的年龄（最后一次访问距离现在的秒数）
+stats slabs	返回MemCache运行期间创建的每个slab的信息（下面有详细解读）
+quit	关闭连接
+
+
+
+
+
+stats是一个比较重要的指令，用于列出当前MemCache服务器的状态，拿一组数据举个例子：
+
+STAT pid 1023   MemCache服务器的进程id 
+STAT uptime 21069937    服务器已经运行的秒数
+STAT time 1447235954    服务器当前的UNIX时间戳 
+STAT version 1.4.5      MemCache版本
+STAT pointer_size 64    当前操作系统指针大小，反映了操作系统的位数，64意味着MemCache服务器是64位的 
+STAT rusage_user 1167.020934   进程的累计用户时间 
+STAT rusage_system 3346.933170   进程的累计系统时间 
+STAT curr_connections 29   当前打开着的连接数
+STAT total_connections 21  当服务器启动以后曾经打开过的连接数
+STAT connection_structures 49   服务器分配的连接构造数 
+STAT cmd_get 49      get命令总请求次数 
+STAT cmd_set 7458    set命令总请求次数 
+STAT cmd_flush 0    flush_all命令总请求次数 
+STAT get_hits 7401  总命中次数，重要，缓存最重要的参数就是缓存命中率，以get_hits / (get_hits + get_misses)表示，比如这个缓存命中率就是99.2% 
+STAT get_misses 57  总未命中次数 
+..（delete、incr、decr、cas的hits和misses数，cas还多一个badval）
+STAT auth_cmds 0    认证命令的处理次数 
+STAT auth_errors 0  认证失败的处理次数 
+STAT bytes_read 22026555    总读取的字节数
+STAT bytes_written 8930466      总发送的字节数 
+STAT limit_maxbytes 4134304000  分配给MemCache的内存大小（单位为字节） 
+STAT accepting_conns 1  是否已经达到连接的最大值，1表示达到，0表示未达到
+STAT listen_disabled_num 0  统计当前服务器连接数曾经达到最大连接的次数，这个次数应该为0或者接近于0，如果这个数字不断增长， 就要小心我们的服务了
+STAT threads 4  当前MemCache总线程数，由于MemCache的线程是基于事件驱动机制的，因此不会一个线程对应一个用户请求 
+STAT bytes 151255336    当前服务器存储的items总字节数
+STAT current_items 57146    当前服务器存储的items总数量 
+STAT total_items 580656 自服务器启动以后存储的items总数量 
+STAT evicitions 0
+ 
+
+stats slab指令解读: 如果对上面的MemCache存储机制比较理解了，那么我们来看一下各个slab中的信息，还是拿一组数据举个例子：
+
+ 1 STAT 1:chunk_size 96
+ 2 ...
+ 3 STAT 2:chunk_size 144
+ 4 STAT 2:chunks_per_page 7281
+ 5 STAT 2:total_pages 7
+ 6 STAT 2:total_chunks 50967
+   ...
+首先看到，第二个slab的chunk_size（144）/第一个slab的chunk_size（96）=1.5，第三个slab的chunk_size（216）/第二个slab的chunk_size（144）=1.5，可以确定这个MemCache的增长因子是1.5，chunk_size以1.5倍增长。然后解释下字段的含义：
+
+参  数  名	作      用
+chunk_size	当前slab每个chunk的大小，单位为字节
+chunks_per_page	每个page可以存放的chunk数目，由于每个page固定为1M即1024*1024字节，所以这个值就是（1024*1024/chunk_size）
+total_pages	分配给当前slab的page总数
+total_chunks	当前slab最多能够存放的chunk数，这个值是total_pages*chunks_per_page
+used_chunks	已经被分配给存储对象的chunks数目
+free_chunks	曾经被使用过但是因为过期而被回收的chunk数
+free_chunks_end	新分配但还没有被使用的chunk数，这个值不为0则说明当前slab从来没有出现过容量不够的时候
+mem_requested	当前slab中被请求用来存储数据的内存空间字节总数，（total_chunks*chunk_size）-mem_requested表示有多少内存在当前slab中是被闲置的，这包括未用的slab+使用的slab中浪费的内存
+get_hits	当前slab中命中的get请求数
+cmd_set	当前slab中接收的所有set命令请求数
+delete_hits	当前slab中命中的delete请求数
+incr_hits	当前slab中命中的incr请求数
+decr_hits	当前slab中命中的decr请求数
+cas_hits	当前slab中命中的cas请求数
+cas_badval	当前slab中命中但是更新失败的cas请求数
+看到这个命令的输出量很大，所有信息都很有作用。举个例子吧，比如第一个slab中使用的chunks很少，第二个slab中使用的chunks很多，这时就可以考虑适当增大MemCache的增长因子了，让一部分数据落到第一个slab中去，适当平衡两个slab中的内存，避免空间浪费。
+
+
+
+memcache集群需要注意，由于各服务器上数据不一致，会导致缓存被命中的概率降低，解决办法有两种：
+1. 主从复制
+2. 编写hash算法，将数据与邻近的memcache绑定，可以大幅度的提高命中的概率
+ 
+memcached:
+master ./memcached -d -c 265 -u root -l 127.0.0.1 -p 11211 -P /tmp/memcached.pid   (192.168.1.37)
+slave /memcached -d -c 265 -u root -l 127.0.0.1 -p 11211   -x 192.168.1.37 -X 11212 -P /tmp/memcached.pid
+
+
+1、repcached介绍
+repcached是一个单master单slave的方案，它的master/slave都可读写，相互同步，如果master坏掉,slave侦测到连接断了,它会自动 listen而成为 master；等待新的 slave加入
+
+2、安装
+在两台服务器上分别安装memcached服务，另注本文libevent的版本为：libevent-1.4.13，下载地址: http://www.monkey.org/~provos/libevent-1.4.13-stable.tar.gz 
+repcached有两种方式：
+方式一、下载对应的repcached版本
+#wget http://downloads.sourceforge.net/repcached/memcached-1.2.8-repcached-2.2.tar.gz 
+#tar zxf memcached-1.2.8-repcached-2.2.tar.gz
+#cd memcached-1.2.8-repcached-2.2
+
+【方式二、下载对应patch版本
+#wget http://downloads.sourceforge.net/repcached/repcached-2.2-1.2.8.patch.gz 
+#gzip -cd ../repcached-2.2-1.2.8.patch.gz | patch -p1】
+#./configure –enable-replication
+# make
+# make install
+
+3、启动：
+启动master
+#/usr/local/bin/memcached -v -l 192.168.0.160 -p 11211 -uroot
+replication: listen (master监听)
+
+启动salve
+#/usr/local/bin/memcached -v -l 192.168.0.163 -p 11213 -uroot -x 192.168.0.160 -X 11212
+replication: connect (peer=192.168.0.160:11212)
+replication: marugoto copying
+replication: start
+
+启动正常后，master将accept。
+
+4、测试：
+操作master #telnet 192.168.0.160 11211  #set key1 0 0 3
+查看slave  #telnet 192.168.0.163 11213  #get key1
+
+5、应用：
+可以实现cache冗余，避免因cache服务器down掉而导致数据丢失。
+注意：如果master down机，slave接管并成为master，这时down机的master只能启用slave,他们之间互换角色，才能保持复制功能。换句话说，master没有抢占功能。

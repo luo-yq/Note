@@ -1,0 +1,81 @@
+设置开机启动:
+# vi /etc/rc.local
+加入以下内容
+## ActiveMQ
+su - username -c '/home/wusc/activemq-01/bin/activemq start'
+
+
+vim ~/.bash_profile
+加入
+
+alias nginx.start='launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.nginx.plist'
+alias nginx.stop='launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.nginx.plist'
+alias nginx.restart='nginx.stop && nginx.start'
+alias php-fpm.start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.php55.plist"
+alias php-fpm.stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.php55.plist"
+alias php-fpm.restart='php-fpm.stop && php-fpm.start'
+alias mysql.start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
+alias mysql.stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
+alias mysql.restart='mysql.stop && mysql.start'
+alias redis.start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.redis.plist"
+alias redis.stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.redis.plist"
+alias redis.restart='redis.stop && redis.start'
+alias memcached.start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.memcached.plist"
+alias memcached.stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.memcached.plist"
+alias memcached.restart='memcached.stop && memcached.start'
+
+
+
+
+
+
+
+
+
+###根据pid文件停止进程： 
+kill `cat /tmp/memcached.pid` 
+
+
+
+
+###查看启动的服务：
+netstat -lp | grep memcached
+
+###查看进程号：
+ps -ef | grep memcached
+
+
+
+
+
+
+
+
+查看日志： tail -100f 会实时更新； tail -n100不实时更新。
+   切换用户： su root   ; su common_user pass 
+   查看服务及对应端口号  netstat –npl | grep snmp
+   查看进程并关闭  ps -aux |grep tomcat  kill －9
+   删除目录或文件 rm -rf 文件及路径
+   install linux software with cdrom :
+          修改/etc/yum/目录下的CentOS-Base.repo ，内容为
+                 [base]
+                     name=CentOS-$releasever - Base
+                     baseurl=file:///media/CentOS_5.3_Final/
+                     enabled=1
+                     gpgcheck=1
+                     gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+          使用yum list net-snmp 查看相关包是否存在，  安装软件：yum install net-snmp，更新是yum update net-snmp
+
+   Telnet 的格式  telnet ip  port.   测试telnet是否能运行，可使用 telnet localhost 22
+   调整系统时间： (1)date 042612492005  月日时分年.秒   (2)hwclock -w 
+   建立linux下的ntpd服务
+        开发 端口，或关闭防火墙
+        1. 主机 ntpq -p，ntpdate -u 指定网址， date查看时间 
+        2. 被动机 修改ntp.conf, 清空 ntp/ntpservers  ntp/step-tickers为主机
+  如果使用nohup命令提交作业,那么在缺省情况下该作业的所有输出都被重定向到一个名为
+       nohup.out的文件中,除非另外指定了输出文件.
+              nohup command > myout.file 2>&1
+      输出被重定向到myout.file文件中.
+
+
+

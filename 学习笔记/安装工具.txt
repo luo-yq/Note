@@ -1,0 +1,135 @@
+安装工具.txt
+
+安装软件包
+RPM redhat packedge manager //Linux行业标准  需要手动安装依赖
+YUM centos //可自动安装依赖
+
+rpm -i <.rpm file name> 安装指定的 .rpm 文件
+rpm -U <.rpm file name> 用指定的 .rpm 文件升级同名包
+rpm -e <package-name>  删除指定的软件包 
+rpm -q <package-name> 查询指定的软件包在系统中是否安装 
+rpm -qa  查询系统中安装的所有RPM软件包
+rpm -qf </path/to/file>  查询系统中指定文件所属的软件包 
+rpm -qi <package-name> 查询一个已安装软件包的描述信息  
+rpm -ql <package-name> 查询一个已安装软件包里所包含的文件 
+rpm -qc <package-name> 查看一个已安装软件包的配置文件位置 
+rpm -qd <package-name> 查看一个已安装软件包的文档安装位置
+rpm -qR <package-name> 查询一个已安装软件包的最低依赖要求
+￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼￼
+使用 RPM 管理包 http://www.proxyserve.net/index.php?q=aHR0cDovL3NtYXJ0cmFp...
+￼￼￼rpm -qpi <.rpm file name>
+rpm -qpl <.rpm file name>
+查询一个未安装的 RPM文件的描述信息
+￼￼￼rpm -qpc <.rpm file name>
+rpm -qpd <.rpm file name>
+￼在安装/升级时,还可以使用 -vh 参数,其中:v表示在安装过程中将显示较详细的信息;h表示显示水平进度条 在使用 rpm -qa 命令时,还可以使用 |more 或 |grep 进行过滤
+所有的 <.rpm file name> 既可以是本地文件,也可以是远程文件 校验软件包将检查软件包中的所有文件是否与系统中所安装的一致性。包括校验码文件大小,存取权限和属主属性都 将根据数据库进行校验。该操作可在用户安装了新程序以后怀疑某些文件遭到破坏时使用。
+rpm 命令使用举例 安装软件包
+1、安装本地软件包
+ #  rpm -ivh /media/cdrom/CentOS/elinks-0.11.1-5.1.el5.i386.rpm
+ Preparing...                #
+1:elinks # 2、安装远程软件包
+ #  rpm -ivh http://centos.candishosting.com.cn/5/os/i386/CentOS/elinks-0.11.1-5.1.el5.i386.rpm
+ Preparing...                #
+1:elinks # 3、安装不在 CentOS 软件库中的软件包
+下面以安装 Fedora Extras 中的软件包为例。
+ #  rpm --import http://download.fedora.redhat.com/pub/fedora/linux/extras/RPM-GPG-KEY-Fedora-Extras
+ #  wget http://download.fedora.redhat.com/pub/fedora/linux/extras/6/i386/darcs-1.0.9-3.fc6.i386.rpm
+ #  rpm -ivh darcs-1.0.9-3.fc6.i386.rpm
+ Preparing...                #
+1:darcs #
+￼￼￼￼升级软件包
+查询一个未安装的 RPM文件里所包含的文件
+￼查看一个未安装的 RPM文件的配置文件位置
+￼查看一个未安装的 RPM文件的文档安装位置
+￼￼rpm -qpR <.rpm file name>
+查询一个未安装的 RPM文件的最低依赖要求
+￼￼rpm -V <package-name>
+校验指定的软件包
+￼￼rpm -V </path/to/file>
+校验包含指定文件的软件包
+￼￼rpm -Vp <.rpm file name>
+校验指定的未安装的 RPM文件
+￼￼rpm -Va
+校验所有已安装的软件包
+￼￼rpm --rebuilddb
+重新创建系统的 RPM 数据库,用于不能安装和查询的情况
+￼￼rpm --import <key file>
+导入指定的签名文件
+￼￼rpm -Kv --nosignature <.rpm file name>
+检查指定的RPM文件是否已损坏或被恶意篡改(验证包的MD5校验和)
+￼￼rpm -K <.rpm file name>
+检查指定RPM文件的GnuPG签名
+
+
+
+ 
+yum check-update  检查可更新的所有软件包
+yum update  下载更新系统已安装的所有软件包
+yum upgrade  大规模的版本升级,与yum update不同的是,连旧的淘汰的包也升级
+yum install <packages>  安装新软件包
+yum update <packages>  更新指定的软件包
+yum remove <packages>  卸载指定的软件包
+yum groupinstall <groupnames>  安装指定软件组中的软件包
+yum groupupdate <groupnames>   更新指定软件组中的软件包
+yum groupremove <groupnames>   卸载指定软件组中的软件包
+yum grouplist  查看系统中已经安装的和可用的软件组 
+yum list 列出资源库中所有可以安装或更新以及已经安装的rpm包
+yum list <regex> 列出资源库中与正则表达式匹配的可以安装或更新以及已经安装的rpm包
+yum list available 列出资源库中所有可以安装的rpm包
+yum list available <regex>  列出资源库中与正则表达式匹配的所有可以安装的rpm包
+yum list updates 列出资源库中所有可以更新的rpm包 
+yum list updates <regex> 列出资源库中与正则表达式匹配的所有可以更新的rpm包 
+yum list installed 列出资源库中所有已经安装的rpm包 
+yum list installed <regex>  列出资源库中与正则表达式匹配的所有已经安装的rpm包
+yum list extras 列出已经安装的但是不包含在资源库中的rpm包
+yum list extras <regex>  列出与正则表达式匹配的已经安装的但是不包含在资源库中的rpm包
+yum list recent 列出最近被添加到资源库中的软件包
+yum search <regex> 检测所有可用的软件的名称、描述、概述和已列出的维护者,查找与正则表达式匹配的值
+yum provides <regex> 检测软件包中包含的文件以及软件提供的功能,查找与正则表达式匹配的值 
+yum clean headers 清除缓存中的rpm头文件
+yum clean packages 清除缓存中rpm包文件
+yum clean all 清除缓存中的rpm头文件和包文件
+yum deplist <packages> 显示软件包的依赖信息
+
+当第一次使用yum或yum资源库有更新时,yum会自动下载所有所需的headers放置于 /var/cache/yum 目录下,所需时间可能较长。 
+
+
+
+
+
+
+
+
+
+
+
+
+
+homebrew 安装
+ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+
+其他brew命令
+brew search
+brew install
+brew uninstall
+brew list           列出已安装的软件
+brew update     更新brew
+brew home       用浏览器打开brew的官方网站
+brew info         显示软件信息
+brew deps        显示包依赖
+
+
+brew doctor   查看出错原因及解决方案
+
+wget安装 brew install wget
+
+大部分软件安装需要pkg-config
+安装pkg-config
+curl http://pkgconfig.freedesktop.org/releases/pkg-config-0.28.tar.gz -o pkg-config-0.28.tar.gz
+tar -xf pkg-config-0.28.tar.gzcd pkg-config-0.28
+
+./configure  --with-internal-glib
+   make
+  sudo  make install
+

@@ -1,0 +1,49 @@
+yum install -y lrzsz
+cd /usr/local
+rz 上传文件到Linux
+
+tar -xvf jdk-7u76-linux-x64.tar
+rm -f jdk-7u76-linux-x64.tar
+
+vi /etc/profile 
+
+JAVA_HOME=/usr/local/jdk1.7.0_76
+CLASS_PATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+PATH=$JAVA_HOME/bin:$PATH
+export JAVA_HOME CLASS_PATH PATH
+
+source /etc/profile
+
+
+
+
+
+
+
+
+###jdk安装配置#####
+vi /etc/profile
+export JAVA_HOME=/opt/jdk1.8.0_161
+export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export PATH=$PATH:$JAVA_HOME/bin
+source /etc/profile
+
+
+
+
+jdk 安装
+	chmod +x jdk-1_5_0_22-linux-i586-rpm.bin(添加执行权)
+	./jdk-1_5_0_22-linux-i586-rpm.bin
+	jdk默认安装目录为/usr/java/jdk1.5.0_22
+	安装完毕为他建立一个链接以节省目录长度
+	ln -s /usr/java/jdk1.5.0_22 /usr/jdk	
+	编辑配置文件
+	vi /etc/profile
+	添加如下内容：
+	JAVA_HOME=/usr/jdk
+	CLASSPATH=$JAVA_HOME/lib/
+	PATH=$PATH:$JAVA_HOME/bin
+	export PATH JAVA_HOME CLASSPATH	
+	source /etc/profile
+	java -version	
+	

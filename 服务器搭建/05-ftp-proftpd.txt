@@ -1,0 +1,296 @@
+
+brew install proftpd
+安装到了 /usr/local/Cellar/proftpd/1.3.5a:
+
+	编译和安装
+	wget http://systeng.net/source/proftpd-1.2.10.tar.gz
+	tar -xvfz proftpd-1.2.10.tar.gz
+	cd proftpd-1.2.10
+	./configure --sysconfdir=/etc
+	make
+	make install
+	到现在为止，你已经完成了ProFTPD的编译和安装。并且在/etc/目录下有一个默认的ProFTPD配置文件ProFTPD.conf。 
+
+11.1.3  建立FTP帐号和目录
+ 
+建立FTP下载用户：adduser -g ftp -s /sbin/nologin –m test
+设置FTP下载用户的密码：passwd test
+建立FTP上传用户：adduser -g ftp -s /sbin/nologin –m upload
+设置FTP上传用户的密码：passwd upload
+ 
+11.1.4  配置PROFTPD服务器
+ 
+PROFTPD服务器的各种配置参数默认保存在PROFTPD.CONF中，下面我们就打开这个文件并对它进行适当的配置，以便于PROFTPD能顺利的启动。
+ 
+[root@linux rpm]# vi /etc/proftpd.conf
+======================/etc/ProFTPD.conf======================
+ServerName                      "llzqq's vsftpd service"
+AllowRetrieveRestart            on 
+AllowStoreRestart               on
+ServerType                      standalone
+DefaultServer                   on
+RequireValidShell           off
+ 
+Port                            21
+Umask                           022
+MaxInstances                    10
+ 
+User                            nobody
+Group                           ftp
+ 
+DefaultRoot ~
+ 
+<Directory />
+AllowOverwrite                   on
+</Directory>
+ 
+DisplayLogin                    /welcome/.welcome
+ 
+<Limit LOGIN>
+AllowGroup ftp
+DenyAll
+</Limit>
+ 
+<Directory /home/test>
+<Limit WRITE>
+DenyGroup ftp
+</Limit>
+TransferRate RETR 15 group ftp
+</Directory>
+<Directory /home/upload>
+<Limit RMD RNFR DELE RETR>
+DenyGroup ftp
+</Limit>
+TransferRate STOR 50 group ftp
+</Directory>
+ 
+UseReverseDNS off
+IdentLookups off
+ServerIdent off
+MaxClientsPerHost 2
+TimeoutIdle 300
+TimeoutLogin 240
+TimeoutNoTransfer 240
+PassivePorts 50000 55000
+======================/etc/ProFTPD.conf======================
+ 
+11.1.5  启动测试 
+
+因为redhat系统中nobody用户属于nobody组，而不是nogroup组。 
+
+若需要将ProFTPD设置为系统启动时自动启动则通过如下命令拷贝启动文件： 
+
+[root@linux proftpd-1.2.10]# cd contrib/dist/rpm
+[root@linux rpm]# cp proftpd.init.d /etc/init.d/proftpd
+
+然后修改该脚本的可执行属性： 
+
+[root@linux rpm]# chmod 755 /etc/init.d/proftpd
+
+然后运行命令把PROFTPD加到系统服务列表中
+[root@linux rpm]# chkconfig --add proftpd
+ 
+设置PROFTPD开机启动
+[root@linux rpm]# chkconfig proftpd on
+
+重新系统启动以后，ProFTPD将自动启动。 
+最后，需要确保系统当前没有ftp服务器在运行： 
+
+[root@linux rpm]# netstat -an 
+若输出中包含 
+
+tcp 0 0 0.0.0.0:21 0.0.0.0:* LISTEN 
+
+则说明ProFTPD服务器已经启动了。也可以这样启动PROFTPD服务器
+
+[root@linux rpm]# service proftpd start 
+
+这时候可以通过如下命令来测试ProFTPD是否正常运行： 
+
+[root@linux rpm]# ftp 192.168.0.33 
+Connected to 192.168.0.33. 
+220 ProFTPD 1.2.10 Server (ProFTPD Default Installation)[ftpd.test.com.cn] 
+User (192.168.0.33:(none)): ideal 
+Password: 
+230 User ideal logged in. 
+ftp> 
+
+则现在你就拥有了一个安全可靠的ftp服务器。
+ 
+11.1.6  PROFTPD的常用命令
+
+/usr/local/proftpd/sbin/ftpshut
+
+这个命令还是比较实用的，因为你可能需要不断的调整你的服务器，而这个命令就非常灵活，可以在不停止proftpd进程的前提下，定时停止ftp连接，这里将会详细说它是怎么使用的。 
+
+ftpshut [ -l min ] [ -d min ] time [ warning-message ... ] 
+
+-l min: 在ftp关闭服务之前的几分钟内，尝试建立新的ftp连接均不被接受 
+-d min: 在ftp关闭服务之前的几分钟内，已经建立的ftp连接将被中止 
+time: 在多少时间后，服务器将关闭ftp服务，格式有两种 
+＋number 经过number分钟后关闭 
+MMHH 在今天MM：HH服务器将关闭 
+
+注意，这里我们用这个命令是把ftp服务给停了，但实际的proftpd进程还没停止，所以一般调试ftp会使用到这个命令。 
+
+举例： 
+再经过30分钟后，FTP服务将关闭，在这之前的20分钟不可接受任何新的ftp连接，已经建立的在服务关闭前10分钟强制断线，并在客户端显示“FTP Server Will shutdown at time” 
+
+
+ftpshut -l 20 -d 10 +30 "FTP Server Will shutdown at time"
+
+其实ftpshut就是产生/etc/shutmsg ,你只要删除这个文件ftp又可以重新服务，或者直接 
+
+ftpshut -R
+
+好了，开始讲一些proftpd的基本配置吧，它的配置基本格式是
+
+＃全局设置
+设置项目1 参数1 
+设置项目2 参数2 
+
+＃某个目录的设置 
+<Directory "路径名"> 
+... 
+... 
+</Directory> 
+
+＃关于匿名用户的设置 
+<Anonymous "匿名登陆的目录"> 
+... 
+... 
+<Limit 限制动作> 
+... 
+... 
+</Limit> 
+</Anonymous>
+
+我们用到的比较多的可能是Limit的使用，Limit大致有以下动作，基本能覆盖全部的权限了，大家灵活使用就是了。 
+
+CMD：  Change Working Directory 改变目录 
+MKD：  MaKe Directory 建立目录的权限 
+RNFR： ReName FRom 更改目录名的权限 
+DELE： DELEte 删除文件的权限 
+RMD：  ReMove Directory 删除目录的权限 
+RETR： RETRieve 从服务端下载到客户端的权限 
+STOR： STORe 从客户端上传到服务端的权限 
+READ： 可读的权限，不包括列目录的权限，相当于RETR，STAT等 
+WRITE：写文件或者目录的权限，包括MKD和RMD 
+DIRS： 是否允许列目录，相当于LIST，NLST等权限，还是比较实用的 
+ALL：  所有权限 
+LOGIN：是否允许登陆的权限
+
+针对上面这个Limit所应用的对象，又包括以下范围  
+AllowUser     针对某个用户允许的Limit 
+DenyUser      针对某个用户禁止的Limit 
+AllowGroup 针对某个用户组允许的Limit 
+DenyGroup     针对某个用户组禁止的Limit 
+AllowAll      针对所有用户组允许的Limit 
+DenyAll       针对所有用户禁止的Limit
+
+关于限制速率的参数为：  
+TransferRate STOR|RETR 速度（Kbytes/s） user 使用者
+
+下面我们以例子来解说proftp的配置，这样大家可能更加容易理解。 
+
+l         ftp服务器支持断点续传，且最大支持同时10人在线，每个ip只允许两个连接；
+l         允许ftpusers用户组只能访问自己的目录，而不能访问上级或者其他目录；
+l         用户登陆服务器时不显示ftp服务器版本信息，以增加安全性；
+l         建立一个kaoyan的ftp帐户，属于ftpusers组，kaoyan用户只允许下载，没有
+可写的权限。下载速率限制在50Kbytes/s。
+l         建立一个upload用户，也属于ftpusers组，同kaoyan用户的宿主目录一样，允许upload用户上传文件和创建目录的权限，但不允许下载，并且不允许删除目录和文件的权限，上传的速率控制在100Kbytes/s
+ 
+先是前期的用户和组添加以及目录的权限设置 
+ 
+[root@linux root]# adduser -g ftp -s /sbin/nologin –m test
+[root@linux root]# passwd test
+[root@linux root]# adduser -g ftp -s /sbin/nologin –m upload
+[root@linux root]# passwd upload
+
+设置/etc/proftpd.conf 
+
+注意#表示注释，对设置没影响，可以不写 
+
+ServerName "llzqq's vsftpd service" 
+ServerType standalone 
+DefaultServer on 
+Port 21 
+Umask 022 
+MaxInstances 10      #最多有10个proftpd的PID 
+User nobody 
+Group ftp
+MaxClients 10        #最多允许10个用户在线 
+MaxClientsPerHost 2 #一个IP只允许两个连接" 
+允许断点续传（上传），断点续续（下载）是默认支持的，不用设置
+AllowStoreRestart on
+DisplayLogin /welcome/welcome.msg #欢迎词文件 
+ServerIdent off      #屏蔽服务器版本信息 
+DefaultRoot ~        #设置ftp组只能访问自己的目录 
+
+<Limit LOGIN>
+AllowGroup ftp       #只有ftp组成员可以登录ftp服务器
+DenyAll
+</Limit>
+ 
+<Directory /home/test>
+<Limit WRITE>         #不允许写
+DenyGroup ftp
+</Limit>
+TransferRate RETR 15 group ftp  #下载速度15k/s
+</Directory>
+<Directory /home/upload>
+<Limit RMD RNFR DELE RETR>         #不允许修改权限，改名，删除，下载
+DenyGroup ftp
+</Limit>
+TransferRate STOR 50 group ftp  #上传速度50k/s
+</Directory>
+
+这里我们再讲一些proftp的其他参数配置： 
+
+MaxHostsPerUser 1 "对不起，每个帐户最多允许来源ip为1个" 
+#MaxHostsPerUser 对防止ftp帐号还是比较有用的。 
+
+MaxClientsPerUser 1 "对不起，每个帐户在每个客户端最多可以同时登陆1次" 
+#这个参数可以防止多线程软件下载对服务器的破坏 
+
+MaxClientsPerHost 1 "对不起，同一个客户端只能最多1个帐号可以登陆" 
+#比如ftp服务端有好多帐户你都有，但也只能用1个帐号登陆 
+
+TimeoutIdle 600 
+#客户端idel时间设置，默认就是600秒 
+
+DisplayLogin welcome.msg 
+#设置ftp登陆欢迎信息文件 
+
+关于欢迎文件的设置包含如下参数 
+
+
+%T 目前的时间  
+%F 所在硬盘剩下的容量  
+%C 目前所在的目录  
+%R Client 端的主机名称  
+%L Server 端的主机名称  
+%U 使用者帐户名称  
+%M 最大允许连接人数  
+%N 目前的服务器连接人数  
+%E FTP服务器管理员的 email  
+%i 本次上传的文件数量  
+%o 本次下载的文件数量  
+%t 本次上传+下载的文件数量
+
+知道这些参数，我们就可以写出一个友好的欢迎语 
+
+# vi /home/test/welcome/welcome.msg 
+
+欢迎您%U， 这是llzqq的测试FTP服务器； 
+目前时间是：%T； 
+本服务器最多允许%M个用户连接数； 
+目前服务器上已有%N个用户连接数； 
+目前你所在的目录是%C; 
+目录所在的硬盘还剩下%F字节。
+
+PassivePorts 50000 55000        #端口也可自己指定喜欢的
+
+
+
+

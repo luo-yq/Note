@@ -1,0 +1,91 @@
+
+安全性高
+brew install vsftpd
+安装到了 /usr/local/Cellar/vsftpd/3.0.3:
+
+
+
+安装与配置
+wget http://down.systeng.net/vsftpd-1.2.1-3E.1.i386.rpm
+pm –ivh vsftpd-1.2.1-3E.1.i386.rpm
+ 
+建立FTP下载用户：
+adduser -d –m /home/test -g ftp -s /sbin/nologin test
+ 
+建立FTP上传用户：
+adduser -d –m /home/upload -g ftp -s /sbin/nologin upload
+ 
+设置用户密码：
+passwd test
+passwd upload
+ 
+设置用户目录访问：
+vi /etc/vsftpd/chroot_list
+test
+upload
+ 
+vi /etc/vsftpd/vsftpd.conf
+ 
+FTP服务的使用者
+如果用户在远程FTP服务器上拥有账号，用户为【本地用户】。本地用户可以通过输入自己的账号和口令来进行授权登录。当授权访问的本地用户登录系统后，其登录目录为用户自己的家目录，本地用户既可以下载又可以上传。
+如果用户在远程FTP服务器上拥有账号，且此账号只能用于文件传输服务，则称此用户为【虚拟用户或GUEST用户】。虚拟用户可以通过输入自己的账号和口令来进行授权登录。当授权访问的虚拟用户登录系统后，其登录目录为其指定的目录。通常情况下，虚拟用户既可以下载有可以上传。
+如果用户在远程FTP服务器上没有账号，则称此用户为 【匿名用户】 。若FTP服务器提供匿名访问功能，则匿名用户可以通过输入账号（anonymous或ftp）和口令（随便一个E-Mail地址）来进行登录。当匿名用户登录系统后，其登录目录为匿名FTP服务器的根目录（/var/ftp/pub），一般情况下匿名FTP服务器只提供下载功能，不提供上传服务或者上上传受到一定限制。
+
+ 
+========================= vsftpd.conf =========================
+anonymous_enable=NO 不允许匿名登录
+local_enable=YES 允许本地用户登录
+write_enable=NO开放本地用户的写权限
+local_umask=022 设置本地用户的上传文件生成掩码为022，默认值为077
+anon_upload_enable=NO 不允许匿名用户上传
+anon_mkdir_write_enable=NO 不允许匿名用户写和创建目录的权限
+dirmessage_enable=YES 当切换到目录时，显示该目录下的。Message隐含文件的内容
+xferlog_enable=YES 激活上传和下载日志
+connect_from_port_20=YES 启动FTP数据端口的连接请求
+idle_session_timeout=600 将在用户会话空闲（命令间隔）10分钟后被中断
+data_connection_timeout=120 将在数据连接空闲2分钟后被中断
+ftpd_banner=Welcome to blah FTP service. 用户连接服务器后显示的信息
+chroot_local_user= NO
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list 以上三行表明，只有chroot_list文件中的用户才可以执行chroot（切换到家目录以外的目录）
+ls_recurse_enable=NO若是启动此功能，则允许登入者使用ls -R 这个指令。默认值为NO。
+hide_ids=YES如果启动这项功能，所有档案的拥有者与群组都为ftp，也就是使用者登入使用ls -al 
+之类的指令，所看到的档案拥有者跟群组均为ftp。默认值为关闭。
+userlist_enable=NO这个选项只有在userlist_enable 启动时才会被检验。如果将这个选项设为YES，则在 /etc/vsftpd.user_list 中的使用者将无法登入?r 若设为NO ， 则只有在/etc/vsftpd.user_list 中的使用者才能登入。而且此项功能可以在询问密码前就出现错误讯息，而不需要检验密码的程序。
+use_localtime=YES如果启用, vsftpd 在列取目录时, 将显示您本地时区的时间
+listen=YES 使vsftpd处于独立启动模式
+listen_address=192.168.1.2/24如果 vsftpd 以独立模式运行, 此设定用于修改默认(所有本地接口)监听地址. 格式为数字 IP 地址
+ 
+若是vsftpd 使用standalone 的模式，可使用这个参数定义使用哪个IP address 提供这项服务，若是主机上只有定义一个IP address，则此选项不需使用，若是有多个IP address，可定义在哪个IP address 上提供ftp 服务。若是不设定，则所有的IP address均会提供此服务。默认值为无。
+tcp_wrappers=YES 使用tcp_wrappes 作为主机访问控制方式
+max_clients=50 将指明服务器总的客户并发连接数为50
+max_per_ip=2 将指明每个客户机（IP）的最大连接数为2
+local_max_rate=102400 将使本地用户的最大传输速率为102400字节每秒
+pasv_min_port=50000
+pasv_max_port=55000 将使客户端连接时的端口范围在50000到55000之间。
+========================= vsftpd.conf =========================
+ 
+启动VSFTPD服务器：
+ 
+[root@linux pub]# service vsftpd start
+ 
+关于umask
+        我们知道如何改变一个目录或者文件的属性，但是当新建一个目录或者文件的时候，其默认属性是什么？这与umask指令有关。umask用户制定当前用户在 建立文件或者目录时的属性默认值。那么，如何得知或设定umask呢？查看umask数值直接输入umask即可，要设定其值，在umask之后接3个数 字。那么怎么指定这三个数字呢？主要还是跟linux的文件属性有关。参考下面的规则：
+若用户建立的是“文件”，则默认没有可执行（x）项，即只有rw这两个项，也就是最大为666（-rw-rw-rw）
+若用户建立的是“目录”，则由于x与是否可以进入此目录有关，因此默认为所有权限均开发，亦即777(drwxrwxrwx)
+语法：
+umask   [number]
+示例：
+umask      //显示当前的umask值
+
+umask 002   //设定新的umask值
+        umask指定的是“该默认值需要取消的权限”，因为r，w，x分别是4，2，1.所以要取消写权限，就输入2，而如果要取消读权限，就输入4，那么要取消读写权限就输入6，要取消执行与写权限，就输入3。例如：执行umask 002 后，当用户
+ 建立文件时：666-002==>(-rw-rw-rw-)-(- - - - - - - -w-)==>-rw-rw-r--
+ 建立目录时：777-002==>(drwxrwxrwx)-(- - - - - - - - w-)==>drwxrwxr-x
+           umask可以在/etc/bashrc中修改，默认情况下，root的 umask为022，而一般用户的则为002，因为可写权限很重要，一般情况都会取消这个权限。此外，因为root比较重要，所以为了安全起见，其同群组的写入属性也会被取消，这样也可以在一定程度上提高系统的安全性。
+ 
+示例：
+umask决定目录和文件被创建时得到的初始权限
+umask = 022时
+新建的目录 权限是755 
+文件的权限是 644

@@ -1,0 +1,127 @@
+
+
+select uuid()
+
+SELECT LAST_INSERT_ID()
+
+自增列 sqlStatement="MySql" identity="true"
+
+
+
+#mysql日志设置（含时间大约long_query_time的慢查询日志）
+# 在[mysqld] 中輸入
+#log
+log-error=/usr/local/mysql/log/error.log
+log=/usr/local/mysql/log/mysql.log
+long_query_time=2
+log-slow-queries= /usr/local/mysql/log/slowquery.log
+
+
+
+ddl数据定义语言
+create database XXX
+drop database XXX
+create table XXX
+desc XXX
+show create table XXX
+drop table XXX
+alter table oldname rename newname 
+alter table  XXX  modify colname newtype
+alter table  XXX  modify colname newtype first 移动到第一列
+alter table  XXX  change oldname newname type
+alter table  XXX  add column colname type
+alter table  XXX  add colname type after existcol
+alter table  XXX  drop column colname
+
+
+
+DML
+insert into tablename () values()
+update tablename set
+delete from tablename
+select 
+distinct
+limit start,size
+union / union all
+
+[GROUP BY field1, field2, ... #分组语句
+[WITH ROLLUP]] #是否再汇总
+[HAVING condition] #对分类后再过滤
+
+DCL
+(1)授权: GRANT [SELECT/UPDATE/INSERT/DELETE] on [DB.*/DB.<table>] TO '<username>'@'<host>' IDENTIFIED BY '<password>';
+(2)回收授权：REVOKE [SELECT/UPDATE/INSERT/DELETE] ON [DB.*/DB.<table>] FROM '<username>'@'<host>';
+
+
+
+
+
+MyISAM:
+
+特点：不支持事务，不支持外键，访问速度快。
+I
+nnoDB:
+
+特点：支持事务，写速度较MyISAM慢，占用空间比MyISAM大。
+自动增长列：即AUTO_INCREMENT。InnoDB的自动增长列必须是索引的或组合索引的第一列(MyISAM可不是第一列)
+外键约束 : 只有InnoDB支持外键约束, 创建外键时父表必须有对应的索引, 子表在创建外键的时候也会自动创建对应的索引
+
+MEMORY:
+
+特点：每个memory表实际只对应1个磁盘文件，格式为.frm文件。由于数据在内存中，访问速度非常快，默认使用HASH索引，但如果服务挂了，数据也就没了。
+启动MySQL服务时，可是使用--init-file选项，把INSERT...SELECT或LOAD DATA INFILE语句放入该文件，可加载数据。
+
+MERGE:
+
+特点：是一组MyISAM表的组合，这些MyISAM表必须结构完全相同。
+对MERGE类型的表进行查询，更新，删除操作，这些操作实际上是对内部的实际的MyISAM表进行操作。
+插入操作通过INSERT_METHODZ子句定义的，其可以有三个值：FIRST, LAST, NO。FIRST作用在第一张表，LAST作用在最后一张表，NO不作用表。
+对MERGE表进行DROP操作，只是删除MERGE定义，对内部表无影响。
+MERGE表被保存为.frm文件(存储表定义)和.MRG(存储组合表信息)。
+
+
+设计索引的原则
+
+搜索的索引列，不一定是SELECT出的列。最适合索引的列应该是WHERE子句中的列或连接子句中的列，而不是SELECT选择列中的列。
+使用唯一索引。索引列的基数越大，索引的效果越好。比如出生日期这种列的值就比较多，而性别这种列的值就只有男女。
+使用短索引。如果对字符串进行索引，就应该指定一个前缀长度。
+利用最左前缀。创建一个n列索引时，实际创建了MySQL可利用的n个索引。多列索引可起几个索引的作用，因为可以利用索引中最左边的列集来匹配行。
+不要过度索引。索引会占用磁盘空间，且会降低写操作的性能。
+对于InnoDB存储引擎的表，记录默认会按照一定的顺序保存。有主键，则按主键顺序保存。没有主键，但有唯一索引，就按唯一索引的顺序保存。既没有主键，也没有唯一索引，表中会自动生成一个内部列，并按照这个列的顺序保存。按照主键或内部列进行访问时最快的, 所以InnoDB的表，尽量使用自己的主键。InnoDB表的普通索引都会保存主键的键值，索引主键尽可能选择短的数据类型。
+
+
+
+
+通过拆分提高表的访问效率：
+
+这里的拆分指数据库表进行拆分，对于MyISAM表主要有两种拆分方法：
+      1. 第一种方法是垂直拆分，即把主键和一些列放到一个表，然后把主键和其他一些列放到另一个表中。这样可以把常用列和非常用列分开，一定程度上减少I/O次数，但需要管理冗余列，查询所有数据需要JOIN操作。
+
+      2. 第二种方法是水平拆分，根据一列或多列的值，把数据行放到两个独立的表中。表很大，分割后可以降低在查询时所需要读的数据和索引的页数；表中数据本来就有独立性，比如有些数据常用，有些不常用。需要把数据存放在多个介质中。
+
+逆规范化：
+
+大学老师都喜欢讲究三范式，道理不错，要放在数据量大，查询频繁的互联网应用中，是完全行不通的，我们随时需要逆规范化。
+常用的逆规范化技术有：
+       1. 增加冗余列：指多个表中具有相同的列，避免连接查询。
+
+       2. 增加派生列：指增加的列来自其他表中的数据，由其他表中的数据经过计算生成，以减少连接查询和集函数的使用。
+
+       3. 重新组表：指如果许多用户需要查询两个表的数据，则把他们组合成一张表，以减少连接查询。
+
+       4. 分割表：把常用列与非常用列等可以分开保存，减少查询的I/O。
+
+逆规范也会带来一定的问题，比如数据完整性等，你需要保证各表的各种冗余字段的同步，个人建议冗余那些不会或不经常变动的列，可以通过其他一些方法保证数据完整性：
+       1. 定时批处理更新。
+
+       2. 在逻辑实现中实现同步。
+
+       3. 触发器同步执行。
+
+
+
+
+
+
+
+

@@ -1,0 +1,52 @@
+samba 与 NFS 两种共享文件方式
+samba是基于Microsoft的smb/cifs协议
+访问Samba共享依赖于一个第三方包：jcifs
+
+安装方式---mac
+brew install samba
+
+brew services start samba
+
+cd /usr/local/Cellar/samba/3.6.25
+./sbin/smbd   守护进行方式启动
+
+sudo vim /usr/local/Cellar/samba/3.6.25/etc/smb.conf
+sudo vim /usr/local/etc/smb.conf
+
+找到如下这句：是访问控制，可进行用户控制或采用共享模式
+; security = user 替换为：security = share
+在配置文件最后添加：
+
+[Ubuntu]
+path = /home/michael/share
+public = yes
+writable = yes
+
+windows 访问：  \\remoteIp\Ubuntu
+mac 访问 samba   smb://remoteIp
+
+共享目录
+comment = Ubuntu
+path = /home/michael/Development
+public = yes
+writable = yes
+valid user = michael
+
+如果系统中还没有michael这个用户，则创建：sudo adduser michael
+系统有michael用户后，设置密码：sudo smbpasswd -a michael
+
+
+安装方式---linux
+a) 建立共享目录: mkdir /home/pirate/smbshare,  chmod 777 smbshare 
+b) 安装samba, sudo apt-get install samba,  sudo apt-get install smbfs 
+c) 修改samba配置文件, sudo gedit /etc/samba/smb.conf, 在文件最后添加如下行: 
+
+               [smbshare]  #-----共享名字, 客户端访问时需使用这个名字 
+               path = /home/pirate/smbshare  
+               available = yes 
+               browsealbe = yes 
+               public = yes 
+               writable = yes 
+
+d)  创建共享用户: sudo useradd aaa 
+f)  重启samba, sudo /etc/init.d/samba restart 

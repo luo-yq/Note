@@ -1,0 +1,469 @@
+cd /usr/local
+wget http://archive.apache.org/dist/activemq/5.14.1/apache-activemq-5.14.1-bin.tar.gz
+#wget http://apache.fayea.com/activemq/5.14.1/apache-activemq-5.14.1-bin.tar.gz
+tar -zxv -f apache-tomcat-7.0.29.tar.gz // 解压压缩包
+rm -rf apache-tomcat-7.0.29.tar.gz // 删除压缩包
+mv apache-tomcat-7.0.29 tomcat
+
+#开放端口
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --reload
+
+
+
+1. 测试工具
+目前使用两种测试工具进行压力测试 
+1. Jmeter 测试单客户端收发多主题，测试高并发，大数据量时的接收效率 
+2. emqtt_benchmark测试多客户端收发主题，测试高吞吐量下服务器性能
+
+1.1 安装Erlang
+emqtt_benchmark测试工具使用Erlang语言开发，必须在Linux的环境下运行，因此需要先安装Erlang语言环境。
+
+1.1.1 安装Erlang 
+可以参考这篇帖子，使安装别的特别简单。
+
+1.1.2 安装问题
+
+没有安装git，比如出现以下错误： 
+ERROR: Rebar requires version {1,5} or higher of git to process {git,"git://github.com/talentdeficit/jsx.git",{tag,"v0.9.0"}}
+ 
+解决办法： 
+下载安装git工具
+
+yum install git
+make clean
+make
+ 
+不能下载Erlang，错误： 
+[root@localhost mqtt-test]# ./kerl build 18.3 18.3
+Verifying archive checksum...
+Checksum error, check the files in /root/.kerl/archives
+ 
+解决办法： 
+删除archives文件夹
+
+[root@localhost mqtt-test]# rm -rf /root/.kerl/archives
+1
+1.2 emqtt_benchmark安装使用
+这是一个简单的MQTT基准工具用Erlang编写的。该工具的主要目的是基准测试MQTT服务器可以支持的并发连接数。官网下载
+
+1.2.1 下载安装 
+将下载下来的emqtt_benchmark-master.zip放置一个目录下，并解压缩, 使用make进行编译安装 
+
+unzip emqtt_benchmark-master 
+cd emqtt_benchmark-master 
+ls 
+make 
+1.2.2 订阅命令 
+在目录emqtt_benchmark-master下执行命令：./emqtt_bench_sub --help，结果如下：
+
+[root@localhost emqtt_benchmark-master]# ./emqtt_bench_sub --help
+Usage: emqtt_bench_sub [--help <help>] [-h [<host>]] [-p [<port>]]
+                   [-c [<count>]] [-i [<interval>]] [-t <topic>]
+                   [-q [<qos>]] [-u <username>] [-P <password>]
+                   [-k [<keepalive>]] [-C [<clean>]]
+                   [--ifaddr <ifaddr>]
+
+--help           help information
+//服务器ip地址
+-h, --host       mqtt server hostname or IP address [default: localhost]
+//服务器端口号
+-p, --port       mqtt server port number [default: 1883]
+//最大连接客户端数量 默认200
+-c, --count      max count of clients [default: 200]
+//客户端连接间隔时间，默认10毫秒
+-i, --interval   interval of connecting to the broker [default: 10]
+//订阅的主题 %i=自增长序号
+-t, --topic      topic subscribe, support %u, %c, %i variables
+//消息服务qos等级，
+//0=最多一次 服务器与 客户端 交互1次
+//1=至少一次 服务器与 客户端 交互2次
+//2=仅有一次 服务器与 客户端 交互4次
+-q, --qos        subscribe qos [default: 0]
+//客户端用户名
+-u, --username   username for connecting to server
+//用户端密码
+-P, --password   password for connecting to server
+//维持客户端活跃的时间 默认300秒
+-k, --keepalive  keep alive in seconds [default: 300]
+//客户端断开后是否清除session 默认true
+-C, --clean      clean session [default: true]
+//代理ip接口
+--ifaddr         local ipaddress or interface address
+ 
+举例：创建1000个并发客户端，并每秒接收100条消息频率
+
+./emqtt_bench_sub -c 1000 -i 10 -t bench/%i -q 2
+ 
+1.2.3 发布命令 
+执行命令：./emqtt_bench_pub --help，结果如下：
+
+[root@localhost emqtt_benchmark-master]# ./emqtt_bench_pub --help
+Usage: emqtt_bench_pub [--help <help>] [-h [<host>]] [-p [<port>]]
+                   [-c [<count>]] [-i [<interval>]]
+                   [-I [<interval_of_msg>]] [-u <username>]
+                   [-P <password>] [-t <topic>] [-s [<size>]]
+                   [-q [<qos>]] [-r [<retain>]] [-k [<keepalive>]]
+                   [-C [<clean>]] [--ifaddr <ifaddr>]
+
+--help                 help information
+-h, --host             mqtt server hostname or IP address [default: 
+                     localhost]
+-p, --port             mqtt server port number [default: 1883]
+-c, --count            max count of clients [default: 200]
+-i, --interval         interval of connecting to the broker [default: 10]
+//客户端发布消息的时间间隔 默认1000毫秒
+-I, --interval_of_msg  interval of publishing message(ms) [default: 1000]
+-u, --username         username for connecting to server
+-P, --password         password for connecting to server
+-t, --topic            topic subscribe, support %u, %c, %i variables
+//消息字节大小 默认256字节
+-s, --size             payload size [default: 256]
+-q, --qos              subscribe qos [default: 0]
+-r, --retain           retain message [default: false]
+-k, --keepalive        keep alive in seconds [default: 300]
+-C, --clean            clean session [default: true]
+--ifaddr               local ipaddress or interface address
+ 
+举例：创造10个客户,每个客户端发布消息的速度每秒100条，吞吐量1000条/秒
+
+./emqtt_bench_pub -c 10 -I 10 -t bench/%i -s 256
+ 
+1.3 Jmeter安装使用
+Apache JMeter是Apache组织开发的基于Java的压力测试工具。下载 
+用于对软件做压力测试，它最初被设计用于Web应用测试，但后来扩展到其他测试领域。
+
+可以参考我的另一片帖子
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+activemq.xml配置文件详解
+
+<beans 
+  xmlns="http://www.springframework.org/schema/beans" 
+  xmlns:amq="http://activemq.apache.org/schema/core" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd 
+  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"> 
+ 
+    <!-- Allows us to use system properties as variables in this configuration file --> 
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"> 
+        <property name="locations"> 
+            <value>file:${activemq.base}/conf/credentials.properties</value> 
+        </property>       
+    </bean> 
+ 
+    <!-- The <broker> element is used to configure the ActiveMQ broker. --> 
+     
+    <!-- brokerName：必须定义一个名称 --> 
+    <!-- 不使用持久化存储：persistent="false"，注意：内存要足够大 --> 
+    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="testBroker" dataDirectory="${activemq.base}/data" destroyApplicationContextOnStop="true" persistent="true"> 
+  
+               
+        <destinationPolicy> 
+            <policyMap> 
+              <policyEntries> 
+              <!-- 如果设定了<systemUsage>，则全局按照<systemUsage>，这里精细控制每一个q --> 
+              <!-- 设定了flowcontrol以后，会根据memorylimit的缓冲区设定的大小，决定producer的流速，即：可能拖慢producer --> 
+              <!-- 设定flowcontrol false后(同时不设定systemUsage)，虽然不会拖慢producer，但是可能会占用大量activemq的内存，如果处理仍然不及时，可能最终导致amq outofmemory --> 
+              <!-- 参考下面<systemUsage>的说明 --> 
+              <!-- 设定了false以后，表示producer直接都给，直到撑死systemUsage，才报客户端Exception --> 
+                <policyEntry topic=">" producerFlowControl="false" topicPrefetch="1000" useCache="true"> 
+                  <pendingSubscriberPolicy> 
+                    <vmCursor /> 
+                  </pendingSubscriberPolicy> 
+                </policyEntry> 
+                 
+                <!-- 设定true，表示超过memoryLimit以后，就等，等到systemUsage设定的超时时间报Exception --> 
+                <!-- 尽管可以让systemUsage统一管理全部的，但也就失去了精细管理每一个队列的能力，如果队列有重要和不重要之分，即：有的允许丢数据的，就设定true和memoryLimit；有的不允许的，就单独设定 --> 
+                <!-- 关于amq的特殊检测参数也在这里设定，参见http://activemq.apache.org/advisory-message.html --> 
+                <!-- queuePrefetch：一次分配给consumer多少数量的消息 --> 
+                <policyEntry queue=">" producerFlowControl="true" memoryLimit="4mb" queuePrefetch="1000" useCache="true"> 
+                  <!-- Use VM cursor for better latency 
+                       For more information, see: 
+                        
+                       http://activemq.apache.org/message-cursors.html 
+                        
+                  <pendingQueuePolicy> 
+                    <vmQueueCursor/> 
+                  </pendingQueuePolicy> 
+                  --> 
+                </policyEntry> 
+              </policyEntries> 
+            </policyMap> 
+        </destinationPolicy>  
+  
+         
+        <!-- 设定jmx管理端口 --> 
+        <managementContext> 
+            <managementContext connectorPort="62222" jmxDomainName="testDomain" createConnector="true"/> 
+        </managementContext> 
+ 
+        <!-- 设定持久化方案 --> 
+        <persistenceAdapter> 
+            <!-- 稳定性最强的一个 --> 
+            <!-- <amqPersistenceAdapter useNIO="true" directory="target/Broker2-data/activemq-data" syncOnWrite="true" indexPageSize="16kb" persistentIndex="true" indexMaxBinSize="100" maxFileLength="10mb" maxCheckpointMessageAddSize="32kb" cleanupInterval="3000" checkpointInterval="20000" /> --> 
+            <!-- 对于恢复来说，这个存储不能保证完全不丢数据。它比一般存储的快50% --> 
+            <kahaDB directory="${activemq.base}/data/kahadb" /> 
+        </persistenceAdapter> 
+         
+         
+          <!-- System Usage 对整个的broker做全局设定--> 
+          <!-- 使用systemUsage，以后，如果参数值设定不当，可能导致整个的q停止相应 --> 
+          <!-- 好的办法是：设定systemUsage，同时设定sendFailIfNoSpaceAfterTimeout（多长时间后超时），这个超时信息会返回给producer。这样即不会让amq被撑死，有能够保证producer不被拖死 --> 
+          <systemUsage> 
+            <systemUsage sendFailIfNoSpaceAfterTimeout="1000"> 
+                <memoryUsage> 
+                    <memoryUsage limit="32 mb"/> 
+                </memoryUsage> 
+                <storeUsage> 
+                    <storeUsage limit="5 gb"/> 
+                </storeUsage> 
+                <tempUsage> 
+                    <tempUsage limit="100 mb"/> 
+                </tempUsage> 
+            </systemUsage> 
+        </systemUsage> 
+         
+        <!-- 定义连接方式，注意如果只监听内网ip，需要指定IP地址 --> 
+        <!-- 可以指定热备等，使用failover --> 
+        <transportConnectors> 
+            <transportConnector name="manzuoopenwire" uri="tcp://0.0.0.0:63333"/> 
+        </transportConnectors> 
+ 
+        <!-- 对于broker，可以设定认证 --> 
+        <!-- 
+        <plugins> 
+            <simpleAuthenticationPlugin> 
+                <users> 
+                    <authenticationUser username="admin" password="password" groups="admins,publishers,consumers"/> 
+                    <authenticationUser username="publisher" password="password" groups="publishers,consumers"/> 
+                    <authenticationUser username="consumer" password="password" groups="consumers"/> 
+                    <authenticationUser username="guest" password="password" groups="guests"/> 
+                </users> 
+            </simpleAuthenticationPlugin> 
+        </plugins> 
+        --> 
+    </broker> 
+     
+     
+    <!-- 可以设定web 管理界面 --> 
+    <import resource="jetty.xml"/> 
+</beans> 
+
+
+
+
+
+
+
+cp apache-activemq-5.13.0 activemq-01
+cd activemq-01
+cd bin
+chmod 755 ./activemq
+
+conf/jetty.xml 端口配置
+    <bean id="jettyPort" class="org.apache.activemq.web.WebConsolePort" init-method="start">
+             <!-- the default port number for the web console -->
+        <property name="host" value="0.0.0.0"/>
+        <property name="port" value="8161"/>
+    </bean>
+
+
+配置防火墙
+    # vi /etc/sysconfig/iptables
+添加:
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 61616 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 8161 -j ACCEPT
+重启防火墙:
+# service iptables restart
+
+
+用户配置：此处未尝试
+conf/activemq.xml
+  
+    方式一：可能是老方式
+    <plugins>
+      <simpleAuthenticationPlugin>
+        <users>
+          <authenticationUser username="wusc" password="wusc.123" groups="users,admins"/>
+        </users>
+      </simpleAuthenticationPlugin>
+    </plugins>
+    方式二：可能是新方式
+    credentials.properties
+    credentials-enc.properties  密码加密
+
+    activemq.username=system
+    activemq.password=manager
+    guest.password=password
+权限配置
+conf/jetty.xml
+
+    <bean id="securityConstraint" class="org.eclipse.jetty.util.security.Constraint">
+        <property name="name" value="BASIC" />
+        <property name="roles" value="user,admin" />
+        <!-- set authenticate=false to disable login -->
+        <property name="authenticate" value="true" />
+    </bean>
+    <bean id="adminSecurityConstraint" class="org.eclipse.jetty.util.security.Constraint">
+        <property name="name" value="BASIC" />
+        <property name="roles" value="admin" />
+         <!-- set authenticate=false to disable login -->
+        <property name="authenticate" value="true" />
+    </bean>
+
+控制台登录
+conf/jetty-realm.properties
+  # Defines users that can access the web (console, demo, etc.)
+  # username: password [,rolename ...]
+  admin: admin, admin
+  user: user, user
+
+
+ActiveMQ发送模式，连接串
+（1）ActiveMQ异步发送，只需新增参数transport.useAsyncSend=true，具体如下:
+      BrokerUri = "tcp://127.0.0.1:61616?transport.useAsyncSend=true"
+（2）ActiveMQ同步发送，只需新增参数transport.useAsyncSend=false，具体如下:
+      BrokerUri = "tcp://127.0.0.1:61616?transport.useAsyncSend=false"
+      其实activeMQ在默认情况下就是同步发送，所以在同步发送时可以简写为：
+      BrokerUri = "tcp://127.0.0.1:61616"
+ 
+错误：Channel was inactive for too long （服务器消息较长时间没有消息发送时，客户端会报这个错误）
+解决方法：在建立连接的Uri中加入： wireFormat.maxInactivityDuration=0
+
+错误：The Session is closed（网络异常时客户端会报出这个错误）
+解决办法：在建立连接的Uri中加入最大重连间隔： maxReconnectDelay=10000
+ 
+ActiveMQ负责均衡：对broker采取了负载均衡和基于共享文件系统的主备配置，这个时候，客户端生产者和消费者的URI中用
+failover:(tcp://192.168.1.117:61616,tcp://192.168.1.118:61616,tcp://broker3:61616)
+采用failover方式连接导致,在activemq未启动时导致tomcat一直尝试连接mq，导致tomcat卡死
+解决方法：不采用failover连接
+
+
+
+./activemq setup ~/.activemqrc
+./activemq start
+
+ActiveMQ消息管理后台系统： http://localhost:8161/admin
+
+
+
+
+
+
+
+安全机制一般包含验证（Authentication）和授权（Authorization）两部分。在ActiveMQ中，验证指通过访问者的用户名和密码实现用户身份的验证，授权指为消息目标（队列或主题）的读、写、管理指定具有相应权限的用户组，并为用户分配权限。ActiveMQ的安全机制基于插件实现。
+
+ActiveMQ提供两种验证插件，分别是：
+
+1）Simple authentication plugin-in；
+2）JAAS（Java Authentication and Authorization Service）authentication plugin-in。ActiveMQ提供一种授权插件：Authorization plugin-in。
+
+ActiveMQ安全机制的使用
+
+1. ActiveMQ的使用
+
+mvn install -Dmaven.test.skip=true  
+
+
+cd apache-activemq-5.13.0/bin/
+./activemq start
+
+2. Simple authentication plugin-in的使用
+
+在activemq.xml中如下配置：
+
+<plugins> 
+    <simpleAuthenticationPlugin> 
+        <users> 
+            <authenticationUser username="system" password="password" 
+                groups="users,admins"/> 
+            <authenticationUser username="user" password="password" 
+                groups="users"/> 
+            <authenticationUser username="guest" password="password" groups="guests"/> 
+        </users> 
+    </simpleAuthenticationPlugin> 
+</plugins>   
+3. JAAS authentication plugin-in的使用
+
+在activemq.xml中如下配置：
+
+<plugins> 
+    <jaasAuthenticationPlugin configuration="activemq-domain" /> 
+</plugins>   
+创建login.config文件：
+
+activemq-domain { 
+  org.apache.activemq.jaas.PropertiesLoginModule required 
+    debug=true 
+    org.apache.activemq.jaas.properties.user="users.properties" 
+    org.apache.activemq.jaas.properties.group="groups.properties"; 
+}; 
+创建users.properties和groups.properties文件，包含用户和用户组信息。
+
+users.properties：
+
+system=password 
+user=password 
+guest=password
+groups.properties：
+
+admins=system 
+users=system,user 
+guests=guest 
+4. Authorization plugin-in的使用
+
+在activemq.xml中如下配置：
+
+<plugins> 
+  <authorizationPlugin> 
+    <map> 
+      <authorizationMap> 
+        <authorizationEntries> 
+          <authorizationEntry queue=">" read="admins" write="admins" admin="admins" /> 
+          <authorizationEntry queue="USERS.>" read="users" write="users" admin="users" /> 
+          <authorizationEntry queue="GUEST.>" read="guests" write="guests,users" admin="guests,users" /> 
+          
+          <authorizationEntry queue="TEST.Q" read="guests" write="guests" /> 
+          
+          <authorizationEntry topic=">" read="admins" write="admins" admin="admins" /> 
+          <authorizationEntry topic="USERS.>" read="users" write="users" admin="users" /> 
+          <authorizationEntry topic="GUEST.>" read="guests" write="guests,users" admin="guests,users" /> 
+          
+          <authorizationEntry topic="ActiveMQ.Advisory.>" read="guests,users" write="guests,users" admin="guests,users"/> 
+        </authorizationEntries> 
+      </authorizationMap> 
+    </map> 
+  </authorizationPlugin> 
+</plugins>  
+ActiveMQ安全机制的源代码分析
+
+ActiveMQ在其maven工程的activemq-core模块中实现安全机制。ActiveMQ原有安全机制均基于插件实现，实现思路如图所示。
+
+
+
+其中，Broker接口是ActiveMQ的核心接口，ActiveMQ消息服务器对象即该接口的实现。接口BrokerPlugin通过installPlugin方法传入Broker对象，为其创建插件。BrokerFilter类也实现自Broker接口，其与Broker的关系，类似于Struts中Interceptor与Action的关系，多个BrokerFilter对象以及消息服务器Broker对象通过指向下一个对象的引用next构成链状结构，当创建连接、消息生产者、消息消费者时，先后执行BrokerFilter中的相应方法，直至执行消息服务器中的方法，而安全机制类即继承自BrokerFilter。
+
+ActiveMQ原有安全机制的相关类均继承或实现自上述类或接口，安全机制的类包为activemq-core中的org.apache.activemq.security。
+
+
+

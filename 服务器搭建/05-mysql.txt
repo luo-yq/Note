@@ -1,0 +1,270 @@
+centos6
+
+yum install mysql
+yum install mysql-server
+yum install mysql-devel
+
+systemctl start mysqld
+
+
+
+
+
+
+
+centos7
+
+yum install mariadb
+yum install mariadb-server
+yum install mariadb-devel
+
+
+systemctl start mariadb  #启动MariaDB
+systemctl stop mariadb  #停止MariaDB
+systemctl restart mariadb  #重启MariaDB
+systemctl enable mariadb  #设置开机启动
+
+
+
+
+
+centos7 
+
+wget http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+rpm -ivh mysql-community-release-el7-5.noarch.rpm
+yum install mysql-community-server
+
+
+
+设置密码不需要重启
+set password for 'root'@'localhost' =password('password');
+flush privileges;
+
+
+方法1： 用SET PASSWORD命令
+　　mysql -u root
+　　mysql> SET PASSWORD FOR 'root'@'localhost' = PASSWORD('newpass');
+方法2：用mysqladmin
+　　mysqladmin -u root password "newpass"
+　　如果root已经设置过密码，采用如下方法
+　　mysqladmin -u root password oldpass "newpass"
+方法3： 用UPDATE直接编辑user表
+　　mysql -u root
+　　mysql> use mysql;
+　　mysql> UPDATE user SET Password = PASSWORD('newpass') WHERE user = 'root';
+　　mysql> FLUSH PRIVILEGES;
+在丢失root密码的时候，可以这样
+　　mysqld_safe --skip-grant-tables&
+　　mysql -u root mysql
+　　mysql> UPDATE user SET password=PASSWORD("new password") WHERE user='root';
+　　mysql> FLUSH PRIVILEGES;
+
+
+
+
+
+配置mysql
+1、编码
+mysql配置文件为/etc/my.cnf
+
+最后加上编码配置
+
+[mysql]
+default-character-set =utf8
+这里的字符编码必须和/usr/share/mysql/charsets/Index.xml中一致。
+
+
+
+2、远程连接设置
+把在所有数据库的所有表的所有权限赋值给位于所有IP地址的root用户。
+
+mysql> grant all privileges on *.* to root@'%'identified by 'password';
+如果是新用户而不是root，则要先新建用户
+
+mysql>create user 'username'@'%' identified by 'password';  
+
+
+查看 MySQL Server 是不是监听了 3306 端口
+执行命令netstat -tulpen
+这里如果没有监听3306端口或者只监听了localhost（0.0.0.0表示监听所有），则在my.cnf添加下面这一行
+
+bind-address = 0.0.0.0
+
+
+
+3、如果服务器是 CentOS7，将 MySQL 服务加入防火墙
+
+===
+
+执行命令
+
+sudo firewall-cmd --zone=public --permanent --add-service=mysql
+返回success。然后继续执行
+
+sudo systemctl restart firewalld
+我的重启防火墙之后就能正常访问了。
+
+
+
+
+
+
+1.设置mysql服务器的serverId
+
+vi /etc/my.cnf
+[mysqld]
+log-bin=mysql-bin //[主库必须]启用二进制日志
+server-id=1
+
+2. 查看MariaDB的状态（主库日志文件） show master status;
+
+
+3.stop slave; //如果之前没有启动过 Slave 则不必执行该命令
+  change master to master_host='',master_user='',master_password='', master_log_file='主库日志文件',master_log_pos=日志文件位置;
+  start slave; //启动从服务器复制功能
+
+
+
+
+设置本机外的访问地址
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'192.168.195.%' IDENTIFIED BY 'my-new-password' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+内网穿透
+stream{
+    server {
+        listen 51306; 
+        proxy_pass 192.168.195.151:3306;
+    }
+}
+
+清空链接
+mysqladmin flush-hosts -uroot -proot
+
+
+  mysql主从配置。鄙人是在如下环境测试的：
+
+　　主数据库所在的操作系统：win7
+
+　　主数据库的版本：5.0
+
+　　主数据库的ip地址：192.168.1.111
+
+　　从数据库所在的操作系统：linux
+
+　　从数据的版本：5.0
+
+　　从数据库的ip地址：192.168.1.112
+
+介绍完了环境，就聊聊配置步骤：
+
+　　1、确保主数据库与从数据库一模一样。
+
+　　　　例如：主数据库里的a的数据库里有b，c，d表，那从数据库里的就应该有一个模子刻出来的a的数据库和b，c，d表
+
+　　2、在主数据库上创建同步账号。
+
+　　　　GRANT REPLICATION SLAVE,FILE ON *.* TO 'mstest'@'192.168.1.112' IDENTIFIED BY '123456';
+
+　　　　192.168.1.112：是运行使用该用户的ip地址
+
+　　　　mstest：是新创建的用户名
+
+　　　　123456：是新创建的用户名的密码
+
+　　　　以上命令的详细解释，最好百度一下，写太多反到更加更不清思路。
+
+　　3、配置主数据库的my.ini(因为是在window下，所以是my.ini不是my.cnf)。
+
+　　　   [mysqld]
+
+　　　　server-id=1
+　　　　log-bin=log
+　　　　binlog-do-db=mstest      //要同步的mstest数据库,要同步多个数据库，就多加几个replicate-db-db=数据库名
+
+　　　　binlog-ignore-db=mysql  //要忽略的数据库
+
+　　4、配置从数据库的my.cnf。
+　　　　[mysqld]
+
+　　　　server-id=2
+　　　　master-host=192.168.1.111
+　　　　master-user=mstest      　　//第一步创建账号的用户名
+　　　　master-password=123456   //第一步创建账号的密码
+　　　　master-port=3306
+　　　　master-connect-retry=60
+　　　　replicate-do-db=mstest        //要同步的mstest数据库,要同步多个数据库，就多加几个replicate-db-db=数据库名
+　　　　replicate-ignore-db=mysql　 //要忽略的数据库　
+　　5、验证是否成功
+
+　　　　进入mysql，后输入命令:show slave status\G。将显示下图。如果slave_io_running和slave_sql_running都为yes，那么表明可以成功同步了            
+
+　　6、测试同步数据。
+
+　　　　进入主数据库输入命令:insert into one(name) values('beijing');
+
+　　　　然后进入从数据库输入命令：select * from one;
+
+　　　　如果此时从数据库有获取到数据，说明同步成功了，主从也就实现了
+
+
+
+yum -y install mariadb mariadb-server
+systemctl start mariadb
+systemctl enable mariadb
+#初始化设置密码
+mysql_secure_installation
+
+firewall-cmd --zone=public --add-port=3306/tcp --permanent 
+firewall-cmd --reload
+
+2、配置MariaDB的字符集
+
+vi /etc/my.cnf
+在[mysqld]标签下添加
+init_connect='SET collation_connection = utf8_unicode_ci' 
+init_connect='SET NAMES utf8' 
+character-set-server=utf8 
+collation-server=utf8_unicode_ci 
+skip-character-set-client-handshake
+
+
+vi /etc/my.cnf.d/client.cnf
+在[client]中添加
+default-character-set=utf8
+
+
+vi /etc/my.cnf.d/mysql-clients.cnf
+在[mysql]中添加
+default-character-set=utf8 
+
+
+systemctl restart mariadb
+
+之后进入MariaDB查看字符集
+mysql> show variables like "%character%";show variables like "%collation%";
+
+
+ 
+
+3、添加用户，设置权限
+
+创建用户命令
+mysql>create user oa@localhost identified by '123';
+
+直接创建用户并授权的命令
+mysql>grant all on *.* to oa@localhost indentified by 'oa';
+
+授予外网登陆权限 
+mysql>grant all privileges on *.* to oa@'%' identified by '123';
+
+授予权限并且可以授权
+mysql>grant all privileges on *.* to oa@'hostname' identified by '123' with grant option;
+
+select,insert,update,delete,create,drop,index,alter,grant,references,reload,shutdown,process,file
+
+
+4、设置不区分大小写
+vi /etc/my.cnf.d/server.cnf
+在[mysqlld]下加上
+lower_case_table_names=1
+默认是等于0的,即大小写敏感。

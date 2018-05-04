@@ -1,0 +1,36 @@
+持续集成工具 hudson 的衍生 jenkins.war
+在tomcat以端口号8180启动
+打开http://localhost:8180/jenkins
+
+
+启动项目
+  java -jar jenkins.war --httpPort -8080
+项目首页  http://localhost:8080/
+
+新建  普通项目、maven项目
+
+配置： 构建方式
+
+
+
+
+
+
+
+
+
+
+2. 创建任务
+  2.1 点“新Job”,界面如下：
+  输入任务名称，任意名称都可以，但最好是有意义的名称，这里输入的名称和项目名称相同为hummer
+  2.2 选择项目类型，因我的项目是maven项目，这里选择“构建一个maven2/3项目”点击”OK“进入下一个界面。
+  2.3 界面如下：
+  源代码管理根据自己的需要进行选择，我的源代码是使用svn管理的，这里选择“Subversion Modules”，在"Repository URL"录入你的svn仓库地址；第一次录入时还需要录入svn仓库的用户名和口令。
+刚才的那个界面比较大，向下滚动，中间部分的界面如下：
+构建触发器，我选择“Build whenever a SNAPSHOT dependency is built”，意思是依赖于快照的构建，应该是当svn有修改时就构建项目。
+2.4 build设置不用修改，就使用pom.xml，目标选项也不用修改。
+2.5 设置构建后的步骤，（Post Steps，可选设置 ），我这里要求构建成功后把war文件复制到指定的目录，然后停运tomcat，删除项目web目录，启动tomcat。
+2.6 设置邮件通知 
+勾选“E-mail Notification”，在recipients中录入要接收邮件的邮箱。
+点“保存”，完成设置
+3. 在工作区域的左边菜单上点“立即构建”，开始构建项目，

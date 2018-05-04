@@ -1,0 +1,223 @@
+
+
+
+
+Maven导出Project依赖的jar包
+
+从Maven仓库中导出jar包：
+mvn dependency:copy-dependencies  
+会导出到Project的targed/dependency 下面
+ 
+可以在Project创建lib文件夹，输入以下命令：
+mvn dependency:copy-dependencies -DoutputDirectory=lib  
+这样jar包都会copy到Project目录下的lib里面
+ 
+可以设置依赖级别，通常用编译需要的jar
+mvn dependency:copy-dependencies -DoutputDirectory=lib   -DincludeScope=compile  
+
+
+打包
+mvn install -Dmaven.test.skip=true 
+
+
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <localRepository>E:/apache-maven-3.1.0/.m2/repository</localRepository>
+    <interactiveMode>true</interactiveMode>
+    <offline>false</offline>
+    <pluginGroups>
+        <pluginGroup>org.mortbay.jetty</pluginGroup>
+        <pluginGroup>org.jenkins-ci.tools</pluginGroup>
+    </pluginGroups>
+    
+    <!--配置权限,使用默认用户-->
+    <servers>
+        <server>
+            <id>nexus-releases</id>
+            <username>deployment</username>
+            <password>deployment123</password>
+        </server>
+        <server> 
+            <id>nexus-snapshots</id>
+            <username>deployment</username>
+            <password>deployment123</password>
+        </server>
+    </servers>
+
+    <mirrors>
+
+    </mirrors>
+
+    <profiles>
+        <profile>
+           <id>edu</id>
+                <activation>
+                    <activeByDefault>false</activeByDefault>
+                    <jdk>1.6</jdk>
+                </activation>
+                <repositories>
+                    <!-- 私有库地址-->
+                    <repository>
+                        <id>nexus</id>
+                        <url>http://192.168.4.221:8081/nexus/content/groups/public/</url>
+                        <releases>
+                            <enabled>true</enabled>
+                        </releases>
+                        <snapshots>
+                            <enabled>true</enabled>
+                        </snapshots>
+                    </repository>
+                </repositories>      
+                <pluginRepositories>
+                    <!--插件库地址-->
+                    <pluginRepository>
+                        <id>nexus</id>
+                        <url>http://192.168.4.221:8081/nexus/content/groups/public/</url>
+                        <releases>
+                            <enabled>true</enabled>
+                        </releases>
+                        <snapshots>
+                            <enabled>true</enabled>
+                       </snapshots>
+                    </pluginRepository>
+                </pluginRepositories>
+            </profile>
+    </profiles>
+    
+    <!--激活profile-->
+    <activeProfiles>
+        <activeProfile>edu</activeProfile>
+    </activeProfiles>
+    
+</settings>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+windows 删除maven缓存文件
+for /r %i in (*.lastUpdated) do del %i
+
+
+1. 项目编码<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+2. java编译环境
+3. 
+
+
+
+
+常用插件：
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+
+
+
+ 			<!-- compiler插件, 设定JDK版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.0</version>
+                <configuration>
+                    <!-- 最低要求JDK1.7 -->
+                    <source>1.7</source>
+                    <target>1.7</target>
+                    <showWarnings>true</showWarnings>
+                </configuration>
+            </plugin>
+
+
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.3</version>
+                <configuration>
+                    <show>private</show>
+                    <nohelp>true</nohelp>
+                </configuration>
+            </plugin>
+
+
+ 
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<configuration>
+					<stylesheetfile>${basedir}/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<show>public</show>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
+
+
+			<plugin>  
+                <artifactId>maven-source-plugin</artifactId>  
+                <version>2.1</version>  
+                <configuration>  
+                    <attach>true</attach>  
+                </configuration>  
+                <executions>  
+                    <execution>  
+                        <phase>compile</phase>  
+                        <goals>  
+                            <goal>jar</goal>  
+                        </goals>  
+                    </execution>  
+                </executions>  
+            </plugin>  
+
+
+
+
+
+
+
+
+
+
+
+
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>1.4.0.RELEASE</version>
+            </plugin>
+
+
+
+

@@ -1,0 +1,43 @@
+Tools > Build System > New Build System...
+{
+"cmd": ["/opt/local/bin/sbcl", "--script", "${file}"],
+"working_dir": "${file_path}",
+"selector": "source.lisp"
+}
+
+clojure
+{
+	"cmd": ["/usr/local/bin/clj", "$file"]
+}
+
+lua
+{  
+ "cmd": ["/usr/local/bin/lua", "$file"],  
+ "file_regex": "^(...*?):([0-9]*):?([0-9]*)",  
+ "selector": "source.lua"  
+}  
+
+groovy
+{
+	"cmd": ["/usr/local/bin/groovy", "$file"]
+}
+
+perl
+{  
+     "cmd": ["/usr/bin/perl", "$file"],  
+     "file_regex": ".* at (.*) line ([0-9]*)",  
+     "selector": "source.perl",  
+     "encoding": "GBK"  
+}  
+
+scala
+{
+	"cmd": ["/usr/local/scala-2.11.6/bin/scala", "$file"]
+}
+
+PHP
+{
+	    "cmd": ["php", "$file"],
+	    "file_regex": "php$", 
+	    "selector": "source.php" 
+}

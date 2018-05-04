@@ -8,3 +8,46 @@
 240： Kafka，RabbitMq，Activemq，openfire   3G
 112： Redis，Memcachedb，FTPServer，MongoDB，ELK，zookeeper  2G
 
+
+
+
+
+
+
+
+mongodb   (端口范围27000----28999)
+       master : 27001   master-web : 28001    
+        slave : 27002    slave-web : 28002
+
+redis    (端口号6379，6380)
+
+
+mysql    (端口号3306，3307)
+
+solr  jetty 8983
+
+持续集成工具 tomcat8(jenkins,teamcity)   8805,8809,8880
+
+php web     tomcat8   8905,8909,8980
+
+
+
+
+
+zookeeper
+
+nginx
+
+elk
+
+ftp 21
+telnet 23
+name 42
+
+mail ( imap : 2143     lmtp : 2024     pop3 : 2110    smtp : 2025 ) 
+
+
+
+
+activemq    jetty管理台端口：8161
+

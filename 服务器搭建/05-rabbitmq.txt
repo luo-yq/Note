@@ -1,0 +1,266 @@
+1. 安装
+安装依赖
+yum install erlang
+引入秘钥
+rpm --import https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+安装服务
+yum install rabbitmq-server-3.6.9-1.noarch.rpm
+
+
+启动rabbitmq
+rabbitmq-server 
+
+
+安装管理页面插件
+./rabbitmqctl start_app
+
+./rabbitmq-plugins enable rabbitmq_management
+
+管理页默认端口：15672
+
+
+
+添加远程访问配置
+
+　　默认网页是不允许访问的，需要增加一个用户修改一下权限，代码如下：
+
+　　添加用户:rabbitmqctl add_user hxb hxb
+
+　　添加权限:rabbitmqctl set_permissions -p "/" hxb ".*" ".*" ".*"
+
+   修改用户角色：rabbitmqctl set_user_tags hxb administrator
+
+
+
+rabbitmqctl  命令
+
+   add_user        <UserName> <Password>
+
+　　delete_user    <UserName>
+
+　　change_password <UserName> <NewPassword>
+
+　　list_users
+
+　　add_vhost    <VHostPath>
+
+　　delete_vhost <VHostPath>
+
+　　list_vhostsset_permissions  [-p <VHostPath>] <UserName> <Regexp> <Regexp> <Regexp>
+
+　　clear_permissions [-p <VHostPath>] <UserName>
+
+　　list_permissions  [-p <VHostPath>]
+
+　　list_user_permissions <UserName>
+
+　　list_queues    [-p <VHostPath>] [<QueueInfoItem> ...]
+
+　　list_exchanges [-p <VHostPath>] [<ExchangeInfoItem> ...]
+
+　　list_bindings  [-p <VHostPath>]
+
+　　list_connections [<ConnectionInfoItem> ...]
+
+
+
+
+
+
+
+
+
+java客户端
+<dependency>
+  <groupId>com.rabbitmq</groupId>
+  <artifactId>amqp-client</artifactId>
+  <version>4.1.0</version>
+</dependency>
+
+
+
+
+
+amqp协议适合性能高的设备
+mqtt适合嵌入式这类性能要求不高的设备
+
+
+
+1.centos7中安装RabbitMQ
+1).首先需要安装erlang
+yum -y install erlang
+2).完成后安装RabbitMQ：
+先下载rpm：
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.6/rabbitmq-server-3.6.6-1.el7.noarch.rpm
+yum -y install rabbitmq-server-3.6.6-1.el7.noarch.rpm 
+
+#启动后台管理插件
+rabbitmq-plugins enable rabbitmq_management   
+#web监控插件
+rabbitmq-plugins enable rabbitmq_tracing
+# 安装mqtt插件
+rabbitmq-plugins enable rabbitmq_mqtt 
+
+
+
+#添加用户和权限
+#默认网页guest用户是不允许访问的，需要增加一个用户修改一下权限，代码如下：
+#添加用户:
+rabbitmqctl add_user admin admin
+#添加权限:
+rabbitmqctl set_permissions -p "/" admin ".*" ".*" ".*"
+#修改用户角色:
+rabbitmqctl set_user_tags admin administrator
+
+#启动
+rabbitmq-server start &
+#停止
+rabbitmqctl stop 
+
+
+
+firewall-cmd --zone=public --add-port=15672/tcp --permanent
+firewall-cmd --zone=public --add-port=5672/tcp --permanent
+firewall-cmd --zone=public --add-port=1883/tcp --permanent
+firewall-cmd --reload
+
+rabbitmq-server -detached   #后台运行rabbitmq  
+rabbitmqctl stop 停止服务器
+
+
+修改端口和配置支持外网
+vi /etc/rabbitmq/rabbitmq.config
+分别配置web界面端口15672和amqp协议端口5672,mqtt协议端口1883
+[
+{rabbitmq_management, [{listener, [{port, 15672}, {ip, "0.0.0.0"}, {ssl, false}]}]},
+{rabbit, [{tcp_listeners, [5672]}, {loopback_users, ["admin"]}]},
+{rabbitmq_mqtt, [{default_user,     <<"guest">>},
+                  {default_pass,     <<"guest">>},
+                  {allow_anonymous,  true},
+                  {vhost,            <<"/">>},
+                  {exchange,         <<"amq.topic">>},
+                  {subscription_ttl, 1800000},
+                  {prefetch,         10},
+                  {ssl_listeners,    []},
+                  %% Default MQTT with TLS port is 8883
+                  %% {ssl_listeners,    [8883]}
+                  {tcp_listeners,    [1883]},
+                  {tcp_listen_options, [{backlog,   128},
+                                        {nodelay,   true}]}]}
+].
+
+
+ip:15672/#/
+
+ 
+
+
+
+手动安装Erlang
+
+yum -y install make gcc gcc-c++ kernel-devel m4 ncurses-devel openssl-devel  
+yum -y install ncurses-devel  
+wget http://erlang.org/download/otp_src_18.2.1.tar.gz  
+tar xvfz otp_src_18.2.1.tar.gz   
+cd opt_src_18.2.1
+./configure   
+make install  
+
+安装rabbitmq
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.9/rabbitmq-server-generic-unix-3.6.9.tar.xz      
+yum install xz  
+xz -d xz -d rabbitmq-server-generic-unix-3.6.9.tar.xz  
+tar -xvf rabbitmq-server-generic-unix-3.6.9.tar 
+
+cp -r rabbitmq_server-3.6.9 /usr/local/rabbitmq  
+
+vi /etc/profile  
+export PATH=/usr/local/rabbitmq/sbin:$PATH     
+source /etc/profile
+
+ 
+
+
+
+
+
+
+
+RabbitMQ 是一个消息代理。它的核心原理非常简单：接收和发送消息。你可以把它想像成一个邮局：你把信件放入邮箱，邮递员就会把信件投递到你的收件人处。在这个比喻中，RabbitMQ 就扮演着邮箱、邮局以及邮递员的角色。
+
+生产(Producing)意思就是发送。
+
+队列(queue)就是邮箱的名称。消息通过你的应用程序和 RabbitMQ 进行传输，它们能够只存储在一个队列（queue）中。 队列（queue）没有任何限制，你要存储多少消息都可以——基本上是一个无限的缓冲。多个生产者（producers）能够把消息发送给同一个队列，同样，多个消费者（consumers）也能够从同一个队列（queue）中获取数据。队列可以绘制成这样（图上是队列的名称）：
+
+消费（Consuming）和获取消息是一样的意思。
+
+ 
+
+安装：brew install rabbitmq
+安装目录：/usr/local/Cellar/rabbitmq/3.6.1/sbin
+配置环境: $RABBITMQ_HOME/etc/rabbitmq/rabbitmq-env.conf
+    $RABBITMQ_HOME/etc/rabbitmq/rabbitmq.config
+启动：sudo ./rabbitmq-server start   
+     sudo rabbitmq-server -detached  守护进程(没有写PID文件)
+安装管理台插件：sudo ./rabbitmq-plugins enable rabbitmq_management
+管理台地址：http://localhost:15672  默认用户 guest/guest 只能登陆localhost
+
+
+管理Broker
+关闭：./rabbitmqctl stop
+显示RabbitMQ中间件各种信息：sudo rabbitmqctl status
+启动应用：sudo  rabbitmqctl start_app
+停止应用：sudo rabbitmqctl stop_app
+
+重置RabbitMQ节点：（重置前要停止应用）
+sudo rabbitmqctl reset
+sudo rabbitmqctl force_reset
+
+
+用户管理
+添加用户 sudo rabbitmqctl add_user username password
+删除用户 sudo rabbitmqctl delete_user username
+修改密码 sudo rabbitmqctl change_password username newpassword
+列出所有用户 sudo rabbitmqctl list_users  
+
+虚拟机管理
+创建虚拟主机 sudo rabbitmqctl add_vhost vhostpath
+列出所有虚拟主机 sudo rabbitmqctl list_vhosts
+删除虚拟主机 sudo rabbitmqctl delete_vhost vhostpath
+
+权限管理
+设置远程访问权限： sudo rabbitmqctl set_permissions [-p vhostpath] username regexp regexp regexp
+清除用户权限 sudo rabbitmqctl clear_permissions [-p vhostpath] username
+列出虚拟主机上的所有权限 sudo rabbitmqctl list_permissions [-p vhostpath]
+列出用户权限 sudo rabbitmqctl list_user_permissions username
+
+
+列出所有队列
+sudo rabbitmqctl list_queues [-p <vhostpath>] [<queueinfoitem> ...]
+sudo rabbitmqctl list_exchanges [-p <vhostpath>] [<exchangeinfoitem> ...]
+sudo rabbitmqctl list_bindings [-p <vhostpath>] [<bindinginfoitem> ...]
+sudo rabbitmqctl list_connections [<connectioninfoitem> ...]
+sudo rabbitmqctl list_channels [<channelinfoitem> ...]
+sudo rabbitmqctl list_consumers [-p <vhostpath>]
+
+
+
+
+设置用户设置为administrator才能远程访问 
+设置用户角色： sudo rabbitmqctl set_user_tags lyt administrator 
+sudo rabbitmqctl set_permissions -p / lyt ".*" ".*" ".*"
+
+本地节点默认被命名为”rabbit”。可以通过这个命令前使 用”-n”标志明确的指定节点名称, 例如:  
+sudo rabbitmqctl -n rabbit@hostname **** 控制台命令
+
+开放端口
+#ufw allow 5672
+
+
+
+
+
+
+
+
+

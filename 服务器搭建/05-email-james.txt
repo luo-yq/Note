@@ -1,0 +1,43 @@
+tar -zxf apache-james-3.0-beta3-app.tar.gz
+端口修改
+服务监听端口不是在/etc/service，而是在james的conf下文件配置，
+imapserver.xml：<bind>0.0.0.0:2143</bind>
+lmtpserver.xml：<bind>127.0.0.1:2024</bind>
+pop3server.xml：<bind>0.0.0.0:2110</bind>
+smtpserver.xml：<bind>0.0.0.0:2025</bind>
+
+启动
+1）./james start
+2）./run.sh &
+
+停止
+1）./james stop
+2) kill run PID, 也许不用，杀之前检查是否有apache-james的进程
+
+配置域名:需要在james启动后执行
+1）cd bin
+2）./james-cli.sh -h localhost adddomain bellinms.com
+
+添加默认域名
+vi conf/domainlist.xml
+<domainlist class="org.apache.james.domainlist.jpa.JPADomainList">
+  <autodetect>true</autodetect>
+  <autodetectIP>true</autodetectIP>
+  <defaultDomain>pallasli.com</defaultDomain>
+</domainlist>
+<domainlist class="org.apache.james.domainlist.xml.XMLDomainList">
+   <domainnames>
+       <domainname>pallasli.com</domainname>
+   </domainnames>
+   <autodetect>true</autodetect>
+   <autodetectIP>true</autodetectIP>
+   <defaultDomain>pallasli.com</defaultDomain>
+</domainlist>
+添加用户
+1）cd bin
+2）./james-cli.sh  -h localhost adduser admin@pallasli.com 123456
+
+远程连接stmp端口    telnet localhost 2025
+添加用户    adduser usernameLyt passwordLyt
+查看用户    listusers
+停止服务器   quit
