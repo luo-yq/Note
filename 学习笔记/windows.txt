@@ -1,3 +1,5 @@
+windows : netstat -an|find "61616" 
+
 控制面板----程序功能----打开Windows功能
 打开 telnet
 打开  Internet---FTP及扩展  打开TFTP

@@ -51,3 +51,175 @@ mail ( imap : 2143     lmtp : 2024     pop3 : 2110    smtp : 2025 )
 
 activemq    jetty管理台端口：8161
 
+
+
+
+
+
+VMware 使用vmneto8 进行 nat 连接
+网关 192.168.195.2
+主机 192.168.195.1
+
+虚拟机网段分配   
+
+11--19 基础配置，用于克隆，节省空间
+11: 基础配置，常用命令和工具 lsof,ssh,network_tools
+12: nginx,haproxy,redis,memcache,mq,mongodb等各种小服务
+13: elk
+100：tomcat,weblogic,was,jboss等
+150: mysql
+160: oracle
+180: zookeeper
+200: cloudra
+210: 大数据基础软件
+230: 监控
+
+101--109  tomcat,weblogic,jboss,was,其他web容器预留
+151--159  mysql
+161--169  oracle
+171--179   nginx
+181--189   zookeeper
+191-199   redis
+
+201--209   cloudra大数据
+211--219   大数据
+ssh免密登录
+Hadoop集群，
+一致性 Zookeeper集群，
+实时流计算 Storm集群
+查询 hive,MapReduce,Pig,Spark SQL
+批处理 spark（Spark看作是Hadoop MapReduce的一个替代品）
+存储 hbase,MongoDB，CouchDB，Tair，Redis，Memcached,OceanBase,LevelDB,HDFS
+日志系统(flume,logstash,kibana)
+消息系统(StormMq,ZeroMq,RabbitMq,ActiveMq，Kafka集群，Jafka)
+监控 Nagios,Ganglia,zabbix
+平台 Ambari，cloudra
+全文检索 Nutch,Lucene,SolrCloud,Solr,Sphinx，elanstic
+
+Sqoop
+
+数据挖掘Mahout
+云计算OpenStack
+容器Docker
+
+
+
+220    邮箱
+
+
+160：  root/oracle  oracle/oracle     system/oracle
+
+
+
+
+
+
+
+
+
+
+
+1.  网络配置
+
+    BOOTPROTO=static
+    ONBOOT=yes
+
+    IPADDR=192.168.195.11
+    NETMASK=255.255.255.0
+    GATEWAY=192.168.195.2
+
+    DNS1=8.8.8.8
+
+
+
+2. 安装工具
+   yum -y install net-tools.x86_64 httpd ntp lsof wget firewalld lrzsz gcc-c++ zlib zlib-devel pcre pcre-devel telnet
+
+   rpm -qa|grep -E "openssh" 
+   ## sudo yum install openssh*
+   yum -y install openssl openssl-devel
+   注册使用服务：
+
+   sudo systemctl enable sshd  
+   sudo systemctl start sshd 或者
+   service sshd start 
+ 
+   开启防火墙的22端口： 
+   systemctl start firewalld 
+   sudo firewall-cmd --zone=public --add-port=22/tcp --permanent  
+   sudo service firewalld restart
+ 
+
+
+   gcc (nginx之类由c语言开发的，编译的时候需要用到)
+   PCRE (Perl库，包括 perl 兼容的正则表达式库) 
+   zlib (zlib库提供了很多种压缩和解压缩的方式)  
+   openssl (OpenSSL 是一个强大的安全套接字层密码库，囊括主要的密码算法、常用的密钥和证书封装管理功能及SSL协议)
+ 
+
+3.
+
+	web和mysql
+   jdk 安装1.7和1.8
+
+
+
+
+4.  克隆虚拟机后的操作
+
+  mv /etc/sysconfig/network-scripts/ifcfg-eno16777736 /etc/sysconfig/network-scripts/ifcfg-ens33 
+  vim /etc/sysconfig/network-scripts/ifcfg-ens33  删除配置文件中的UUID那一行， 修改 ip ，name,device
+  进入/etc/udev/rules.d/这个目录，删除文件90-eno-fix.rules，rm -f 90-eno-fix.rules
+  修改主机名 /etc/sysconfig/network
+
+ 	#修改主机名 /etc/sysconfig/network
+	NETWORKING=yes
+	HOSTNAME=master.hadoop
+	NETWORKING_IPV6=no
+	GATEWAY=192.168.195.2
+
+
+	#映射 /etc/hosts
+
+
+	192.168.195.11 basic
+
+	192.168.195.100 web100
+	192.168.195.150 mysql150 
+	192.168.195.160 oracle160
+	192.168.195.170 nginx170
+	192.168.195.180 zookeeper180
+	192.168.195.190 redis190
+	192.168.195.200 hadoop
+
+	192.168.195.101 web101
+	192.168.195.102 web102
+	192.168.195.103 web103
+
+	192.168.195.151 mysql151
+	192.168.195.152 mysql152
+	192.168.195.133 mysql153
+
+	192.168.195.161 oracle161
+	192.168.195.162 oracle162
+
+	192.168.195.171 nginx171
+	192.168.195.172 nginx172
+
+
+	192.168.195.181 zookeeper181
+	192.168.195.182 zookeeper182
+	192.168.195.183 zookeeper183
+
+
+	192.168.195.191 redis191
+	192.168.195.192 redis192 
+
+
+	192.168.195.201 master.hadoop
+	192.168.195.202 datanode2.hadoop
+	192.168.195.203 datanode3.hadoop
+
+
+
+	

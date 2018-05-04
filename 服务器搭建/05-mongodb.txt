@@ -47,3 +47,30 @@ Environment=MONGO_URL=mongodb://localhost:27017/mongod ROOT_URL=http://192.168.1
 WantedBy=multi-user.target
 
 
+
+
+
+
+
+
+
+# vi /etc/yum.repos.d/mongodb-org-3.2.repo 
+[mongodb-org-3.2]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc
+
+yum -y install mongodb-*
+yum -y install memcached 
+yum -y install haproxy 
+yum -y install nginx 
+yum -y install rabbitmq-server.noarch
+
+
+
+[root@localhost ~]# /etc/init.d/mongod start
+Starting mongod (via systemctl):                           [  OK  ]
+[root@localhost ~]# netstat -nltp|grep mongo
+tcp        0      0 127.0.0.1:27017      0.0.0.0:*   LISTEN      89958/mongod
