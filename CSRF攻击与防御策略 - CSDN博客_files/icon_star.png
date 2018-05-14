@@ -1,0 +1,673 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" dir="ltr">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>ITeye Java编程 Spring框架 Ajax技术 agile敏捷软件开发 ruby on rails实践 - ITeye做最棒的软件开发交流社区</title>
+    <meta name="description" content="Java编程,Spring Struts Webwork框架深入,XMLHTTP Ajax开发,Java Web开发,Java企业应用,Java设计模式,Java开源框架,Java应用服务器,Rich Client讨论,Ruby编程,Ruby DSL开发,Ruby on rails实践,JavaScript编程,敏捷软件开发XP TDD,软件配置管理,软件测试,项目管理UML,数据库,C#/.net C/C++ Erlang/FP PHP/Linux平台,精通Hibernate" />
+    <meta name="keywords"  content="Java编程 Spring框架 Ajax技术 agile敏捷软件开发 ruby on rails实践 ITeye深度技术社区" />
+    <meta name="baidu_union_verify" content="7b2a15d73dd1b1b6a67d7a4ddcfffa33" />
+    <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+    <link rel="search" type="application/opensearchdescription+xml" href="/open_search.xml" title="ITeye" />
+    <link href="/rss" rel="alternate" title="ITeye技术网站RSS频道订阅" type="application/rss+xml" />
+    <link href="http://www.iteye.com/stylesheets/new_homepage.css?1517971859" media="screen" rel="stylesheet" type="text/css" />
+    <script src="http://www.iteye.com/javascripts/application.js?1448702469" type="text/javascript"></script>
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?e19a8b00cf63f716d774540875007664";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+
+
+        //自动推送工具代码
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        }
+        else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+
+
+  </head>
+  <body>
+    <div id="page">
+      <div id="header">
+        <!--全屏-->
+        <script type="text/javascript" ads-src="http://csdnim.qtmojo.com/main/s?user=allyestest|allyestest|allyestest0410&db=csdnim&border=0&local=yes&js=ie" src="http://creatim.qtmojo.cn/td/AllyesDeliver.min.js" charset="gbk"></script>
+        <!--全屏-->
+
+        <!--浮标-->
+        <script type="text/javascript" ads-src="http://csdnim.qtmojo.com/main/s?user=csdn|homepage|floating_1&db=csdnim&border=0&local=yes&js=ie" src="http://creatim.qtmojo.cn/td/AllyesDeliver.min.js" charset="gbk"></script>
+        <!--浮标-->
+        <div class="clearfix"><div id="user_nav">
+
+      <a href="/login" class="welcome" title="登录">您还未登录 !</a>
+    <a href="/login">登录</a>
+    <!--<a href="/signup" class="nobg">注册</a>-->
+    <!--<a href="http://passport.csdn.net/account/mobileregister?from=http://www.iteye.com">注册</a>-->
+  </div>
+</div>
+        <div class="clearfix">
+          <div id="branding">
+            <a href="http://www.iteye.com"><img alt="ITeye3.0" src="http://www.iteye.com/images/logo.gif?1448702469" title="ITeye-最棒的软件开发交流社区" /></a>
+          </div>
+          <div id="gg">
+            <ins data-revive-zoneid="156" data-revive-id="8c38e720de1c90a6f6ff52f3f89c4d57"></ins>
+          </div>
+        </div>
+      </div>
+      <div id="content" class="clearfix">
+        <div id="main">
+          <div id="news">
+            
+              <div class="news_picture">
+                <div>
+                  <table class="ge" id="ge" cellspacing="0" cellpadding="0">
+                    <tbody>
+                      <tr>
+                        <td class="pic" id="bimg">
+                          
+                          <div id="top_pictures">
+                                                          <div class="dis" id="top_picture_image_0" style="">
+                                <a href="https://edu.csdn.net/topic/ai119?utm_source=iteye" target="_blank" title="人工智能工程师直通车"><img alt="人工智能工程师直通车" src="http://www.iteye.com/upload/top_picture/0000/0153/人工智能工程师直通车.png" /></a>
+                              </div>
+                                                          <div class="dis" id="top_picture_image_1" style="display: none;">
+                                <a href="https://edu.csdn.net/topic/python119?utm_source=iteye" target="_blank" title="Python全栈工程师"><img alt="Python全栈工程师" src="http://www.iteye.com/upload/top_picture/0000/0152/Python全栈工程师.png" /></a>
+                              </div>
+                                                          <div class="dis" id="top_picture_image_2" style="display: none;">
+                                <a href="https://edu.csdn.net/topic/web119?utm_source=iteye" target="_blank" title="Web全栈工程师"><img alt="Web全栈工程师" src="http://www.iteye.com/upload/top_picture/0000/0151/Web全栈工程师.png" /></a>
+                              </div>
+                                                      </div>
+                          <table id="font_hd" cellspacing="0" cellpadding="0">
+                            <tbody>
+                              <tr>
+                                <td class="lkff" id="info">
+                                                                      <div class="dis" id="top_picture_title_0" style="">
+                                      <a href="https://edu.csdn.net/topic/ai119?utm_source=iteye" target="_blank" title="人工智能工程师直通车">人工智能工程师直通车</a>
+                                    </div>
+                                                                      <div class="dis" id="top_picture_title_1" style="display: none;">
+                                      <a href="https://edu.csdn.net/topic/python119?utm_source=iteye" target="_blank" title="Python全栈工程师">Python全栈工程师</a>
+                                    </div>
+                                                                      <div class="dis" id="top_picture_title_2" style="display: none;">
+                                      <a href="https://edu.csdn.net/topic/web119?utm_source=iteye" target="_blank" title="Web全栈工程师">Web全栈工程师</a>
+                                    </div>
+                                                                  </td>
+                                <td id="simg">
+                                  <div id="simg-wrap">
+                                                                          <div class="dis " id="top_picture_button_0" >
+                                        1
+                                      </div>
+                                                                          <div class="dis f1" id="top_picture_button_1" >
+                                        2
+                                      </div>
+                                                                          <div class="dis f1" id="top_picture_button_2" >
+                                        3
+                                      </div>
+                                                                      </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <script type="text/javascript">
+                    (function(){
+                      var total = 3;
+                      var current = 0;
+                      var auto_play_on = true;
+
+                      $('bimg').observe('mouseover', function() {auto_play_on = false;});
+                      $('bimg').observe('mouseout', function() {auto_play_on = true;});
+
+                      var showPicture = function(index) {
+                        if (current !== index) {
+                          new Effect.Fade('top_picture_image_' + current);
+                          new Effect.Appear('top_picture_image_' + index);
+                          $('top_picture_title_' + current).hide();
+                          $('top_picture_title_' + index).show();
+                          $('top_picture_button_' + current).addClassName('f1');
+                          $('top_picture_button_' + index).removeClassName('f1');
+                          current = index;
+                        }
+                      };
+
+                      for (var i = 0; i < total; i++) {
+                        $('top_picture_button_' + i).observe('click', (function(i) {
+                          return function(ev) {
+                            showPicture(i);
+                          }
+                        })(i));
+                      };
+
+                      var autoPlay = function() {
+                        if (total !== 0 && auto_play_on) {
+                          var next = (current < (total - 1)) ? (current + 1) : 0;
+                          showPicture(next);
+                        }
+                      };
+                      setInterval(autoPlay, 5000);
+                    })();
+                  </script>
+                </div>
+              </div>
+            
+
+            
+              <div class="news_content" >
+                <h3><span>热点聚焦</span></h3>
+                <dl>
+                                      <dt><a href="http://www.iteye.com/news/32997" target="_blank" title="怎样解决编程语言之间的差异性问题？">怎样解决编程语言之间的差异性问题？</a></dt>
+                    <dd>
+                      毫无疑问，不同的编程语言间存在着很多差异性。那么对于这种差异性开发者应如何解决？本文就来一探究竟。
+                      <a href="http://www.iteye.com/news/32997" target="_blank" title="怎样解决编程语言之间的差异性问题？">[详情]</a>
+                    </dd>
+                                      <dt><a href="http://www.iteye.com/news/32993" target="_blank" title=" 嘴上说着喜爱Java 9 ，身体却诚实地拥抱了Java 8 "> 嘴上说着喜爱Java 9 ，身体却诚实地拥抱了Java 8 </a></dt>
+                    <dd>
+                      五一假日期间，JAXcenter再放大招，为我们带来了完整的2018年备受关注的编程语言榜单。
+                      <a href="http://www.iteye.com/news/32993" target="_blank" title=" 嘴上说着喜爱Java 9 ，身体却诚实地拥抱了Java 8 ">[详情]</a>
+                    </dd>
+                                      <dt><a href="http://www.iteye.com/news/32988" target="_blank" title="5 种使用 Python 代码轻松实现数据可视化的方法">5 种使用 Python 代码轻松实现数据可视化的方法</a></dt>
+                    <dd>
+                      数据可视化是数据科学家工作中的重要组成部分。创建可视化方法确实有助于使事情变得更加清晰易懂，特别是对于大型、高维数据集。
+                      <a href="http://www.iteye.com/news/32988" target="_blank" title="5 种使用 Python 代码轻松实现数据可视化的方法">[详情]</a>
+                    </dd>
+                                  </dl>
+              </div>
+            
+          </div>
+
+          <div class="tuiguang">
+            <ins data-revive-zoneid="157" data-revive-id="8c38e720de1c90a6f6ff52f3f89c4d57"></ins>
+          </div>
+          <div class="after">
+            
+              <div class="main_left" style="width: 720px">
+                <h3>
+                  <a href="/news" target="_blank">每日资讯</a>
+                  <a href="/news" class="more" target="_blank">[更多]</a>
+                </h3>
+                <ul style="width: 750px">
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32997" target="_blank" title="怎样解决编程语言之间的差异性问题？">怎样解决编程语言之间的差异性问题？</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32993" target="_blank" title="嘴上说着喜爱Java 9 ，身体却诚实地拥抱了Java 8 ">嘴上说着喜爱Java 9 ，身体却诚实地拥抱了 ...</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32988" target="_blank" title="5 种使用 Python 代码轻松实现数据可视化的方法">5 种使用 Python 代码轻松实现数据可视化的 ...</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32985" target="_blank" title="现代前端开发路线图：从零开始，一步步成为前端工程师">现代前端开发路线图：从零开始，一步步成为 ...</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32983" target="_blank" title="七行JSON代码将你的网站变成移动应用">七行JSON代码将你的网站变成移动应用</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32982" target="_blank" title="Python 人气王，JS 比 Java 更受公司青睐">Python 人气王，JS 比 Java 更受公司青睐</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32980" target="_blank" title="深入理解Android消息机制">深入理解Android消息机制</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32979" target="_blank" title="高级Java开发人员最常访问的几个网站">高级Java开发人员最常访问的几个网站</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32978" target="_blank" title="改进 JavaScript 和 Rust 的互操作性：深入认识 wasm-bindgen 组件 ">改进 JavaScript 和 Rust 的互操作性：深入 ...</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32977" target="_blank" title="趣味算法图解，文科生都看懂了">趣味算法图解，文科生都看懂了</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32974" target="_blank" title="ES6 javascript 实用开发技巧 ">ES6 javascript 实用开发技巧 </a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32972" target="_blank" title="用JavaScript写一个区块链">用JavaScript写一个区块链</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32971" target="_blank" title="常用的几种大数据架构剖析 ">常用的几种大数据架构剖析 </a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32969" target="_blank" title="Redis 在现实世界的 5 个用法">Redis 在现实世界的 5 个用法</a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32967" target="_blank" title="异步系统的两种测试方法 ">异步系统的两种测试方法 </a>
+                    </li>
+                                      <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="/news/32965" target="_blank" title="基于 Docker 的微服务架构实践 ">基于 Docker 的微服务架构实践 </a>
+                    </li>
+                                  </ul>
+              </div>
+            
+          </div>
+          <div class="tuiguang">
+            
+          </div>
+          
+            <div id="column">
+              <h3>
+                <a href="/forums/hot_topics" target="_blank">热门讨论</a>
+                <a href="/forums/hot_topics" class="more" target="_blank">[更多]</a>
+              </h3>
+              <ul class='column_left'>
+                                  <li>                    <a href="http://www.iteye.com/topic/1148104" target="_blank" title="和平之翼代码生成器SMEU版3.2乌篷船即将进入Beta测试">和平之翼代码生成器SMEU版3.2乌篷船即将进入Beta测试</a>
+                  </li>                                  <li>                    <a href="http://www.iteye.com/topic/1148107" target="_blank" title="（原创）Dubbo源码之消费者创建代理">（原创）Dubbo源码之消费者创建代理</a>
+                  </li>                                  <li>                    <a href="http://www.iteye.com/topic/1148113" target="_blank" title="无垠式Java通用代码生成器JEEEU版 Ada 1.5 版正在火热开发">无垠式Java通用代码生成器JEEEU版 Ada 1.5 版正在火热开发</a>
+                  </li>                                  <li>                    <a href="http://www.iteye.com/topic/1148114" target="_blank" title="清新大气的响应式onethink博客网站源码">清新大气的响应式onethink博客网站源码</a>
+                  </li>                                  <li>                    <a href="http://www.iteye.com/topic/1148115" target="_blank" title="新萝卜家园GHOST XP SP3 装机版V2018.04">新萝卜家园GHOST XP SP3 装机版V2018.04</a>
+                  </li>                                  <li>                    <a href="http://www.iteye.com/topic/1148116" target="_blank" title="JEECG新版UI规划，主要提供H5方案（采用主流技术）">JEECG新版UI规划，主要提供H5方案（采用主流技术）</a>
+                  </li>                              </ul>
+            </div>
+          
+          
+          
+
+          
+            <div id="column">
+              <h3>
+                <a href="/groups/all_topics" target="_blank">群组热门讨论</a>
+                <a href="/groups/all_topics" class="more" target="_blank">[更多]</a>
+              </h3>
+              <table class="grid">
+                <thead>
+                  <tr>
+                    <td style="width:400px;">话题</td>
+                    <td style="width:120px;">群组</td>
+                    <td style="width:80px;">回复/点击</td>
+                    <td style="width:100px;">最后回复</td>
+                  </tr>
+                </thead>
+                <tbody>
+                                      <tr onmouseover="$(this).addClassName('mouse_over');" onmouseout="$(this).removeClassName('mouse_over');">
+                      <td>
+                        <a href='http://dlang.group.iteye.com/group/topic/125563' title='dconf2018 中有趣的东西' target='_blank'>dconf2018 中有趣的东西</a>
+                      </td>
+                      <td class="group"><a href="http://dlang.group.iteye.com" target="_blank"> D语言</a></td>
+                      <td class="group">1 / 51</td>
+                      <td class="date">昨天 <a href="http://dlang.group.iteye.com/group/topic/125563/post/356822" target="_blank"><img alt="浏览最新的文章" src="http://www.iteye.com/images/icon_last_post.gif?1448702469" /></a></td>
+                    </tr>
+                                  </tbody>
+              </table>
+            </div>
+          
+          
+          
+
+          <div class="after">
+            <div class="main_left" style="width: 720px" id="album_detail_wrap">
+              <h3 style="color: #16387C;">
+                博文推荐
+              </h3>
+              <ul style="width: 750px" class="clearfix">
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://laomn.iteye.com/blog/2422227" target="_blank" title="DirectMemory 与 NIO">DirectMemory 与 NIO</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://fanshuyao.iteye.com/blog/2422154" target="_blank" title="Jquery EasyUI Combotree 初始化赋值">Jquery EasyUI Combotree 初始化赋值</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://l4432848.iteye.com/blog/2422208" target="_blank" title="JavaSE——数据类型流、内存流、打印流">JavaSE——数据类型流、内存流、打印流</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://zw7534313.iteye.com/blog/2422138" target="_blank" title="webservice之使用jaxb把xml转换Object或把对象转换成xml文件">webservice之使用jaxb把xml转换Object或把 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://fanshuyao.iteye.com/blog/2422159" target="_blank" title="Jquery EasyUI Combotree根据选中的值展开所有父节点">Jquery EasyUI Combotree根据选中的值展开 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://ldcsaa.iteye.com/blog/2422117" target="_blank" title="5.4呈献：HP-Socket v5.3.1 支持 Android NDK">5.4呈献：HP-Socket v5.3.1 支持 Android ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://xhload3d.iteye.com/blog/2422126" target="_blank" title="基于 HTML5 Canvas 的电信机柜 U 位动态管理">基于 HTML5 Canvas 的电信机柜 U 位动态管 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://wls981.iteye.com/blog/2422116" target="_blank" title="VMWare centos7虚拟机移动后网络服务启动不了">VMWare centos7虚拟机移动后网络服务启动不 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://yin-bp.iteye.com/blog/2422096" target="_blank" title="判断ElasticSearch索引Indice和索引类型是否存在">判断ElasticSearch索引Indice和索引类型是 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://gaojingsong.iteye.com/blog/2422095" target="_blank" title="【消息中间件Kestrel】">【消息中间件Kestrel】</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://gaojingsong.iteye.com/blog/2422091" target="_blank" title="【Apache 之DistributedLog介绍】">【Apache 之DistributedLog介绍】</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://dlseo.iteye.com/blog/2422083" target="_blank" title="联通光纤猫入户升级：千兆光纤宽带的网卡，为什么只显示100M？">联通光纤猫入户升级：千兆光纤宽带的网卡， ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://jerrywang-sap.iteye.com/blog/2422105" target="_blank" title="help.hybris.com和help.sap.com网站的搜索实现">help.hybris.com和help.sap.com网站的搜索 ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://jerrywang-sap.iteye.com/blog/2422104" target="_blank" title="Hybris UI的Route(路由)实现">Hybris UI的Route(路由)实现</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://342104628.iteye.com/blog/2422044" target="_blank" title="阿里面试P6以上必问：并发编程">阿里面试P6以上必问：并发编程</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://jerrywang-sap.iteye.com/blog/2422048" target="_blank" title="300行ABAP代码实现一个最简单的区块链原型">300行ABAP代码实现一个最简单的区块链原型</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://l4432848.iteye.com/blog/2421980" target="_blank" title="JavaSE——装饰设计模式+简单加密解密工程">JavaSE——装饰设计模式+简单加密解密工程</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://bewithme.iteye.com/blog/2421898" target="_blank" title="tomcat 7.0.78 中 ehcache 报 Initial cause was Error configuring from input stream.">tomcat 7.0.78 中 ehcache 报 Initial cau ...</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://ligaosong.iteye.com/blog/2421939" target="_blank" title="mysql8.0.11安装和远程连接配置">mysql8.0.11安装和远程连接配置</a>
+                    </li>
+                                    <li class="title" style="width: 355px;margin-right: 10px;float: left">
+                      <a href="http://jerrywang-sap.iteye.com/blog/2422080" target="_blank" title="SAP CRM和C4C的内容管理(Content Management)">SAP CRM和C4C的内容管理(Content Managem ...</a>
+                    </li>
+                              </ul>
+            </div>
+
+          </div>
+        </div>
+        <div id="local">
+          <div class="search column">
+            <form action="/search"  method="get">
+              <input type="hidden" name="type" value="all" />
+              <input type="text" name="query" class="text" id="query"  style="width: 152px; *width:145px; "/>
+              <input type="submit" value="搜索" class="submit"/>
+            </form>
+          </div>
+          <div class="tuiguang">
+            <ins data-revive-zoneid="159" data-revive-id="8c38e720de1c90a6f6ff52f3f89c4d57"></ins>
+          </div>
+
+          
+            <div id="recommend" class="box ">
+              <h3>推荐精华文章</h3>
+              <ul>
+                                  <li><a href="/magazines/134-IDE-Comparison" target="_blank" title="编程语言 IDE 对比">编程语言 IDE 对比</a></li>
+                                  <li><a href="/magazines/133-Static-Site-Generators" target="_blank" title="最全的静态网站生成器（开源项目）">最全的静态网站生成器（开源项目）</a></li>
+                                  <li><a href="/magazines/132-Java-NIO" target="_blank" title="Java NIO 系列教程">Java NIO 系列教程</a></li>
+                                  <li><a href="/magazines/131-Java-Concurrency" target="_blank" title="Java并发教程（Oracle官方资料）">Java并发教程（Oracle官方资料）</a></li>
+                                  <li><a href="/magazines/130" target="_blank" title="编程精华资源（ITeye优秀专栏）大汇总">编程精华资源（ITeye优秀专栏）大汇总</a></li>
+                                  <li><a href="/magazines/129-Java-8-Tutorial" target="_blank" title="Java 8 简明教程 ">Java 8 简明教程 </a></li>
+                              </ul>
+            </div>
+          
+
+          <div class="tuiguang">
+            <ins data-revive-zoneid="160" data-revive-id="8c38e720de1c90a6f6ff52f3f89c4d57"></ins>
+          </div>
+
+          <div class="tuiguang">
+            
+          </div>
+
+          
+            <div id="groups" class="box">
+              <h3>活跃群组</h3>
+                              <div class="group">
+                  <div class='logo'><a href='http://javaeye-water.group.iteye.com' target='_blank'><img src='/upload/logo/group/80/eb3bcb04-f1f0-426b-abe7-209b0e8c4760.jpg' alt='灌水乐园群组' title='灌水乐园: ITeye的灌水乐园......' height='48' width='48' /></a></div>
+                  <span>
+                    <a href="http://javaeye-water.group.iteye.com" target="_blank"><strong>灌水乐园</strong></a>
+                    <br/>成员：425人
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'><a href='http://solr.group.iteye.com' target='_blank'><img src='/upload/logo/group/60504/3b46fcc6-1fd5-37a7-8106-1e4faab088fb.jpg' alt='solr交流圈群组' title='solr交流圈: solr 是基于lucene搜索库的一个搜索引擎框架，本圈子旨在聚集对solr感兴趣的朋友一起讨论，互相学习，共同进步。' height='48' width='48' /></a></div>
+                  <span>
+                    <a href="http://solr.group.iteye.com" target="_blank"><strong>solr交流圈</strong></a>
+                    <br/>成员：429人
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'><a href='http://Activiti.group.iteye.com' target='_blank'><img src='/upload/logo/group/804835/495b5e63-cc24-3edc-b486-f82cad375467-normal.jpg' alt='Activiti群组' title='Activiti: Alfresco软件在2010年5月17日宣布Activiti业务流程管理（BPM）开源项目的正式启动，其首席架构师由业务流程管理BPM的专家 Tom Baeyens担任。
+Activiti项目是一项新的基于Apache许可的开源BPM平台，从基础开始构建，旨在提供支持新的BPMN 2.0标准，包括支持对象管理组（OMG），面对新技术的机遇，诸如互操作性和云架构，提供技术实现。
+
+工作流的运用越来越多，Activiti发展势头强劲。可是在国内这方面的资料很少，希望可以通过JavaEye这个开源社区把Activiti普及开来！' height='48' width='48' /></a></div>
+                  <span>
+                    <a href="http://Activiti.group.iteye.com" target="_blank"><strong>Activiti</strong></a>
+                    <br/>成员：142人
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'><a href='http://javaeye-admin.group.iteye.com' target='_blank'><img src='/upload/logo/group/84/32858d7c-ed39-4ce4-bba3-16d380cb4e9e.gif' alt='站务讨论群组' title='站务讨论: ITeye站务圈子' height='48' width='48' /></a></div>
+                  <span>
+                    <a href="http://javaeye-admin.group.iteye.com" target="_blank"><strong>站务讨论</strong></a>
+                    <br/>成员：432人
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'><a href='http://dlang.group.iteye.com' target='_blank'><img src='/upload/logo/group/5/6f5d3392-e89e-47e2-aeb1-739df0277598.png' alt=' D语言群组' title=' D语言: D 语言既有 C 语言的强大威力，又有 Python 和 Ruby 的开发效率。它是一种集垃圾回收、C 语言应用程序二进制接口兼容、契约式设计、强力范型、内嵌汇编、内置单元测试、Mixin、类 Java 包管理机制、内置同步机制、内建基本运行时信息的系统级编程语言。
+初学者推荐学习 使用 1.0 系列最新版。' height='48' width='48' /></a></div>
+                  <span>
+                    <a href="http://dlang.group.iteye.com" target="_blank"><strong> D语言</strong></a>
+                    <br/>成员：604人
+                  </span>
+                </div>
+                          </div>
+          
+
+          
+            <div id="groups" class="box">
+              <h3>热门专栏</h3>
+                              <div class="group">
+                  <div class='logo'>
+                    <a href="/blogs/subjects/Spring-Cloud" target="_blank"><img alt="12d8ea3d-4199-3941-8a17-acd5024729b8" height="48" src="http://www.iteye.com/upload/logo/blog_wiki/1274253/12d8ea3d-4199-3941-8a17-acd5024729b8.jpg" width="48" /></a>
+                  </div>
+                  <span>
+                    <a href="/blogs/subjects/Spring-Cloud" target="_blank">Spring_Cloud构建云架构</a><br />
+                    创建者：springcloud关注者
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'>
+                    <a href="/blogs/subjects/sparrow-java" target="_blank"><img alt="877aca81-daac-33c8-8bf9-3a886cebc6c3" height="48" src="http://www.iteye.com/upload/logo/blog_wiki/1287735/877aca81-daac-33c8-8bf9-3a886cebc6c3.jpg?1517538501" width="48" /></a>
+                  </div>
+                  <span>
+                    <a href="/blogs/subjects/sparrow-java" target="_blank">自己动手写java 框架</a><br />
+                    创建者：zh_harry
+                  </span>
+                </div>
+                              <div class="group">
+                  <div class='logo'>
+                    <a href="/blogs/subjects/AngularJS-LIUXU" target="_blank"><img alt="Eace7a35-2604-38a7-aa1e-e77dd4bea5e4" height="48" src="http://www.iteye.com/upload/logo/blog_wiki/1273325/eace7a35-2604-38a7-aa1e-e77dd4bea5e4.jpg" width="48" /></a>
+                  </div>
+                  <span>
+                    <a href="/blogs/subjects/AngularJS-LIUXU" target="_blank">Angularjs实战</a><br />
+                    创建者：柳絮飞祭奠
+                  </span>
+                </div>
+                          </div>
+          
+
+          
+            <div id="groups" class="box">
+              <h3>推荐博主</h3>
+              
+                <div class="group">
+                  <div class="logo"><a href='http://jerrywang-sap.iteye.com' target='_blank'><img alt="JerryWang_SAP的博客" class="logo" src="http://www.iteye.com/upload/logo/user/1290429/c4c2d866-240a-3211-84a9-7f30e22eb541-thumb.jpg?1520308941" title="JerryWang_SAP的博客: " width="48px" /></a></div>
+                  <span>
+                    <a href='http://jerrywang-sap.iteye.com' target='_blank' title='JerryWang_SAP'>JerryWang_SAP</a><br />
+                    浏览量：21361
+                  </span>
+                </div>
+              
+                <div class="group">
+                  <div class="logo"><a href='http://qqtalk.iteye.com' target='_blank'><img alt="情情说的博客" class="logo" src="http://www.iteye.com/upload/logo/user/1294238/ae56de0c-ea0d-3c35-83ed-abb8752345dc-thumb.png?1522666244" title="情情说的博客: 情情说" width="48px" /></a></div>
+                  <span>
+                    <a href='http://qqtalk.iteye.com' target='_blank' title='情情说'>情情说</a><br />
+                    浏览量：10023
+                  </span>
+                </div>
+              
+                <div class="group">
+                  <div class="logo"><a href='http://l4432848.iteye.com' target='_blank'><img alt="l4432848的博客" class="logo" src="http://www.iteye.com/images/user-logo-thumb.gif?1448702469" title="l4432848的博客: " width="48px" /></a></div>
+                  <span>
+                    <a href='http://l4432848.iteye.com' target='_blank' title='l4432848'>l4432848</a><br />
+                    浏览量：80929
+                  </span>
+                </div>
+              
+                <div class="group">
+                  <div class="logo"><a href='http://dumi1997.iteye.com' target='_blank'><img alt="就是我leonardc的博客" class="logo" src="http://www.iteye.com/upload/logo/user/1289918/9d2635f1-6784-39ef-8475-9d5bb4092e03-thumb.jpg?1519727923" title="就是我leonardc的博客: " width="48px" /></a></div>
+                  <span>
+                    <a href='http://dumi1997.iteye.com' target='_blank' title='就是我leonardc'>就是我leonardc</a><br />
+                    浏览量：10431
+                  </span>
+                </div>
+              
+                <div class="group">
+                  <div class="logo"><a href='http://laomn.iteye.com' target='_blank'><img alt="男人50的博客" class="logo" src="http://www.iteye.com/upload/logo/user/1278055/2d02e8a3-ba58-352b-b472-780067141403-thumb.jpg" title="男人50的博客: 老码农-http://www.laomn.com" width="48px" /></a></div>
+                  <span>
+                    <a href='http://laomn.iteye.com' target='_blank' title='男人50'>男人50</a><br />
+                    浏览量：13372
+                  </span>
+                </div>
+              
+            </div>
+          
+
+        </div>
+
+        <div id="nav">
+  <div class="wrapper">
+    <ul>
+            <li><a href="http://www.iteye.com/" class='selected'>首页</a></li>
+      <li><a href="http://www.iteye.com/news">资讯</a></li>
+      <li><a href="http://www.iteye.com/magazines">精华</a></li>
+      <li><a href="http://www.iteye.com/forums">论坛</a></li>
+      <li><a href="http://www.iteye.com/ask">问答</a></li>
+      <li><a href="http://www.iteye.com/blogs">博客</a></li>
+      <li><a href="http://www.iteye.com/blogs/subjects">专栏</a></li>
+      <li><a href="http://www.iteye.com/groups">群组</a></li>
+      <!-- <li><a target="_blank" href="http://job.iteye.com/iteye">招聘</a></li>-->
+      <li class="last"><a href="http://www.iteye.com/search">搜索</a></li>
+    </ul>
+  </div>
+</div>
+      </div>
+      <div id="footer">
+  <div id="site_nav">
+    <ul>
+      <li><a href="/index/service">广告服务</a></li>
+      <li><a href="http://webmaster.iteye.com">ITeye黑板报</a></li>
+      <li><a href="/index/contactus">联系我们</a></li>
+      <li class="last"><a href="/index/friend_links">友情链接</a></li>
+    </ul>
+  </div>
+  <div id="copyright">
+    &copy; 2003-2018 ITeye.com.    [ <a href="http://www.miibeian.gov.cn">京ICP证070598号</a>  京公网安备11010502027441 ]<br/>
+    北京创新乐知信息技术有限公司 版权所有<br />
+  </div>
+</div>
+      <center><a href="http://www.hd315.gov.cn/beian/view.asp?bianhao=010202012082400500"><img src="/images/biaoshi.gif" /></a></center>
+    </div>
+    <script type="text/javascript">
+  document.write("<img src='http://stat.iteye.com/?url="+ encodeURIComponent(document.location.href) + "&referrer=" + encodeURIComponent(document.referrer) + "&user_id=' width='0' height='0' />");
+</script>
+
+
+
+    <script type="text/javascript">
+      function pongoad57(url_list)
+      {
+        var html = "";
+        for(var i = 0;i < url_list.length; i++){
+          var url = url_list[i];
+          var li = "<a href='<orgurl>' target='_blank'><cityname>:<orgname></a>"
+          .replace("<orgurl>", encodeURI(url.orgurl.escapeHTML()))
+          .replace("<orgname>", url.orgname.escapeHTML())
+          .replace("<joburl>", encodeURI(url.joburl.escapeHTML()))
+          .replace("<cityname>", url.cityname.escapeHTML());
+          if (url.jobname != null){
+            li += "<a target='_blank' href='" + encodeURI(url.joburl) + "'> 诚聘" + url.jobname.escapeHTML() + "</a>";
+          }
+          html += "<li>" + li + "</li>";
+        }
+        $$("#recommended ul").first().innerHTML=html;
+      }
+    </script>
+
+    <script type="text/javascript">
+      var url = encodeURIComponent(document.location.href);
+      var id = 57;
+      var callbackfun="pongoad57";
+      //document.write(unescape('%3Cscript src="http://a.pongo.cn/Job/GetAdForIteyeCallBack%3Fid%3D'+id+'%26Url%3D'+encodeURIComponent(url)+'%26&CallBack%3D'+callbackfun+'" type="text/javascript"%3E%3C/script%3E'));
+    </script>
+    <script src="http://c.csdnimg.cn/public/common/libs/jquery/jquery-1.11.1.min.js" type="text/javascript"></script>
+<script src="http://csdnimg.cn/asdf/tracking-1.0.1.js" type="text/javascript"></script>
+<script language="javascript" type="text/javascript" src="http://csdnimg.cn/asdf/async-1.0.1.js"></script>
+<script src="http://csdnimg.cn/pubfooter/js/tracking-1.0.3.js?version=20130923164150" type="text/javascript"></script>
+<script type="text/javascript">var $csdn_iteye_jq = jQuery.noConflict();// 解决jq与prototype.js命名空间冲突的问题</script>
+    <script type="text/javascript">
+        (function(){
+            not_loading = true;
+            pageNum = 3
+            oList = $csdn_iteye_jq("#album_detail_wrap");
+            $csdn_iteye_jq(window).scroll(function() {
+                var scrollTop = $csdn_iteye_jq(this).scrollTop();
+                var scrollHeight = $csdn_iteye_jq(document).height() ;
+                var windowHeight = $csdn_iteye_jq(this).height();
+                if (scrollTop + windowHeight >= scrollHeight) {
+                    if(not_loading){
+                        refreshMore();
+                        setTimeout(function(){
+                            getMore();
+                        },100);
+                    }else{
+                        $csdn_iteye_jq(".dl_more").remove();
+                    }
+                }
+            });
+
+            function getMore(){
+                not_loading = false;
+                console.log("getMore......");
+                $csdn_iteye_jq.ajax({
+                    type: 'get',
+                    url: '/blogs/ajax_get_blogs',
+                    data:{
+                        page:pageNum
+                    },
+                    //async: false,
+                    dataType: 'json',
+                    success: function (resobj) {
+                        var totalNum = resobj.total_pages;
+                        if(pageNum <= totalNum && resobj.oHtml != ''){
+                            $csdn_iteye_jq(".dl_more").remove();
+                            oList.find('ul').append(resobj.oHtml);
+                            refreshMore();
+                            not_loading = true;
+                            pageNum++;
+                        }else{
+                            not_loading = false;
+                            noMore();
+                        }
+                    },
+                    error: function (err) {
+                        console.log(err);
+                    }
+                });
+            }
+
+            function noMore(){
+                $csdn_iteye_jq(".dl_more").remove();
+                if(oList.find(".dl_no_more").length ==0){
+                    oList.append('<div class="dl_no_more" style="font-size:14px; color:red; text-align:center;padding-top:10px; ">我们是很有底线的</div>');
+                }
+            }
+
+            function refreshMore(){
+                if(oList.find(".dl_more").length ==0){
+                    oList.append('<div class="dl_more" style="font-size:14px; color:red; text-align:center;padding-top:10px;">上滑加载更多</div>');
+                }
+            }
+        })();
+    </script>
+  </body>
+</html>

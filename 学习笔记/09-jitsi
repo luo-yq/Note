@@ -1,0 +1,36 @@
+
+需要注意：
+apt-get自带的jitsi-meet版本比较低，本身不带中文，且api与新版本差距较大，新版本的中文翻译也不充足，需要完善
+需要了解的技术，nginx，nodejs，react
+
+1.在线安装,系统采用Ubuntu
+
+echo 'deb https://download.jitsi.org stable/' >> /etc/apt/sources.list.d/jitsi-stable.list
+wget -qO -  https://download.jitsi.org/jitsi-key.gpg.key | apt-key add -
+apt-get update
+apt-get -y install nginx
+apt-get -y install jitsi-meet
+
+
+
+
+nginx上配置应用和视频都使用视频的https地址，目的是解决嵌套https页面时，web的不安全链接跳转问题
+修改 /etc/nginx/site-enable/*.conf
+
+#添加nginx配置
+location /oa {
+		proxy_pass http://ip:port;
+}
+
+service nginx restart
+
+
+
+
+允许跨域访问在相应的location中添加
+add_header 'Access-Control-Allow-Origin' '*';
+add_header 'Access-Control-Allow-Methods' 'GET,POST,PUT,DELETE,OPTIONS';
+add_header 'Access-Control-Allow-Headers' 'Origin,X-Requested-With,Content-Type,Accept';
+
+
+ 

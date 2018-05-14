@@ -1,0 +1,32 @@
+
+
+
+
+安装Elasticsearch
+
+java -version
+echo $JAVA_HOME
+
+
+
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.tar.gz
+tar -xvf elasticsearch-6.2.4.tar.gz
+cd elasticsearch-6.2.4/bin
+./elasticsearch 
+##./elasticsearch -Ecluster.name=my_cluster_name -Enode.name=my_node_name
+curl http://localhost:9200/ 
+
+
+
+
+
+
+安装Marvel监控
+关闭Marvel：
+echo 'marvel.agent.enabled: false' >> ./config/elasticsearch.yml
+
+集群
+config/elasticsearch.yml中可设置集群名称
+
+集群端口9300
+restfull端口9200
