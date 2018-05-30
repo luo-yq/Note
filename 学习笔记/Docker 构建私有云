@@ -1,0 +1,82 @@
+安装
+
+支持的Ubuntu版本  12.0.4，14.0.4，16.0.4
+支持的cpu 64位 x86或arm
+支持内核  >=3.10
+
+
+#查看内核与操作系统
+uname -a  
+#升级内核 Ubuntu Xenial 16.0.4 lts ,   Ubuntu Trusty 14.0.4 lts   ,   Ubuntu Precise 14.0.4 lts   
+#12.0.4升级内核到trusty
+sudo apt-get install -y --install-recommends linux-generic-lts-trusty
+#14.0.4升级内核到xenial
+sudo apt-get install -y --install-recommends linux-generic-lts-xenial
+
+
+以下以Ubuntu xenial 16.0.4 lts 为例
+
+
+
+如果需要swap limit这些功能，就需要修改 GRUB 的配置文件 /etc/default/grub ，在 中添加内核引导参数
+GRUB_CMDLINE_LINUX
+  
+cgroup_enable=memory
+swapaccount=1
+
+。 然后不要忘记了更新 GRUB:
+使用脚本自动安装
+
+
+$ sudo update-grub
+$ sudo reboot
+
+#安装docker
+
+
+#下载
+#官网
+curl -sSL https://get.docker.com/ | sh
+#阿里云
+curl -sSL http://acs-public-mirror.oss-cn-hangzhou.aliyuncs.com/docker-engine/internet | sh -
+#DaoCloud
+curl -sSL https://get.daocloud.io/docker | sh
+
+
+如果系统没有安装可选内核模块的话，可以执行下面的命令来安装可选内核模块包:
+
+$ sudo apt-get install linux-image-extra-$(uname -r) linux-image-extra-virtual
+
+
+
+
+
+
+
+
+
+
+$ echo "<REPO>" | sudo tee /etc/apt/sources.list.d/docker.list
+$ sudo apt-get update
+
+
+
+#安装
+$ sudo apt-get install docker-engine
+
+#开机启动
+$ sudo systemctl enable docker
+$ sudo systemctl start docker
+
+
+
+
+
+
+
+
+
+
+
+
+

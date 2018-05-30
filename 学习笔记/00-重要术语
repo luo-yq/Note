@@ -1,0 +1,55 @@
+云计算有以下SPI三种模式
+SaaS 软件即服务，提供了完整的可直接使用的应用程序
+Paas 平台即服务，提供了用户可以访问的完整或部分的应用程序开发
+IaaS 基础设施即服务，分为公有云，私有云和混合云
+
+Caas 通讯即服务
+ACaaS 门禁即服务
+ 
+Daas 数据即服务
+BGaaS 大数据即服务
+
+
+
+
+
+
+
+
+
+政务云（Government Cloud）是指运用云计算技术，统筹利用已有的机房、计算、存储、网络、安全、应用支撑、信息资源等，发挥云计算虚拟化、高可靠性、高通用性、高可扩展性及快速、按需、弹性服务等特征，为政府行业提供基础设施、支撑软件、应用系统、信息资源、运行保障和信息安全等综合服务平台。
+
+
+行业云是由行业内或某个区域内起主导作用或者掌握关键资源的组织建立和维护，以公开或者半公开的方式，向行业内部或相关组织和公众提供有偿或无偿服务的云平台。
+
+政务云属于行业云的一种，是面向政府行业，由政府主导，企业建设运营的综合服务平台，一方面可以避免重复建设，节约建设资金，另一方面通过统一标准有效促进政府各部门之间的互连互通、业务协同，避免产生“信息孤岛”，同时有利于推动政府大数据开发与利用，是大众创业、万众创新的基础支撑。
+
+
+
+
+
+云计算
+客户端	
+▪ 网页浏览器	▪ 智能手机	▪ 上网本	▪ Nettop
+应用	
+▪ SAP OnDemand Solutions	▪ Google Apps	▪ Microsoft Online
+▪ NetSuite	▪ SalesForce	
+平台	
+▪ App Engine	▪ Windows Azure	▪ Engine Yard	▪ Force.com
+▪ Heroku	▪ MTurk	▪ RightScale	▪ Amazon S3
+▪ SimpleDB	▪ SQS		
+基础设施	
+▪ EC2	▪ Eucalyptus	▪ FlexiScale	▪ GoGrid
+▪ Nimbus	▪ OpenStack	▪ Rackspace Cloud	▪ VPC
+类型	
+▪ SaaS	▪ PaaS	▪ IaaS	▪ CaaS
+技术	
+▪ 网络	▪ 数据中心	▪ 分散式档案系统	▪ 硬件虚拟化
+▪ Web服务	▪ 虚拟设备	▪ 多租户技术	
+标准	
+▪ Ajax	▪ Atom	▪ HTML5	▪ REST
+▪ XMPP	▪ BitTorrent	
+
+
+
+

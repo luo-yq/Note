@@ -1,0 +1,194 @@
+
+
+合理的网络：
+
+请求  
+------------->  zuul路由（api监控，限流，权限，安全，网关）
+
+从注册中心获取地址 ------------->   feign 作为open-service（对ribbon做了封装，负载均衡，断路器）
+从注册中心获取地址 ------------->  service （）
+
+
+
+
+
+
+
+
+
+总结：
+
+服务注册与发现服务端：eureka-server, zookeeper服务, consul服务
+
+注册服务：eureka-client, zookeeper, consul
+
+负载均衡: ribbon, feign
+
+断路器,(聚合)仪表盘: hystrix, hystrix-dashoard, hystrix-turbine
+
+路由器: zuul
+
+
+
+
+
+
+
+eureka  服务注册与发现
+ribbon  服务端负载均衡
+Feign 集成了ribbon
+Hystrix 断路器，解决服务器问题导致线程阻塞问题
+Hystrix Dashboard 仪表盘
+zuul  路由转发和过滤器，负责分发，多根据路径分发，过滤器进行权限验证
+Spring Cloud Sleuth 主要功能就是在分布式系统中提供追踪解决方案，并且兼容支持了 zipkin，你只需要在pom文件中引入相应的依赖即可。
+
+
+
+
+spring cloud config  分布式配置组件，有server和client,  spring cloud config 配合 eureka使用
+可使用 spring cloud bus 做消息总线，实现通知微服务架构的配置文件的更改。
+
+Hystrix Turbine 聚合仪表盘
+
+
+consul 另一个服务注册于发现的组件
+
+http://locahost:8761/
+http://locahost:8764/hystrix
+
+
+
+
+安全
+Security
+认证服务
+OAuth2 
+
+jwt
+
+
+shiro
+
+动态加载配置文件
+Archaius
+
+服务注册
+zookeeper
+
+app间消息传递
+stream
+
+任务管理
+task
+
+
+
+
+
+
+通过zookeeper配置不同环境的配置文件，进行配置文件的统一管理
+
+create /config ""
+create /config/garlic ""
+create /config/garlic-dev ""
+create /config/garlic-test ""
+create /config/garlic-prod ""
+create /config/garlic/name "default"
+create /config/garlic-dev/name "dev"
+set /config/garlic-dev/name "dev"
+create /config/garlic-test/name "test"
+create /config/garlic-prod/name "prod"
+
+
+
+
+
+zuul 功能
+
+Authentication 认证
+Insights 洞察力
+Stress Testing 压力测试
+Canary Testing 金丝雀测试
+Dynamic Routing 动态路由
+Service Migration 服务迁移
+Load Shedding 减载
+Security 安全
+Static Response handling 静态响应处理
+
+
+
+注意事项：如果希望按照书写顺序来执行路由规则，则必须使用YAML文件，不能使用properties
+
+
+
+技术选型
+
+准备自建一个轻量级的服务网关，技术选型如下：
+
+开发语言：java + groovy，groovy的好处是网关服务不需要重启就可以动态的添加filter来实现一些功能；
+微服务基础框架：springboot；
+网关基础组件：netflix zuul；
+服务注册中心：consul；
+权限校验：jwt；
+API监控：prometheus + grafana；
+API统一日志收集：logback + ELK；
+压力测试：Jmeter；
+
+
+
+
+
+
+
+
+
+
+
+
+spring boot 吞吐量
+
+有人提到简单逻辑下
+
+4核32g能达到1w
+2核8g能达到1k
+
+
+>10w客户端，以峰值5w作为估算，不包含复杂运算的情况下
+5w/1w*32=5*32=160g  即5w并发，建议8核以上服务器内存总数大于160g
+考虑实际情况，应考虑至少，3台*8核*64G 
+ 
+8核 1g~~300---------5w-----  170g     3台64g
+
+硬盘按4T硬盘保留1年记录估算
+
+
+数据量 2k*50k=100M   峰值每秒流量>100M,服务器每秒需要有能接收100M以上数据的能力
+日交换数据量   100M*3600*4=1000G    应当仅存储有用数据（运算处理后的压缩数据）
+数据估算：除轨迹外，都是状态，状态仅存储变更点，每车每日1k次状态变换，10M次状态变换，1G数据
+         轨迹： 按平均每车每日8小时运行计算，3600*8/5*100k=60M次位置变换，6G  
+         日增量按10G计算
+         1T硬盘可保留3个月记录
+
+         每日1000w状态记录
+         每日6000w条位置记录
+
+
+另外需要服务器部署 mysql数据库，mongodb，redis 等小服务
+
+mysql存储频繁修改的数据，如轨迹。定时同步到mongodb中，即轨迹查询需要分段查询
+mysql存储高级汇总结果，便于后期查询，减少统计时间，即使数据清理后，仍保留的统计状态
+mongodb做数据查询分析
+redis做实时数据缓存
+
+
+
+
+
+
+
+
+
+
+
+
+

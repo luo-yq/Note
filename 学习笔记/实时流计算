@@ -1,0 +1,19 @@
+storm: 亚秒级，至少发送一次，数据可能重复
+spark streaming: 有一定延迟，仅仅发送一次，准确度高
+
+
+
+
+
+
+
+storm:
+
+
+启动：
+./storm nimbus &
+./storm supervisor &
+./storm ui &
+
+ui访问路径
+localhost:8080  

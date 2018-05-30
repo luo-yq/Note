@@ -33,4 +33,37 @@ add_header 'Access-Control-Allow-Methods' 'GET,POST,PUT,DELETE,OPTIONS';
 add_header 'Access-Control-Allow-Headers' 'Origin,X-Requested-With,Content-Type,Accept';
 
 
- 
+
+
+
+
+
+二次开发：
+
+安装node>8
+下载jitsi-meet源码
+cd jitsi目录
+npm install 
+./Makefile all 会创建一个目录 source_package/jitsi-meet ,执行过程中会报错，但影响不大
+make 编译项目
+
+
+汉化----lang/main-zhCN.js  汉化
+页面配置----interfaceConfig.js 修改一些基本配置（如工具栏，汉化，水印等），或在初始化是设置参数
+访问配置----config.js----/etc/jitsi/meet/*.-config.js     修改访问地址
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
