@@ -1,0 +1,71 @@
+docker常用命令
+#打开一个可执行的shell
+docker exec -it 容器名 bash
+
+#查看修改的文件列表
+docker diff
+
+#docker commit会将所有的变化，有关、无关的都进行保存，容易导致镜像臃肿，所以，
+#docker commit 一般只用于备份系统，而DockerFile用于制作镜像
+#将指定容器保存为镜像 选项  --author  “作者”    --message  “描述”
+docker commit 选项  容器名/容器id   仓库名:标签
+
+
+#查看指定镜像的历史记录
+docker history 仓库名:标签
+
+
+#文件 DockerFile
+mkdir mynginx
+cd mynginx
+vi DockerFile
+
+#初始来自哪个基础镜像
+FROM nginx
+#docker exec 进去后，在此镜像上所做的一系列操作
+#一个RUN就是一层，现在最多只能写127层，所以RUN 命令 要是有  /分行  并使用 &&  连接命令，以减少层数 
+RUN 命令行
+
+#根据同目录的DockerFile构建镜像
+docker build  -t 仓库名:标签
+#根据指定的DockerFile构建镜像
+docker build -f ../相对目录 -t 仓库名:标签
+
+
+#从指定的url读取DockerFile构建镜像
+docker build  url  -t 仓库名:标签
+
+WORKDIR 指定工作目录
+EXPOSE 声明端口，仅仅是声明，便于使用这了解需要映射那些端口
+COPY 原样赋值
+ADD 自动解压缩
+
+注意：两个RUN不在一个进程中
+
+
+#容器内不能用CMD service start，CMD systemctl start 等方式启动守护进程，只能直接使用原命令，如nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+FROM ubuntu:16.04
+RUN apt-get update /
+	&& apt-get install -y curl /
+	&& rm -rf /var/lib/apt/lists/*
+CMD ["curl","-s","http://ip.cn"]
+
+
+#执行后会输出ip信息
+docker run 容器
+docker run 容器  curl http://ip.cn -i
+
+#ENTRYPOINT替代CMD
+ENTRYPOINT ["curl","-s","http://ip.cn"]
+#执行后会输出ip信息
+docker run 容器 -i
+
+
+
+
+
+
+
+

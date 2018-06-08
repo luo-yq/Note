@@ -1,10 +1,18 @@
 
+docker run -it --name jitsi-meet -p 443:443 robertoandrade/jitsi-meet
+
+
+
+
+
+
 需要注意：
 apt-get自带的jitsi-meet版本比较低，本身不带中文，且api与新版本差距较大，新版本的中文翻译也不充足，需要完善
 需要了解的技术，nginx，nodejs，react
 
 1.在线安装,系统采用Ubuntu
 
+apt-get -y install wget
 echo 'deb https://download.jitsi.org stable/' >> /etc/apt/sources.list.d/jitsi-stable.list
 wget -qO -  https://download.jitsi.org/jitsi-key.gpg.key | apt-key add -
 apt-get update
@@ -38,7 +46,26 @@ add_header 'Access-Control-Allow-Headers' 'Origin,X-Requested-With,Content-Type,
 
 
 
+
+
 二次开发：
+
+
+
+apt-get update
+apt-get -y install nodejs
+apt-get -y install nodejs-legacy
+apt-get -y install npm
+npm install n -g
+apt-get -y install curl
+n 8.0.0
+apt-get -y install jitsi-meet
+cd /usr/share/jitsi-meet
+npm install
+
+
+
+
 
 安装node>8
 下载jitsi-meet源码
