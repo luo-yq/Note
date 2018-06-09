@@ -83,6 +83,16 @@ VMware 使用vmneto8 进行 nat 连接
 
 201--209   cloudra大数据
 211--219   大数据
+
+
+50：ubuntu rocker
+60：centos rocker
+
+
+
+
+
+
 ssh免密登录
 Hadoop集群，
 一致性 Zookeeper集群，

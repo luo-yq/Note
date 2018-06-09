@@ -18,11 +18,10 @@ sudo apt-get install -y --install-recommends linux-generic-lts-xenial
 
 
 
-如果需要swap limit这些功能，就需要修改 GRUB 的配置文件 /etc/default/grub ，在 中添加内核引导参数
-GRUB_CMDLINE_LINUX
-  
-cgroup_enable=memory
-swapaccount=1
+如果需要swap limit这些功能，就需要修改 GRUB 的配置文件 /etc/default/grub ，在 GRUB_CMDLINE_LINUX 中添加内核引导参数
+cgroup_enable=memory swapaccount=1
+
+vim /etc/default/grub
 
 。 然后不要忘记了更新 GRUB:
 使用脚本自动安装
@@ -33,40 +32,50 @@ $ sudo reboot
 
 #安装docker
 
+cd /opt
 
-#下载
-#官网
-curl -sSL https://get.docker.com/ | sh
-#阿里云
-curl -sSL http://acs-public-mirror.oss-cn-hangzhou.aliyuncs.com/docker-engine/internet | sh -
-#DaoCloud
-curl -sSL https://get.daocloud.io/docker | sh
+# step 1: 安装必要的一些系统工具
+sudo apt-get update
+sudo apt-get -y install apt-transport-https ca-certificates curl software-properties-common
+# step 2: 安装GPG证书
+curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+# Step 3: 写入软件源信息
+sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+# Step 4: 更新并安装 Docker-CE
+sudo apt-get -y update
+sudo apt-get -y install docker-ce
+sudo docker version
 
-
-如果系统没有安装可选内核模块的话，可以执行下面的命令来安装可选内核模块包:
-
-$ sudo apt-get install linux-image-extra-$(uname -r) linux-image-extra-virtual
-
-
-
-
-
-
-
-
-
-
-$ echo "<REPO>" | sudo tee /etc/apt/sources.list.d/docker.list
-$ sudo apt-get update
-
-
-
-#安装
-$ sudo apt-get install docker-engine
 
 #开机启动
-$ sudo systemctl enable docker
-$ sudo systemctl start docker
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# 安装指定版本的Docker-CE:
+# Step 1: 查找Docker-CE的版本:
+# apt-cache madison docker-ce
+#   docker-ce | 17.03.1~ce-0~ubuntu-xenial | http://mirrors.aliyun.com/docker-ce/linux/ubuntu xenial/stable amd64 Packages
+#   docker-ce | 17.03.0~ce-0~ubuntu-xenial | http://mirrors.aliyun.com/docker-ce/linux/ubuntu xenial/stable amd64 Packages
+# Step 2: 安装指定版本的Docker-CE: (VERSION 例如上面的 17.03.1~ce-0~ubuntu-xenial)
+# sudo apt-get -y install docker-ce=[VERSION]
+
+
+
+#14.0.4配置加速器 vim /etc/default/docker
+#DOCKER_OPTS="--registry-mirror=https://jxus37ad.mirror.aliyuncs.com"
+
+#16.0.4配置加速器（使用systemctl命令的服务器）
+vim /etc/systemd/system/multi-user.target.wants/docker.service
+
+ExecStart=/usr/bin/dockerd --registry-mirror=https://jxus37ad.mirror.aliyuncs.com
+
+#重启服务
+sudo systemctl restart docker
+#开放端口
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+firewall-cmd --reload
+
+ 
 
 
 
