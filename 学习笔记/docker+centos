@@ -6,10 +6,24 @@ uname -r
 
 使用root或sudo执行
 #更新yum资源
-yum update
+yum -y update
 #两种安装方式
 yum -y install docker-io
 #curl -fsSL https://get.docker.com/ | sh
+
+vi /etc/sysconfig/docker
+# /etc/sysconfig/docker
+
+# Modify these options if you want to change the way the docker daemon runs
+
+OPTIONS='--selinux-enabled=false  --log-driver=journald --signature-verification=false'
+if [ -z "${DOCKER_CERT_PATH}" ]; then
+    DOCKER_CERT_PATH=/etc/docker
+fi
+
+:wq 
+
+
 #启动docker
 service docker start
 #测试docker
@@ -27,6 +41,46 @@ vi /etc/docker/daemon.json
 {
   "registry-mirrors": ["http://hub-mirror.c.163.com"]
 }
+
+
+docker pull registry
+docker pull nginx
+docker pull zookeeper
+docker pull consul
+docker pull node
+docker pull haproxy
+docker pull openjdk
+docker pull tomcat:7
+docker pull tomcat:8
+docker pull solr
+docker pull storm
+docker pull webcenter/activemq 
+docker pull redis
+docker pull memcached
+docker pull jenkins
+docker pull redmine
+docker pull idoop/zentao
+docker pull ubuntu:16.04
+docker pull mongo:3
+docker pull mysql:5.6
+docker pull httpd
+docker pull wurstmeister/kafka
+docker pull garethflowers/svn-server
+docker pull sebp/elk
+docker pull sonatype/nexus
+docker pull robertoandrade/jitsi-meet
+docker pull wordpress  cms建站平台 php 
+docker pull rocket.chat
+docker pull apache/nutch
+docker pull google/cadvisor  docker 监控
+docker pull stilliard/pure-ftpd
+docker pull probablyfine/flume
+docker pull eroadltd/jmeter
+docker pull tvial/docker-mailserver
+ 
+docker pull cloudera/quickstart 
+
+docker pull rabbitmq:management
 
 
 #私有仓库需要越狱Google创建账号
@@ -116,3 +170,74 @@ user1 = rw　　　　　 #单用户
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#启动docker监控，
+mkdir -p /var/run /var/lib/docker /dev/disk 
+
+mount -o remount,rw '/cadvisor/sys/fs/cgroup'
+sudo ln -s /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
+
+docker run \
+  --privileged=true \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:rw \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  --publish=10001:8080 \
+  --detach=true \
+  --name=cadvisor \
+  google/cadvisor:latest
+
+
+  --volume=/sys:/sys:ro \
+
+
+
+#启动nginx
+mkdir /nginx
+
+docker run \
+   --privileged=true \ 
+   --name nginx \
+   -p 80:80 \
+   -d \
+   nginx
+
+   -v /nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+#启动Tomcat
+
+#启动Jenkins
+
+#启动elk
+#需要先修改主机的配置
+vi /etc/sysctl.conf 
+
+vm.max_map_count=655360
+
+sysctl -p
+
+#5601 (Kibana web interface).
+#9200 (Elasticsearch JSON interface).
+#5044 (Logstash
+docker run \
+-p 5601:5601 -p 9200:9200 -p 9300:9300 -p 5044:5044 \
+-ti --name elk sebp/elk
+ 
+#启动rabbitmq
+  
+
+sudo docker run -d --name rabbitmq -p 5671:5671 -p 5672:5672 -p 4369:4369 -p 25672:25672 -p 15671:15671 -p 15672:15672 rabbitmq:management
