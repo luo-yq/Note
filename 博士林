@@ -363,3 +363,37 @@ RSAUtil.decryptStr(paramMap.getString("pwd"), request.getSession().getServletCon
 scrollbarSize :0 ,  
 fitColumns : true,
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ scp ~/Download root@13.37.6.31:/usr/hdp/2.5.0.0-1245/sqoop/lib/
+
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table ITEM  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table HOTEL  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table T_TOLLGATE_INFO  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table T_TOLLGATE_IPC  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table T_VEHICLE_INFO  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table TOLLGATE_CAMERA  -m 1 --hive-import --hive-database testdb
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table TOLLGATE_FTP_BRIL  -m 1 --hive-import --hive-database testdb
+
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table T_VEHICLE_ALARM_INFO  -m 1 --hive-import --hive-database testdb
+
+sqoop import --connect jdbc:oracle:thin:@13.37.6.24:1521/orcl --username xrkk --password xrkk --table T_REQUEST_INFO  -m 1 --hive-import --hive-database testdb
+
+
+
+

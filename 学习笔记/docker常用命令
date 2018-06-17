@@ -26,13 +26,13 @@ FROM nginx
 #一个RUN就是一层，现在最多只能写127层，所以RUN 命令 要是有  /分行  并使用 &&  连接命令，以减少层数 
 RUN 命令行
 
-#根据同目录的DockerFile构建镜像
-docker build  -t 仓库名:标签
+#根据同目录的Dockerfile构建镜像，.表示当前目录
+docker build  -t 仓库名:标签 .     
 #根据指定的DockerFile构建镜像
 docker build -f ../相对目录 -t 仓库名:标签
 
 
-#从指定的url读取DockerFile构建镜像
+#从指定的url读取Dockerfile构建镜像
 docker build  url  -t 仓库名:标签
 
 WORKDIR 指定工作目录

@@ -343,12 +343,12 @@ alter user SYSTEM account unlock
 
 docker run -d --name mongo -p 27017:27017 mvertes/alpine-mongo
 
+#启动cloudera
+docker run --name cloudera --hostname=quickstart.cloudera --privileged=true -p 7180:7180 -p 7280:80 -d cloudera/quickstart /usr/bin/docker-quickstart
+
+#需要8G内存
+docker exec cloudera /home/cloudera/cloudera-manager --express
+
 
 
  
-
-
-
-
-
-
