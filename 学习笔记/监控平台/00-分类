@@ -1,0 +1,308 @@
+参考  卓豪 applications manage       https://www.manageengine.cn
+
+
+
+应用服务器
+数据库
+主机系统
+虚拟化
+ERP:企业资源
+终端用户体验
+中间件
+门户
+云平台
+
+
+
+1. 服务监控 
+
+   服务监控收集应用程序的用户和与实时服务处理现况有关的性能数据。 伟奥监控系统提供的服务监控项目如下。 
+
+•实时连接中的并发用户
+
+•实时运行中的Active Service 
+
+•实时业务处理量 
+
+•实时 Transaction响应时间分布图 
+
+•包含外部Transaction和绑定变量的SQL跟踪
+
+默认提供3个代理探针，支持3个服务器。Web组件支持：JSP、Servlets、EJB；Web Frameworks支持： Struts；ORM Frameworks支持： Hibernate、Spring、iBATIS。NET代理使用.NET的API来进行监视、收集数据并通过进程间通讯（IPC）发送给代理服务，然后收集的数据定时地从.NET代理发送给Application Manager。
+
+最大支持120个服务器，120套监控授权，3000TPS。
+
+节点1和2：Applications Manager服务器
+
+节点3：MSSQL数据库服务器
+
+
+
+提供原厂三年保修，包含三年标准服务免费，四台服务器，9个节点。
+
+针对中心核心业务系统需求，伟奥应用程序性能监控系统可实现系统集中化实时监控。支持整合的监控面板，在一个监控画面中可以对所有运营中的应用服务进行集中监控，主监控面板中，展示所有重要的运行指标；能够监控服务能力指标：业务吞吐量、实时运行的活动服务数、请求的达到率、响应时间等；能够监控资源使用情况：系统及JAVA应用程序的 CPU使用率、系统及JAVA内存堆使用量、数据库连接池的使用状态等；能够监控用户相关信息：并发用户数、访问用户数、点击量等；能够实时展示预警告警信息：系统预警信息、应用运行时发生的异常和错误信息等；监控需要满足实时性的要求，监控指标数据或图表以每秒为单位实时更新；支持根据需要灵活配置自定义监控画面，用以满足个性化监控需求。
+
+根据中心业务情况定制实时事务深度分析，能够实时监控应用程序当前正在处理的活动请求事务，能够从请求事务到达服务器即开始追踪，支持将事务执行的轨迹全部都在系统上呈现出来，并可进行深度剖析。并可查看当前终端用户的IP地址、访问的URL、请求方式、当前运行状态、请求运行到的代码位置。事务轨迹追踪可达到类/方法/SQL语句级别，能够查看SQL执行的绑定变量和返回结果集数量，资源是否正常关闭，支持追踪任意方法的参数和返回值。在事务追踪中能够查看到已经完成和正在处理的每一个阶段的响应时间。
+
+
+
+2. 资源监控 
+
+资源监控收集应用程序在提供服务的过程中使用的与CPU和Memory等逻辑的或物理的资源有关的性能数据。 伟奥监控系统提供的资源监控项目如下。 
+
+• DB Connection及Connection Pool状态 
+
+•系统及进程CPU使用率 
+
+•系统及进程Memory使用量
+
+• JAVA Heap Memory使用量 
+
+•文件IO状态 
+
+• TCP Socket IO跟踪
+
+3. 故障诊断及分析 
+
+与Web应用程序的性能有关的问题类型分为因负载量增加导致的相对性能问题和非正常的特定条件状况下发生的条件性性能问题。伟奥监控系统为了诊断并分析这种性能问题，提供了如下功能。 
+
+• JAVA Heap Memory Leak跟踪(Collection ObDumpject及Live Object) 
+
+•未返还 DB Connection/JDBC Statement/ResultSet Object跟踪 
+
+•未处理 DB Transaction(commit/rollback)跟踪 
+
+•在应用程序中发生的例外(Exception)跟踪 
+
+•在应用程序中发生的SQL例外(SQL Exceptoin)跟踪 
+
+•有关处理Active Service的线程的Dump 
+
+•有关HTTP Session的Dump 
+
+•载入类的查询  
+
+支持内存泄露原因的追踪，通过系统设定，可以快速的找到应用系统中会引发内存泄露的特定类对象和集合框架类对象，并且显示关联调用的情况。能监控到程序JDBC相关对象使用完毕没有及时释放的情况，如未关闭的结果集、SQL指令集、数据库连接等，能够准确显示调用它们的页面地址和查询语句。能够追踪出查询结果集过大的语句和调用页面地址。提供应用服务内部的文件I/O和Socket通讯的追踪。
+
+当服务器即将发生问题时，系统能够自动发出预警和告警。告警信息可以分为不同的风险级别，并且显示时间、应用名、页面路径等关联信息。告警方式多样化，支持界面告警、声光电、短信、电子邮件等多种方式，开放通用的接口，支持将信息推送至其他告警平台。
+
+4. 实时线程监控 
+
+伟奥应用程序性能监控系统把JAVA应用程序当前正在处理的Transaction称为Active Service。同时，把Active Service列表按过程时间段分类后，通过Realtime Equalizer Chart和ActiveService List提供。通过这些，用户可以确认当前的有关JAVA应用程序内部ActiveService的快照信息。
+
+伟奥系统具备实时线程积压的智能控制功能。当服务器存在性能问题，并发请求过多时，可能出现严重的线程积压情况，系统支持在实时追踪界面上，对确认已经死掉或者引起故障的请求线程进行手工的暂停、杀死、重启操作。支持设定排队线程的优先级，当服务器繁忙时，保障重要的业务优先被执行。并可设定系统服务峰值级别，当服务请求激增，排队现象严重时，根据预先设置的参数智能控制请求数量，保证当前服务运行稳定。  
+
+5. 事务响应时间分布图 
+
+响应时间分布图是把所有Transaction以Transaction的起始时间和响应时间为标准，在图表上用点描述。在伟奥监控系统中指X-View。 利用X-View监控所有Transaction处理现况，则可以掌握导致响应时间延迟的特定Transaction或相互关联的Transaction组，更有效地分析性能低下现象。
+
+而且，还可以通过伟奥监控系统 Profiling功能，分析有关个别Transaction的详细执行内容。详细执行内容包括如下内容。 
+
+•任意的方法调用动态Profiling 
+
+•方法参数和返回值跟踪 
+
+•包含DB和绑定变量的SQL跟踪 
+
+•与保留系统的联动等外部Transaction跟踪 
+
+•文件和Socket IO跟踪  
+
+ 可提供请求事务响应时间的实时分布图表，通过图表可以直观的评估运行情况、判断性能问题。分布图表支持从响应时间的角度展示，支持以业务逻辑执行时间、DB交互时间、SQL结果获取(Fetch)时间、 TUXEDO/CICS/Tmax等外部事务调用时间为基准，变更分布的形态，以此来对响应时间进行分段定位分析。对于分布图中的每个事务，可以展开事务详细列表，从多种视角对每个请求事务的执行轨迹进行详细剖析（语句级追踪）。分布图不光提供实时分布展示，还应提供历史情景再现功能，即可查询任意历史时刻的应用事务执行情况。
+
+6. SQL语句分析
+
+基于应用程序的调用次数和平均响应时间统计，导出导致性能低下的瓶颈应用程序，可以通过Profiling功能，具体掌握运行相应应用程序的Transaction的瓶颈区间。 
+
+而且，掌握SQL和外部Transaction在特定应用程序中的占有率，可以很容易找出需要进行调优的SQL和外部Transaction。
+
+7. 统计分析及报告 
+
+伟奥监控系统把收集的性能数据保存到数据库中，可进行灵活的统计分析。另外提供对相应数据进行二次加工的多种用户定义型报告编写功能。提供任意时间段的应用页面、SQL外部事务、异常的统计汇总，如成功次数、失败次数、所占比例、响应时间等。提供趋势分析功能，可以横向和纵向对比，分析不同应用在同一时段的表现、同一应用在不同时段的表现，而且可以评估负载均衡情况等。提供每日、每周、每月的报告书，包含各种TOP排行，性能数据汇总，关键指标的平均值、最大值以及峰值时刻。提供用户自定义报告书功能，可以自由加工监控数据，以此制作满足用户要求的报告书。
+
+可查看CPU内存和垃圾回收情况，分析内存泄露隐患。对应用服务器的性能影响在一定数值以下，平均CPU负载增量不超过3%，无需单独占用进程，对应用及应用服务器的嵌入程度在可接受范围。
+
+支持所有操作系统，支持.NET以及所有符合J2EE标准的中间件。
+
+支持分级部署和管理，适用于集群环境。
+
+
+
+
+
+
+
+
+
+亮点
+应用发现 & 依赖映射
+
+自动发现IT环境中的应用和服务器，并生成不同组件间的关系映射。
+
+全面的性能管理
+
+获取100多种性能指标，包括响应时间、资源利用率、CPU/内存等。
+
+IT资源的统一视图
+
+从整体的IT资源统一视图到局部的应用拓扑，全景掌控。
+
+分布式大规模监控
+
+支持分布式网络的资源集中监控，最多可管理多达5万台服务器或应用。
+
+故障管理
+
+除了电子邮件和短信通知外，还可以执行纠正问题的程序或脚本、发送SNMP Trap来自动解决问题。还可以基于阈值来触发启动/停止/重启Windows服务、虚拟机、Amazon EC2实例的动作。
+
+根本原因分析
+
+快速发现性能瓶颈，节省分析问题的时间。根本原因分析使用层次化结构形式展现，并且可以方便的在Web界面中查看。
+
+强大的报表
+
+借助强大丰富的报表，进行故障排查和容量规划。
+
+友好的Web客户端
+
+通过直观友好的Web界面或手机浏览器或iPhone或Android手机App访问。
+
+多用户角色权限
+
+可以为用户分配各种角色，如普通用户、管理员、操作员和经理，来执行不同权限的操作。
+
+多语言版本
+
+提供中文、英语、法语、德语、西班牙语、韩语、匈牙利语、日语等语言版本。
+
+监控能力
+应用服务器监控
+Microsoft .NET监控
+Oracle应用服务器监控
+JBoss监控
+Tomcat监控
+VMware vFabric tc服务器监控
+BEA WebLogic监控
+SilverStream监控
+IBM WebSphere监控
+GlassFish服务器监控
+数据库监控
+Oracle监控
+MySQL监控
+SQL Server监控
+DB2监控
+Sybase监控
+PostgreSQL监控
+Memcached监控
+数据库查询监控
+MongoDB监控
+Cassandra监控
+Redis监控
+系统管理
+Windows监控
+Linux监控
+Solaris监控
+AIX监控
+AS400监控
+HP-Unix / Tru64 Unix监控
+FreeBSD监控
+Novell监控
+Mac OS监控
+用户自定义监控
+Windows事件日志监控
+文件系统监控
+Windows性能计算器
+虚拟化监控
+Docker监控new
+VMware监控
+Hyper-V监控
+Citrix XenServer监控
+虚拟机监控
+自动化虚拟资源供给
+VMware Horizon View监控
+ERP监控
+SAP监控
+Oracle E-Business Suite监控
+Siebel服务器监控
+终端用户体验监控
+用户体验监控
+分布式用户监控
+中间件/Portal监控
+WebSphere MQ监控
+WebSphere MQ Message Broker
+MS Office SharePoint监控
+WebLogic Integration监控
+Microsoft Message Queue (MSMQ)
+VMware vFabric RabbitMQ
+Web事务处理监控
+Java Web事务监控(应用性能透视)
+.NET Web事务监控
+Ruby on Rails Web事务监控
+Java Runtime监控
+JMX监控 | SNMP监控
+服务监控
+Hadoop监控new
+Oracle Coherence监控
+JMX监控 | JMX Consoles
+SNMP Consoles
+文件系统监控
+Windows性能计数器
+脚本监控
+数据库查询监控
+网站监控
+URL监控
+记录和回放HTTP请求
+URL内容监控
+真实浏览器监控
+云监控
+Amazon EC2监控
+Amazon RDS监控
+自动化云资源管理
+Windows Azure监控
+OpenStack监控new
+其它应用监控
+Exchange服务器监控
+服务监控
+Ping监控
+Web服务器/ Web服务监控
+Web服务 (SOAP)
+Apache监控
+IIS监控
+Nginx监控
+PHP监控
+SSL凭证监控
+活动目录监控
+LDAP监控
+DNS监控
+FTP, SFTP监控
+其它Web服务器监控
+其它功能
+集成Site24x7
+分布式网络管理
+手机客户端
+iPhone App
+Android App
+网络性能监控
+集成ServiceDesk Plus
+SAN存储网络监控
+异常检测
+REST API
+地图视图
+SLA管理
+与ManageEngine软件集成
+ServiceDesk Plus - 帮助台软件
+
+ServiceDesk Plus是一个基于Web的帮助台和资产管理软件。通过集成ServiceDesk Plus，你可以使用在ServiceDesk Plus以工单的形式来跟踪Applications Manager生成的告警。
+
+Site24X7 - 在线网站监视服务
+
+集成Site24x7之后，就可用从局域网内网同时监视网站的性能。在Applications Manager本身之外还能从全球各处监视你的网站。
+
+OpManager - 网络监控软件
+
+和OpManager集成可以即监视你的业务应用，又可以监视网络设备，例如路由器、交换机等。
+
+OpStor - 存储监控软件
+
+和OpStor集成可以即监视你的业务应用，又可以监视存储设备，例如存储阵列、光纤交换机等。
+

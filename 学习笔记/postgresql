@@ -1,0 +1,124 @@
+#测试
+#初始化pgbench
+pgbench -i -s 10 --foreign-keys --unlogged-tables -U postgres postgres
+
+
+pgbench -M prepared -r -c 10 -j 2 -T 30 -U postgres postgres
+
+# -c 连接数  -j 线程数为c的约数  -T 测试时间  -U 用户 数据库  （还有其他参数如 -C 是使用短连接，效率低下）
+# 通过改变-c参数可找到客户数的瓶颈  
+pgbench -M extended --aggregate-interval 2 -l  -c 2 -j 2 -T 10 -U postgres postgres
+
+
+
+
+
+#备份
+pg_dump -h host -U postgres databasename > C:\databasename.bak
+
+pg_dump -U postgres postgres > postgres.bak
+
+#恢复数据
+psql -h localhost -U postgres -d databasename <  C:\databasename.bak(测试没有成功)
+
+psql -U postgres postgres2 < postgres.bak
+
+
+
+
+
+
+
+
+
+8核 8线程 16G 内存   8个客户机   每秒吞吐量 1w  cpu 55%
+8核 8线程 16G 内存   12个客户机   每秒吞吐量 1.2w  cpu 65%
+8核 8线程 16G 内存   16个客户机   每秒吞吐量 1.2w  cpu 75%
+8核 8线程 16G 内存   32个客户机   每秒吞吐量 1.2w  cpu 80%
+
+
+mysql 不做优化效率慢一半
+
+
+
+
+root/bril2018@192.168.66.253
+
+
+postgres:   
+2g 2j 2client  1000
+
+
+8g 8j 8client 7000
+
+32g 8j 8client 7000
+32g 8j 16client 14000
+32g 8j 32client 13000
+32g 8j 64client 8000
+ 
+
+
+48g 8j 8client 10000
+48g 8j 16client 14000
+48g 8j 32client 13000
+48g 8j 64client 8000
+
+测试过程中，有间歇性的阻塞，吞吐量甚至会减半
+
+性能优化
+
+方案1： 关闭事务，减少提交事务的时间
+
+方案2： 使用一条copy取代批量insert
+
+cd usr/local/share/postgresql/
+cp postgresql.conf.sample postgresql.conf
+vi postgresql.conf
+
+shared_buffers 应尽可能大，通常设为RAM的10%，不要超过40%
+进程的最大共享内存设为  kernel.shmmax = postgres shared_buffers + 32MB
+
+work_mem 排序功能影响结果集拆分，应尽可能大，一般设为RAM的2%~4%，   注意  RAM>最大线程数*每个线程的排序数*work_mem
+max_connections 最大线程数
+
+effective_cache_size   索引扫描需要的内存 ， 一般设为（ RAM - postgres 运行内存 ）* 25%
+
+maintenance_work_mem  创建索引时，需要，设的大一点可以提高建表速度   如：8g 内存 给 512M，
+
+
+FSYNC vs ASYNC   sync=no 关闭 fsync 的话， 性能会提升 15% 到 25% ， 但系统崩溃时可能丢掉几条数据
+
+
+wal_buffers
+WAL 的储存大小。default 是 64 kb。 实验证明， 设定这个值在 256 kb 到 1 MB 之间会提升效能。
+
+
+增加checkpoint_segments 或者 checkpoint_timeout 可以有一定的效能提升。
+checkpoint_segments： 最多的wal log数量，到达后会激发 checkpoint，通常设置定为30
+checkpoint_timeout： 一般设置15-20分钟，常的可以设定1天也没关系
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

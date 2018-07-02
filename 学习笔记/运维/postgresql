@@ -1,0 +1,302 @@
+
+
+
+
+重要配置
+
+--cpu-shares=1024   1核cpu为1024，100% ， 2核cpu为2048，200%  .......
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+docker pull postgres:alpine
+docker run --name postgres --hostname postgres -m 8G -p 5432:5432 --net=host -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+docker run --name postgres2 --hostname postgres2 -m 8G -p 5433:5432 -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+docker run --name postgres --cpu-shares=1024 --hostname postgres  -m 8G -p 5432:5432 -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+ 
+
+docker run --name postgres2 --hostname postgres2 -m 8G -p 5433:5432 -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+
+docker exec -it postgres sh
+
+#测试
+#初始化pgbench
+pgbench -i -s 10 --foreign-keys --unlogged-tables -U postgres postgres
+
+
+pgbench -M prepared -r -c 10 -j 2 -T 30 -U postgres postgres
+
+# -c 连接数  -j 线程数为c的约数  -T 测试时间  -U 用户 数据库  （还有其他参数如 -C 是使用短连接，效率低下）
+# 通过改变-c参数可找到客户数的瓶颈  
+pgbench -M extended --aggregate-interval 2 -l  -c 2 -j 2 -T 10 -U postgres postgres
+
+
+
+
+
+#备份
+pg_dump -h host -U postgres databasename > C:\databasename.bak
+
+pg_dump -U postgres postgres > postgres.bak
+
+#恢复数据
+psql -h localhost -U postgres -d databasename <  C:\databasename.bak(测试没有成功)
+
+psql -U postgres postgres2 < postgres.bak
+
+
+------缓存占用大是否影响性能------------------------------------------------------------------------------------------------
+
+考虑分10个表处理，为减轻服务器压力，必须保证，预计单表最大数据量时吞吐量在 10w/10s ；
+
+20个客户机， 每次5000条，分10张表，主键+5个索引：    单表10w 条后吞吐量已下降到10w，20w条后下降到1w以内，
+
+20个客户机， 每次5000条，分10张表，主键+3个索引：    单表50w 条后吞吐量已下降到10w，100w条后下降到5w以内
+
+20个客户机， 每次5000条，分10张表，主键+2个索引：    单表100w 条后吞吐量已下降到20w，150w条后下降到13w，170w条后吞吐量已下降到10w
+
+20个客户机， 每次5000条，分10张表，主键+1个索引：    单表300w 条后吞吐量已下降到20w，500w条后下降到16w，700w条后吞吐量已下降到12w，900w条后吞吐量已下降到12w
+
+20个客户机， 每次5000条，分10张表，仅主键（序列）：   无压力
+
+
+---------------------------------------------------------------------------------------------------------
+按分库处理，单库吞吐量应在，10w/10s/库数
+
+
+
+20个客户机， 每次5000条，分10张表，+5个索引：    单表20w 条后吞吐量已下降到10w，40w条后下降到1w以内，
+
+20个客户机， 每次5000条，分10张表，+3个索引：    单表50w 条后吞吐量已下降到10w，100w条后下降到5w以内
+
+20个客户机， 每次5000条，分10张表，+2个索引：    单表100w 条后吞吐量已下降到20w，150w条后下降到13w，170w条后吞吐量已下降到10w
+
+20个客户机， 每次5000条，分10张表，+1个索引：    单表300w 条后吞吐量已下降到20w，0w条后下降到10w，170w条后吞吐量已下降到10w
+
+
+
+
+
+
+#主机
+
+su postgres
+
+vi ~/data/pg_hba.conf
+host    replication     replica     172.17.0.3/16                 md5
+
+psql
+CREATE ROLE replica login replication encrypted password 'replica';
+
+vi ~/data/postgresql.conf
+
+wal_level = hot_standby  # 这个是设置主为wal的主机
+
+max_wal_senders = 32 # 这个设置了可以最多有几个流复制连接，差不多有几个从，就设置几个
+wal_keep_segments = 256 ＃ 设置流复制保留的最多的xlog数目
+wal_sender_timeout = 60s ＃ 设置流复制主机发送数据的超时时间
+
+max_connections = 100 # 这个设置要注意下，从库的max_connections必须要大于主库的
+
+#从机
+
+mkdir -p /data/pgsql/data2
+pg_basebackup -F p --progress -D /data/pgsql/data2 -h 172.17.0.2 -p 5432 -U replica --password
+
+cp /usr/local/share/postgresql/recovery.conf.sample /data/pgsql/data2/recovery.conf
+vi /data/pgsql/data2/recovery.conf
+
+
+standby_mode = on  # 这个说明这台机器为从库
+primary_conninfo = 'host=10.12.12.10 port=5432 user=replica password=replica'  # 这个说明这台机器对应主库的信息
+
+recovery_target_timeline = 'latest' # 这个说明这个流复制同步到最新的数据
+
+
+vi    /data/pgsql/data2/postgresql.conf
+
+max_connections = 1000 ＃ 一般查多于写的应用从库的最大连接数要比较大
+
+hot_standby = on  ＃ 说明这台机器不仅仅是用于数据归档，也用于数据查询
+max_standby_streaming_delay = 30s # 数据流备份的最大延迟时间
+wal_receiver_status_interval = 1s  # 多久向主报告一次从的状态，当然从每次数据复制都会向主报告状态，这里只是设置最长的间隔时间
+hot_standby_feedback = on # 如果有错误的数据复制，是否向主进行反馈
+
+
+
+
+服务器端压力测试结果，增加内存对插入数据影响不大，主要是服务器的线程数与客户机数对插入数据的吞吐量有影响，服务器内存对查询性能有影响，
+16G内存应当已满足性能需要
+
+虚拟机CPU型号名称：Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+
+测试结论，合理的线程数搭配客户机的方式是： 线程数 <= 客户机 <=  线程数 * 4
+
+未优化情况下
+8线程，服务器插入数据的最大吞吐量可达1.2w左右
+16线程，服务器插入数据的最大吞吐量可达2w左右
+
+
+建议的配置是： 16线程，16G内存，16客户机，每批次1000，服务器端吞吐量1.8W，批量吞吐量 16w。
+
+
+8线程  16G 内存   8个客户机    每秒吞吐量 1w  cpu 55%
+8线程  16G 内存   12个客户机   每秒吞吐量 1.2w  cpu 65%
+8线程  16G 内存   16个客户机   每秒吞吐量 1.2w  cpu 75%
+8线程  16G 内存   32个客户机   每秒吞吐量 1.2w  cpu 80%
+
+16线程 16G 内存   16个客户机   每秒吞吐量 1.8w   cpu  60%
+16线程 16G 内存   32个客户机   每秒吞吐量 2w   cpu  60%
+16线程 16G 内存   64个客户机   每秒吞吐量 1.9w   cpu  70%
+
+
+顶级postgresql高手，优化后 E7 系列 144 线程  95G 内存  吞吐量 140w  
+
+
+java 客户端批量插入,仅主键索引情况下,每条数据5列
+
+8线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 8w   cpu  80%
+8线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 8w   cpu  80% 
+
+16线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 16w   cpu  70%
+16线程 16G 内存   16个客户机  每批次5000  每秒吞吐量 16w   cpu  75%
+16线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 18w   cpu  80% 
+
+主键+新建2个索引=3个索引列
+每秒吞吐量减少为  3W
+
+主键+新建4个索引=5个索引列
+每秒吞吐量减少为  2W
+
+有索引时，cpu使用率急剧下降，仅20~30%
+
+
+
+
+java 客户端批量插入,仅主键索引情况下,每条数据20列 
+
+16线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 4.5w   cpu  60%
+16线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 5w   cpu  60% 
+
+16线程 16G 内存   32个客户机  20列  5个索引  每批次1000  每秒吞吐量 2w-4w  
+16线程 16G 内存   16个客户机  20列  5个索引  每批次1000  每秒吞吐量 1.6-3w  
+
+
+主键+新建1个索引=2个索引列
+每秒吞吐量减少为  3.9W
+
+
+主键+新建2个索引=3个索引列
+每秒吞吐量减少为  2.5W
+
+主键+新建4个索引=5个索引列
+每秒吞吐量减少为  1.6W——3.5w
+
+有索引时，cpu使用率急剧下降，仅20~30%
+
+
+
+
+
+mysql 不做优化效率慢一半
+
+
+
+
+root/bril2018@192.168.66.253
+
+
+postgres:   
+2g 2j 2client  1000
+
+
+8g 8j 8client 7000
+
+32g 8j 8client 7000
+32g 8j 16client 14000
+32g 8j 32client 13000
+32g 8j 64client 8000
+ 
+
+
+48g 8j 8client 10000
+48g 8j 16client 14000
+48g 8j 32client 13000
+48g 8j 64client 8000
+
+测试过程中，有间歇性的阻塞，吞吐量甚至会减半
+
+性能优化
+
+方案1： 关闭事务，减少提交事务的时间
+
+方案2： 使用一条copy取代批量insert
+
+cd usr/local/share/postgresql/
+cp postgresql.conf.sample postgresql.conf
+vi postgresql.conf
+
+shared_buffers 应尽可能大，通常设为RAM的10%，不要超过40%
+进程的最大共享内存设为  kernel.shmmax = postgres shared_buffers + 32MB
+
+work_mem 排序功能影响结果集拆分，应尽可能大，一般设为RAM的2%~4%，   注意  RAM>最大线程数*每个线程的排序数*work_mem
+max_connections 最大线程数
+
+effective_cache_size   索引扫描需要的内存 ， 一般设为（ RAM - postgres 运行内存 ）* 25%
+
+maintenance_work_mem  创建索引时，需要，设的大一点可以提高建表速度   如：8g 内存 给 512M，
+
+
+FSYNC vs ASYNC   sync=no 关闭 fsync 的话， 性能会提升 15% 到 25% ， 但系统崩溃时可能丢掉几条数据
+
+
+wal_buffers
+WAL 的储存大小。default 是 64 kb。 实验证明， 设定这个值在 256 kb 到 1 MB 之间会提升效能。
+
+
+增加checkpoint_segments 或者 checkpoint_timeout 可以有一定的效能提升。
+checkpoint_segments： 最多的wal log数量，到达后会激发 checkpoint，通常设置定为30
+checkpoint_timeout： 一般设置15-20分钟，常的可以设定1天也没关系
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

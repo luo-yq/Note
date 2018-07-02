@@ -80,7 +80,7 @@ docker pull garethflowers/svn-server
 docker pull sonatype/nexus
 docker pull eroadltd/jmeter
 docker pull tvial/docker-mailserver
-
+docker pull cassandra
 
 docker pull alpine
 docker pull centos:7
@@ -378,11 +378,21 @@ http://192.168.195.101:3000
 
 
 
-
+#postgres
 docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=123456 -d postgres:alpine
 
 
+#启动cassandra
+docker run --name cassandra1 -d cassandra
+
+#连接方式 docker run --name some-app --link cassandra1:cassandra -d app-that-uses-cassandra
 
 
+#集群
+#docker run --name cassandra2 -d -e CASSANDRA_SEEDS="$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' cassandra1)" cassandra
+docker run --name cassandra2 -d --link cassandra1:cassandra cassandra
 
+#使用cql连接Cassandra
+docker run -it --link cassandra2:cassandra --rm cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR"'
+docker run -it --link cassandra2:cassandra --rm cassandra cqlsh cassandra
 
