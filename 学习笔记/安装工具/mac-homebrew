@@ -1,0 +1,27 @@
+homebrew 安装
+ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+
+其他brew命令
+brew search
+brew install
+brew uninstall
+brew list           列出已安装的软件
+brew update     更新brew
+brew home       用浏览器打开brew的官方网站
+brew info         显示软件信息
+brew deps        显示包依赖
+
+
+brew doctor   查看出错原因及解决方案
+
+wget安装 brew install wget
+
+大部分软件安装需要pkg-config
+安装pkg-config
+curl http://pkgconfig.freedesktop.org/releases/pkg-config-0.28.tar.gz -o pkg-config-0.28.tar.gz
+tar -xf pkg-config-0.28.tar.gzcd pkg-config-0.28
+
+./configure  --with-internal-glib
+   make
+  sudo  make install
+

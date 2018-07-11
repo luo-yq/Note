@@ -72,7 +72,8 @@ psql -U postgres postgres2 < postgres.bak
 
 20个客户机， 每次5000条，分10张表，主键+2个索引：    单表100w 条后吞吐量已下降到20w，150w条后下降到13w，170w条后吞吐量已下降到10w
 
-20个客户机， 每次5000条，分10张表，主键+1个索引：    单表300w 条后吞吐量已下降到20w，500w条后下降到16w，700w条后吞吐量已下降到12w，900w条后吞吐量已下降到12w
+20个客户机， 每次5000条，分10张表，主键+1个索引：    单表300w 条后吞吐量已下降到20w，500w条后下降到16w，700w条后吞吐量已下降到12w，7000w条后依然保持
+												？？2000w条后吞吐量已下降到12w
 
 20个客户机， 每次5000条，分10张表，仅主键（序列）：   无压力
 
@@ -290,8 +291,175 @@ checkpoint_timeout： 一般设置15-20分钟，常的可以设定1天也没关�
 
 
 
+postgresql10.4 主从
+
+一、环境基本信息
+
+IP：172.18.0.2（主）port 5432
+    172.18.0.3（备）port 5433
 
 
+docker network create --subnet=172.18.0.0/16 mynetwork
+docker run --network mynetwork -p 5432:5432 --ip 172.18.0.2 --name postgres -v /data/docker/postgres_data:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+这样就安装好了postgresql的容器
+/data/docker/postgres_data这个为数据库pgdata容器外目录
+cd /data/docker/postgres_data
+到数据库pg_data
+二、主库配置
+2.1修改pg_hba.conf文件，添加认证
+host replication repuser 172.18.0.3/32 trust
+
+2.2修改postgresql.conf文件，以下是128G内存的配置
+
+listen_addresses = '*'			
+port = 5432				
+max_connections = 1000			
+tcp_keepalives_idle = 7200		
+tcp_keepalives_interval = 75		
+tcp_keepalives_count = 9		
+shared_buffers = 32GB			
+work_mem = 128MB				
+maintenance_work_mem = 4GB		
+autovacuum_work_mem = 1GB		
+dynamic_shared_memory_type = posix	
+bgwriter_lru_maxpages = 1000		
+bgwriter_lru_multiplier = 10.0		
+effective_io_concurrency = 2		
+max_worker_processes = 40		
+max_parallel_workers_per_gather = 20	
+max_parallel_workers = 40		
+wal_level = replica			
+fsync = on				
+synchronous_commit = off		
+wal_buffers = 1GB			
+checkpoint_timeout = 30min		
+max_wal_size = 64GB
+min_wal_size = 16GB
+checkpoint_completion_target = 0.9	
+archive_mode = on		
+archive_command = '/bin/date >/dev/null'		
+max_wal_senders = 10		
+wal_keep_segments = 512
+hot_standby = on
+max_standby_archive_delay = 700s
+max_standby_streaming_delay = 700s		
+effective_cache_size = 96GB
+log_destination = 'stderr'		
+logging_collector = on		
+log_directory = 'log'			
+log_filename = 'postgresql-%Y%m%d_%H%M%S.log'	
+log_rotation_age = 1d			
+log_rotation_size = 100MB		
+log_min_duration_statement = 5s		
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_error_verbosity = verbose		
+log_line_prefix = '%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h '		
+log_lock_waits = on			
+log_statement = 'ddl'			
+log_temp_files = 0			
+log_timezone = 'PRC'
+log_autovacuum_min_duration = 0	
+autovacuum_max_workers = 8		
+autovacuum_naptime = 10min		
+datestyle = 'iso, ymd'
+timezone = 'PRC'
+lc_messages = 'zh_CN.UTF-8'			
+lc_monetary = 'zh_CN.UTF-8'			
+lc_numeric = 'zh_CN.UTF-8'			
+lc_time = 'zh_CN.UTF-8'				
+default_text_search_config = 'pg_catalog.simple'
+
+
+
+
+2.3创建repuser用户（进容器psql内部或者工具navicat执行）
+CREATE USER repuser
+REPLICATION
+LOGIN
+CONNECTION LIMIT 2
+ENCRYPTED PASSWORD '123456';
+
+一般我们也可到172.18.0.3备库验证，
+psql -h 172.18.0.2 -p 5432 -U repuser -d postgres -W （我这里不验证因为备库是基于主库的镜像快照创建现在不能验证）
+修改完所有配置重新启动容器。
+三、主库容器备份到备库并恢复
+3.1主库上备份容器
+备份前做基础备份：
+docker exec -it postgresdb /bin/bash进入容器
+postgres=# select pg_start_backup('bakup');创建基础备份
+
+退出，在开始主库容器备份
+
+docker commit -p imageID postgres_backup
+
+docker save -o /data/docker/postgres_backup.tar postgres_backup
+
+3.2迁移
+scp postgres_backup.tar root@172.18.0.3:/tmp
+
+3.3备库恢复
+docker load -i postgres_backup.tar
+
+3.4备库容器启动
+在66备库基于 postgres_backup 镜像启动容器
+
+ docker run --network mynetwork -p 5433:5432 --ip 172.18.0.3 --name postgres_backup -v /data/docker/postgres_data_backup:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+docker run --network mynetwork -p 5433:5432 --ip 172.18.0.3  --name postgres_backup -v /data/docker/postgres_data_backup:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres_backup
+
+rm -rf /var/lib/postgresql/data/*
+pg_basebackup -D /var/lib/postgresql/data -h172.18.0.2 -p5432 -Urepuser -X stream -v --checkpoint=fast -r 50M
+
+
+四、备库配置
+/data/docker/postgres_data_backup
+修改postgresql.conf
+hot_standby = on
+增加recovery.conf配置如下：
+standby_mode = 'on'
+primary_conninfo = 'user=repuser password=123456 host=172.18.0.2 port=5432'
+recovery_target_timeline = 'latest'
+重启备库
+
+主库上操作
+结束基础备份：
+postgres=# select pg_stop_backup();
+日志切换：
+postgres=# select pg_switch_wal();
+ 
+五、验证
+主库上查看发送进程：
+[root@65 postgres_data]# ps -ef |grep postgres
+systemd+ 3033 3018 0 Sep26 ? 00:00:00 postgres
+systemd+ 3079 3033 0 Sep26 ? 00:00:03 postgres: checkpointer process
+systemd+ 3080 3033 0 Sep26 ? 00:00:00 postgres: writer process
+systemd+ 3081 3033 0 Sep26 ? 00:00:00 postgres: wal writer process
+systemd+ 3082 3033 0 Sep26 ? 00:00:00 postgres: autovacuum launcher process
+systemd+ 3083 3033 0 Sep26 ? 00:00:00 postgres: stats collector process
+systemd+ 15863 3033 0 09:46 ? 00:00:00 postgres: wal sender process repuser 172.16.36.66(46164) streaming 0/E000EB8
+systemd+ 16559 3033 0 09:50 ? 00:00:00 postgres: postgres postgres 172.19.14.202(55561) idle
+root 18672 7318 0 09:53 pts/0 00:00:00 grep —color=auto postgres
+systemd+ 30123 30108 0 Sep22 ? 00:00:04 postgres
+systemd+ 30212 30123 0 Sep22 ? 00:00:00 postgres: checkpointer process
+systemd+ 30213 30123 0 Sep22 ? 00:00:02 postgres: writer process
+systemd+ 30214 30123 0 Sep22 ? 00:00:02 postgres: wal writer process
+systemd+ 30215 30123 0 Sep22 ? 00:00:02 postgres: autovacuum launcher process
+systemd+ 30216 30123 0 Sep22 ? 00:00:06 postgres: stats collector process
+备库上查看接收进程：
+[root@66 postgres_data]# ps -ef |grep postgres
+systemd+ 33596 33581 0 09:46 ? 00:00:00 postgres
+systemd+ 33647 33596 0 09:46 ? 00:00:00 postgres: startup process recovering 00000001000000000000000E
+systemd+ 33648 33596 0 09:46 ? 00:00:00 postgres: checkpointer process
+systemd+ 33649 33596 0 09:46 ? 00:00:00 postgres: writer process
+systemd+ 33650 33596 0 09:46 ? 00:00:00 postgres: wal receiver process streaming 0/E000EB8
+systemd+ 33807 33596 0 09:49 ? 00:00:00 postgres: stats collector process
+systemd+ 33903 33596 0 09:51 ? 00:00:00 postgres: postgres postgres 172.19.14.202(55568) idle
+root 33972 30806 0 09:52 pts/0 00:00:00 grep —color=auto postgres
 
 
 

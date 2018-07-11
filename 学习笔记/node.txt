@@ -30,3 +30,7 @@ ls -las 仔细查看，全局安装的npm包一般会在这个目录下创建软
 sudo rm -rf /usr/local/share/man/man1/node.1
 sudo rm -rf /usr/local/lib/dtrace/node.d
 sudo rm -rf ~/.npm
+
+
+
+

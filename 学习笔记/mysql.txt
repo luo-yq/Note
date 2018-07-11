@@ -1,5 +1,4 @@
 
-
 select uuid()
 
 SELECT LAST_INSERT_ID()

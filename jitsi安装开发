@@ -1,16 +1,4 @@
 
-apt-get update
-apt-get install nodejs
-apt-get install nodejs-legacy
-apt-get install npm
-npm install n -g
-apt-get install curl
-n 8.0.0
-
-
-
-
-
 
 
 

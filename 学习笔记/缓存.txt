@@ -1,3 +1,0 @@
-brew install cassandra
-brew install squid
-brew install varnish

@@ -50,5 +50,7 @@ docker stats 容器名
 
 
 
+docker update -m 2048m <name>
+
 
 

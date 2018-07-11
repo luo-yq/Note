@@ -1,47 +1,3 @@
-centos在国内发展较快，所谓的性能问题应会逐渐被解决。
-
-1. 安装docker
-#检查版本 要求64位，内核>3.10
-uname -r
-
-使用root或sudo执行
-#更新yum资源
-yum -y update
-#两种安装方式
-yum -y install docker-io
-#curl -fsSL https://get.docker.com/ | sh
-
-vi /etc/sysconfig/docker
-# /etc/sysconfig/docker
-
-# Modify these options if you want to change the way the docker daemon runs
-
-OPTIONS='--selinux-enabled=false  --log-driver=journald --signature-verification=false'
-if [ -z "${DOCKER_CERT_PATH}" ]; then
-    DOCKER_CERT_PATH=/etc/docker
-fi
-
-:wq 
-
-
-#启动docker
-service docker start
-#测试docker
-docker run hello-world
-
-
-#添加镜像加速
-#网易加速器：http://hub-mirror.c.163.com
-#官方中国加速器(只含一些公有镜像)：https://registry.docker-cn.com
-#ustc的镜像：https://docker.mirrors.ustc.edu.cn
-
-
-vi /etc/docker/daemon.json
-
-{
-  "registry-mirrors": ["http://hub-mirror.c.163.com"]
-}
-
 
 docker pull registry
 docker pull nginx:alpine
@@ -51,7 +7,6 @@ docker pull jenkins:alpine
 docker pull redis:alpine
 docker pull rabbitmq:management-alpine
 docker pull mvertes/alpine-mongo
-docker pull postgres:alpine
 
 docker pull solr:alpine
 docker pull httpd:alpine
@@ -293,7 +248,7 @@ docker run -d --name rabbitmq -p 5671:5671 -p 5672:5672 -p 4369:4369 -p 25672:25
 #启动mysql
 mkdir -p ~/mysql/data ~/mysql/logs ~/mysql/conf
 cd ~/mysql
-docker run --name mysql -p 3306:3306 -v $PWD/conf:/etc/mysql/conf.d -v $PWD/logs:/logs -v $PWD/data:/var/lib/mysql \
+docker run --name mysql -m 16GB -p 3306:3306 -v $PWD/conf:/etc/mysql/conf.d -v $PWD/logs:/logs -v $PWD/data:/var/lib/mysql \
   -e MYSQL_ROOT_PASSWORD=123456 -d mysql:5.6
 
 
@@ -378,12 +333,9 @@ http://192.168.195.101:3000
 
 
 
-#postgres
-docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=123456 -d postgres:alpine
-
 
 #启动cassandra
-docker run --name cassandra1 -d cassandra
+docker run --name cassandra1 -p 9042:9042 -d cassandra
 
 #连接方式 docker run --name some-app --link cassandra1:cassandra -d app-that-uses-cassandra
 
@@ -395,4 +347,68 @@ docker run --name cassandra2 -d --link cassandra1:cassandra cassandra
 #使用cql连接Cassandra
 docker run -it --link cassandra2:cassandra --rm cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR"'
 docker run -it --link cassandra2:cassandra --rm cassandra cqlsh cassandra
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE if not exists mydb.test1001 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1002 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1003 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1004 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1005 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1006 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1007 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1008 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1009 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1011 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1012 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1013 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1014 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1015 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1016 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1017 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1018 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1019 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+
+
+
+
+docker pull wurstmeister/zookeeper  
+docker pull wurstmeister/kafka  
+
+
+docker run -d --name zookeeper -p 2181 -t wurstmeister/zookeeper  
+docker run --name kafka -e HOST_IP=localhost -e KAFKA_ADVERTISED_PORT=9092 -e KAFKA_BROKER_ID=1 -e ZK=zk -p 9092 --link zookeeper:zk -t wurstmeister/kafka  
+
+
+docker exec -it ${CONTAINER ID} /bin/bash   
+cd opt/kafka_2.11-0.10.1.1/   
+bin/kafka-topics.sh --create --zookeeper zookeeper:2181 --replication-factor 1 --partitions 1 --topic mykafka  
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mykafka  
+bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --topic mykafka --from-beginning  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

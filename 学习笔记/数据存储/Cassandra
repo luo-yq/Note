@@ -1,0 +1,44 @@
+适合的场景：吞吐量大，虽节点数线性增加
+不适合的场景：事务，强一致性要求高的场景
+
+
+Cassandra key-value 非关系型nosql数据库
+Cassandra 的数据模型的基本概念：
+1. Cluster : Cassandra 的节点实例，它可以包含多个 Keyspace
+2. Keyspace : 用于存放 ColumnFamily 的容器，相当于关系数据库中的 Schema 或 database
+3. ColumnFamily : 用于存放 Column 的容器，类似关系数据库中的 table 的概念 
+4. SuperColumn ：它是一个特列殊的 Column, 它的 Value 值可以包函多个 Column
+5. Columns：Cassandra 的最基本单位。由 name , value , timestamp 组成
+
+
+
+cd /opt
+wget http://mirrors.tuna.tsinghua.edu.cn/apache/cassandra/3.11.2/apache-cassandra-3.11.2-bin.tar.gz
+tar -xvzf apache-cassandra-3.11.2-bin.tar.gz
+rm -f apache-cassandra-3.11.2-bin.tar.gz
+mv apache-cassandra-3.11.2 cassandra1
+cd cassandra1
+vi conf/cassandra.yaml
+
+cluster_name:"node1"
+hints_directory: /opt/data01/cassandra/hints
+data_file_directories:
+     - /opt/data01/cassandra/data
+commitlog_directory: /opt/data01/cassandra/commitlog
+cdc_raw_directory: /opt/data01/cassandra/cdc_raw
+saved_caches_directory: /opt/data01/cassandra/saved_caches
+
+
+listen_address: 192.168.1.201
+rpc_address: 192.168.1.201
+
+
+seed_provider:"一般提供3台，多了影响效率，本机不用加"
+
+改Snitch的模式，多节点肯定要配置多个rack多个dc，这样才能做好副本的分配，实现高可用
+endpoint_snitch: GossipingPropertyFileSnitch
+因为下一步要使用KairosDB，因此需要把thrift的rpc端口打开，默认是关闭的，都推荐用CQL了，不走thrift
+start_rpc: true
+由于使用了GossipPropertyFileSnitch，需要同时修改cassandra-rackdc.properties，把本地的rack和dc设置一下
+dc=datacenter1
+rack=rack1

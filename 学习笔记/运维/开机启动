@@ -1,0 +1,28 @@
+#Linux 自定义开机启动
+
+start.sh
+
+export JAVA_HOME=/usr/java/j2sdk1.4.2_08
+export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar:.
+export PATH=$PATH:$JAVA_HOME/bin
+export CATALINA_HOME=/usr/local/tomcat
+/usr/local/tomcat/bin/catalina.sh start
+
+
+开机启动脚本(无法获取用户级的环境变量，需要在启动脚本中exportip)
+/etc/rc.d/rc.local
+
+...
+
+sh start.sh
+
+
+
+#Ubuntu中配置openssh-server开机启动 
+sudo vim /etc/rc.local
+#文件，在exit 0语句前加入： 
+/etc/init.d/ssh start
+
+#centos中配置openssh-server开机启动
+systemctl enable sshd.service
+

@@ -44,23 +44,3 @@ sudo passwd
 su 
 #使用root更新
 apt-get update
-
-#使用root安装SSH
-sudo apt-get -y install openssh-server
-sudo apt-get -y install vim
-
-#Ubuntu中配置openssh-server开机自动启动 
-sudo vim /etc/rc.local
-#文件，在exit 0语句前加入： 
-/etc/init.d/ssh start
-
-
-sudo systemctl start sshd.service
-
-
-
-
-
-
-
-
