@@ -221,3 +221,25 @@ for /r %i in (*.lastUpdated) do del %i
 
 
 
+
+生成可执行jar包：
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.1.1</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>cn.pallasli.javafx.main.Main</mainClass>
+                    <arguments>
+                        <argument>arg0</argument>
+                        <argument>arg1</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
