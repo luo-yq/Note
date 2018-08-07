@@ -1,0 +1,6 @@
+
+maps  splits 默认64兆自动增加，可能是需要增加mapreduce程序，需要进一步研究，临时在程序里设置了最大splits为1
+
+oracle的驱动包  需要将 数据库驱动包放到    /opt/cloudera/parcels/CDH-5.../lib/hadoop-mapreduce下
+
+非mr调用需要的oracle包需要再MANIFEST.MF文件中配置

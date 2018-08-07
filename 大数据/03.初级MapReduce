@@ -1,0 +1,81 @@
+3.初级MapReduce
+
+Map-Reduce是一个使用简易的软件框架，基于它写出来的应用程序能够运行在大型集群上，并以一种可靠容错的方式并行处理TB级别的数据集。Map-Reduce把分布式的业务逻辑从复杂的细节(如何分布，调度，监控及容错等)中抽离出来，使程序员可以只关心应用逻辑，关心根据哪些key把问题分解，哪些操作是map操作，哪些是reduce操作，其它并行计算中的分布、工作调度、机器间通信等问题都交给Map-Reduce Framework去做，很大程度上简化了整个编程模型。
+一个Map-Reduce 作业（job） 通常会把输入的数据集切分为若干独立的数据块，由 map任务（task）以完全并行的方式处理它们。框架会对map的输出先进行排序， 然后把结果输入给reduce任务。通常作业的输入和输出都会被存储在文件系统中。 整个框架负责任务的调度和监控，以及重新执行已经失败的任务。Map过程通过对输入列表中的每一条记录执行map函数，生成一系列的输出列表，如图2。Reduce过程对一个输入的列表进行扫描工作，随后生成一个聚集值，最为最后的输出，如图3。若map的输出进行了分区处理，则在同一个分区的数据将被发送到同一个Reduce任务中            
+
+数据从map函数输出到作为reduce函数的输入的过程被称为shuffle(混洗或洗牌)。在这个过程中，框架对数据进行了很多处理，有人将shuffle称为MapReduce的心脏，是奇迹发生的地方。
+
+
+Hadoop正在迅速地成为IT模型的数据中心。由于Flume中有用于任何事件数据丰富的连接，Sqoop可用于所有结构化数据，HttpFS可用于SOA集成和ODBC、JDBC报表工具，所以任何现有数据管理工作流程在产生数据或请求数据时都可以无缝地、安全地与Hadoop接口通讯。这种扩展使Hive进一步发展为Hadoop元仓库的标准。最初的目的是在非结构化数据上映射SQL模式，Hive已经增强了安全功能（针对定义验证和数据访问控制），而且集成了Flume、Sqoop以及其他系统接口。如今所有Hadoop部署都用这些数据集成的功能与Hadoop交换数据。未来，他们将能够与Hive安全地交换元数据。
+
+
+
+
+
+
+
+1.Job类初始化JobClient实例，JobClient中生成JobTracker的RPC实例，这样可以保持与JobTracker的通讯，JobTracker的地址和端口等都是外部配置的，通过Configuration对象读取并且传入。
+
+2.JobClient提交作业。
+
+3.JobClient生成作业目录。
+
+4.从本地拷贝MapReduce的作业jar文件(一般是自己写的程序代码jar)。
+
+5.如果DistributedCache中有需要的数据，从DistributedCache中拷贝这部分数据。
+
+6.根据InputFormat实例，实现输入数据的split，在作业目录上生成job.split和job.splitmetainfo文件。
+
+7.将配置文件写入到作业目录的job.xml文件中。
+
+8.JobClient和JobTracker通讯，提交作业。
+
+9.JobTracker将job加入到job队列中。
+
+10.JobTracker的TaskScheduler对job队列进行调度。
+
+11.TaskTracker通过心跳和JobTracker保持联系，JobTracker收到后根据心跳带来的数据，判断是否可以分配给TaskTracker Task，TaskScheduler会对Task进行分配。
+
+12.TaskTracker启动TaskRunner实例，在TaskRunner中启动单独的JVM进行Mapper运行。
+
+13.Map端会从HDFS中读取输入数据，执行之后Map输出数据先是在内存当中，当达到阀值后，split到硬盘上面，在此过程中如果有combiner的话要进行combiner，当然sort是肯定要进行的。
+
+14.Map结束了，Reduce开始运行，从Map端拷贝数据，称为shuffle阶段，之后执行reduce输出结果数据，之后进行commit的操作。
+
+15.TaskTracker在收到commit请求后和JobTracker进行通讯，JobTracker做最后收尾工作。
+
+16.JobTracker返回结果给JobClient，运行结束。
+
+
+
+对Map端输出，需要做如下的事情：
+1.如果有Partitioner的话，反射构造Partitioner。
+2.将key/value/Partitioner数据写入到内存当中。
+3.当内存当中的数据达到一定阀值了，需要spill到硬盘上面，在spill前，需要进行排序，如果有combiner的话需要进行combiner。
+4.sort的规则是先进行Partitioner的排序，然后再进行key的字典排序，默认的是快速排序。
+5.当生成多个spill文件时，需要进行归并，最终归并成一个大文件
+
+关于排序：
+1.在内存中进行排序，整个数据的内存不会进行移动，只是再加上一层索引的数据，排序只要调整索引数据就可以了
+2.多个spill文件归并到一个大文件时，是一个归并排序的过程，每一个spill文件都是按分区和key排序好的，所以归并完的文件也是按分区和key排序好的。
+
+在进行归并的时候，也不是一次性的把所有的spill文件归并成一个大文件，而是部分spill文件归并成中间文件，然后中间文件和剩下的spill文件再进行一次归并，依次类推，这个的考虑还是因为一次归并文件太多的话IO消耗太大了，
+
+Reduce端机制
+1。ReduceTask有一个线程和TaskTracker联系，之后TaskTracker和JobTracker联系，获取MapTask完成事件
+2. ReduceTask会创建和MapTask数目相等的拷贝线程，用于拷贝MapTask的输出数据，MapTask的数据一般都是非本地的
+3. 当有新的MapTask完成事件时，拷贝线程就从指定的机器上面拷贝数据，是通过http的形式进行拷贝
+4. 当数据拷贝的时候，分两种情况，当数据量小的时候就会写入内存当中，当数据量大的时候就会写入硬盘当中，这些工作分别由两个线程完成
+5. 因为所有的数据都来自不同的机器，所以有多个文件，这些文件需要归并成一个文件，在拷贝文件的时候就会进行归并动作
+6. 拷贝和归并过程统称为shuffle过程
+
+Reduce端输出需要做如下的事情：
+1.构造RecordWriter，这个是根据客户端设置的OutputFormat中getRecordWriter()方法得到 
+2.通过OutputFormat和RecordWriter将结果输出到临时文件中
+3.Rudece进行commit过程，和TaskTracker进行通信，TaskTracker和JobTracker进行通信，然后JobTracker返回commit的指令，Reduce进行
+commit，将临时结果文件重命名成最终的文件
+4.commit成功后，kill掉其他的TaskAttempt
+
+
+
+

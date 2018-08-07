@@ -1,0 +1,103 @@
+Hadoop产生背景
+
+
+Hadoop最早起源于Nutch。Nutch是一个开源的网络搜索引擎，由Doug Cutting于2002年创建。Nutch的设计目标是构建一个大型的全网搜索引擎，包括网页抓取、索引、查询等功能，但随着抓取网页数量的增加，遇到了严重的可扩展性问题，即不能解决数十亿网页的存储和索引问题。之后，谷歌发表的两篇论文为该问题提供了可行的解决方案。一篇是2003年发表的关于谷歌分布式文件系统（GFS）的论文。该论文描述了谷歌搜索引擎网页相关数据的存储架构，该架构可解决Nutch遇到的网页抓取和索引过程中产生的超大文件存储需求的问题。但由于谷歌仅开源了思想而未开源代码，Nutch项目组便根据论文完成了一个开源实现，即Nutch的分布式文件系统（NDFS）。另一篇是2004年发表的关于谷歌分布式计算框架MapReduce的论文。该论文描述了谷歌内部最重要的分布式计算框架MapReduce的设计艺术，该框架可用于处理海量网页的索引问题。同样，由于谷歌未开源代码，Nutch的开发人员完成了一个开源实现。由于NDFS和MapReduce不仅适用于搜索领域，2006年年初，开发人员便将其移出Nutch，成为Lucene的一个子项目，称为Hadoop。大约同一时间，Doug Cutting加入雅虎公司，且公司同意组织一个专门的团队继续发展Hadoop。同年2月，Apache Hadoop项目正式启动以支持MapReduce和HDFS的独立发展。2008年1月，Hadoop成为Apache顶级项目，迎来了它的快速发展期。
+
+
+
+	Hadoop在大数据、云计算中的位置和关系
+	国内外Hadoop应用案例介绍
+	分布式系统概述
+	
+Hadoop生态圈以及各组成部分的简介
+
+HBase
+
+Google Bigtable的开源实现
+列式数据库
+可集群化
+可以使用shell、web、api等多种方式访问
+适合高读写（insert）的场景
+HQL查询语言
+NoSQL的典型代表产品
+
+
+Hive
+
+数据仓库工具。可以把Hadoop下的原始结构化数据变成Hive中的表
+支持一种与SQL几乎完全相同的语言HiveQL。除了不支持更新、索引和事务，几乎SQL的其它特征都能支持
+可以看成是从SQL到Map-Reduce的映射器
+提供shell、JDBC/ODBC、Thrift、Web等接口
+
+Zookeeper
+
+Google Chubby的开源实现
+用于协调分布式系统上的各种服务。例如确认消息是否准确到达，防止单点失效，处理负载均衡等
+应用场景：Hbase，实现Namenode自动切换
+工作原理：领导者，跟随者以及选举过程
+
+Sqoop
+
+用于在Hadoop和关系型数据库之间交换数据
+通过JDBC接口连入关系型数据库
+
+Chukwa
+
+架构在Hadoop之上的数据采集与分析框架
+主要进行日志采集和分析
+通过安装在收集节点的“代理”采集最原始的日志数据
+代理将数据发给收集器
+收集器定时将数据写入Hadoop集群
+指定定时启动的Map-Reduce作业队数据进行加工处理和分析
+
+
+Pig
+
+Hadoop客户端
+使用类似于SQL的面向数据流的语言Pig Latin
+Pig Latin可以完成排序，过滤，求和，聚组，关联等操作，可以支持自定义函数
+Pig自动把Pig Latin映射为Map-Reduce作业上传到集群运行，减少用户编写Java程序的苦恼
+
+
+Avro
+
+数据序列化工具，由Hadoop的创始人Doug Cutting主持开发
+用于支持大批量数据交换的应用。支持二进制序列化方式，可以便捷，快速地处理大量数据
+动态语言友好，Avro提供的机制使动态语言可以方便地处理 Avro数据。
+Thrift接口
+
+
+Cassandra 
+
+NoSQL，分布式的Key-Value型数据库，由Facebook贡献
+与Hbase类似，也是借鉴Google Bigtable的思想体系
+只有顺序写，没有随机写的设计，满足高负荷情形的性能需求
+
+
+
+	Hadoop核心MapReduce例子说明
+
+
+
+
+Hadoop 是Apache 下的一个项目，由HDFS、MapReduce、HBase、Hive 和ZooKeeper等成员组成。其中，HDFS 和MapReduce 是两个最基础最重要的成员。
+HDFS 是Google GFS 的开源版本，一个高度容错的分布式文件系统，它能够提供高吞吐量的数据访问，适合存储海量（PB 级）的大文件（通常超过64M）。
+
+采用Master/Slave 结构。
+NameNode 维护集群内的元数据，对外提供创建、打开、删除和重命名文件或目录的功能。
+DatanNode 存储数据，并提负责处理数据的读写请求。
+DataNode定期向NameNode 上报心跳，NameNode 通过响应心跳来控制DataNode。
+
+Hadoop MapReduce 的实现也采用了Master/Slave 结构。
+Master 叫做JobTracker，而Slave 叫做TaskTracker。
+用户提交的计算叫做Job，每一个Job 会被划分成若干个Tasks。JobTracker负责Job 和Tasks 的调度，而TaskTracker负责执行Tasks。
+
+MapReduce 是大规模数据（TB 级）计算的利器，Map 和Reduce 是它的主要思想，来源于函数式编程语言，Map 负责将数据打散，Reduce负责对数据进行聚集，用户只需要实现map 和reduce 两个接口，即可完成TB 级数据的计算，常见的应用包括：日志分析和数据挖掘等数据分析应用。另外，还可用于科学数据计算，如圆周率PI 的计算等。
+
+
+
+
+
+
+
+

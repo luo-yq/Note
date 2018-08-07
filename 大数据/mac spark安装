@@ -1,0 +1,50 @@
+brew install scala
+
+2.spark环境搭建
+先安装scala
+brew install scala
+安装完成后
+scala -version查看是否安装成功
+
+2.spark安装包下载:http://spark.apache.org/downloads.html
+下载完成后解压
+
+
+然后配置scala和spark路径
+
+vim /etc/profile
+
+配置如下参数（自己本机spark和scala路径）
+
+
+
+export SCALA_HOME=/usr/local/Cellar/scala
+export PATH=$PATH:$SCALA_HOME/bin
+export SPARK_HOME=/Users/lv/spark/spark-2.0.1-bin-hadoop2.7
+export PATH=$PATH:$SPARK_HOME/bin
+
+3.进行本机SSH配置，在主目录下输入如下命令：
+
+ssh-keygen –t rsa –P ""
+
+然后一直按回车直到结束，接着输入命令,追加私钥：
+
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+最后需要做的一件事是在System Preferences->Sharing中选中Remote Login
+
+4.启动Spark
+
+首先进入Spark目录中的sbin子目录运行如下脚本启动Spark:
+./start-all.sh
+
+
+查看是否启动
+
+
+使用Spark shell 进行测试
+进去Spark目录下的bin子目录运行如下脚本启动Spark shell:
+
+./spark-shell
+
+当看到如下界面的时候你已经成功了：

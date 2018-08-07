@@ -1,0 +1,115 @@
+安装 hadoop
+brew install hadoop
+
+配置ssh免密码登录
+用dsa密钥认证来生成一对公钥和私钥：
+
+$ ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
+将生成的公钥加入到用于认证的公钥文件中：
+
+$ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
+接下来测试一下是否配置成功
+
+$ ssh localhost
+如果遇到connection refused之类的错误，检查一下mac是否开启远程登录功能，在系统偏好设置中可以设置。
+
+
+
+进入安装目录
+cd /usr/local/Cellar/hadoop/2.7.2
+
+进入配置文件目录
+cd libexec/etc/hadoop/
+
+core-site.xml文件
+<configuration> 
+	<property> 
+		<name>fs.defaultFS</name> 
+		<value>hdfs://localhost:9000</value> 
+	</property> 
+</configuration>
+
+hdfs-site.xml
+<configuration> 
+	<property> 
+		<name>dfs.replication</name> 
+		<value>1</value> 
+	</property> 
+</configuration>
+
+mapred-site.xml
+<configuration> 
+	<property> 
+		<name>mapreduce.framework.name</name> 
+		<value>yarn</value> 
+	</property> 
+</configuration>
+
+yarn-site.xml
+<configuration>
+	<property>
+   		<name>yarn.nodemanager.aux-services</name>
+  		<value>mapreduce_shuffle</value>
+	</property>
+</configuration>
+
+
+
+进入安装目录
+cd /usr/local/Cellar/hadoop/2.7.2/libexec
+
+格式化文件系统
+bin/hdfs namenode -format
+-----Storage directory /tmp/hadoop-lyt1987/dfs/name has been successfully formatted.
+
+
+
+启动NameNode和DataNode的守护进程。
+$ sbin/start-dfs.sh
+启动ResourceManager和NodeManager的守护进程。
+
+(如果启动失败====增加调试信息设置
+$ export HADOOP_ROOT_LOGGER=DEBUG,console
+$ hadoop fs -text /test/data/origz/access.log.gz)
+
+
+$ sbin/start-yarn.sh
+访问localhost:50070和localhost:8088测试是否正常。
+
+
+创建hdfs目录:
+
+$ bin/hdfs dfs -mkdir /user
+$ bin/hdfs dfs -mkdir /user/robin
+拷贝一些文件到input目录:
+$ bin/hdfs dfs -put etc/hadoop input
+运行样例:
+$ bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar grep input output 'dfs[a-z.]+'
+在localhost:50070中的Utilities标签下找到/user/robin目录，下载part-r-00000文件，可以看到其中内容如下所示：
+
+4   dfs.class
+4   dfs.audit.logger
+3   dfs.server.namenode.
+2   dfs.period
+2   dfs.audit.log.maxfilesize
+2   dfs.audit.log.maxbackupindex
+1   dfsmetrics.log
+1   dfsadmin
+1   dfs.servers
+1   dfs.replication
+1   dfs.file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

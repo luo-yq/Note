@@ -1,0 +1,6 @@
+6.使用ZooKeeper构建分布式系统
+
+
+zookeeper 3.3.3 Version已知严重的问题是关于短暂节点的缺失和会话超时
+
+安装 zookeeper 3.4

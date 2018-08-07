@@ -1,0 +1,77 @@
+ntp 时间同步
+
+
+安装NTP服务（所有节点）
+集群中所有主机必须保持时间同步，如果时间相差较大会引起各种问题。 具体思路如下：
+
+master节点作为ntp服务器与外界对时中心同步时间，随后对所有datanode节点提供时间同步服务。
+所有datanode节点以master节点为基础同步时间。
+
+所有节点安装相关组件：ntp与ntpdate。按顺序安装即可，完成后，配置开机启动：
+
+chkconfig ntpd on
+复制代码
+
+检查是否设置成功：
+chkconfig --list ntpd
+复制代码
+
+其中2-5为on状态就代表成功。
+
+配置内网NTP服务器（master节点）
+在配置之前，先使用ntpdate手动同步一下时间，免得本机与对时中心时间差距太大，使得ntpd不能正常同步。这里选用65.55.56.206作为对时中心。
+
+ntpdate -u 65.55.56.206
+复制代码
+
+
+ntp服务只有一个配置文件，配置好了就OK。 这里只给出有用的配置，不需要的配置都用#注掉，这里就不在给出：
+
+driftfile /var/lib/ntp/drift
+restrict 127.0.0.1
+restrict -6 ::1
+restrict default nomodify notrap 
+server 65.55.56.206 prefer
+includefile /etc/ntp/crypto/pw
+keys /etc/ntp/keys
+复制代码
+
+配置文件完成，保存退出，启动服务，执行如下命令：
+
+service ntpd start
+chkconfig ntpd on (设置开机启动)
+复制代码
+
+检查是否成功，用ntpstart命令查看同步状态，出现以下状态代表启动成功：
+
+synchronised to NTP server () at stratum 2
+time correct to within 74 ms
+polling server every 128 s
+复制代码
+
+如果出现异常请等待几分钟，一般等待5-10分钟才能同步。
+
+配置ntp客户端（所有datanode节点）
+driftfile /var/lib/ntp/drift
+restrict 127.0.0.1
+restrict -6 ::1
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+server 192.168.1.101
+includefile /etc/ntp/crypto/pw
+keys /etc/ntp/keys
+复制代码
+
+ok保存退出，请求服务器前，请先使用ntpdate手动同步一下时间：
+
+ntdate -u 192.168.1.101 (内网ntp服务器)
+复制代码
+
+这里可能出现同步失败的情况，请不要着急，一般是本地的ntp服务器还没有正常启动，一般需要等待5-10分钟才可以正常同步。启动服务：
+
+service ntpd start
+chkconfig ntpd on
+复制代码
+
+因为是连接内网，这次启动等待的时间会比master节点快一些，但是也需要耐心等待一会儿。
+

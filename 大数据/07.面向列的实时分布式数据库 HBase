@@ -1,0 +1,120 @@
+安装
+brew install hbase
+安装的同时会安装hadoop
+
+
+设置JAVA_HOME
+cd /usr/local/Cellar/hbase//libexec/conf
+vi hbase-env.sh
+
+export JAVA_HOME="/usr/bin/java"
+
+设置HBase的核心配置
+vi hbase-site.xml
+
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    //这里设置让HBase存储文件的地方
+    <value>file:///Users/andrew_liu/Downloads/hbase</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.dataDir</name>
+    //这里设置让HBase存储内建zookeeper文件的地方
+    <value>/Users/andrew_liu/Downloads/zookeeper</value>
+  </property>
+</configuration>
+
+
+
+启动
+./start-hbase.sh
+停止
+./stop-hbase.sh
+
+
+
+验证是否安装成功
+jps
+
+有HMaster 则说明安装成功
+
+启动HBase Shell
+./bin/hbase shell
+
+
+
+伪分布式模式
+修改hbase-env.sh：   HBASE_MANAGE_XK = true
+修改hbase-site.xml:   
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    //Here you have to set the path where you want HBase to store its files.
+    <value>hdfs://localhost:8020/hbase</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+  <value>true</value>
+</property>
+</configuration>
+
+
+再次启动成功HBase会在HDFS下创建/hbase目录
+$ hdfs dfs -ls /hbase
+
+
+hbase shell  #启动HBase Shell
+
+
+
+创建表:    create '表名称', '列名称1','列名称2','列名称N'
+添加记录:      put '表名称', '行名称', '列名称:', '值'
+查看记录:    get '表名称', '行名称'
+查看表中的记录总数:   count  '表名称'
+删除记录:    delete  '表名' ,'行名称' , '列名称'
+删除行:    deleteall '表名' ,'行名称' 
+清空表:  truncate '表名'
+删除一张表:    先要屏蔽该表，才能对该表进行删除，第一步 disable '表名称' 第二步 drop '表名称'
+查看所有记录:    scan "表名称"  
+查看某个表某个列中所有数据:     scan "表名称" , ['列名称:']
+更新记录:    就是重写一遍进行覆盖
+
+查询服务器状态: status
+查询hive版本:  version
+获得表的描述: list
+查询表是否存在: exists '表名称'
+判断表是否enable:  is_enabled '表名称' 
+判断表是否disable:  is_disabled '表名称'
+
+自增：incr '表名' , '行名称', '列名称'
+获取自增次数：get_counter '表名' , '行名称', '列名称'
+
+
+'表'，'列族:列'  
+
+
+#创建表
+> create 'student', 'description', 'course'  #创建表名为student的表, 指明两个列名, 分别为description和course
+
+#信息明细
+> list 'student'  #列出list表信息
+
+#插入数据
+> put 'student', 'row1', 'description:age', '18'  #意思为在student表row1处插入description:age的数据为18
+> put 'student', 'row1', 'description:name', 'liu'
+> put 'student', 'row1', 'course:chinese', '100'
+
+#一次扫描所有数据
+> scan 'student'
+
+#使表失效 / 有效
+> disable 'student'
+> enable 'student'
+
+#删除表(要先disable)
+>  drop 'student'
+
+#退出shell
+> quit
+

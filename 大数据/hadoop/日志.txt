@@ -1,0 +1,21 @@
+1. Hadoop 1.x版本
+Hadoop 1.x中MapReduce的服务日志包括JobTracker日志和各个TaskTracker日志，他们的日志位置如下：
+JobTracker：在JobTracker安装节点上，默认位置是
+${hadoop.log.dir}/logs/*-jobtracker-*.log，该文件每天生成一个，旧的日志后缀是日期，当天的日志文件后缀是“.log”，其中${hadoop.log.dir}默认值是hadoop安装目录，即${HADOOP_HOME}。
+TaskTracker：在各个TaskTracker安装节点上，默认位置是
+$HADOOP_HOME/logs/*-tasktracker-*.log，该文件每天生成一个，旧的日志后面会跟一个日志，当天的日志文件后缀是“.log”
+作业日志包括jobhistory日志和task日志两部分，其中，jobhistory日志是作业运行日志，包括作业启动时间、结束时间，每个任务的启动时间、结束时间，各种counter信息等，用户可以从这个日志中解析出作业运行的各种信息，是非常有价值的信息。默认存放位置是JobTracker所在节点的${hadoop.log.dir}/history目录下，可通过参数hadoop.job.history.location配置。每个task日志存放在task运行节点上，存放位置是${hadoop.log.dir}/userlogs//目录下，每个task包含三个日志文件，分别是stdout、stderr和syslog，其中，stdout是通过标准输出打印出来的日志，比如System.out.println，注意，程序中通过标准输出打印的日志并不会直接显示在终端上，而是保存在这个文件中，syslog是通过log4j打印的日志，通常这个日志中包含的有用信息最多，也是错误调试中最关键的参考日志。
+
+
+
+2. Hadoop 2.x版本
+Hadoop 2.x中YARN系统的服务日志包括ResourceManager日志和各个NodeManager日志，他们的日志位置如下：
+ResourceManager日志存放位置是Hadoop安装目录下的logs目录下的yarn-*-resourcemanager-*.log
+NodeManager日志存放位置是各个NodeManager节点上hadoop安装目录下的logs目录下的yarn-*-nodemanager-*.log
+应用程序日志包括jobhistory日志和Container日志，其中，jobhistory日志是应用程序运行日志，包括应用程序启动时间、结束时间，每个任务的启动时间、结束时间，各种counter信息等。
+Container日志包含ApplicationMaster日志和普通Task日志，它们均存放在Hadoop安装目录下的userlogs目录中的application_xxx目录下，其中ApplicationMaster日志目录名称为container_xxx_000001，普通task日志目录名称则为container_xxx_000002，container_xxx_000003，….，同Hadoop 1.x一样，每个目录下包含三个日志文件：stdout、stderr和syslog，且具体含义是一样的。
+
+
+
+
+

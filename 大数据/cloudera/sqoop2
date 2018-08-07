@@ -1,0 +1,78 @@
+
+下载sqoop2
+http://www.apache.org/dyn/closer.cgi/sqoop/
+
+
+
+vi ~/.bashrc
+
+
+#Sqoop Configure  
+export SQOOP_HOME=/opt/sqoop-1.99.7-bin-hadoop200  
+export PATH=$PATH:$SQOOP_HOME/bin  
+export CATALINA_HOME=$SQOOP_HOME/server  
+export LOGDIR=$SQOOP_HOME/logs  
+
+
+服务端安装
+
+cd /opt/sqoop-1.99.7-bin-hadoop200/server/conf
+
+
+ 2、首先修改catalina.properties文件
+
+               修改common.loader值，将Hadoop相关包引进来，具体如下：
+
+# common.loader=${catalina.base}/lib,${catalina.base}/lib/*.jar,${catalina.home}/lib,${catalina.home}/lib/*.jar,${catalina.home}/../lib/*.jar,/usr/lib/hadoop/*.jar,/usr/lib/hadoop/lib/*.jar,/usr/lib/hadoop-hdfs/*.jar,/usr/lib/hadoop-hdfs/lib/*.jar,/usr/lib/hadoop-mapreduce/*.jar,/usr/lib/hadoop-mapreduce/lib/*.jar,/usr/lib/hadoop-yarn/*.jar,/usr/lib/hadoop-yarn/lib/*.jar  
+  
+common.loader=${catalina.base}/lib,${catalina.base}/lib/*.jar,${catalina.home}/lib,${catalina.home}/lib/*.jar,${catalina.home}/../lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/common/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/common/lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/hdfs/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/hdfs/lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/mapreduce/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/mapreduce/lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/tools/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/tools/lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/yarn/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/yarn/lib/*.jar,/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/share/hadoop/httpfs/tomcat/lib/*.jar  
+
+
+3、其次sqoop_bootstrap.properties采用默认值，不作修改
+[html] view plain copy
+sqoop.config.provider=org.apache.sqoop.core.PropertiesConfigurationProvider  
+        
+4、最后修改sqoop.properties
+              Derby数据库的JDBC相关配置
+
+# JDBC repository provider configuration  
+org.apache.sqoop.repository.jdbc.handler=org.apache.sqoop.repository.derby.DerbyRepositoryHandler  
+org.apache.sqoop.repository.jdbc.transaction.isolation=READ_COMMITTED  
+org.apache.sqoop.repository.jdbc.maximum.connections=10  
+org.apache.sqoop.repository.jdbc.url=jdbc:derby:@BASEDIR@/repository/sqoopdb;create=true  
+org.apache.sqoop.repository.jdbc.driver=org.apache.derby.jdbc.EmbeddedDriver  
+org.apache.sqoop.repository.jdbc.user=sa  
+org.apache.sqoop.repository.jdbc.password=  
+               同时将org.apache.sqoop.submission.engine.mapreduce.configuration.directory属性修改为自己对应Hadoop的配置文件目录
+
+# Hadoop configuration directory  
+org.apache.sqoop.submission.engine.mapreduce.configuration.directory=/home/hadoopUser/cloud/hadoop/programs/hadoop-2.2.0/etc/hadoop/  
+
+
+5. 将MySQL JDBC驱动包拷贝到  /opt/sqoop-1.99.7-bin-hadoop200/server/lib目录下
+
+
+
+
+启动
+sqoop.sh server start 
+查看进程
+jps
+
+
+
+
+
+
+
+五、Sqoop客户端安装
+
+        Sqoop客户端不需要额外的配置和安装步骤，只需要将安装包解压拷贝到指定目录，配置.bashrc文件，直接执行如下命令即可：
+
+[hadoopUser@secondmgt ~]$ sqoop.sh client 
+
+
+
+
+
+

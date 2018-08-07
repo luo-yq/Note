@@ -1,0 +1,265 @@
+
+从yum源下载安装包及依赖包
+
+局域网内所有linux都用yum从外网源安装软件有点浪费，尤其遇到下载慢的情况；
+
+所以考虑下载后传到其他机器安装，还可以保证版本一致（创建一个本地仓库更好，这个后面研究了再记录）；
+
+首先安装yum工具
+
+yum install yum-utils
+下载命令是yumdownloader；
+
+默认只下载单个rpm包，可用--resolve下载所有依赖包；
+
+默认下载到当前目录，可用--destdir指定下载目录；
+
+下载lsof示例：
+
+yumdownloader lsof --resolve --destdir=/data/mydepot/
+
+
+
+
+1.  安装centos 环境
+
+/etc/inittab
+
+systemctl set-default multi-user.target  //设置成命令模式
+systemctl set-default graphical.target  //设置成图形模式
+
+2.  设置桥接网络
+    
+	#桥接设置ip
+	IPADDR=192.168.2.201 
+	DNS1=8.8.8.8
+
+	ONBOOT=yes
+	BOOTPROTO=none
+
+
+
+	#修改主机名 /etc/sysconfig/network
+	NETWORKING=yes
+	HOSTNAME=master.hadoop
+	NETWORKING_IPV6=no
+	GATEWAY=192.168.2.1
+
+
+	#映射 /etc/hosts
+	192.168.2.201 master.hadoop
+
+	关闭防火墙（所有节点）
+	防火墙会引起hadoop相关组件通讯的各种异常。 防火墙：
+
+	service iptables stop (临时关闭)
+	chkconfig iptables off (重启后生效)
+
+	SELINUX：
+	setenforce 0 (临时生效) 
+	修改/etc/selinux/config 下的 SELINUX=disabled （重启后生效）
+
+	service network restart  
+
+
+打通SSH（所有节点）
+这里master节点和其他datanode节点会略有区别。 首先说有节点均执行如下命令，遇到提示一路回车即可：
+
+ssh-keygen -t rsa
+
+然后在主节点执行以下命令：
+
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+scp文件到所有datenode节点：
+
+scp ~/.ssh/authorized_keys root@datanode1:~/.ssh/
+
+然后输入密码即可，以后再到其他机器就不需要密码额。
+
+
+证书发生变化后客户端处理
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @  
+cd .ssh  
+vi known_hosts   
+把相应行代码删除 
+
+
+
+
+
+
+
+3.  yum -y install net-tools.x86_64
+    yum -y install wget
+    yum -y install httpd
+    yum -y install ntp
+    yum -y install lsof
+    yum -y install perl  （mysql需要）
+    yum -y install 'perl(Data::Dumper)'  (mysql 安装服务需要的perl模块)
+
+
+
+    rpm -ivh oracle-j2sdk1.7-1.7.0+update67-1.x86_64.rpm
+
+	设置当前进程环境变量
+	export JAVA_HOME=/usr/java/jdk1.7.0_67-cloudera
+
+	设置当前用户环境变量
+	echo $HOME/.bashrc
+	vi /root/.bashrc
+	添加
+	export JAVA_HOME=/usr/java/jdk1.7.0_67-cloudera
+
+
+
+	设置系统环境变量 vi  /etc/profile
+	export JAVA_HOME=/usr/java/jdk1.7.0_67-cloudera
+	export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+	export PATH=$PATH:$JAVA_HOME/bin
+	执行：source  /etc/profile 让设置立即生效
+
+4.Mysql配置（master节点）
+只需要配置master节点的Mysql即可。（这里不再介绍如何安装Mysql） 将mysql设置为开机启动：
+
+chkconfig mysqld on
+复制代码
+
+本次安装需要创建如下数据库（不包括Cloudera Manager的数据库，Cloudera Manager数据库有相关脚本创建，后面会有说明）
+
+--hive数据库
+create database hive DEFAULT CHARSET utf8 COLLATE utf8_general_ci
+--集群监控数据库
+create database amon DEFAULT CHARSET utf8 COLLATE utf8_general_ci
+--hue数据库
+create database hue DEFAULT CHARSET utf8 COLLATE utf8_general_ci
+复制代码
+
+以上数据库，可能会根据安装组件的不同略有差别。 给用户授权（这里密码设为hadoop）
+
+grant all on *.* to root@"%" Identified by "hadoop";
+复制代码
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cloudera 建议将 /proc/sys/vm/swappiness 设置为 0。当前设置为 30。使用 sysctl 命令在运行时更改该设置并编辑 /etc/sysctl.conf 以在重启后保存该设置。您可以继续进行安装，但可能会遇到问题，Cloudera Manager 报告您的主机由于交换运行状况不佳。以下主机受到影响： 
+master.hadoop
+
+在会受到影响的主机上执行echo 0 > /proc/sys/vm/swappiness命令即可解决。
+
+已启用“透明大页面”，它可能会导致重大的性能问题。版本为“/sys/kernel/mm/transparent_hugepage”且发行版为“{1}”的 Kernel 已将 enabled 设置为“{2}”，并将 defrag 设置为“{3}”。请运行“echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag”以禁用此设置，然后将同一命令添加到一个 init 脚本中，如 /etc/rc.local，这样当系统重启时就会予以设置。或者，升级到 RHEL 6.5 或更新版本，它们不存在此错误。将会影响到以下主机： 
+master.hadoop
+
+
+
+echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag 
+echo 'echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag' >> /etc/rc.local 
+
+echo never > /sys/kernel/mm/transparent_hugepage/defrag 
+echo 'echo never > /sys/kernel/mm/transparent_hugepage/defrag' >> /etc/rc.local 
+
+
+
+
+
+
+
+
+
+启动服务需要3--5分钟
+
+service cloudera-scm-server-db restart
+
+service cloudera-scm-server restart
+
+service httpd restart
+
+
+chkconfig cloudera-scm-server-db on
+
+chkconfig cloudera-scm-server on
+
+chkconfig httpd on
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+centos6.7 cm启动权限问题
+
+su -s /bin/bash cloudera-scm -c "touch /var/log/cloudera-scm-server/db.log; /usr/share/cmf/bin/initialize_embedded_db.sh /var/lib/cloudera-scm-server-db/data /var/log/cloudera-scm-server/db.log"  
+  
+su -s /bin/bash cloudera-scm -c "pg_ctl start -w -D /var/lib/cloudera-scm-server-db/data -l /var/log/cloudera-scm-server/db.log"  
+
+
+
+
+
+
+Command failed to run because service Hive has invalid configuration. Review and correct its configuration. 
+
+First error: Hive Metastore Database Host must be configured when Hive metastore is configured to use a database other than Derby.
+
+
+
+
+
+After changing the host to the fqdn, did you re-run the create tables
+command?
+What is the error when starting hive metastore server?
+
+If you are using the AWS installer and are on a VPN, you can sometimes hit
+problems when we try to resolve the hostname, which can result in Hive
+failing to populate its hostname correctly (it is empty). It should be the
+fqdn of the cloudera manager server. You can check if this happened to you
+by inspecting /etc/cloudera-scm-server/db.mgmt.properties. If that file has
+no host names, then you have hit this problem and should edit that file to
+populate the host names and restart cloudera manager.
+
+
+
+
+
+Command Create Hive Metastore Database is not currently available for execution.
+
+
+
+
+sudo yum install postgresql-jdbc
+ln -s /usr/share/java/postgresql-jdbc.jar /usr/lib/hive/lib/postgresql-jdbc.jar
+
+postgresql  的jar    java8  4.2  java7 4.1  java6  4.0
+

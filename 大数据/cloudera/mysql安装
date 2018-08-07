@@ -1,0 +1,236 @@
+mysql安装
+
+
+RPM方式安装MySQL5.6
+a. 检查MySQL及相关RPM包，是否安装，如果有安装，则移除（rpm –e 名称）
+
+[root@localhost ~]# rpm -qa | grep -i mysql
+
+mysql-libs-5.1.66-2.el6_3.x86_64
+
+[root@localhost ~]# yum -y remove mysql-libs*
+
+centos7  默认安装了mariadb
+# rpm -qa | grep mariadb
+将它们统统强制性卸载掉：
+# rpm -e --nodeps mariadb-libs-5.5.35-3.el7.x86_64
+
+
+
+b. 下载Linux对应的RPM包 centos7 对应 el7
+ 
+c. 安装MySQL
+
+rpm -ivh MySQL-server-5.6.15-1.el6.x86_64.rpm
+rpm -ivh MySQL-devel-5.6.15-1.el6.x86_64.rpm 
+rpm -ivh MySQL-client-5.6.15-1.el6.x86_64.rpm
+
+#修改配置文件位置
+
+[root@localhost rpm]# cp /usr/share/mysql/my-default.cnf /etc/my.cnf
+d. 初始化MySQL及设置密码
+
+[root@localhost rpm]# /usr/bin/mysql_install_db
+
+[root@localhost rpm]# service mysql start
+
+
+systemctl start mysql   
+
+得到错误：ERROR!The server quit without updating PID file
+我们这里主要是因为：selinux惹的祸，如果是centos系统，默认会开启selinux。解决方法是关闭它，打开/etc/selinux/config，把SELINUX=enforcing改为SELINUX=disabled后存盘退出重启机器。
+
+Google了下 ，问题可能的原因有多种，具体什么原因最好的办法是先查看下错误日志：
+1、可能是/usr/local/mysql/data/mysql.pid文件没有写的权限
+解决方法 ：给予权限，执行 “chown -R mysql:mysql /var/data” “chmod -R 755 /usr/local/mysql/data”  然后重新启动mysqld！
+
+2、可能进程里已经存在mysql进程
+解决方法：用命令“ps -ef|grep mysqld”查看是否有mysqld进程，如果有使用“kill -9  进程号”杀死，然后重新启动mysqld！
+
+3、可能是第二次在机器上安装mysql，有残余数据影响了服务的启动。
+解决方法：去mysql的数据目录/data看看，如果存在mysql-bin.index，就赶快把它删除掉吧，它就是罪魁祸首了。本人就是使用第三条方法解决的 ！
+
+4、mysql在启动时没有指定配置文件时会使用/etc/my.cnf配置文件，请打开这个文件查看在[mysqld]节下有没有指定数据目录(datadir)。
+解决方法：请在[mysqld]下设置这一行：datadir = /usr/local/mysql/data
+
+5、skip-federated字段问题
+解决方法：检查一下/etc/my.cnf文件中有没有没被注释掉的skip-federated字段，如果有就立即注释掉吧。
+
+6、错误日志目录不存在
+解决方法：使用“chown” “chmod”命令赋予mysql所有者及权限
+
+7、selinux惹的祸，如果是centos系统，默认会开启selinux
+解决方法：关闭它，打开/etc/selinux/config，把SELINUX=enforcing改为SELINUX=disabled后存盘退出重启机器试试。
+
+
+
+
+
+
+
+mysql datadir 默认为 /var/lib/mysql
+
+
+需要修改数据目录下  mysql包下文件的权限  给mysql用户和组   chown mysql:mysql  *    
+/var/lib/mysql/mysql/ 
+
+
+
+
+
+
+
+
+
+[root@localhost rpm]# cat /root/.mysql_secret  #查看root账号密码
+
+# The random password set for the root user at Wed Dec 11 23:32:50 2013 (local time): qKTaFZnl
+
+[root@localhost ~]# mysql -uroot –pqKTaFZnl
+
+mysql> SET PASSWORD = PASSWORD('123456');    #设置密码为123456
+
+mysql> exit
+
+[root@localhost ~]# mysql -uroot -p123456
+e. 允许远程登陆
+
+mysql> use mysql;
+
+mysql> select host,user,password from user;
+
++-----------------------+------+-------------------------------------------+
+
+| host                  | user | password                                  |
+
++-----------------------+------+-------------------------------------------+
+
+| localhost             | root | *6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9 |
+
+| localhost.localdomain | root | *1237E2CE819C427B0D8174456DD83C47480D37E8 |
+
+| 127.0.0.1             | root | *1237E2CE819C427B0D8174456DD83C47480D37E8 |
+
+| ::1                   | root | *1237E2CE819C427B0D8174456DD83C47480D37E8 |
+
++-----------------------+------+-------------------------------------------+
+
+mysql> update user set password=password('123456') where user='root';
+
+mysql> update user set host='%' where user='root' and host='localhost';
+
+mysql> flush privileges;
+
+mysql> exit
+f. 设置开机自启动
+
+[root@localhost ~]# chkconfig mysql on
+
+[root@localhost ~]# chkconfig --list | grep mysql
+
+mysql           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+g. MySQL的默认安装位置
+/var/lib/mysql/               #数据库目录
+/usr/share/mysql              #配置文件目录
+/usr/bin                     #相关命令目录
+/etc/init.d/mysql              #启动脚本
+
+
+修改字符集和数据存储路径
+配置/etc/my.cnf文件,修改数据存放路径、mysql.sock路径以及默认编码utf-8.
+[html] view plain copy 在CODE上查看代码片派生到我的代码片
+[client]  
+password        = 123456  
+port            = 3306  
+default-character-set=utf8  
+[mysqld]  
+port            = 3306  
+character_set_server=utf8  
+character_set_client=utf8  
+collation-server=utf8_general_ci  
+#(注意linux下mysql安装完后是默认：表名区分大小写，列名不区分大小写； 0：区分大小写，1：不区分大小写)  
+lower_case_table_names=1  
+#(设置最大连接数，默认为 151，MySQL服务器允许的最大连接数16384; )  
+max_connections=1000  
+[mysql]  
+default-character-set = utf8  
+
+查看字符集
+show variables like '%collation%';
+show variables like '%char%';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+12、解决mysql不用用户名和密码可以直接登陆的问题：
+mysql>use mysql;
+mysql>delete from user where user='';
+mysql>flush privileges; (必须的)
+
+
+
+
+
+
+
+
+
+
+1.vi /etc/my.cnf
+2.在[mysqld]中添加
+skip-grant-tables
+例如：
+[mysqld]
+skip-grant-tables
+datadir=/var/lib/MySQL
+socket=/var/lib/mysql/mysql.sock
+3.重启mysql
+service mysql restart
+4.用户无密码登录
+mysql -uroot -p (直接点击回车，密码为空)
+5.选择数据库
+use mysql;
+6.修改root密码
+update user set authentication_string=password('123456') where user='root';
+
+7.执行
+ flush privileges;
+
+8.退出
+exit;
+9.删除
+skip-grant-tables
+
+10.重启mysql
+service mysql restart
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+使用密码
+mysqladmin -u u  -h h  password  'p'
+

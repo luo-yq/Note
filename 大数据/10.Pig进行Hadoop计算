@@ -1,0 +1,4 @@
+10.Pig进行Hadoop计算
+
+
+pig 脚本语言，可编写在Hadoop上运行的mapreduce，但性能比java低25%

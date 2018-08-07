@@ -1,0 +1,184 @@
+配置文件   
+centos6 /etc/sysconfig/network-scripts/ifcfg-eth**
+centos7 /etc/sysconfig/network-scripts/ifcfg-enp**
+设置自动获取ip 将 ONBOOT="no" 改为 ONBOOT="yes"
+service network restart
+ifconfig eth0
+
+
+如果ifconfig不能用
+yum install net-tools.x86_64
+如果wget不能用
+yum install wget
+
+下载jdk1.7
+yum -y list java-1.7*
+yum -y remove ...
+yum -y install java-1.7.0-openjdk  java-1.7.0-openjdk-devel  #安装openjdk
+
+设置当前进程环境变量
+export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk
+
+设置当前用户环境变量
+echo $HOME/.bashrc
+vi /root/.bashrc
+添加
+export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk
+
+
+设置系统环境变量 vi  /etc/profile
+export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk
+export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export PATH=$PATH:$JAVA_HOME/bin
+执行：source  /etc/profile 让设置立即生效
+ 
+
+/******配置未成功******/
+三，配置SSH无密码登陆
+$ ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
+$ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
+验证ssh，# ssh localhost 
+不需要输入密码即可登录。
+
+wget http://mirrors.hust.edu.cn/apache/hadoop/common/stable2/hadoop-2.7.3.tar.gz
+
+
+mkdir -p /usr/hadoop
+mv hadoop-2.7.3.tar.gz /usr/hadoop
+cd /usr/hadoop
+tar -xzvf hadoop-2.7.1.tar.gz
+
+在/usr/hadoop/目录下，建立tmp、hdfs/name、hdfs/data目录，执行如下命令 
+mkdir /usr/hadoop/tmp 
+mkdir /usr/hadoop/hdfs 
+mkdir /usr/hadoop/hdfs/data 
+mkdir /usr/hadoop/hdfs/name
+
+
+设置环境变量，vi ~/.bash_profile
+#set hadoop path
+export HADOOP_HOME=/usr/hadoop/hadoop-2.7.1
+export PATH=$PATH:$HADOOP_HOME/bin
+使环境变量生效，$source ~/.bash_profile
+
+
+Hadoop配置 
+进入$HADOOP_HOME/etc/hadoop目录，配置 hadoop-env.sh等。涉及的配置文件如下： 
+hadoop-2.7.1/etc/hadoop/hadoop-env.sh 
+hadoop-2.7.1/etc/hadoop/yarn-env.sh 
+hadoop-2.7.1/etc/hadoop/core-site.xml 
+hadoop-2.7.1/etc/hadoop/hdfs-site.xml 
+hadoop-2.7.1/etc/hadoop/mapred-site.xml 
+hadoop-2.7.1/etc/hadoop/yarn-site.xml
+
+1）配置hadoop-env.sh
+
+# The java implementation to use.
+#export JAVA_HOME=${JAVA_HOME}
+export JAVA_HOME=/usr/java/jdk1.7.0_79
+2）配置yarn-env.sh
+
+#export JAVA_HOME=/home/y/libexec/jdk1.7.0/
+export JAVA_HOME=/usr/java/jdk1.7.0_79
+3）配置core-site.xml 
+添加如下配置：
+
+<configuration>
+ <property>
+    <name>fs.default.name</name>
+    <value>hdfs://localhost:9000</value>
+    <description>HDFS的URI，文件系统://namenode标识:端口号</description>
+</property>
+
+<property>
+    <name>hadoop.tmp.dir</name>
+    <value>/usr/hadoop/tmp</value>
+    <description>namenode上本地的hadoop临时文件夹</description>
+</property>
+</configuration>
+4），配置hdfs-site.xml 
+添加如下配置
+
+<configuration>
+<!—hdfs-site.xml-->
+<property>
+    <name>dfs.name.dir</name>
+    <value>/usr/hadoop/hdfs/name</value>
+    <description>namenode上存储hdfs名字空间元数据 </description> 
+</property>
+
+<property>
+    <name>dfs.data.dir</name>
+    <value>/usr/hadoop/hdfs/data</value>
+    <description>datanode上数据块的物理存储位置</description>
+</property>
+
+<property>
+    <name>dfs.replication</name>
+    <value>1</value>
+    <description>副本个数，配置默认是3,应小于datanode机器数量</description>
+</property>
+</configuration>
+5），配置mapred-site.xml 
+添加如下配置：
+
+<configuration>
+<property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+</property>
+</configuration>
+6），配置yarn-site.xml 
+添加如下配置：
+
+<configuration>
+<property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+</property>
+<property>
+        <name>yarn.resourcemanager.webapp.address</name>
+        <value>192.168.241.128:8099</value>
+</property>
+</configuration>
+4，Hadoop启动 
+1）格式化namenode
+
+$ bin/hdfs namenode –format
+2）启动NameNode 和 DataNode 守护进程
+
+$ sbin/start-dfs.sh
+3）启动ResourceManager 和 NodeManager 守护进程
+
+$ sbin/start-yarn.sh
+5，启动验证 
+1）执行jps命令，有如下进程，说明Hadoop正常启动
+
+# jps
+6097 NodeManager
+11044 Jps
+7497 -- process information unavailable
+8256 Worker
+5999 ResourceManager
+5122 SecondaryNameNode
+8106 Master
+4836 NameNode
+4957 DataNode
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
