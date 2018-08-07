@@ -1,0 +1,299 @@
+1.haproxy的配置段有"global"，"defaults","listen","frontend"和"backend"等
+global：配置中的参数为进程级别的参数，且通常与其运行的操作系统有关
+defaults：用于为所有其他配置段提供默认参数，这配置默认配置参数可由下一个"defaults"所重新设定
+forntend：用于定义一系列监听的套接字，这些套接字可以接受客户端请求并与子建立连接
+backend: 用于定义一系列“后端”服务器，代理将会将对应客户端的请求转发至这些服务器
+listen: 用于定义通过关联“前段”和“后端”一个完整的代理，通常只对TCP流量有用
+所有代理的名称只能使用大写字母、小写字母、数字、-（中线）、_（下划线）、.(点号)和：（冒号）。此外，ACL名称会区分大小写
+
+2.时间格式一些包含了值得参数表示时间，如超时时长。以毫秒为单位，时间单位做后缀，如us（微妙），ms（毫秒），s（秒），m（分钟），h（小时），d（天）
+
+3.配置参数详细说明请参考http://cbonte.github.io/haproxy-dconv/configuration-1.4.html
+
+
+一：global 全局配置
+
+chroot: 修改haproxy的工作目录至指定的目录，并在放弃权限之前执行chroot()操作，可以提升haproxy的安全级别，不过需注意的是确保指定的目录为空目录且任何用户均不能有写权限
+daemon：让haproxy以守护进程的方式工作于后台，其等同于“-D”选项的功能，当然，也可以在命令行中以“-db”选项将其禁用
+gid：以指定的GID运行haproxy，建议使用专用于运行haproxy的GID，以避免因权限带来的风险
+group：同gid，不过这里为指定的组名
+uid: 已指定的UID身份运行haproxy进程
+user：同uid，但这里使用的为用户名
+log：定义全局的syslog服务器，最多可以定义两个
+nbproc: 指定启动的haproxy进程个数，只能用于守护进程模式的haproxy；默认为止启动一个进程，鉴于调试困难等多方面的原因，一般只在但进程仅能打开少数文件描述符的场中中才使用多进程模式
+pidfile: pid文件的存放位置
+ulimit-n:设定每个进程所能够打开的最大文件描述符，默认情况下其会自动进行计算，因此不建议修改此选项
+node：定义当前节点的名称，用于HA场景中多haproxy进程共享同一个IP地址时
+description: 当前实例的描述信息
+maxconn：设定每个haproxy进程所接受的最大并发连接数，其等同于命令行选项"-n"，"ulimit-n"自动计算的结果正式参照从参数设定的
+maxpipes: haproxy使用pipe完成基于内核的tcp报文重组，此选项用于设定每进程所允许使用的最大pipe个数，每个pipe会打开两个文件描述符，因此，"ulimit -n"自动计算的结果会根据需要调大此值，默认为maxcoon/4
+noepoll: 在linux系统上禁用epoll机制
+nokqueue：在BSE系统上禁用kqueue机制
+nopoll：禁用poll机制
+nosepoll: 在linux系统上禁用启发式epoll机制
+nosplice：禁止在linux套接字上使用tcp重组，这会导致更多的recv/send调用，不过，在linux2.6.25-28系列的内核上，tcp重组功能有bug存在
+spread-checks<0..50,in percent>: 在haprorxy后端有着众多服务器的场景中，在紧缺是时间间隔后统一对中服务器进行健康状况检查可能会带来意外问题，此选项用于将检查的时间间隔长度上增加或减少一定的随机时长，为当前检查检测时间的%
+tune.bufsize: 设定buffer的大小，同样的内存条件下，较小的值可以让haproxy有能力接受更多的并发连接，较大的值了可以让某些应用程序使用较大的cookie信息，默认为16384，其可以在编译时修改，不过强烈建议使用默认值
+tune.chksize: 设定检查缓冲区的大小，单位为字节，更大的值有助于在较大的页面中完成基于字符串或模式的文本查找，但也会占用更多的系统资源，不建议修改
+tune.maxaccept：设定haproxy进程内核调度运行时一次性可以接受的连接的个数，较大的值可以带来较大的吞吐量，默认为单进程模式下为100，多进程模式下为8，设定为-1可以禁止此限制，一般不建议修改
+tune.maxpollevents：设定一次系统调用可以处理的事件最大数，默认值取决于OS,其至小于200时可介于带宽，但会略微增大网络延迟，但大于200时会降低延迟，但会稍稍增加网络带宽的占用
+tune.maxrewrite：设定在首部重写或追加而预留的缓存空间，建议使用1024左右的大小，在需要更大的空间时，haproxy会自动增加其值
+tune.rcvbuf.client：设定内核套接字中客户端接收缓存区的大小，单位为字节，强烈推荐使用默认值
+tune.rcvbuf.server：设定内核套接字中服务器接收缓存区的大小，单位为字节，强烈推荐使用默认值
+tune.sndbuf.client：设定内核套接字中客户端发送缓存区的大小，单位为字节，强烈推荐使用默认值
+tune.sndbuf.server：设定内核套接字中服务器端发送缓存区的大小，单位为字节，强烈推荐使用默认值
+debug  调试模式，输出启动信息到标准输出
+quiet   安装模式，启动时无输出
+
+
+二：defaults 默认配置
+
+balance
+balance [] 
+balance url_param [check_post []]
+定义负载均衡算法，可用于"defaults"、"listen"和"backend"中。用于在负载均衡场景中挑选一个server，其仅用于持久信息不可用的条件下或需要将一个连接重新派发至另一个服务器时。支持的算法有：
+
+roundrobin：基于权重进行轮询，在服务器的处理时间保持均匀分布时 ，这是最平衡、最公平的算法。此算法是动态的，这表示某权重可以在运行时进行调整，不过，在设计上，每个后端服务器仅能最多支持4128个连接
+static-rr：基于权重进行轮询，与roundrobin类似，但是为静态方法，在运行时调整期后端权重不会生效，不过，其在后端服务器连接数上没有限制
+leastconn：新的连接强求笨哦派发至具有最少连接数目的后端服务器，在有这较长会话的场景中推荐使用此算法，如LDAP、SQL等。其并不太适合用于较短会话的应用层协议，如HTTP，此算法是动态的，可以在运行时调整其权重
+source：将请求的源地址进行hash运算，并有后端的服务器的权重总数相处后派发至某匹配的服务器，这可以使得同一个客户端IP的请求始终被派发至某特定的服务器，不过，当服务器权重总数发生变化时，如某服务器宕机或者添加新服务器，许多的请求可能会被派发至与此前请求不同的服务器，常用于负载均衡无cooki功能的基于TCP的协议，默认为动态，不过可以使用hash-type修改此特性
+uri：对URI的左半部分（“问号”标记之前的部分）或整个URI进行hash运算，并由服务器的总权重相除后派发至某匹配的服务器；这可以使得对同一个URI的请求总是派发至某匹配的服务器，除法服务器的权重总数发生了变化，此算法常用于代理缓存或反病毒代理以提高缓存的命中率，需要注意的是，此算法仅应用于HTTP后端服务器场景，其默认为静态算法，不过可以使用hash-type修改此特性
+url_param：通过为URL指定的参数在每个HTTP GET请求中将会被索引，日过找到了指定的参数且其通过等于号“=”被赋予了一个值，那么此值将被执行hash运算并被服务器的总权重相处后派发至某匹配的服务器，此算法可以通过追踪请求中的用户标识进而确保同一个用户的ID请求被发送同一个特定的服务器，除非服务器的总权重发生了变化；如果某请求中没有出现指定的参数或其没有有效值，则使用轮询算法对其想用请求进行调度，此算法默认为静态，不过可以使用hash-type修改此特性
+har（）:对于每个HTTP请求，通过指定的HTTP首部将会被检索，如果对于那个的首部没有出现或其没有有效值，则使用轮询算法对响应请求进行调度，其有一个可选项“use_domain_only”可以指定检索类似host类的首部时仅计算域名部分以降低hash算法的运算量，此算法默认为静态，不过可以使用hash-type修改此特性
+
+bind
+bind [
+]:[,.....]
+bind [
+]:[,.....] interface 
+该指令仅能用于frontend和listen区段，用于定义一个或多个监听的套接字
+:可选项，其可以为主机名、IPV4地址、IPV6地址或*：省略此选项、将其指定为*或0.0.0.0时，将监听当前系统的所有IPv4地址
+:可以是一个特定的TCP端口，也可是一个端口范围（如6604-6610），代理服务器将通过制定的端口来接受客户端请求，需要注意的是，每组监听的套接字在同一个实例上只能使用一次，而且小于1024的端口需要有特定的权限的用户才能使用，这可能需要通过uid参数来定义
+：指定物理接口的名称，仅能在linux系统上使用，其不能使用接口别名，二进程使用物理端口名称，而且只有管理有权限指定绑定的物理端口
+
+mode
+mode{ tcp|http|health }
+设定实例的运行模式或协议，当实现内容交换时，前段和后端必须工作与统一中模式（一般说来时tcp模式），否则将无法启动实例
+tcp: 实例运行于纯tcp模式，在客户端和服务器端之间将建立一个全双工的连接，且不会对7层报文做任何类型的检查，此为默认模式，通常用于SSL、SSH、SMTP等应用
+http：实例运行于http模式，客户端请求在转发至后端服务器之前将被深度分析，所有不与RFC模式兼容的请求都会被拒绝
+health：实例运行于health模式，其对入站请求仅响应“OK”信息并关闭连接，且不会记录任何日志信息 ，此模式将用于相应外部组件的监控状态检测请求；目前来讲，此模式已经废弃，因为tcp或http模式中的monitor关键字可完成此类功能
+
+log
+log global
+log
+[[]]
+为每个实例启用事件和流量日志，因此可用于所有区段。每个实例最多可硬定义两个log参数，不过，如果使用了“log global”且“global”端定义了两个log参数时，多余的log参数将会倍忽略
+global：当前实例的日志系统参数同“global”段中的定义时，将使用此格式，每个实例仅能定义一个“log global”语句，且其没有额外的参数
+：定义日志发往的位置，其格式之一可以为，其中prot为udp协议，默认为514，格式之二为Unix套接字文件路径，当需要留心chroot应用及用户读写权限
+: 可以为syslog系统的标准facility之一
+: 定义日志级别，即输出信息过滤器，默认为所有信息，指定级别时，所有等于或高于此级别的日志信息将会被发送
+
+maxconn
+maxconn 
+设定一个前段的最大并发连接数，因此，其不能用于backend区段，对于大型站点来说，可以尽可能提高此值以便让haproxy管理连接队列，从而便面无法应答用户请求。当然，此最大值不能超过“global”段中的定义。此外，需要留心的是，haproxy会为每个连接维持两个缓冲，每个缓存的大小为8KB，在加上其他的数据，每个连接将大约占用17KB的RAM空间，这意味着经过适当优化后 ，有着1GB的可用RAM空间时将维护40000-50000并发连接
+如果为指定了一个过大值，极端场景中，其最终所占据的空间可能会超过当前主机的可用内存，这可能会带来意想不到的结果，因此，将其设定一个可接受值放为明智绝对，其默认为2000
+
+default_backend
+default_backend 
+在没有匹配的“use_backend”规则时为实例指定使用的默认后端，因此，其不可应用于backend区段，在“frontend”和“backend”之间进行内容交换时，通常使用“use-backend”定义其匹配规则，而没有被匹配到的请求将有此参数指定的后端接收
+:指定使用的后端名称
+
+
+server
+server
+[:port][param*]
+在后端声明一个server，因此，不能用于defaults和frontend区段。
+: 为此服务器指定的内部名称，其将会出现在日志及警告信息中；如果设定了“http-send-server-name”,他还将会被添加至发往此服务器的请求首部中
+：此服务器的IPv4地址，也支持使用可解析的主机名，只不过在启动时需要解析主机名至响应的IPV4地址
+<:port>：指定将连接请求所发往此服务器时的目标端口，其为可选项，为设定是，将使用客户端请求时的同一相同端口
+[param*]：为此服务器设定的一系列参数：其可以得参数非常多，具体请参考官方文档（http://cbonte.github.io/haproxy-dconv/configuration-1.4.html#5）中的说明，下面仅说明几个常用的参数
+服务器或默认服务器参数:
+backup：设定为备用服务器，仅在负载均衡场景中的其他server均不可以启用此server
+check：启动对此server执行监控状态检查，其可以借助于额外的其他参数完成更精细的设定，如：
+inter: 设定监控状态检查的时间间隔，单位为毫秒，默认为2000，也可以使用fastinter和downinter来根据服务器端专题优化此事件延迟
+rise：设定检查状态检查中，某离线的server从离线状态转换至正常状态需要成功检查的次数
+fall：设定检查状态检查中，某离线的server从正常状态转换至离线状态需要成功检查的次数
+cookie：为指定server设定cookie值，此处指定的值将会在请求入站时被检查，第一次为此值挑选的server将会倍后续的请求所选中，其目的在于实现持久连接的功能
+maxconn：指定此服务器接受的最大并发连接数，如果发往此服务器的连接数目高于此处指定的值，其将被放置于请求队列，以等待其他连接被释放
+maxqueue：通过观察服务器的通信状况来判断其健康状态，默认为禁用，其支持的类型有“layer 4”和“layer 7”，“layer 7”仅能用于http代理场景
+redir：启用重定向功能，将发往此服务的GET和HEAD请求均以302状态码响应，需要注意的是，在prefix后面不能使用/，且不能使用相对地址，以避免造成循环，例如
+
+server srv1 192..168.1.202:80 redir http://imageserver.wangfeng7399.com check
+weight: 权重，默认为1，最大值为256，0表示不参与负载均衡
+检查方法：
+ option httpchk
+ option httpchk
+ option httpchk
+ option httpchk：不能用于frontend端，例如：
+
+backend https_relay
+mode tcp
+option httpchk OPTIONS * HTTP/1.1rnHost: www
+server apache1 192.168.1.1:443 check port 80
+
+capture request header
+capture request header len 
+捕获并记录指定的请求首部最近一次出现时的第一个值，仅能用于“frontend”和“listen”区段，捕获的首部值使用花括号{}括起来后添加进日志中，如果需要捕获多个首部值，他们将以指定的次序出现在日志文件中，并以竖线“|”作为分隔符，不存在的首部记录为空字符串，最长需要捕获的首部包括在虚拟主机环境中使用的“host”、上传请求首部中的“Content-length”、快速区别现实用户和网络机器人“User-agent”，已经代理环境中距离请求来源的“X-Forword-For”
+: 要捕获的首部的名称，此名称不区分大小写，但建议与他们出现在首部中的格式相同，比如大写首字母，需要注意的是，记录在日志的是首部的值，而非首部名称
+: 指定距离首部值时所记录的精确长度，超出的部分将会倍忽略
+可以捕获的请求首部的个数没有限制，但每个捕获最多能记录64个字符，为了保证同一个frontend中日志格式的统一性，首部捕获仅能在frontend中定义
+
+capture response header
+capture response header len 
+捕获并记录响应首部。其格式和要点同捕获的请求首部响应
+
+stats enable
+启用基于程序编译时默认设置的统计报告，不能用于“frontend”区段，只要没有额外的其他设定，他们就会使用如下的配置        
+- stats uri   : /haproxy?stats 
+- stats realm : "HAProxy Statistics"
+- stats auth  : no authentication
+- stats scope : no restriction
+尽管“stats enable”一条就能够启用统计报告，但还是建议设定其他所有的参数，以避免其依赖默认设定而带来非预期后果，下面是一个配置案例实例
+
+backend public_www
+    server srv1 192.168.1.201:80
+    stats enable
+    stats hide-version
+    stats scope   .
+    stats uri     /admin?stats
+    stats realm   Haproxy Statistics
+    stats auth    admin1:AdMiN123
+    stats auth    admin2:AdMiN321
+
+stats hide-version
+启用统计报告并隐藏HAProxy版本报告，不能用于“frontend”区域，默认情况下，统计页面会显示一些有用信息，包括HAProxy的版本号，然后，向所有人公开HAproxy的准确版本号是非常有危险的，因为他能够版主恶意用户快速定位版本的缺陷和漏洞，尽管“stats hide-version”一条就能够启用统计报告，但还是建议设定其他所有的参数，以避免其依赖默认设定而带来非预期后果请参照“stats enable”一节的说明
+
+stats realm
+stats realm 
+启用统计报告并高精认证领域，不能用于“frontend”区域，haproxy在读取realm是会讲是做一个单词，因此，中间的空白字符都必须使用反斜线进行转移。此参数仅在与“stats auth”配置使用时有意义
+：实现HTTP基本认证时显示在浏览器中的领域名称，用于提示用户输入一个用户名和密码
+尽管“stats realm”一条就能够启用统计报告，但还是建议设定其他所有的参数，以避免其依赖默认设定而带来非预期，后果请参照“stats enable”一节的说明
+
+stats scope
+stats scope {|"."}
+启用统计报告并限定报告的区段，不能用于“frontend”区域，当指定此语句时，统计报告将仅显示其列举出区段的报告信息，所有其他区段的信息将被隐藏，如果需要显示多个区段的统计报告，此语句可以定义多次，需要注意的是，区段名称进程仅仅是以字符串比较的方式进行，他不会真检查指定的区段是否真正存在
+：可以是一个“listen”、“frontend”或“backend”区段的名称，而“.”则表示stats scope语句所定义的当前区段
+尽管“stats scope”一条就能够启用统计报告，但还是建议设定其他所有的参数，以避免其依赖默认设定而带来非预期后果，请参照“stats enable”一节的说明
+
+stats auth
+stats auth :
+启用带认证的统计报告功能并授权一个用户账号，不能用于“frontend”区域
+：授权进行访问的用户名
+：此用户的访问密码，明文格式
+此语句将给予默认设定启用统计功能报告，并仅允许其定义的用户访问，其也可以定义多次以手段多个用户账号，可以结合“stats realm”参数在提示用户认证是给出一个领域说明信息，在使用非法用户访问统计功能时，其将会响应一个“401 Forbidden”页面，其认证方式为HTTP Basic认证，密码传输会以明文方式进行，因此，配置文件中也使用存储明文方式存储以说明其非保密信息故此不能想用与其他关键性账号的密码。
+尽管“stats auth”一条就能够启用统计报告，但还是建议设定其他所有的参数，以避免其依赖默认设定而带来非预期后果，请参照“stats enable”一节的说明
+
+stats admin 
+atsts admin {if|unless}
+在指定的条件满足时启用统计报告页面的管理级别功能，他允许通过web接口启用或禁用服务器，不过，基于安全的角度考虑，统计报告页面应该尽可能为只读的，此外，如果启用了HAproxy的多进程模式，启用此管理级别将会可能导致异常行为
+目前来说，POST请求方法被限制于仅能使用缓冲区减去保留之外的空间，因此，服务器列表不能过长，否则，此请求将无法正常工作，因此，建议一次仅调整少数几个服务器，
+
+option httplog
+option httplog [clf]
+启用记录HTTP请求、会话状态和计时器的功能
+clf：使用CLF格式来代替HAproxy默认的HTTP格式，通常在使用仅支持CLF格式的特定日志分析器时才需要使用此格式
+默认情况下，日志输入格式非常简陋。因为其仅包括源地址、目标地址和实例名称、而“option httplog”参数将会使得日志变得丰富许多，其通常包括但不局限于HTTP请求、连接计时器、会话状态、连接数、捕获的首部及cookie、“frontend”、“backend”及服务器名称。当然也包括源地址和端口号等。
+
+option logasap  
+no option logasap
+启用或禁用提前将HTTP请求记入日志，不能用于“frontend”区段。
+默认情况下，HTTP请求是在请求结束时进行记录以便能够将其整体输入时长和字节数记入日志，由此，传较大的对象时，其记入日志的市场可能会略有延迟，“option logasap”参数能够在服务器发送complete首部时及时记录日志，只不过，此时将不记录整体传输时长和字节数。此情形下，捕获“Content-Length”响应报文来记录的字节数是以一个较好的选择
+
+option forwardfor
+option forwardfor[ except ][ header ][ if-none ]   
+允许在发往服务器的请求首部中插入“X-Forwarded-For”首部
+：可选参数，当指定时，源地址为皮至此网络中的请求都禁用此功能
+：可选参数，可使用一个自定义的首部，如“X-Cluster-Client-IP”来代替“X-Forwarded-For”，有些独特的web服务器的确需要用一个独特的首部
+if-none: 仅在此首部不存在时才会将其添加至请求报文中
+HAproxy工作与反向代理模式，其发往服务器的请求中的客户端IP均为HAproxy主机的地址而非真正的客户端地址，这会使得服务器的日志记录不了真正的请求来源，“X-Forwarded-For”首部则可用于解决此问题，HAproxy可以向每个房网服务器的请求上添加此首部，并以客户端IP为其value
+需要注意的是，HAproxy工作与隧道模式，其仅检查每一个连接的第一个请求，一次，仅第一个请求报文中被附加此首部，请确保同时使用“option httpclose”、“option forceclose”和“option http-server-close”几个option，例如
+
+errorfile
+errorfile 
+在用户请求不存在的页面时，返回一个页面给客户端而非有haproxy生成的错误代码，可用于所有段中
+: 指定对HTTP的那些状态码发回指定的页面，这里可用的状态码有200、400、403、408、500、502、503和504
+：指定用于响应的页面文件
+例如：
+
+errorfile 400 /etc/haproxy/errorfiles/400badreq.http
+errorfile 403 /etc/haproxy/errorfiles/403forbid.http
+errorfile 503 /etc/haproxy/errorfiles/503sorry.http
+
+errorloc和errorloc302
+errorloc 
+errorloc302 
+请求错误时，返回一个HTTP重定向至某URL的信息，可以用于所有端中
+: 指定对HTTP的那些状态码发回指定的页面，这里可用的状态码有200、400、403、408、500、502、503和504
+：Location首部中指定的页面位置的具体路径，可以是在当前服务器上的页面的相对路径，也可以使用绝对路径，需要注意的是，如果URI之神错误时禅师某特定状态码信息的话，有可能会导致循环定向
+需要留意的时，这两个关键字都会返回302状态码，浙江使得客户端使用同样的HTTP方法获取指定的URL。对于非GET方法获取指定的URL，对于非GET方法的场景（如POST）来说会产生问题，因为返回客户端的URL是不允许使用GET意外的其他方法的，如果的确有这种问题，可以使用errorloc303来返回303状态码给客户端
+
+ errorloc303
+ errorloc303 
+ : 指定对HTTP的那些状态码发回指定的页面，这里可用的状态码有400、403、408、500、502、503和504
+  ：Location首部中指定的页面位置的具体路径，可以是在当前服务器上的页面的相对路径，也可以使用绝对路径，需要注意的是，如果URI之神错误时禅师某特定状态码信息的话，有可能会导致循环定向
+
+五、ACL  
+   haproxy的ACL用于实现基于请求报文的首部、响应报文的内容或其他的环境状态信息来做出转发决策，这大大增强了其配置弹性，其配置法则通常非为两步，首先定义ACL，及定义一个测试条件，而后在条件得到满足时执行某特定的动作，如阻止请求或转发至某特定的后端，官方文档（http://cbonte.github.io/haproxy-dconv/configuration-1.4.html#7）定义ACL的语法格式如下：
+
+   acl[flags][operator] …
+
+   ：ACL名称，区分字符大小写，其只能包含大小写字符、数字、-（连接线）、_(下划线)、.(点号)和：冒号，haproxy中，acl可以重名，还可以把多个测试条件定义为一个共同的acl
+   : 测试标准，即对什么信息发起测试，测试方式可以有[flags]指定的标志进行调整，而有些测试标准也可以需要在其为之前指定一个操作符[operator]
+
+   [flags]：目前haproxy的acl支持的标志位有3个
+
+       -i：不区分中模式字符的大小写
+       -f：从指定的文件中加载模式
+       –：标识符的强制结束标记，在模式中的字符串像标记符时使用
+
+    ：acl测试条件支持的值有以下四类
+
+       整数或证书范围：如1024：65535表示从1024到65535，仅支持使用正整数（如果出现类似小数的标识，其通常为测试版本），其支持使用的操作符有5个，分别为eq（等于）、ge（大于等于）、gt(大于)、le(小于等于）和lt(小于)
+
+       字符串：支持使用“-i”以忽略字符大小写，支持使用“”进行转义，如果在模式首部出现了-i，可以在之前使用“–”标识位
+       正则表达式：其机制类同于字符串匹配
+
+       IP地址及网络地址
+
+    同一个acl中可以指定多个测试条件，这些测试条件需要由逻辑操作符指定其关系，条件间的组合测试关系有三种：“与”（默认即为与操作）、“或”（使用“||”操作符和“or”）和“非”（使用“！”操作符）
+
+   常用的测试标准
+
+       5.1 be_sess_rate (integer)
+           be_sess_rate(backend) (integer)
+
+           用于测试指定的backend上会话创建的速率（即每秒创建的会话数）是否满足指定的条件，常用于在指定的backend上的会话速率过高时将用户请求转发至另外的backend，或用于阻止攻击行为。例如：
+
+backend dynamic
+    mode http
+    acl being_scanned be_sess_rate gt 100
+    redirect location /denied.html if being_scanned
+      5.2 fe_sess_rate 
+         fe_sess_rate(backend) (integer)
+           用于测试指定的frontend（或当前fortend）上的创建速率是否满足指定的条件，常用于为frontend指定一个合理的会话创建速率的上限以防止服务器被滥用，例如
+
+
+frontend mail
+    bind :25
+    mode tcp
+    maxconn 500
+    acl too_fast fe_sess_rate ge 50
+    tcp-request inspect-delay 50ms
+    tcp-request content accept if ! too_fast
+    tcp-request content accept if WAIT_END
+定律限定入站邮件速率不能大于50封/秒，所有在指定范围之外的请求都被延时50毫秒
+
+       5.3 hdr 
+           hdr(header) 
+           用于测定请求报文中的所有首部或指定首部是否满足指定的条件，指定首部时，其名称不区分大小写，且在括号“（）”中不能有任何多余的空白字符，测试服务器端的响应报文时可以使用shdr（）。例如。下面的例子用于测试首部Connection的值是否为close    hdr(Connection) -i close
+       5.4 method            测试HTTP请求报文中使用的方法
+       5.5 path_beg            用于测试请求的URI是否以指定的模式开头。
+acl url_static path_beg -i /static /images /javascript /stylesheets
+测试URL是个以/static /images /javascript /stylesheets开头
+       5.6 path_end            用于测试请求的URL是否以指定的模式结尾
+acl url_static       path_end       -i .jpg .gif .png .css .js                                                                    
+测试URI是否以.jpg .gif .png .css .js结尾
+       5.7 hdr_beg           用于测试请求报文的指定首部的开头部分是否符合指定的模式
+acl host_static hdr_beg(host) -i img. video. download. ftp.
+用于测试请求报文首部中的主机是否已img. video. download. ftp.开头
+       5.8 hdr_beg           用于测试请求报文的指定首部结尾是否符合指定的模式

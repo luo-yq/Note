@@ -1,0 +1,88 @@
+cd apache-httpd-2.4.20
+
+./configure --prefix=/usr/local/apr  
+make  
+make test  
+make install  
+
+
+
+
+
+study
+AIX 5.3下安装apache
+
+1.下载：从http://httpd.apache.org/download.cgi下载最新版本的httpd-2.2.11.tar.gz 
+2.解压缩,配置,编译,安装 
+# gunzip httpd-2.2.11.tar.gz 
+# tar xvf httpd-2.2.11.tar 
+# cd httpd-2.2.11
+3.配置 
+# ./configure –prefix=/usr/apache  <br />
+4.编译 
+# make
+5.安装 
+# make install
+6.编辑配置文件 
+# vi /usr/apache/conf/httpd.conf 
+把以下的两行 
+User daemon 
+Group daemon 
+改为 
+User nobody 
+Group nobody 
+#ServerName指定为服务器的IP 
+ServerName 10.XX.XX.XX:80 
+#DocumentRoot是默认的目录,初始只有一个index.html 
+DocumentRoot "/usr/apache/htdocs" 
+7.编辑这个index.html 
+#vi /usr/apache/htdocs/index.html 
+加入以下负责跳转的html 
+<meta http-equiv="refresh" content="0;url=http://10.XX.XX.XX:8001/XXWeb/">
+8.启动apache 
+# /usr/apache/bin/apachectl start  
+9.测试,直接输入IP访问
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+?apache httpd2.4.10能支持最新的websocket代理，理论上是可以在我们的3.0系统中用于穿透apache代理连接tomcat的websocket服务，以下为在linux的安装步骤。
+
+1、下载?apache httpd2.4.10源码：  http://httpd.apache.org/download.cgi#apache24
+
+2、安装老三样：
+    1）、 gzip -d httpd-2.4.10.tar.gz
+             tar xvf httpd-2.4.10.tar
+
+    2）、 cd httpd-2.4.10
+             ./configure --prefix=/opt/httpd-2.4.10 --enable-modules=shared --enable-mods-shared=all \
+	     --enable-proxy --enable-proxy-connect --enable-proxy-ftp --enable-proxy-http \
+	     --enable-proxy-ajp --enable-proxy-balancer --enable-rewrite \
+	     --with-apr=/opt/apr-1.5.1\
+	     --with-apr-util=/opt/apr-util-1.5.3\
+	     --with-pcre=/opt/pcre-8.33
+             后面三个都是支持包，若不选择默认使用系统中的版本，但httpd2.4要求apr至少是1.4以上版本。
+
+     3）、make && make install
+
+3、修改conf/httpd.conf，将以下两行的注释取消：
+      LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so
+      LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
+
+   末尾插入：
+   ProxyPass /ws2/ ws://192.168.0.7:7001/
+   ProxyPass /wss2/ wss://192.168.0.7:443/
+   ProxyPass / balancer://cluster/ stickysession=JSESSIONID
+   <proxy balancer://cluster>
+   #      BalancerMember http://192.168.0.7:7001 loadfactor=1 route=jvm1
+   #      BalancerMember http://192.168.0.2:7001 loadfactor=1 route=jvm2
+          BalancerMember ajp://192.168.0.7:8009 loadfactor=1 route=jvm1
+          BalancerMember ajp://192.168.0.2:8009 loadfactor=1 route=jvm2
+   </proxy>
+
+问题：使用ajp，ws能穿透过apache，但使用http（注释部分）却穿透不了，若不用http的话，ws连接会话带不到后端服务器，继续研究中...
+ 
+
+
+
+

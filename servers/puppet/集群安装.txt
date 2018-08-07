@@ -1,0 +1,220 @@
+环境安装：
+Puppet 是用ruby语言写的，所以要安装ruby环境，服务器端与客户端都要安装，我这的环境没有装ruby，所以用yum安装一下。要精细化安装的话，需要安装4个包。
+[root@testsns ~]# yum –y install ruby*
+精细化安装Ruby环境
+1.puppet是基于ruby开发。所以要安装ruby语言环境。
+找到相应版本对应的ruby的rpm包(下以redhat 5.4为例)
+rpm –ivh ruby-libs-1.8.5-5.el5_2.3.i386.rpm
+rpm –ivh ruby-1.8.5-5.el5_2.3.i386.rpm
+2.Rdoc的安装。
+如果需要查看帮助文档，需要安装此包。有一点特殊说明，此包在AS4上未找到相关的rpm。所以建议服务端使用5.0以上的版本。
+rpm –ivh ruby-irb-1.8.5-5.el5_2.3.i386.rpm
+rpm –ivh ruby-rdoc-1.8.5-5.el5_2.3.i386.rpm
+Server端安装：
+1、时间同步
+ntpdate time.nist.gov
+2、安装Facter用来获取客户端系统信息(如hostname,ip,OS-Version,fqdn等)
+[root@testsns opt]# tar zxvf facter-1.6.5.tar.gz
+[root@testsns opt]# cd facter-1.6.5
+[root@testsns facter-1.6.5]# ruby install.rb
+[root@testsns facter-1.6.5]# cd ..
+[root@testsns opt]# tar zxvf puppet-2.6.13.tar.gz
+[root@testsns opt]# cd puppet-2.6.13
+[root@testsns puppet-2.6.13]# ruby install.rb
+[root@testsns puppet-2.6.13]# cp conf/auth.conf /etc/puppet/
+[root@testsns puppet-2.6.13]# cp conf/redhat/fileserver.conf /etc/puppet/
+[root@testsns puppet-2.6.13]# cp conf/redhat/puppet.conf /etc/puppet/
+[root@testsns puppet-2.6.13]# cp conf/redhat/server.init /etc/init.d/puppetmaster
+[root@testsns puppet-2.6.13]# chmod +x /etc/init.d/puppetmaster
+[root@testsns puppet-2.6.13]# chkconfig --add puppetmaster
+[root@testsns puppet-2.6.13]# chkconfig puppetmaster on
+[root@testsns puppet-2.6.13]# mkdir -p /etc/puppet/manifests
+3、生成pupput用户
+[root@testsns opt]# puppetmasterd --mkusers
+4、启动
+[root@testsns opt]# /etc/init.d/puppetmaster start
+
+Slave端安装:
+1、时间同步
+ntpdate time.nist.gov
+   和服务器端安装方法一样，先安装ruby环境，再安装facter和puppet，只是在puppet拷贝配置文件时要注意。
+2、安装Facter用来获取客户端系统信息(如hostname,ip,OS-Version,fqdn等)
+ 
+---内容如下
+[agent]
+Listen = true
+Server = testsns
+---
+[root@nfstest puppet-2.6.13]# vi /etc/puppet/namespaceauth.conf
+----内容如下
+[fileserver]
+allow *
+[puppetmaster]
+allow *
+[puppetrunner]
+allow *
+[puppetbucket]
+allow *
+[puppetreports]
+allow *
+[resource]
+allow *
+----
+3、生成用户和rra目录
+[root@nfstest puppet]# puppetmasterd --mkusers
+4、启动
+[root@nfstest puppet]# /etc/init.d/puppet start
+5、修改hosts
+   修改双方的/etc/hosts文件，添加各自的IP地址对应的主机名，生产环境做内部DNS比较好，不用修改每台服务器的hosts文件。
+192.168.133.42 nfstest
+192.168.133.44 testsns
+6、开放端口
+   关闭双方的防火墙及selinux，或开放8140（server服务器端口），8139（client服务器端口）。相互作ping hostname telnet hostname 8140 test hostname 8139等，看网络及hosts是否正常
+认证：
+客户端发送请求
+Puppeted --test –server testsns
+服务器查看
+Puppetca –list
+服务器端签名
+Puppetca –s –a //对所有客户端全部签名
+Puppetca –s nfstest //只签名某个客户端
+ 
+功能模块介绍及实例操作
+
+文件分发：
+通过puppet可以向被管理机上推送文件，方法是使用file类型的source属性
+1：修改/etc/puppet、fileserver.conf
+2：修改/etc/puppet/manifests/ site.pp
+实例：要把server服务器上/opt目录下的mysql-5.1.49-linux-i686-icc-glibc23.tar.gz传输至client服务器的/opt目录下，文件名不变。
+第一步：Vi /etc/puppet/fileserver.conf
+[files]
+path /opt/
+allow 192.168.133.0/24
+第二步：vi /etc/puppet/manifests/site.pp
+file 
+{ "/opt/mysql-5.1.49-linux-i686-icc-glibc23.tar.gz":
+source => "puppet://$puppetserver/files/mysql-5.1.49-linux-i686-icc-glibc23.tar.gz",
+}
+第三步：
+在client客户端执行更新命令
+puppetd --test --server testsns
+    此处“$puppetserver”是puppet Server端的名称，即hostname，网上教程都是在hosts里指定，生产环境下用内部的DNS上作解析，像我公司一个www平台就有70台linux服务器，一个个添加hosts，不搞死人去。
+修改文件属性：
+   实例：把/tmp/dd142/ puppet-2.6.13.tar.gz文件的权限改为puppet用户，并设置权限为666。
+第一步：编辑Server端的site.pp
+vi /etc/puppet/manifests/site.pp
+---内容如下
+file
+{ "/tmp/dd142/puppet-2.6.13.tar.gz":
+owner => "puppet",
+group => "puppet",
+mode => 666,
+}
+----
+第二步：在client端执行命令
+puppetd --test --server testsns
+执行SHELL命令或shell脚本：
+    实例：通过puppet分发执行shell脚本，在客户端的opt目录下新建一目录shelldir。
+第一步：编辑Server端的site.pp
+vi /etc/puppet/manifests/site.pp
+exec { "exec-mkdir":
+cwd => "/opt",
+command => "sh /opt/lgh.sh",
+user => "root",
+path => "/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin",
+}
+第二步：在client端编辑一shell脚本
+
+第三步：在client端执行命令
+puppetd --test --server testsns
+在/opt目录下查看shelldir有没有建立。
+服务检查及修改：
+    可以通过puppet对一些服务进行检查。puppet是通过service命令操作的。所以，只能针对在/etc/init.d/目录下的服务
+实例：把客户端的防火墙起来（原来是关闭的）
+vi /etc/puppet/manifests/site.pp //清空site.pp，再新建
+service
+{ iptables:
+ensure => "running",
+}
+cron计划任务：
+接上面的shell程序实例，在17：30执行/opt/lgh.sh。
+cron { "cron-shell": #title部分，可用来作为注释。
+command => "sh /opt/lgh.sh" #要执行的命令
+user	=> "root",	#添加到root用户下的crontab中
+minute	=> "30",	#即第一个星号
+hour	=> "17"	#即第二个星号
+}
+登录客户端查看效果
+
+扩展阅读：
+在开源世界里，有很多配置工具可供选择，这个领域一些关键的产品有：
+Puppet(http://puppet.reductivelabs.com/):
+Ruby写成的配置管理工具，使用C/S架构，使用declarative language配置客户端。
+Cfengine(http://www.cfengine.org):
+最先发布的开源配置工具之一，1993年发布，同样是C/S架构，通常应用于教育机构。
+LCFG(http://www.lcfg.org/):
+C/S架构的配置管理工具，使用XML定义配置。
+Bcfg2
+Python编写的C/S架构的配置管理工具，使用规格书和客户机响应配置目标主机。
+本文档致力于描述使用Puppet管理你的主机、应用程序、后台程序和各种服务。
+在此只讲Puppet，因为它简单，强大，流行。
+
+什么是puppet？
+
+    puppet是一种Linux、Unix平台的集中配置管理系统，使用自有的puppet描述语言，可管理配置文件、用户、cron任务、软件包、系统服务等。puppet把这些系统实体称之为资源，puppet的设计目标是简化对这些资源的管理以及妥善处理资源间的依赖关系。
+     puppet采用C/S星状的结构，所有的客户端和一个或几个服务器交互。每个客户端周期的（默认半个小时）向服务器发送请求，获得其最新的配置信息，保证和该配置信息同步。每个puppet客户端每半小时(可以设置)连接一次服务器端, 下载最新的配置文件,并且严格按照配置文件来配置服务器. 配置完成以后,puppet客户端可以反馈给服务器端一个消息. 如果出错,也会给服务器端反馈一个消息.
+为什么要开发puppet
+    系统管理员都喜欢自己写点小工具来让自己的工作完成的更快或者更好, 不管是在大企业管理大量的服务器还是只管理两三台机器. 但是很少人会把他们的工具发布出来. 也就是是说极少有工具能被重用,或者说很多工具就只能在所在的组织内部有用.拷贝给别的组织,他们也用不上. 也就是说,每个系统管理员,在一个新的公司,都会另起炉灶开发一套基于ssh,for循环的"系统"来帮助自己完成系统管理任务.
+    开发puppet是为了让系统管理员可以相互交流和共享成熟的工具,避免重复的劳动.通过以下两个特性来实现这一目标:
+提供一个简洁的但是强大的框架来完成系统管理任务
+系统管理任务可以描述成puppet语言,因此可以相互分享代码,就像分享其他语言的代码一样,比如python, c等
+    因此,作为系统管理员的你可以更快的完成工作,因为你可以用puppet来处理所有的管理细节. 甚至你还可以下载其他管理员的puppet代码来让你的工作完成的更快.
+使用puppet 的稳定性
+     puppet与其他手工操作工具有一个最大的区别就是 puppet的配置具有稳定性,因此你可以多次执行puppet, 一旦你更新了你的配置文件,puppet就会根据配置文件来更改你的机器配置,通常每30分钟检查一次. puppet会让你的系统状态同配置文件所要求的状态保持一致. 比如你配置文件里面要求ssh服务必须开启. 假如不小心ssh服务被关闭了,那么下一次执行puppet的时候,puppet会发现这个异常,然后会开启 ssh 服务. 以使系统状态和配置文件保持一致.puppet就象一个魔术师,会让你的混乱的系统收敛到puppet配置文件所想要的状态.
+     可以使用puppet管理服务器的整个生命周期,从初始化到退役.不同于传统的例如sun的Jumpstart或者redhat的Kickstart, puppet可以长年让服务器保持最新状态.只要一开始就正确的配置他们,然后再也不用去管他们.通常puppet用户只需要给机器安装好puppet并让他们运行,然后剩余的工作都由puppet来完成.
+
+puppet的细节和原理
+
+     puppet的目的是让你只集中于你要管理的目标,而忽略实现的细节,例如命令名,参数或者文件格式. puppet把系统里面的用户,软件包,服务 看作是"资源", puppet的作用就是管理这些资源以及资源之间的相互联系.
+     底层支撑工具 Providers,puppet有很多的资源类型,例如文件,用户,软件包,服务, 不同的操作系统上对资源的管理命令是不一样的,例如debian下面用apt-get安装软件,redhat下面用yum安装软件. 因此puppet 对同一资源的管理可以有多个实现,配置资源的时候,可以明确的指定用什么provider. 例如在redhat上配置一个package资源的时候,可以指定provider是yum.
+Facter变量
+     在puppet客户端分析代码的时候,会把从facter传送过来的对应的值赋值给变量. 你可以单独手工执行facter这个命令,这个命令会打印出它所收集到的关于主机的信息,例如ip地址等等. facter把收集到值发送给puppet服务器端,服务器端就可以根据不同的条件来对不同的节点机器生成不同的puppet配置文件. 最重要的一个就是服务器的主机名.
+
+工作方式与流程
+
+     puppet既可以在单机上使用,也可以以c/s结构使用.在大规模使用puppet的情况下,通常使用c/s结构.在这种结构中puppet客户端只是指运行puppet的服务器,puppet服务器端是只运行puppetmaster的服务器.
+     puppet客户端首先会连接到puppet服务器端,并且通过facter工具把客户端的基本配置信息发送给服务器端. 服务器端通过分析客户端的主机名,通过node 定义,找到该主机的配置代码,然后编译配置代码,把编译好的配置代码发回客户端,客户端执行代码完成配置.并且把代码执行情况反馈给puppet服务器端.
+修改系统配置
+     puppet 通过管理资源的方式来管理系统, 例如管理某个软件是否要安装,是安装最新的还是安装了就行. 管理某个服务是否开启, 管理某个文件的属性,内容等等. 所有的资源都有对应的几个属性可以设置. 通过设置属性的方式来管理资源. 有一种特殊的属性可以用在所有的资源上面,这种属性叫做 metaparams ( 元参数或者元属性).
+
+资源之间的关系
+
+    支持资源之间的关系配置是puppet的关键特性之一. 一个资源的变更可以对另一个资源产生一个动作.例如 /etc/apache.conf这个资源有改动,可以让/etc/init.d/apache 这个资源 reload一下.假如一个资源依赖另一个资源,那么puppet会优先配置被依赖的资源,因此如果你的配置文件没有准备好,对应的服务是不会先启动的.
+
+puppet 语言资源
+
+    puppet的全部就是管理资源,因此puppet语言的焦点就是处理这些资源,下面是一个基本的管理单个资源的例子.
+file {"/etc/hosts": owner = root, group = root, mode = 644}
+     上面的列子给出了定义一个资源所需要的所有组件,类型,名字和属性. 定义了一个 file 资源, 资源的title(标题)是 "/etc/hosts", 资源的属性里面设置了该文件属于那个用户和组,以及文件的权限.
+也可以在一个大括号里面定义多个资源,通过分号来区分.
+避免重复配置
+     puppet的编译器会避免在不同的代码段里面管理同一个资源, 如果在不同的代码段对同一个资源进行配置,执行puppet的时候你会得到一个语法错误.puppet探测这种冲突的情况是通过判断资源类型和资源的title(标题); 如果两个资源有相同的资源类型和title; 那么就认为这两个资源是表示同一个资源.
+类
+    你可以把多个相关的资源定义在一起,组成一个类.可以在其他的代码段include这个类.puppet还支持有限制的类的继承,作用就是在子类里面的属性可以覆盖父类里面的属性.
+字符串
+    几乎所有的东西和符号在puppet里面都被看作是字符串,包括数字和布尔值. 但是如果你用引号把true和false引起来,他们会被当做字符串,例如你想赋值给某个资性"yes"的 字符串.
+变量
+puppet除facter变量外，也可以自定义变量，但不允许你在同一个类里面对一个变量进行两次赋值.
+$myvar = value123
+条件语句
+    Puppet支持常见的条件语句，使得你能根据不同的条件导入不同的资源定义。如if、case、另外puppet从版本0.24.6开始支持比较运算符。
+数组
+   puppet 非常有限的支持数组这种类型,你可以创建数组,并且给他们赋值,但是你不能删除它们.数组用的最多的情况就是上面ssh例子里面,资源依赖哪种情况. 或者是一次管理多个相同类型的资源.例如:user { [bin, adm]: ensure => present }
+函数
+    puppet提供一些有用的函数,例如template利用erb模板来生成文件内容,这样就可以根据不同主机的情况,生成不同的配置文件.例如配置squid的内存缓存大小,可以利用facter返回的内存值做一个简单的数学计算,然后写入到squid的配置文件,就是通过template来完成的. 另外一个函数include 可以读入另外的puppet配置文件或者类.这样可以把puppet的文件分割的更有规律.
+节点
+    最后一个关于puppet语言的语法是节点定义"node", 节点定义很象类定义,也支持继承特性. 当一个节点(puppet客户端)连接到puppet服务器端,puppet解析器会查找这个节点的node代码片断,然后利用这个代码片断来生成该客户端的配置代码. puppet里面主机名来标明一个主机,因此主机名在puppet里面相当重要. 如果puppet找不到匹配该主机名的node定义,就会用默认的节点定义来配置该主机. 在node里面使用主机名,需要用单引号把主机名括起来.
+node 'server1' { include nginx }
+    在上面的代码中,如果server1这个主机连接到puppet服务器,puppet服务器就会按照nginx的代码来配置这台服务器.
+自定义资源
+    puppet里面有一个非常有用的语法结构,叫做define, 通过define可以把多个资源包装成一个资源,或者把一个资源包装成一个模型,便于使用.例如,在debian里面管理一个apache虚拟机非常简单,把一个虚拟主机的配置文件放到/etc/sites-available/里面,然后做一个符号链接到/etc/sites-enabled目录. 你可以为你每个虚拟主机复制同样的配置代码.

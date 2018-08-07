@@ -1,0 +1,78 @@
+
+
+一、主文件配置
+
+配置用户：#user  nobody;
+配置线程数：worker_processes  1;
+错误日志：相对于nginx根目录的位置
+	#error_log  logs/error.log;
+	#error_log  logs/error.log  notice;
+	#error_log  logs/error.log  info;
+
+进程号文件位置：#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+http {
+
+}
+
+
+二、http配置
+
+http {
+    #mime.types文件中定义了各种输出文件格式的配置方式
+    include       mime.types;
+
+    #响应体格式default_type：可以灵活配置在server和location中
+    #default_type  application/octet-stream;
+    #default_type  application/json;
+    default_type   text/html;
+
+    #log_format 配置日志输出内容格式（可配置多种，不同日志使用不同格式）  access_log  配置日志输出位置，并指定使用的格式
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+
+
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #连接超时配置
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip压缩数据开启
+    #gzip  on;
+
+
+
+    #使用include分解server配置
+    include lua.conf;
+
+}
+
+
+
+
+
+
+location / {
+	root /Users/lyt1987/Github/nginx/html/
+	index index.html
+}
+
+
+server {
+        listen 88;
+        server_name localhost;
+        location / {
+            echo "name:$arg_name";
+        }
+}

@@ -1,0 +1,377 @@
+
+一、 客户命令：
+1. smbclient
+smbclient 命令用来存取远程 samba 服务器上的资源，它的界面到目前为止还是文本方式的，命令形式和 ftp 类似。
+smbclient 命令的语法是：
+smbclient <servicename> [password] [options]
+其中 servicename 是要连接的资源名称，资源名称的形式如下： //server/service
+其中 server 是远程服务器的 netbios 名字，对于 windows 服务器来说，就是它们出现在“网络邻居”中的名字。
+service 是各 server 所提供的资源的名字，同样是出现在“网络邻居”中的名字。
+password 是存取该资源所需的口令。
+如果既没有给出 password 参数，也没有使用 -N 选项。smbclient 会提示用户输入口令；如果目标资源并不需要口令，用户可直接回车跳过。
+-N 选项禁止 smbclient 提示用户输入口令，当连接不需要口令的资源时可以使用该选项。
+使用 -L 选项将列出远程服务器提供的所有资源。如果不知道服务器的 netbios 名，可以使用 -I 选项来指定它的 IP 地址，如：
+smbclient //unknown/service -I 192.168.1.2
+使用了 -I 选项之后，servicename 中的 netbios 名部分将被忽略。
+smbclient 命令运行之后，会出现如下提示符（和 DOS 提示符比较相像）：
+smb:\>
+用户在该提示符下输入各种命令。其命令和 ftp 相似，如 cd、lcd、get、mget、put、mput 等，其他比较常用的命令如下所示：
+1. [comand]
+显示有关command的帮助信息，若无command参数，则列出所有可能的命令。
+2. [shell command]
+在本地执行shell命令，如果没有给出shell command，则在本地运行一个shell。用户可以在该shell中执行各种命令，用exit回到smbclient。
+3. lowercase
+关闭或者打开文件名小写转换。如果打开，smbclient 会自动将 get 和 mget 命令取回的文件以相应的小写文件名命名。
+4. print <filename>
+在远程服务器上打印文件 filename。
+5. queue
+显示打印队列。
+6. quit 或者 exit 
+退出 smbclient。
+
+
+smbclient 的 mget 和 mput 命令可以使用通配符“*”和“?”，它们还可以工作在递归模式下。当工作在递归模式时，它们将处理当前目录以及所有由 mask 命令指定的子目录。
+用 recurse 命令打开或关闭递归模式。
+mask 命令指定一个含通配符的模式，当 mget 和 mput 工作在递归模式时，它们将只处理能匹配该模式的目录；如果不工作在递归模式，则忽略该模式。
+mask 命令的使用方法是：
+mask <expr>
+expr 是含通配符的模式。smbclient 还可以发送 WinPopup 消息，方法是：
+smbclient -M NetBIOS_name
+NetBIOS_name 是目标计算机的 NetBIOS 名。连接建立后，键入要发送的消息，按Ctrl-d 组合键结束。
+Smbclient 的工作模式和 ftp 还有一点相像的地方：当我们要处理绝大多数的文件（如执行一个在远端的文件）时必须先下载到本地系统上，然后才能执行相应的操作。
+这种操作方法自有它的好处，如比较节省网络资源，但也会造成文件的重复存取。
+smbclient 命令则可以直接利用远端的文件资源而不用先下载。
+可用的 smbclient 开关：
+sharename : 完整的共享名路径。如 \\server\share。
+-U username : 登录的用户名。
+password : 登录用口令。
+-L ： 列出所有已知的服务器和共享资源。
+连接到NT服务器 comet 以访问共享目录dir1 ,登录的用户名与口令之间用%分开：
+smbclient \\\\comet\\dir1 -U gugong%password
+smbclient -L comet
+开关 -L 查询服务器 comet 中的可用共享资源。
+它还会查询系统（comet）的浏览器，以发现该服务器（comet）已经在网上发现的其它共享资源。
+2. smbmount
+要使用 smbclient 安装 samba 文件系统，linux 内核必须包含 smbfs 的支持模块。在 Turbolinux 里默认内核包含了该模块。除非你自己重新编译了新内核才需要加以注意。smbmount 命令的语法是：
+smbmunt <servicename> <mount-point>
+其中 servicename 是资源名，mount-point 是安装点。
+smbmount 常用的选项有：
+1） -C smbmount 默认将口令转换成大写，使用 -C 选项禁止这种转换。
+2） -N 当连接不需要口令的资源时应该使用本选项。
+3） -P password 指定口令。如果没有指定 -N 或 -P 选项，smbmount 会提示用户输入口令。
+4） -s server-name
+smbmount 的行为和 smbclient 不同，它使用服务器的 Internet 主机名（即 hostname 命令给出的主机名）来获得其 IP 地址，而不是使用服务器的 NetBIOS 名。如果服务器使用不同的 NetBIOS 和 Internet名，则应该用 -s 选项指定其 NetBIOS 名，而在 servicename 中使用Internet 主机名。
+5） -c command-string 执行指定的相对独立的命令。
+6） -I hostname/IP 
+本选项恰好和 -s 选项相反，它允许在 servicename 中使用服务器的NetBIOS 名，而在 -I 之后指定服务器的 Internet 主机名或IP地址。
+-I 和 -s 的效果是一样的，smbmount 总是利用 Internet 主机名查找主机。，然后用服务器的 NetBIOS 名登录（有些服务器要求客户机给出自己的 NetBIOS 名）。
+7） -U username
+如果用户在服务器上的帐号和本地机上的不同，则应该使用该选项指定在服务器上的帐号。
+****** 如果要装载一个 SMB 的文件系统，建议使用“-c”选项来使 smbmount
+****** 执行 mount 命令。例如：
+****** smbmount "\\\\server\\tmp" -c 'mount /mnt -u 123 -g 456'
+这样就可以把名字叫做“server”的计算机的共享资源“tmp”的内容装载到本地的 /mnt 目录下，并给这个目录以及其下所有的文件分配一个本地的 uid（UserID）123 和 gid（Group ID）456 。这样正确执行了之后（指用户输入了正确的路径和密码），读者就可以在 /mnt 目录下看到本来使远端计算机上的内容，并且可以与操作本地的文件一样进行各种被允许的操作，这样非常节省本地的系统资源。
+卸载一个已经装载的 SMB 文件系统用 smbumount 命令。smbumount 命令的格式非常简单，只要指定要卸载的装载点就可以了。
+可用的 smbmount 开关：
+sharename : 以 //server/share 格式输入的共享名。
+mount point : 希望附着共享文件的目录。
+-I server : 包含共享资源的服务器。
+-U username : 登录时使用的用户名。(和 -n 类似,但比 -n 更管用!)
+-P password : 登录时使用的口令。
+-N : 没有口令的登录名，不用提示输入口令。
+-h : 列出可用开关的简单帮助信息。
+想用登录名“gugong”和口令“123”来安装共享文件“\\comet\dir1”到目录“/mnt/comet”
+smbmount \\\\comet\\dir1 /mnt/comet -I comet -U gugong -P 123
+3. smbumount
+要卸掉上一例子中创建的共享安装，可以输入：
+smbumount /mnt/comet
+
+
+二、 服务
+除了客户服务功能，SAMBA 还允许 UNIX 系统发布文件和打印共享。
+有三个文件提供这种连接性：
+nmbd （/usr/sbin/nmbd）
+smbd （/usr/sbin/smbd）
+smb.conf （/etc/smb.conf）
+1. nmbd
+nmbd 实用工具控制系统的 NetBIOS 通信。
+它作为后台程序运行，并且负责监听用于名字服务请求的 NetBIOS 端口。
+当接收了名字服务请求时， nmbd 用系统的 IP 地址作出回答。
+负责保持浏览器能通报在一个已知的工作组中哪个成员在编写 NetBIOS 名字目录。
+可用的 nmbd 开关：
+-D 告诉 nmbd 作为后台进程运行。
+-H lmhost_file 路径和 NetBIOS 主机名字文件的路径名字。
+-d number 告诉 nmbd 运行于由 number 指定的调试级。0～5有效。
+-l log_file_base 指定日志文件的库名。
+-n NetBIOS_name 在主机名不宜用的条件下，指定该系统的 NetBIOS 名字。
+-p port_number 改变缺省的监听端口号。
+-s config_file 若 smb.conf 没有在 /etc 目录下，则指定其位置。
+2. smbd 
+smbd 实用工具是负责所有文件和打印共享服务的后台进程。
+一旦客户通过 nmbd 寻址到一个 SAMBA 服务器，就由 smbd 负责客户的文件和打印请求。
+可用的 smbd 开关：
+-D 告诉 smbd 作为后台进程运行。
+-O socket_option 调节通信参数。
+-a 重写日志文件，缺省是添加。
+-d number 告诉 smbd 运行于由 number 指定的调试级。0～5有效。
+-l log_file_base 指定日志文件的库名。
+-p port_number 改变缺省的监听端口号。
+-s config_file 若 smb.conf 没有在 /etc 目录下，则指定其位置。
+3. smb.conf
+smb.conf 在初始化期间被用于配置 nmbd 和 smbd.
+/etc/rc.d/init.d/smb stop
+/etc/rc.d/init.d/smb start
+[global]
+Global Setting 与配置特定的共享相对,全局设置用于配置整体 SAMBA 环境。全局设置列出在段标题[global]下。
+该节中的参数适用于整个 Samba 服务器,或者是其他节的默认值。
+guest account=username 浏览共享资源时，允许指定可用的有效客户帐户。该帐户必须是有效的帐户名，并且只能拥有最小限度的系统权利。通常为ftp 的这种设置将允许访问共享资源。
+workgroup=Workgroup 允许指定该系统应该加入的工作组名。Workgroup 与域很相似，因为它们都代表了一个 NetBIOS 系统的套件合。Workgroup 与域不同的地方在于，没有套件中的帐户管理——所有的登录名和口令都由每个单独的系统管理。
+
+Home Directories
+当用户得到 SAMBA 的认证后，有一个选项允许用户访问作为共享 SAMBA 主目录。目录的位置可以从 /etc/smbpasswd 文件只查询到，该文件被用于在全系统范围内定义登录名和口令。主目录设置与 smb.conf 被一起列在段标题[homes]下。（？）
+
+Other Shares 你可以把文件系统的任何部分设置为共享。创建共享时，以附上了方括号的共享名作为共享部分的开始，例如 [public]。在共享名之后，每行用列出的一个命令，你指定任何你想应用于该共享部分的参数。
+Share Setting 以下是一个可用于处理共享资源的某些命令的简短列表：
+
+browseable=yes/no 它指出共享对于正在浏览的客户是否可见，或者共享通过使用UNC（通用命名约定）才能访问。例如要访问共享名 public ，而其浏览功能已经被关闭（no），则必须通过输入 UNC\\server\pubic 来访问它。它不会出现在浏览列表中（即在浏览器中不可见）。
+
+creat mode=number 在SAMBA 共享条件下创建文件时，允许分配给这些文件以缺省许可这个字段的数值使用和 chmod 命令一样的数字格式。和 create mask 相反。
+only guest=yes 指定用户对该共享资源的访问只能是客户级的。如果文件许可被正确地设置，则其作用是用户只能看到目录下的文件，但不能进行读写操作。 path=share directory path 定义了一个目录，当用户要访问一个已发布了的共享名字时，就可以访问上述被定义的目录。例如，如果创建了一个名为 public 的共享资源，并且指定 path 等于 /usr/expense/template，则对共享的 public 的访问将直接进入 template 目录，系统将不允许进入该目录的上一级目录结构，而只能进入下一级。
+public= yes/no 定义一个共享是否对公共访问开放。当设置为 yes 时，在系统上没有帐户的用户将基于所定义的客户帐户的属性来接收访问。
+
+valid users=username 指定只有具有特定的登录名的用户才能访问共享。可以指定用空格分开的多个登录名。（ all 表示所有）
+writable=yes/no 定义了一个共享能否使用读/写许可来访问，或一个文件系统能否替代地被认为只读。定义用户接受到访问级的是这个设定和分配给用户 UNIX 帐户一些许可的组合，不管其中哪一个较低。例如，如果用户访问标记为可写的共享，但其 UNIX 帐户有只读许可，那么该用户只能得到该共享的只读访问权。
+[home]
+如果配置文件中包含该节,那么服务器就可以动态地为用户提供连接到其私人目录的共享.
+如果用户要求连接一个配置文件中不存在的共享,服务器就假设用户提供的共享名是一个帐号,然后在本地的密码文件中查找该帐号.如果该帐号存在,并且用户提供了正确的口令,那么服务器就拷贝[在home]节来建立一个新的共享,同时作出如下修改:
+1> 将共享名改为帐号名.
+2> 如果在[home]节中没有指定要共享的目录,那么就使用该帐号的私人目录.
+3> 如果要在[home]节中指定 path 参数,那么宏 %S 是非常有用的,它代表当前共享的名称.例如: path=/data/%S
+这种方法允许为 PC 用户和 Linux 用户提供不同的私人目录.
+由此可见,使用 [home] 节可以简单而快速地允许大量用户存取各自的私人目录.如果用户请求的共享名就是 homes ,服务器同样会为其动态地建立共享,唯一的不同是新共享的名称仍然是 homes.
+[printers]
+该节有点类似于 [homes] 节,只不过是针对打印机的.如果配置文件中包含 [homes] ,
+用户就可以连接到本地 printcap 文件中定义的任何一台打印机.如果用户请求连接一个配置文件中不存在的共享,若 [homes] 节存在,那么服务器会像上节所述那样处理该请求;否则服务器将请求连接的共享名视为一个打印机名,并且在 printcap 文件中查找是否存在可以匹配的打印机,如果存在,就拷贝 [printers] 节以建立新的共享.
+注意: [printers] 节必须是可打印的,否则服务器将拒绝装载配置文件,例如:
+[printers]
+path = /home/samba/print/public
+writeable = no
+guest ok = yes
+printable = yes
+-----------------------------------------------------------------
+宏 描 述
+-----------------------------------------------------------------
+%S  当前服务或共享的名称
+%P  当前服务或共享的目录 
+%u  当前服务或共享使用的用户名
+%g  %u 所在组的名称
+%U  当前会话使用的用户名(登录名?!),即客户机所期望的用户名,可以和客户机真正得到的用户名不同.
+%G  %U 所在组的名称
+%H  %u 的私人目录(主目录)
+%v  Samba 的版本号
+%h  Samba 服务器的 NetBIOS 名
+%m  客户机的 NetBIOS 主机名(Win9x的机器名)
+%L  服务器的 NetBIOS 名
+%N  服务器的（?????）名
+%M  客户机的 Internet 主机名
+%I  客户机的 IP 地址
+%T  当前的日期和时间
+%d  当前服务器进程 ID
+%a  远程客户机的体系结构,目前只能识别WfWg,NT,和 Win 95、98,并且不是100%可靠,其他系统被标示为 UNKNOWN
+-----------------------------------------------------------------
+
+
+
+
+三、 用户身份验证:
+帐号对于 Samba 来说非常重要,用户必须拥有合法的帐号才能连接非 guest 性质的Samba 服务,并且该帐号决定了他享有的权限.即使一个共享是 guest 共享, Samba　也需要一个特定的帐号来提供服务.
+用户有许多种连接 Sabma 服务的方法.服务器遵循下面的步骤决定是否允许一个连接,如果所有的步骤都失败了,就拒绝连接;如果其中有一步成功了,就不再执行其后的步骤.
+1> 如果请求连接的共享包含 " guest only = yes " 参数,那么用户就以" guest account = " 参数制定的身份连接,而不考虑其提供的密码.
+2> 如果客户机提供了一个帐号/密码对,并且该帐号/密码对通过了 Linux 系统的身份验证,那么用户就以该帐号连接.注意这里包括以 "\\server\service\%username" 形式提供的帐号.
+3> 检查客户机的 NetBIOS 名称(亦即 Windows 在网络中使用的计算机名)以及其他曾使用过的帐号,如果有一个可以和提供的密码匹配,那么就允许连接.
+4> 如果客户机已经通过了帐号\密码验证,并且向服务器发送了验证标志( validation token),那么用户就以该帐号连接.
+5> 如果请求的共享包含 " user = " 参数,同时客户机提供了一个密码,并且该密码可以和帐号列表中的一个帐号匹配,那么用户就以该帐号连接.如果" user = " 参数中的某个帐号以 " @ " 开头,那么它会被视为一个用户组名,该组中所有的用户帐号都被包含在 " user = " 列表中.
+
+
+
+四、 Samba 的安全级
+
+Samba 有四种安全级,由参数 security 定义,该参数只能出现在 [global] 中,是一个全局参数.
+这四种安全级是 share,user,server,domain ,其中后三种属于安全模式( Security　Mode ),这里重点讨论 share 和 user 安全级.
+1) security = share
+
+当客户机连接到一个 share 安全级的服务器时,它在连接共享之前,不需要首先提供正确的帐号和密码就可以登录到服务器(虽然 Windows 95/98/NT 等客户机在连接share 级服务器时会发出一个登录请求,该请求只包含帐号).相反的,客户机只有在连接特定的共享时才需提供密码.
+
+注意: 服务器总是使用有效的 Linux 帐号来提供服务,即使是工作在 share 安全级.
+
+因为客户机并不向 share 级的服务器提供帐号,所以服务器使用下面的技术来确定使用什么帐号提供服务:
+1> 如果该共享包含 " guest only =yes " 参数,则使用 " guest account= "　参数指定的 guest 帐号,忽略下面的步骤.
+2> 如果连接请求同时提供一个帐号,那么该帐号被认为是潜在的帐号.
+3> 如果客户机在此之前发出过登录请求,那么该请求包含的帐号也被视为潜在的帐号.
+4> 客户机请求连接的共享名被视为潜在帐号.
+5> 客户机的 NetBIOS 名被视为潜在帐号.
+6> " user = " 列表中的帐号被视为潜在帐号.
+如果 " guest only " 参数为假,则检查所有的潜在帐号,使用第一个和密码匹配的帐号.如果 guest only " 参数为真,或者该共享允许使用 " guest account " ,则使用之,否则拒绝连接.可见, share 服务器决定帐号的过程是很复杂的.
+2) security = user
+这是 Samba 默认使用的安全级.使用 user 安全级时,服务器要求客户机首先以正确的帐号和密码登录(可以对帐号进行映射). " user = " 和 "guest only " 等可能改变用户身份的参数只有在用户成功登录之后才起作用.
+注意: 客户机请求连接的共享名只有在登录之后才传递给服务器,因此没有通过身份验证的用户无法访问任何共享(包括 guest 共享).可以使用 "map to guest " 选项将未知用户映射为 guest 用户,以允许访问 guest 共享.
+3) security = server
+在 server 安全级下, Samba 使用远程 SMB 服务器(如 Windows NT 服务器)进行身份验证,如果失败则自动切换到 user 安全级.对于客户机来说, server 安全级和 user　安全级没有什么不同.
+4) security = domain
+要是用本模式,必须使用 smbpasswd 程序将 Samba 服务器加到一个 Windows NT 域中,并且使用"加密口令(Encrypted Passwords)".在本安全级下, Samba 借助 Windows NT　主控服务器( Windows NT Primary )或者是后备域控制器(Backup Domain Controller)　进行身份验证,采取 Windows NT 服务器相同的行为.
+
+*****************************************************************
+share 和 user 安全级的比较
+share 安全级面向资源,用户每连接一个非 guest 共享都需要提供一个密码.如果主要提供 guest 共享,就应该使用 share 安全级.
+user 安全级面向用户,用户登录后,就无需再为单独的共享提供密码,比较方便.如果用户再 PC 上的帐号和在 Linux 上的帐号相同,那么使用 user 安全级是非常合适的.
+*****************************************************************
+
+
+
+五、 常用参数
+1) 全局参数:
+1>NetBIOS name
+设定Samba服务器的NetBIOS名,客户机用这个名字来识别它,默认值是主机DNS名的第一部分.
+2>workgroup
+设定Samba服务器所在的工作组.
+3>server string
+设定服务器的描述信息,其值可以任意设定.
+4>security
+设定服务器的安全级,有效值是share,user(默认),server,doamin.
+5>announce as
+通常,Samba服务器会对外宣称自己是一个Windows NT服务器,可以用该选项来更改这个设定.其有效值是"NT","Win95"或者"WfW",分别代表Windows NT ,Windows 95　和 Windwos for Workgroups.
+6>log file
+指定Samba服务器的日志文件.
+7>max log size
+设定日志文件的最大长度,其值是一个整数,单位是千字节.如果日志文件超出了规定的长度,Samba会为文件名加上后缀.old,然后再建立一个新文件.如果该值是0,则没有限制,默认值是 max log size = 5000.
+8>map to guest
+guest用户映射，有效值是"Never"、"Bad User"、"Bad Password"。
+9>username map
+用户映射，其值是一个文件名。
+10>load printers
+布尔值，决定是否装载printcap文件中所有的打印机以供浏览。默认值是 load 
+printers = yes。
+2） 其他参数
+有些参数有“同义词”，这些同义词放在其后的括号中。 
+1>path(或directory)
+设定要共享的目录。路径中出现的%u会被替换成为客户机使用的Linux帐号，%m会被替换为客户机的NetBIOS名。
+2>comment
+注释信息。
+3>guest ok(或public)
+如果该参数为yes，则对应的共享允许以guest方式访问。默认值是no。
+4>guest account
+为guest访问方式指定Linux帐号，Samba使用该帐号提供服务，它的权限就是guest用户享有的权限。
+5>guest only
+布尔值，决定该共享是否允许以guest方式访问。如果已经指定了　guest ok　或　public　参数，则本参数不起作用。默认值是 no。
+6>browsable(browseable)
+布尔值，决定该共享是不是可浏览的。如果其值为yes，则相应的共享会出现在“网络邻居”中。
+7>read only
+布尔值，决定该共享是否以只读方式共享。
+8>writeable(或write ok)
+布尔值，决定是否允许用户修改相应的共享。
+9>user(或username users)
+为共享指定潜在的帐号列表。
+10>invalid users
+禁止访问该共享的用户列表。
+11>valid users
+允许访问该共享的用户列表。
+12>writelist
+具有写权限的用户列表。在该列表中的用户可以修改相应的共享，即使该共享的 read only 选项被设为真。
+13>readlist
+具有只读权限的用户列表。无论该共享是否设置了read only选项，该列表中的用户都只享有只读权限。
+14>admin users
+超级用户列表。该列表中的用户对相应的共享拥有一切权限。
+15>force user
+指定一个Linux帐号，所有用户都使用该帐号访问相应的共享。这有助于在用户间共享文件。该帐号只有在连接之后才起作用（！），因此客户机仍然需要提供正确的帐号和口令以连接共享。一旦连接确立，客户机将以该帐号进行任何文件操作，而不管它连接时使用的帐号是什么。
+16>force group(或group)
+同force user类似，只不过强制的是用户组。
+17>available
+该选项允许用户关闭一个共享，其默认值是yes。 
+18>allow host(或hosts allow)
+允许访问相应共享的主机列表，主机间用逗号、空格或制表符分隔。可以使用IP地址和主机名来标识主机。
+19>deny hosts(或hosts deny)
+禁止访问相应共享的主机列表。
+20>preexec
+指定连接建立之后执行的命令，例如：
+preexec = echo \"%u connected to %S from %m(%l)\" >> /tmp/log
+会在连接建立时向日志文件中追加一条记录。
+21>postexec
+指定连接断开之后执行的命令。
+22>root preexec
+和preexec类似，但是这里指定的命令是以root权限运行的。这通常用来安装一个文件系统，如CDROM等。
+23>root postexec
+和postexec类似，但这里指定的命令是以root权限运行的。可以用来卸载文件系统。
+
+
+
+六、 使用用户映射
+Samba提供的用户映射机制包括“guest用户映射”和“用户映射”两种：
+1) guest用户映射
+guest用户映射仅适用于安全模式(user,server和domain安全级).如果一个用户没有通过身份验证,就可以将其映射为guest用户,从而允许他访问guest共享.这里 guest 用户由"guest account="参数指定.
+guest用户映射由全局参数"map to guest"控制,它只能放在[global]节中,可以是如下三个值:
+1>map to guest = Never
+不进行映射,拒绝非法用户访问任何资源.这是默认行为.
+2>map to guest = Bad User
+如果用户使用一个不存在的帐号登录,就将它映射为guest用户;如果提供的帐号正确而口令错误,则禁止连接.
+3>map to guest = Bad Password
+将使用错误口令登录的用户映射为guest用户.这样的设置会产生一个问题,即如果用户不小心键入了错误的口令,服务器会"偷偷地"将他映射为guest用户,而不 出任何错误信息,这样用户会在不知情的情况下受到种种访问限制.
+2) 用户映射
+全局参数"username map"用来控制用户映射,它允许管理员指定一个映射文件,该文件包含了在客户机和服务器间进行用户映射的信息,如:
+username map = /usr/local/samba/lib/users.map 用户映射经常用来在 Windows 和 Linux 主机之间进行映射,因为用户可能在两个系
+统上拥有不同的帐号;另一个用途是将几个用户映射为一个用户,以使他们能更方便地共享文件.
+下面是一个映射文件的例子:
+# Map Windows admain to Linux root
+root = admin administrator
+; Map all the members of group system(用户组) to sys
+sys = @system
+等号左边的是单独的 Linux 帐号,等号右边的是要映射的帐号列表.服务器逐行分析映射文件,如果提供的帐号和某行右侧列表中的帐号匹配,就把它替换为等号左边的帐号.
+如果该行前面没有"!"符号,则继续分析下面的行,否则不继续分析.
+"@"符号表示其后跟的是一个用户组,该组中所有的用户都会被映射为相应的 Linux帐号.
+符号"*"是通配符,它可以匹配任何用户帐号.
+以"#"或";"开头的行是注释行.
+如果要映射包含空格的帐号(Windows帐号中允许有空格),可以用引号将其括起来,如:
+# Map a windows account to LInux account
+tridge = "Andrew Tridgell"
+下面的例子将帐号fred和mary映射为帐号sys,将其他帐号映射为guets帐号.
+!sys = mary fred
+guest = *
+注意: 服务器将对出现在任何位置上的帐号进行映射.例如,如果连接到 \\server\fred，并且fred被映射为mary,那么实际连接的是\\server\mary,用户应该提供mary的口令,而不是fred的口令.Samba默认不提供用户映射.
+
+
+
+七. 使用加密口令
+从 Windows NT 4.0 Service Pack 3 开始,Microsoft决定不再在网络中传递未加密的口令,而仅传递加密口令 (Encripted Password),新版本的Windwos 95 以及Windows98也采用这一约定.这些客户机在和不支持加密口令并且以 user 安全级运行的 Samba 服务器通信时,会遇到很大的困难.为了能顺利地和这些客户机通信,Samba 也加入了对加密口令的支持.
+1) Samba 口令文件
+为了使用加密口令,Samba 需要一份自己的口令文件,并且该文件应该和Linux/etc/passwd 文件保持同步,可以使用mksmbpasswd.sh脚本来制作这份文件:
+cat /etc/passwd | mksmbpasswd.sh > /etc/smbpasswd
+其中smbpasswd就是需要的口令文件,其权限应该设为0600,拥有者是root.samba口令
+文件中的记录和 /etc/smbpasswd 文件的记录一一对应.每行的格式如下:
+username:uid:xxx...xxx:xxx...xxx:Logname:user home dir:user shell
+它的格式和 /etc/passwd 文件基本相同,只有密码字段不同.密码字段由两个部分组成, 每部分都是32个"x".这两部分就是Samba使用的加密口令,前一部分用于和LANManager通信, 后一部分用于和 Windows NT通信. Linux 的口令是无法破译的,因此刚建立的口令文件中所有的用户都没有正确的口令,用32个"x"来表示.root用户可以使用 smbpasswd 命令为每个用户设定一个初始口令,这样用户就可以使用smbpasswd命令更改自己的 samba口令了. smbpasswd的使用方法和 passwd 命令类似. root 用户也可以将口令设置为空,方法是手工修改口令文件,将前11个"x"改为 
+"NO PASSWORD":
+NO PASSWORDxxx...xxx:xxx...xxx
+这样当smbpasswd命令询问用户旧密码时,就可以直接按回车键跳过.
+2) 指定 samba 使用加密口令
+要使 samba 使用加密口令，必须在 /etc/ssmb.conf 文件中的 [global]节中加入以下参数：
+encrypt passwords = yes
+smb passwd file = /etc/smbpasswd
+其中第一行通知 samba 使用加密口令。第二行给出口令文件的路径。如果允许用户使用空口令，则应该使用如下参数：
+null passwords = yes
+但这会带来安全问题。
+3) smbpasswd 命令
+smbpasswd 命令除了可以修改用户口令之外，还可以帮助 root 用户添加和删除用户。smbpasswd 命令如果被 root 用户运行，那么它将直接修改口令文件，而不需要借助smbd；如果被普通用户运行，smbpasswd 就以客户机/服务器模式工作，它连接到smbd 以完成必要的修改。客户机/服务器模式使得 smbpasswd 不必成为一个 SUID 程序，避免产生安全漏洞。
+smbpasswd命令常用选项有：
+1> -a 增加一个用户帐号，该帐号必须出现在 /etc/passwd 文件中，亦即是一个合法的 Linux 帐号，只有 root 可以使用本选项。
+2> -d 禁止一个用户帐号，并不将其删除，仅供 root 使用。
+3> -e 恢复一个被禁止的用户帐号，仅供 root 使用。
+4> -n 将帐号的口令设为空，即将口令字段的前11个字符改为“NO PASSWORD”。
+仅供 root 使用。
+5> -r remote_machine_name 本选项允许用户指定远程主机，如果没有该选项，那么smbpasswd 默认修改本地 Samba 服务器上的口令。remote-machine-name 是 远程主机的 NetBIOS 名。
+6> -U username 本选项只能和 -r 选项连用。当修改远程主机上的口令，用户可以用该选项指定欲修改的帐号。这允许在不同系统中使用不同帐号的用户修改自己的口令。
+7> -s 该选项使 smbpasswd 以 silent （沉默）模式工作，在此模式下，smbpasswd 将从标准输入读取数据，而不是默认的 /dev/tty，这样可以帮助用户编写调用 smbpasswd 的脚本。
+4) 怎样才能不使用加密口令
+上面曾提到，使用加密口令主要是为了能顺利地和 Windows NT 等客户机进行通信。为了达到这个目的，也可以修改 Windows NT 的注册表，以强制其使用不加密的口令（Plain Password）。
+Linux 的 /usr/share/doc/samba-3.0.x/registry/ 目录中有两个注册表文件，它们可以用来自动修改 Windows NT 4 和 Windows 95 的注册表，用户只需在 Windows 系统中双击其图标即可。这两个文件是：NT4_PlainPassword.reg 和 Win95_plainPassword.reg。
+ 
+ 
+ 

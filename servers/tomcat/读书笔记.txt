@@ -1,0 +1,114 @@
+查看tomcat进程
+1. jps | grep Bootstrap
+2. ps -au lyt1987 | grep catalina.startup.Bootstrap
+杀进程
+1. kill -TERM pid
+2. kill -KILL pid
+
+
+
+jvm选项（当最大内存相对于服务器内存不太大时，最好设置启动内存=最大内存，可减少tomcat重新分配内存时占用的时间）
+-Xms256M :设置jvm启动时堆栈内存的大小
+-Xmx512M :设置jvm可扩展的最大堆栈内存
+
+
+将密码进行加密
+cd $CATALINA_HOME
+bin/digest.sh -a MD5 tomcat
+
+server.xml 中配置<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase" digest=“MD5”/>
+
+
+
+权限多种管理方式，单一签入，会话管理
+
+
+访问JNDI 与JDBC 的配置，web.xml
+<resourece-ref>
+	<description>
+	</description>
+	<res-ref-name>jdbc/JabaDotDB</res-ref-name>
+	<res-type>javax.sql.DataSource</res-type>
+	<res-auth>Container</res-auth>
+</resource-ref>
+
+Context ctx = new InitialContext();
+DataSource ds = (DataSource) ctx.lookup(“java:comp/env/jdbc/JabaDotDB”);
+Connection conn = ds.getConnection();
+… …
+conn.close();
+
+server.xml 中 Web应用程序的Context元素中配置jdbc resource
+<Resource name=“jdbc/JabaDotDB”
+	type=“javax.sql.DataSource”
+	auth=“Container”
+	user=“ian”
+	password=“top_secret_stuff”
+	driverClassName=“org.postgrepsql.Driver”
+	url=“jdbc:postgrepsql:jabadot”
+	maxActive=“8”
+	maxIdle=“4”/>
+
+<Context>元素中可配置reloadable属性实现自动加载，自动加载会令tomcat周期性的检查servlet，浪费资源，在正式环境应该禁止
+
+访问用户网站的虚拟路径，~表示用户目录
+http://path/~username
+
+设置web文件目录位置
+
+在Host元素中配置UserConfigListener
+<Listener className=“org.apache.catalina.startup.UserConfig”
+	directoryName=“public_html”——新目录文件名称，默认位置为/home/users/username或/users/username/
+	homeBase=“/home”——修改默认路径为/home/username或/home/username/
+	userClass=“org.apache.catalina.startup.PasswdUserDatabase”/>
+
+
+<Listener className=“org.apache.catalina.startup.UserConfig”
+	directoryName=“public_html”——新目录文件名称，默认位置为/home/users/username或/users/username/
+	homeBase=“/home”——修改默认路径为/home/username或/home/username/ 修改的目录也可以是各用户独立的目录，但所有用户都应拥有相同的目录
+	userClass=“org.apache.catalina.startup.HomesUserDatabase”/>
+
+
+
+cgi???
+
+
+
+
+
+
+
+
+
+
+
+管理员用户设置
+
+You are not authorized to view this page.
+If you have already configured the Manager application to allow access and you have used your browsers back button, used a saved book-mark or similar then you may have triggered the cross-site request forgery (CSRF) protection that has been enabled for the HTML interface of the Manager application. You will need to reset this protection by returning to the main Manager page. Once you return to this page, you will be able to continue using the Manager appliction's HTML interface normally. If you continue to see this access denied message, check that you have the necessary permissions to access this application.
+If you have not changed any configuration files, please examine the file conf/tomcat-users.xml in your installation. That file must contain the credentials to let you use this webapp.
+For example, to add the manager-gui role to a user named tomcat with a password of s3cret, add the following to the config file listed above.
+<role rolename="manager-gui"/>
+<user username="tomcat" password="s3cret" roles="manager-gui"/>
+Note that for Tomcat 7 onwards, the roles required to use the manager application were changed from the single manager role to the following four roles. You will need to assign the role(s) required for the functionality you wish to access.
+	•	manager-gui - allows access to the HTML GUI and the status pages
+	•	manager-script - allows access to the text interface and the status pages
+	•	manager-jmx - allows access to the JMX proxy and the status pages
+	•	manager-status - allows access to the status pages only
+The HTML interface is protected against CSRF but the text and JMX interfaces are not. To maintain the CSRF protection:
+	•	Users with the manager-gui role should not be granted either the manager-script or manager-jmx roles.
+	•	If the text or jmx interfaces are accessed through a browser (e.g. for testing since these interfaces are intended for tools not humans) then the browser must be closed afterwards to terminate the session.
+For more information - please see the Manager App HOW-TO.
+If you have not changed any configuration files, please examine the file conf/tomcat-users.xml in your installation. That file must contain the credentials to let you use this webapp.
+For example, to add the admin-gui role to a user named tomcat with a password of s3cret, add the following to the config file listed above.
+<role rolename="admin-gui"/>
+<user username="tomcat" password="s3cret" roles="admin-gui"/>
+Note that for Tomcat 7 onwards, the roles required to use the host manager application were changed from the single admin role to the following two roles. You will need to assign the role(s) required for the functionality you wish to access.
+	•	admin-gui - allows access to the HTML GUI
+	•	admin-script - allows access to the text interface
+The HTML interface is protected against CSRF but the text interface is not. To maintain the CSRF protection:
+	•	Users with the admin-gui role should not be granted the admin-script role.
+	•	If the text interface is accessed through a browser (e.g. for testing since this interface is intended for tools not humans) then the browser must be closed afterwards to terminate the session.
+
+

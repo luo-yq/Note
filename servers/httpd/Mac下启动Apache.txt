@@ -1,0 +1,132 @@
+Mac下启动Apache.txt
+ 
+
+1.启动
+
+sudo apachectl -k start
+
+2.重新启动
+
+sudo apachectl -k restart
+ 
+ 
+//---------------------------------------------------------------------
+设置Apache容器默认目录（不会命令行的朋友可以参考下面的常用命令）
+ 
+1.Apache配置文件所在目录
+ 
+cd /etc/apache2/
+ 
+2.修改Apache配置文件
+ 
+sudo vim httpd.conf
+ 
+3.查找 DocumentRoot 字符串。“/”为查找定位的意思
+ 
+/DocumentRoot
+ 
+4. 将上述查找到的木木修改为自己想要的目录即可。
+ 
+5.重新启动Apache。
+ 
+//-----------------------------------------------------------------------
+ 
+常用命令：
+ 
+复制代码
+vim中有两种模式
+命令模式，用于输入命令(注意输入法要在英文状态)
+    shift+V        可以选中一行
+    y                    复制一行
+    p                    在当前行下方粘贴复制的内容
+    d$                删除到行尾
+    x                    删除一个字符
+    :wq                保存退出
+    :q!                不保存退出
+    i                    进入编辑模式
+
+编辑模式：用于编辑按ESC可以切换回命令模式
+复制代码
+ 
+
+//----------------------------------------------------------------
+
+ 
+
+若要支持PHP，执行如下：
+
+1.
+cd /etc/apache2
+sudo vim httpd.conf
+/php
+#LoadModule php5_module ...
+
+2.按字母x，删除#，然后按ESC，输入:wq退出编辑器
+ 
+cd /etc/
+ 
+3.复制一份php.ini
+ 
+sudo cp php.ini.default php.ini
+ 
+4.重新启动Apache服务器
+ 
+命令回顾说明：
+
+cd /etc/apache2/        　  进入apache的配置文件目录
+sudo cp file1 file2        将file1复制到file2
+sudo vim httpd.conf        使用vim打开httpd.conf文件
+sudo apachectl -k start    启动apache
+sudo apachectl -k restart  重新启动apache    
+
+
+
+
+
+
+在Mac OS X上配置Apache2
+
+user@my-mac:~ $ apachectl -v
+Server version: Apache/2.2.24 (Unix)
+Server built:   Aug 24 2013 21:10:43
+ 
+
+然后直接去/etc/apache2下面修改Apache的配置文件httpd.conf（2.2版本的Apache还是一个配置文件）。由于这个文件的属主是root，所以普通用户需要使用sudo vi httpd.conf来编辑。
+
+这个文件中比较关键的地方摘抄如下：
+
+User _www
+Group _www
+# 这里就是你的要提供服务的根路径。
+DocumentRoot "/Users/user/Documents/svn-copy/books"
+# 这里是针对这个根路径的权限配置
+<Directory "/Users/user/Documents/svn-copy/books">
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+</Directory>
+
+编辑完毕之后，保存.
+
+出于安全性的考虑，默认情况下，Apache的httpd服务是使用比较低权限的用户身份去运行的，也就是上面截取的配置文件中的User _www和Group _www一行。所以首先你要允许_www访问你的文档，至少要能够读取。
+
+启动Apache服务。默认的监听端口是80，所以需要root权限才能够启动apache。
+
+user@my-mac:apache2 $ sudo apachectl start
+然后，使用浏览器打开http://localhost。哦，给出了403访问被禁止的消息。那么，猜测是权限出现问题了。先看看Apache的日志吧：
+
+cd /var/log/apache2
+cat error_log
+Permission denied: access to / denied (filesystem path '/Users/user/Documents/svn-copy') because search permissions are missing on a component of the path
+ 
+
+根据日志中的错误信息，那么一定是在这个路径上，某一个或者多个文件夹不允许_www用户（httpd的运行用户）search（针对文件夹的 search对应的就是文件夹权限的x）。那么就从最后向最前找。很容易就发现/Users/user/Documents这个文件夹不允许其他人读取。 反正是自己内网开发测试用的，索性就允许其他用户读取好了。
+
+user@my-mac:~ $ cd
+user@my-mac:~ $ chmod o+rx Documents
+ 
+
+然后再次访问http://localhost，一切OK了。
+
+

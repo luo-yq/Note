@@ -1,0 +1,274 @@
+weblogic 性能调优.txt
+
+weblogic 性能调优：
+1、找到startWebLogic.cmd文件，在
+%JAVA_HOME%\bin\java %JAVA_VM% %MEM_ARGS% %JAVA_OPTIONS% -Dweblogic.Name=%SERVER_NAME% -Dweblogic.ProductionModeEnabled=%PRODUCTION_MODE% -Djava.security.policy="%WL_HOME%\server\lib\weblogic.policy" weblogic.Server
+这句话前面加入：
+set MEM_ARGS=-Xms1024m  -Xmx1024m
+set PRODUCTION_MODE=true
+2、开启本地I/O；
+通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> 配置 > 调整选择启用本地I/O。
+3、调优执行队列线程；
+a) 修改默认执行线程数
+       通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> 监视 > 性能中监控最大负载时执行队列的吞吐量和队列中的等待请求数，据此确定理想的数值。
+为获取一个理想的线程数，需要经过反复的测试。在测试中，可以以25*CPU个数为基准进行调整。当空闲线程较少，CPU利用率较低时，可以适当增加线程数的大小（每五个递增）。对于PC Server和Windows 2000，则最好每个CPU小于50个线程，以CPU利用率为90%左右为最佳。
+ 建议值：200
+ 
+b) 设定执行队列的溢出条件；
+      通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> Execute Queue > weblogic.kernel.Defalt > 配置下面几项：
+  队列长度：此值表示执行队列中可容纳的最大请求数，默认值是65536，不要手动改变此值。
+  队列长度阈值百分比：此值表示溢出条件，在此服务器指出队列溢出之前可以达到的队列长度大小的百分比。
+  线程数增加：当检测到溢出条件时，将增加到执行队列中的线程数量。如果CPU和内存不是足够的高，尽量不要改变默认值“0”。因为Weblogic一旦增加后不会自动缩减，虽然最终可能确实起到了降低请求的作用，但在将来的运行中将影响程序的性能。
+  最大线程数：为了防止创建过多的线程数量，可以通过设定最大的线程数进行控制。
+c) 设定执行队列监测行为
+ 通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）>配置 > 调整下可配置下面几项：
+  阻塞线程最长时间：在此服务器将线程诊断为阻塞线程之前，线程必须连续工作的时间长度(秒)。默认情况下，WebLogic Server 认为线程在连续工作 600 秒后成为阻塞线程。
+  阻塞线程计时器间隔：WebLogic Server 定期扫描线程以查看它们是否已经连续工作了 "阻塞线程最长时间" 字段中指定的时间长度的间隔时间(秒)。默认情况下，WebLogic Server 将此时间间隔设置为 600 秒。
+在实际的应用场景中，应根据具体情况通过测试后适当的调整以上参数。
+4、 调优TCP连接缓存数；
+WebLogic Server用Accept Backlog参数规定服务器向操作系统请求的队列大小，默认值为50。当系统重载负荷时,这个值可能过小,日志中报Connection Refused,导致有效连接请求遭到拒绝,此时可以提高Accept Backlog 25%直到连接拒绝错误消失。对于Portal类型的应用,默认值往往是不够的。Login Timeout和SSL Login Timeout参数表示普通连接和SSL连接的超时时间,如果客户连接被服务器中断或者SSL容量大,可以尝试增加该值。
+通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）>配置 > 调整下可配置“接受预备连接”。
+5、减少动态jsp载入次数
+ 通过启动管理控制台，在域（如：mydomain）> 部署 >web应用程序模块 > 配置 > 描述符 > 下可配置
+ Servlet 重新加载检查(秒): 180
+ JSP 页检查(秒):180
+ 
+6、JDBC 连接池调优：
+a)JDBC 连接池的初始容量
+  Initial Capacity(初始容量)：连接池所定义的初始连接数，服务器启动时创建应用服务器的缺损配置是0，该参数值的范围,位于数据库服务器所支持的最大范围内。基于系统性能考虑,该参数应将其设为多个，但不能大于所定义的max Capacity参数值。
+b)JDBC 连接池的最大容量
+max Capacity(最大容量)：连接池所定义的最大连接数，由数据库服务器可以打开的连接数量决定。
+c)调优方法
+ 为了减少新建连接的开销，一定要确信InitialCapacity 值设置与MaxCapacity 值相同，如果InitialCapacity 比MaxCapacity 值少，当负荷增加时，服务器需要创建额外的数据库连接，加重服务器的负担。建议设置连接池的最大值等于或者略小于线程数。设置步骤如下：
+   展开管理控制台左边面板Services节点，再展开JDBC节点，展开Connection Pools节点。
+   点击要配置的连接池名称。
+   选择Configuration――> Connections。
+   设置Initial Capacity的值为60，Maximum Capacity的值为60，Capacity Increment的值为5。
+  这个最大值也可以理解系统并发操作的最大值，如果有等待的话可以适当再提高
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+weblogic92性能调优<一> Java 参数设置
+
+WebLogic Server 的 Java 参数需要在脚本中修改某些默认 Java 值才能满足您的环境和应用程序的需要。
+1）更改 JAVA_HOME 变量的值。
+指定要使用的 SDK 的顶级目录的绝对路径名。例如，c:\bea\jrockit90。 
+在 Windows 或 Linux 平台上，BEA Systems 建议使用下列 JVM： 
+· 对于开发模式，使用带有 HotSpot Client JVM 的 Sun SDK。 
+· 对于生产模式，使用 BEA JRockit® SDK。该 SDK 提供最优运行性能，与其他 SDK 相比，其初次启动周期可能需要较长时间。 
+2）更改 JAVA_VENDOR 变量的值。
+· BEA 表明您使用的是 JRockit SDK。它仅在支持 Jrockit 的平台上有效。 
+· Sun 表明您使用的是 Sun SDK。 
+· HP 和 IBM 表明您使用的是 Hewlett Packard 或 IBM 提供的 SDK。这些值仅在支持 HP 或 IBM SDK 的平台上有效。 
+3）如果堆空间不足，则可能会出现以下 Java 错误： 
+java.lang.OutOfMemoryError <<no stack trace available>>
+java.lang.OutOfMemoryError <<no stack trace available>>
+Exception in thread "main"
+此时需要修改堆空间值，堆大小调整提示 ，以下部分提供了调整 VM 堆大小的一般准则： 
+· 堆大小应设置为一个适当的值，从而使 VM 使用的最大内存量不超过可用物理 RAM 量。如果超过该值，则 OS 会开始分页，性能也会显著降低。VM 使用的内存始终多于堆大小。除了堆大小设置，还要分配内部 VM 功能、VM 之外的本地库和永久代内存（仅适用于 Sun VM：存储类和方法所需的内存）所需的内存。 
+· 使用分代式垃圾收集方案时，温床大小不应超过 Java 堆总大小的一半。通常情况下，堆大小的 25% 到 40% 就已足够。 
+· 在生产环境中，将最小堆大小和最大堆大小设置为同一值，可以避免浪费用于时常调整堆大小所需的 VM 资源。这也适用于新一代堆大小 (Sun) 或温床大小 (BEA Jrockit)。 
+ BEA JRockit JVM 堆大小选项
+任务 
+选项 
+注释 
+设置温床 
+-Xns 
+最好尝试将温床设置得尽可能大，同时还要使垃圾收集暂停时间缩短至可以接受的程度。应用程序创建大量临时对象时，这尤其重要。 
+温床的最大大小不能超过最大堆大小的 95%。 
+设置最小堆大小 
+-Xms 
+BEA 建议将最小堆大小 (-Xms) 与最大堆大小 (-Xmx) 设置为相同的值，以便将垃圾收集的消耗降至最低。 
+设置最大堆大小 
+-Xmx 
+如果与活动数据量相比，最大堆大小值设置得较低，则会因强制进行频繁垃圾收集而降低性能。 
+设置垃圾收集 
+-Xgc: parallel 
+ 
+尽早在运行 Java 应用程序时执行自适应优化。 
+-XXaggressive:memory 
+这样，瓶颈检测器会在开始时以较高的频率运行，然后逐渐降低频率。此选项还可以指示 BEA JRockit 主动使用可用内存。 
+例如，从 java 命令行启动 WebLogic Server 实例时，可使用以下命令指定 BEA JRockit VM 堆大小值：$ java -Xns10m -Xms512m -Xmx512m
+这些值的默认大小的度量单位是字节。该值后附加字母“k”或“K”表示 KB；附加“m”或“M”表示 MB；附加“g”或“G”表示 GB。上例将 10 MB 内存分配给温床堆大小，将 512 MB 内存分配给运行在 JVM 中的 WebLogic Server 实例的最小和最大堆大小。
+Java HotSpot VM 堆大小选项 
+任务 
+选项 
+注释 
+设置新一代堆大小 
+-XX:NewSize 
+将 -XX:NewSize 的大小设置为堆大小的四分之一，这是一条通用规则。如果存在大量短期对象，则增大此选项的值。 
+在增加处理器的同时，一定要增加新一代堆大小。内存分配可以并行进行，但垃圾收集不可并行进行。 
+设置最大新一代堆大小 
+-XX:MaxNewSize 
+设置新一代堆大小的上限。 
+设置新堆大小比率 
+-XX:SurvivorRatio 
+新一代区域分为三个子区：Eden 和两个大小相等的生存空间。 
+配置 Eden/生存空间大小的比率。尝试将此值设置为 8，然后监视垃圾收集情况。 
+设置最小堆大小 
+-Xms 
+将最小堆大小 (-Xms) 与最大堆大小 (-Xmx) 设置为相同的值，以便将垃圾收集的消耗降至最低，这是一条通用规则。 
+设置最大堆大小 
+-Xmx 
+设置堆大小的上限。 
+设置大堆和私有共享内存 
+-XX:+UseISM -XX:+AggressiveHeap 
+请参阅 http://java.sun.com/docs/hotspot/ism.html 
+例如，从 java 命令行启动 WebLogic Server 实例时，可使用以下命令指定 HotSpot VM 堆大小值： $ java -XX:NewSize=128m -XX:MaxNewSize=128m -XX:SurvivorRatio=8 -Xms512m -Xmx512m
+这些值的默认大小的度量单位是字节。该值后附加字母“k”或“K”表示 KB；附加“m”或“M”表示 MB；附加“g”或“G”表示 GB。上例将 128 MB 内存分配给新一代堆大小和最大新一代堆大小，将 512 MB 内存分配给运行在 JVM 中的 WebLogic Server 实例的最小和最大堆大小。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+Weblogic服务器性能调优
+
+Weblogic服务器性能调优
+注：在下面做的介绍都是以Weblogic8.1为例的，其它版本的Weblogic可能会有些许不同。
+　　1) 设置JAVA参数；
+　　a) 编辑Weblogic Server启动脚本文件；
+　　* BEA_HOME\user_projects\domains\domain-name\startWebLogic.cmd(startWebLogic.sh on Unix)
+　　* BEA_HOME\user_projects\domains\domain-name\startManagedWebLogic.cmd(startManagedWebLogic.sh on Unix)
+　　b) 编辑set JAVA_OPTIONS命令，如：set JAVA_OPTIONS=-Xms256m –Xmx256m；
+　　c) 保存，重启即可。
+　　注：在WebLogic中，为了获得更好的性能，BEA公司推荐最小Java堆等于最大Java堆。
+　　2) 开发模式 vs. 产品模式；
+　　开发模式和产品模式的一些参数的默认值不同，可能会对性能造成影响，下面是对性能有影响的参数列表：
+　　参数
+　　开发模式默认值
+　　产品模式默认值
+　　Execute Queue: Thread Count
+　　15 threads
+　　25 threads
+　　JDBC Connection Pool: MaxCapacity
+　　15 connnections
+　　25 connections
+　　3) 尽量开启本地I/O；
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> 配置 > 调整选择启用本地I/O。
+　　注：此值也可通过手动的修改config.xml配置文件。
+　　4) 调优执行队列线程；
+　　a) 修改默认执行线程数
+　　在这里，执行队列的线程数表示执行队列能够同时执行的操作的数量。但此值不是设的越大越好，应该恰到好处的去设置它，太小了，执行队列中将会积累很多待处理的任务，太大了，则会消耗大量的系统资源从而影响整体的性能。在产品模式下默认为25个执行线程。
+　　为了设置理想的执行队列的线程数，我们可以启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> 监视 > 性能中监控最大负载时执行队列的吞吐量和队列中的等待请求数，据此确定理想的数值。
+　　理想的默认执行线程数是由多方面的因素决定的，比如机器CPU性能、总体体系架构、I/O、操作系统的进程调度机制、JVM的线程调度机制。随着CPU个 数的增加，WebLogic可以近乎线性地提高线程数。线程数越多，花费在线程切换的时间也就越多；线程数越小，CPU可能无法得到充分的利用。为获取一 个理想的线程数，需要经过反复的测试。在测试中，可以以25*CPU个数为基准进行调整。当空闲线程较少，CPU利用率较低时，可以适当增加线程数的大小 （每五个递增）。对于PC Server和Windows 2000，则最好每个CPU小于50个线程，以CPU利用率为90%左右为最佳。
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> Execute Queue > weblogic.kernel.Defalt > 配置中修改线程计数。
+　　b) 设定执行队列的溢出条件；
+　　Weblogic Server提供给默认的执行队列或用户自定义的执行队列自定义溢出条件的功能，当满足此溢出条件时，服务器改变其状态为“警告”状态，并且额外的再分配一些线程去处理在队列中的请求，而达到降低队列长度的目的。
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> Execute Queue > weblogic.kernel.Defalt > 配置下面几项：
+　　* 队列长度：此值表示执行队列中可容纳的最大请求数，默认值是65536，最后不要手动改变此值。
+　　* 队列长度阈值百分比：此值表示溢出条件，在此服务器指出队列溢出之前可以达到的队列长度大小的百分比。
+　　* 线程数增加：当检测到溢出条件时，将增加到执行队列中的线程数量。如果CPU和内存不是足够的高，尽量不要改变默认值“0”。因为Weblogic一旦增加后不会自动缩减，虽然最终可能确实起到了降低请求的作用，但在将来的运行中将影响程序的性能。
+　　* 最大线程数：为了防止创建过多的线程数量，可以通过设定最大的线程数进行控制。
+　　在实际的应用场景中，应根据具体情况适当的调整以上参数。
+　　c) 设定执行队列监测行为
+　　Weblogic Server能够自动监测到当一个执行线程变为“阻塞”。变为“阻塞”状态的执行线程将无法完成当前的工作，也无法再执行新请求。如果执行队列中的所有执 行线程都变为“阻塞”状态，Weblogic server可能改变状态为“警告”或“严重”状态。如果Weblogic server变为“严重”状态，可以通过Node Manager来自动关闭此服务器并重新启动它。具体请参考：Node Manager Capabilities文档。
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）>配置 > 调整下可配置下面几项：
+　　* 阻塞线程最长时间：在此服务器将线程诊断为阻塞线程之前，线程必须连续工作的时间长度(秒)。默认情况下，WebLogic Server 认为线程在连续工作 600 秒后成为阻塞线程。
+　　* 阻塞线程计时器间隔：WebLogic Server 定期扫描线程以查看它们是否已经连续工作了 "阻塞线程最长时间" 字段中指定的时间长度的间隔时间(秒)。默认情况下，WebLogic Server 将此时间间隔设置为 600 秒。
+　　5) 调优TCP连接缓存数；
+　　WebLogic Server用Accept Backlog参数规定服务器向操作系统请求的队列大小，默认值为50。当系统重载负荷时,这个值可能过小,日志中报Connection Refused,导致有效连接请求遭到拒绝,此时可以提高Accept Backlog 25%直到连接拒绝错误消失。对于Portal类型的应用,默认值往往是不够的。Login Timeout和SSL Login Timeout参数表示普通连接和SSL连接的超时时间,如果客户连接被服务器中断或者SSL容量大,可以尝试增加该值。
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）>配置 > 调整下可配置“接受预备连接”。
+　　6) 改变Java编译器；
+　　标准的Java编译器是javac，但编译JSP servlets速度太慢，为了提高编译速度，可以使用sj或jikes编译器取代javac编译器。下面说说更改Java编译器：
+　　通过启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）>配置 > 常规下改变Java 编译器，默认为javac。输入完整路径，如：c:\visualcafe31\bin\sj.exe。然后打开高级选项，在预规划到类路径填写编译 Java 代码时为 Java 编译器类路径预规划的选项，如：BEA_HOME\jdk141_02\jre\lib\rt.jar。
+　　7) 使用Webogic Server集群提高性能；
+　　具体关于如何配置Weblogic集群，我就不细说了。详情可参考：Introduction to WebLogic Server Clustering。
+　　8) Weblogic EJB调优
+　　由于EJB2.0已经很少项目在用了，EJB3.0再成熟一点，我再补充这一部分吧！
+　　9) JDBC应用调优
+　　JDBC Connection Pool的调优受制于WebLogic Server线程数的设置和数据库进程数,游标的大小。通常我们在一个线程中使用一个连接,所以连接数并不是越多越好,为避免两边的资源消耗，建议设置连 接池的最大值等于或者略小于线程数。同时为了减少新建连接的开销,将最小值和最大值设为一致。
+　　增加Statement Cache Size对于大量使用PreparedStatement对象的应用程序很有帮助,WebLogic能够为每一个连接缓存这些对象,此值默认为10。在保 证数据库游标大小足够的前提下,可以根据需要提高Statement Cache Size。比如当你设置连接数为25,Cache Size为10时,数据库可能需要打开25*10=250个游标。不幸的是,当遇到与PreparedStatement Cache有关的应用程序错误时,你需要将Cache Size设置为0。
+　　尽管JDBC Connection Pool提供了很多高级参数,在开发模式下比较有用,但大部分在生产环境下不需调整。这里建议最好不要设置测试表, 同时Test Reserved Connections和Test Released Connections也无需勾上。 当然如果你的数据库不稳定,时断时续,你就可能需要上述的参数打开。
+　　最后提一下驱动程序类型的选择,以Oracle为例,Oracle提供thin驱动和oci驱动,从性能上来讲,oci驱动强于thin驱动,特别是大数 据量的操作。但在简单的数据库操作中,性能相差不大,随着thin驱动的不断改进,这一弱势将得到弥补。而thin驱动的移植性明显强于oci驱动。所以 在通常情况下建议使用thin驱动。而最新驱动器由于WebLogic server/bin目录下的类包可能不是最新的,请以Oracle网站为准: http://www.oracle.com/technology ... va/sqlj_jdbc/htdocs /jdbc9201.html。
+　　10) JSP调优
+　　* 设置jsp-param pageCheckSeconds=-1；
+　　* 设置serlet-reload-check=-1或ServletReloadCheckSecs=-1；
+　　* 设置jsp-param precompile=true，关闭JSP预编译选项。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+Weblogic性能调优的一些思路
+
+为得到高性能的吞吐量，把Java堆的最小值与最大值设为相等。如：
+"%JAVA_HOME%\bin\java" -hotspot -Xms512m -Xmx512m -classpath %CLASSPATH% -
+在一个WebLogic域中，配置文件（config.xml）位于与管理服务器通信的机器里，提供WebLogic MBean的长期存储。管理服务器作为连接的中心点，为服务实例与系统管理工具提供服务。域也可以包括其他的WebLogic实例，称之为从服务，主要为应用程序提供服务。
+ExecuteQueue//执行队列缺省处理线程数
+ThreadsIncrease //线程增量，以支援溢出，减缓执行队列的负荷量
+ThreadsMaximum //处理中的最大线程数
+Execute Queues
+ 默认的执行线程为15。
+ 
+ 默认的执行线程为25。
+如果你不配置额外的执行队列，并且指定应用给这些队列，web 应用程序和RMI对象就使用默认的队列weblogic.kernel.default。
+注意；如果自带的执行包没有在你的平台上使用，你可能需要调整默认的执行队列线程数和担任socket读的线程的百分比，去实现最佳性能。
+为了给执行队列决定一个理想的线程数，当队列中所有应用程序都运行在最大负荷的情况下，监视队列的吞吐量。增加线程数，重复负载测试，直到达到最佳的吞吐量。（在某些情况下，增加线程数将产生足够多的上下文转换程序，使得队列中的吞吐量开始减少。）
+注意：WebLogic管理控制台显示的是所有服务器执行队列累积的吞吐量。
+设置理想的执行队列的线程数，我们可以启动管理控制台，在域（如：mydomain）> 服务器 > server实例（如：myserver）> 监视 > 性能中监控最大负载时执行队列的吞吐量和队列中的等待请求数，据此确定理想的数值。
+n         队列长限制百分比（Queue Length Threshold Percent）：达到队列长度百分比（1－99）时，就构成了溢出条件的产生。实际队列大小在限制的百分比之下时才被认为是正常的；在限制百分比之上就会产生溢出。当出现溢出，WebLogic日志就会产生一个错误消息，并且按线程数增量（Threads Increase）属性的值增加线程数，以帮助减少负载量。
+默认的队列长限制百分比为90％。一般情况下，应保留90％或其左右，以应对一些潜在的情况，使得有额外的线程可以去处理一些请求中的异常。记住，队列长度限制百分比不是一定作为自动优化参数――因为正常运作情况下，这个限度从不会被触发。
+n         线程数（Thread Count）：指派到这个队列的线程数。如果你不需要使用超过15个线程（默认），就不必更改这个属性值。
+n         线程数增量（Threads Increase）：是指WebLogic探测到有溢出时，增加到执行队列的线程数。当你指定为0（默认），出现溢出时，WebLogic会把运行良好状态改为"警告"，而且也不会指派额外的线程去减少负荷量。如果CPU和内存不是足够的高，尽量不要改变默认值"0"。因为Weblogic一旦增加后不会自动缩减，虽然最终可能确实起到了降低请求的作用，但在将来的运行中将影响程序的性能。
+注意：如果WebLogic实例的线程数响应了溢出，那么这些额外的线程就会滞留在执行队列，直到服务器重启。监视错误日志，以判断溢出产生的原因，以便根据需要重配置线程数，防止以后类似情况产生。不要同时使用线程数增量和队列长限制百分比作为自动优化的手段。如此做通常结果会产生比正常需要还多的线程被指派到执行队列，这样上下文转化程序的增多会使服务器遭受很差的性能。
+n         最大线程数：是指执行队列中能运行的，这个值保护WebLogic为了响应频繁溢出，创建过多的线程数。默认情况下，最大线程数为400。
+n         堵塞线程最大时间（Stuck Thread Max Time）：输入秒数，线程一定是不断的运行，服务器才会诊断这个线程作为堵塞。默认情况下，WebLogic认为线程连续不断运行600秒后置为堵塞。
+n         堵塞线程时间间隔（Stuck Thread Timer Interval）：输入秒数，这个时间是WebLogic周期性的扫描线程以察觉它们是否连续不断运行了某一线程的时间达到通过堵塞线程最大时间属性指定的时间长度。默认时间间隔为600秒。
+Config.xml文件中的元素接受缓存数（AcceptBacklog）属性是用来设定请求WebLogic实例的连接数，在拒绝额外的请求之前，能接受设定的缓存数。AcceptBacklog属性指定有多少TCP连接缓存在等待队列，规定服务器向操作系统请求的队列大小，这个固定的队列存放了TCP堆栈已经收到但应用程序还没有收到的连接请求。默认值是50，最大值由操作系统决定。
+根据需要修改默认的接受缓存数（Accept Backlog）：
+n         在运行期间，如果许多客户端连接得不到响应或被拒绝，并且服务器端也没有错误消息，说明接受缓存的值可能太小。
+n         在你访问WebLogic时，如果收到"拒绝连接（connection refused）"的提示，则应该增加接受缓存的默认值的25％。继续增加其值的25％，直到停止出现这样的提示。
+    
+ 对于Portal类型的应用,默认值往往是不够的。Login Timeout和SSL Login Timeout参数表示普通连接和SSL连接的超时时间,如果客户连接被服务器中断或者SSL容量大,可以尝试增加该值。
+虽然Web应用程序的处理需求变化多端，但BEA公司发现WebLogic实例与CPU最理想的比例是1：2。
+WebLogic Server 性能调优（二）
+　数据库式的并发策略不同于数据库的并发控制。实体bean在容器中并未被锁定，允许多个交易对相同的实体bean并发操作，因此能够提高性能。当然，这样对隔离的级别也许要求较高，以便确保数据的一致性。 
+　　积极式并发策略与数据库的并发控制也不同。不同之处在于对数据一致性的检查发生在对已设定的更新操作进行存储时而非在装载时将整行锁定。如果应用内对同一个bean访问的冲突不是很激烈的情况下，本策略比数据库式的策略要快一些，虽然两个提供了相同的数据一致性保护级别。但是在有冲突发生的时候，本策略要求调用者要重新发起调用。本特征也只对EJB 2.0 适用。
+　　只读式策略只能用于只读bean。Bean只在应用第一次访问时或者超出参数read-timeout-seconds所指定的值时才被装载。Bean从来不需要被存储。当基本数据改变时，也会通过read-mostly格式通知bean,从而引起重新装载.
+　　紧密关联缓存: 如果两个实体bean, bean A 和bean B 在CMR(容器关系管理)内关联，两个在同一个交易中被访问，且由同样的数据库调用装载，我们称为紧密关联缓存。这是WebLogic Server 7.0的新特征，同样只适用于EJB2.0。
+　　除了上面列出的通过优化容器内对数据库的访问从而达到性能增加的特征外，另有一些在容器之外，针对会话bean和实体bean的参数能够帮助提升性能。
+　　缓冲池和高速缓存是EJB容器为提高会话bean和实体bean性能所提供的主要特征。然而，这些方法并非对所有类型的bean适用。它们的消极面是对内存要求较高，虽然这不是主要的问题。缓冲池适用于无状态会话bean(SLSB)，消息驱动bean(MDB)以及实体bean。一旦为SLSB和MDB设定了缓冲池的大小，这些bean的许多实例就会被创建并被放到缓冲池中，setSessionContext()/setMessageDriveContext()方法会被调用。为这些bean设置的缓冲池的大小不必超过所配置的执行线程数(事实上，要求比此数要小)。如果方法setSessionContext()要做任何开销昂贵的操作的话，此时JNDI查询已经完成，使用缓冲池中的实例方法调用将会加快速度。对实体bean来说，在完成setEntityContext()方法调用之后，缓冲池与bean的匿名实例相连(没有主键)。这些实例可以被查询操作所使用，查询方法从缓冲池中取出一个实例，为其指定一个主键，然后从数据库中装载相应的bean。
+　　高速缓存适用于有状态会话bean(SFSB)和实体bean。实体bean已经在前面讨论过。对于SFSB，缓存能够避免向硬盘串行化的操作。串行化到硬盘的操作非常昂贵，绝对应该避免。用于SFSB的缓存大小可以比连接到服务器的并发客户端数略微大些，这是由于仅当缓存被占用了85%以后，容器才会设法将bean滞留在数据库中待命。如果缓存大于实际所需，则容器不会通过缓存花费时间将bean待命。
+　　EJB容器提供了两种方法进行bean-to-bean 和 Web-tier-to-bean的调用操作:传值调用和传送地址调用。如果bean处在同一个应用之中，则缺省情况下，用的是传送地址的方法，这比传值要快一些。传送地址的方法一般不应被禁止，除非有充足的理由要强制这样做。强制使用传送地址的另一种做法是使用本地接口。在WebLogic Server 7.0中引入了另一个特征是对有状态服务使用激活(activation)。虽然这种做法在某种程度上影响了性能，但由于对内存要求较低，因此极大地改进了扩展性。如果扩展性不值得关注，可以将参数noObjectAction传送给ejbc从而关闭激活(activation)。
+　　JDBC
+　　对数据库的访问来说，调试JDBC与调试EJB容器同样重要。比方说设置连接池的大小?D?D连接池应大到足以容纳所有线程对连接的要求。如果所有对数据库的访问能够在缺省的执行队列中得以实现，则连接数应为执行队列中的线程数，比读取socket的线程(缺省执行队列中用来读取进入请求的线程)数要少。为了避免在运行期间对连接进行创建和删除，可在初始时即将连接池设置为其最大容量。如果可能的话，应确保参数TestConnectionsOnReserve被设置为假(false，这是缺省设置)。如果此参数设置为真(true)，则在连接被分配给调用者之前，都要经过测试，这会额外要求与数据库的反复连接。
+　　另一个重要的参数是PreparedStatementCacheSize。每个连接都为宏语句设一个静态的缓存，大小由JDBC连接池配置时指定。缓存是静态的，时刻牢记这一点非常重要。这意味着如果缓存的大小是n的话，则只有放在缓存中的前n条语句得到执行。确保昂贵的SQL语句享受到缓存的方法是用一个启动类将这些语句存放到缓存中。尽管缓存技术从很大程度上改进了性能，但也不能盲目使用它。如果数据库的格式有了变化，那么在不重新启动服务器的情况下，无法使缓存中的语句失效或者是用新的进行替换。当然，缓存中的语句会使数据库中的光标得以保留。
+　　对于WebLogic Server 7.0来说，由于jDriver性能的改进已使其速度远远快于Oracle的?C驱动程序，尤其对于要完成大量SELECT操作的应用来说就更是如此。这可以从HP提交的利用WebLogic Server 7.0 Beta版的两份Ecperf结果得到证明(http://ecperf.theserverside.com/ecperf/index.jsp?page=results/top_ten_price_performance)。
+　　JMS
+　　JMS子系统提供了很多的调试参数。JMS消息是由称为JMSDispatcher的独立执行队列处理的。因此，JMS子系统既不会由于运行在缺省或者其它执行队列中的应用因争夺资源而导致“营养匮乏”，反过来也不会抢夺其它应用的资源。对JMS来说，大多数的调试参数都是在服务的质量上进行折衷处理。如，利用文件式持续性目的地(file-persistent destnation)禁止同步写操作(通过设置特性: -Dweblogic.JMSFileStore.SynchronousWritesEnabled =false)以后会引起性能急剧提高，但同时也会冒着丢失消息或者重复接收消息的风险。类似地，利用多点传送发送消息会提升性能，同时也会有消息半途丢失的危险。
+WebLogic Server 性能调优（三）
+消息确认间隔不应设置得过短?D?D发送确认的比率越大，处理消息的速度可能会越慢。同时，如果设置得过大，则意味着系统发生故障时，消息会丢失或者被重复发送。 
+　　一般说来，应在单个服务器上对多个JMS目的地进行配置，而不是将它们分散在多个JMS服务器，除非不再需要扩展。
+　　关闭消息页面调度(paging)可能会提高性能，但会影响可扩展性。如果打开消息页面调度(paging)，则需要额外的I/O操作以便将消息串行化到硬盘，在必要的时候再读进来，但同时也降低了对内存的要求。
+　　一般来说，异步过程比同步过程更好操作，更易于调节。
+　　Web容器
+　　Web层在应用中更多的是用来生成表达逻辑。广泛使用的体系结构是从应用层读取数据，然后使用servlet和JSP生成动态内容，其中应用层一般由EJB组成。在这种结构中，servlet 和JSP保留对EJB的引用，以防它们与数据库或数据源直接对话。将这些引用保存起来是个不错的主意。如果JSP和servlet没有和EJB部署在同一台应用服务器上，则利用JNDI进行查询的费用是很昂贵的。
+　　JSP缓存标记符可以用于存储JSP页面内的数据。这些标记符都支持对缓存的输入和输出。对缓存的输出涉及到标记符内的代码所生成的内容，对缓存的输入涉及到标记符内的代码对变量的赋值。如果不希望Web层频繁变化，则可以通过将ServletReloadCheckSecs 设置为-1，从而关闭自动装载(auto-reloading)功能。使用这种方法以后，服务器将不再轮询Web层是否有变化，如果JSP和servlet的数量很多，则效果是非常明显的。
+　　这里也建议不要在HTTP会话中储存过多的信息。如果信息是必须的，可以考虑使用有状态会话bean来替代。
+　　JVM调试
+　　如今的大多数JVM具有自主调节功能，因为它们能够探测到代码中的危险区域并对它们进行优化。开发和部署人员能够考虑的调试参数大概就是堆设置了。设置这些并没有一般的规则。JVM一般堆空间，按新空间或保留空间一般设置为整个堆空间的三分之一或一半组织。整个堆空间不能指定得过大以致于无法支持并发的内存垃圾回收(GC)处理。在这种设置环境中，如果堆太大的话，垃圾回收的间隔应设为一分钟或更长。最后，需要引起注意的是这些设置在很大程度上依赖于部署在服务器上的应用使用内存的模式。有关调试JVM的其它信息可以参考:
+　　服务器调试
+　　除了由各个子系统提供的调试参数以外，还有适用于服务器的参数能够帮助提升性能。其中最重要的是配置线程数和执行队列数。增加线程数并非总能奏效，仅当下列情况成立时再考虑使用这种方法:预定的吞吐量没有达到;等待队列(未开始处理的请求)过长;CPU仍有剩余。当然，这样做并不一定能改善性能。CPU使用率低可能是由于对服务器的其它资源竞争所致，如，没有足够的JDBC连接。当改变线程数时应考虑到这些类似的因素。
+　　在WebLogic Server 7.0中，提供了配置多个执行队列的功能，并且能够在部署中定义处理特殊的EJB或JSP/servlet请求的执行队列。要做到这些，只要在运行weblogic.ejbc时将标志-dispatchPolicy <队列名称> 传送给bean 即可。对于JSP/servlet，可将设置Web应用的weblogic部署描述符中初始化参数(init-param) wl-dispatch-policy的值设为执行队列的名字即可。有时应用中的某些bean/JSP对操作的响应时间比其它的要长，此时，可以对这些bean/JSP设置单独的执行队列。至于队列的大小，要达到最好的性能，还取决于经验。
+　　另一个比较大的问题是决定在何种情况下应该使用WebLogic性能包(http://e-docs.bea.com/wls/docs70/perform/WLSTuning.html - 1112119)。如果socket数不太多(每个服务器上都有一个socket用于客户端JVM的远程方法调用连接)，而且总是忙于读取从客户端发送过来的请求数据，那么此时使用性能包恐怕不会有明显的改进。也有可能不用性能包会导致相似或更好的结果，这取决于JVM在处理网络I/O时的具体实现。
+　　Socket读取线程取自缺省执行队列。在Windows 环境下，每个CPU有两个socket读取线程，在solaris环境下，共有三个socket用于本地输入输出(native I/O)。对于Java 输入输出(I/O)，读取线程数由配置文件config.xml中的参数PercentSocketReaderThreads 进行设置。它的缺省值是33%, 上限是50%，这是显而易见的，因为如果没有线程用于处理请求，则同样不会有更多的读取线程啦。对于Java I/O，应使读取线程数尽量接近客户端连接数，因为在等待请求时，Java I/O会阻塞。这也是为什么当客户端的连接数增加时，线程数不能一直同等增加的原因。
+　　结论
+　　我们上面只讨论了调试服务器的部分方法。需要记住的是，一个设计蹩脚，编写欠佳的应用，通常都不会有好的性能表现，无论对服务器及其参数如何调试。贯穿应用开发周期的各个阶段从设计到部署，性能始终应该是考虑的关键因素。经常发生的情况是性能被放在了功能之后，等到发现了问题再去修改，已经很困难了。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+

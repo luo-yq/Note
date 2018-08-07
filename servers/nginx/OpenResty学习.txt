@@ -1,0 +1,5165 @@
+OpenResty学习.txt
+Socket 编程发展
+
+Linux Socket 编程领域，为了处理大量连接请求场景，需要使用非阻塞 I/O 和复用。select、poll 和 epoll 是 Linux API 提供的 I/O 复用方式，自从 Linux 2.6 中加入了 epoll 之后，高性能服务器领域得到广泛的应用，现在比较出名的 Nginx 就是使用 epoll 来实现 I/O 复用支持高并发，目前在高并发的场景下，Nginx 越来越收到欢迎。
+
+据 w3techs 在2015年8月10日的统计数据表明，在全球 Top 1000 的网站中，有 43.7% 的网站在使用 Nginx，这使得 Nginx 超越了 Apache，成为了高流量网站最信任的 Web 服务器足足有两年时间。已经确定在使用Nginx的站点有：Wikipedia，WordPress，Reddit，Tumblr，Pinterest，Dropbox，Slideshare，Stackexchange 等，可以持续罗列好几个小时，他们太多了。
+
+下图是统计数据：
+
+
+
+select 模型
+
+下面是 select 函数接口：
+
+int select (int n, fd_set *readfds, fd_set *writefds,
+        fd_set *exceptfds, struct timeval *timeout);
+select 函数监视的文件描述符分 3 类，分别是 writefds、readfds和 exceptfds。调用后 select 函数会阻塞，直到有描述符就绪（有数据 可读、可写、或者有except），或者超时（timeout 指定等待时间，如果立即返回设为 null 即可）。当 select 函数返回后，通过遍历 fd_set，来找到就绪的描述符。
+
+select 目前几乎在所有的平台上支持，其良好跨平台支持是它的一大优点。select 的一个缺点在于单个进程能够监视的文件描述符的数量存在最大限制，在 Linux 上一般为1024，可以通过修改宏定义甚至重新编译内核的方式提升这一限制，但是这样也会造成效率的降低。
+
+poll 模型
+
+int poll (struct pollfd *fds, unsigned int nfds, int timeout);
+不同与select使用三个位图来表示三个fdset的方式，poll 使用一个 pollfd 的指针实现。
+
+struct pollfd {
+    int fd; /* file descriptor */
+    short events; /* requested events to watch */
+    short revents; /* returned events witnessed */
+};
+pollfd 结构包含了要监视的 event 和发生的 event，不再使用 select “参数-值”传递的方式。同时，pollfd 并没有最大数量限制（但是数量过大后性能也是会下降）。 和 select 函数一样，poll 返回后，需要轮询 pollfd 来获取就绪的描述符。
+
+从上面看，select 和 poll 都需要在返回后，通过遍历文件描述符来获取已经就绪的 socket。事实上，同时连接的大量客户端在一时刻可能只有很少的处于就绪状态，因此随着监视的描述符数量的增长，其效率也会线性下降。
+
+epoll 模型
+
+epoll 的接口如下：
+
+int epoll_create(int size)；
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)；
+            typedef union epoll_data {
+                void *ptr;
+                int fd;
+                __uint32_t u32;
+                __uint64_t u64;
+            } epoll_data_t;
+
+            struct epoll_event {
+                __uint32_t events;      /* Epoll events */
+                epoll_data_t data;      /* User data variable */
+            };
+
+int epoll_wait(int epfd, struct epoll_event * events,
+                int maxevents, int timeout);
+主要是 epoll_create，epoll_ctl 和 epoll_wait 三个函数。epoll_create 函数创建 epoll 文件描述符，参数 size 并不是限制了 epoll 所能监听的描述符最大个数，只是对内核初始分配内部数据结构的一个建议。epoll_ctl 完成对指定描述符 fd 执行 op 操作控制，event 是与 fd 关联的监听事件。op 操作有三种：添加 EPOLL_CTL_ADD，删除 EPOLL_CTL_DEL，修改 EPOLL_CTL_MOD。分别添加、删除和修改对 fd 的监听事件。epoll_wait 等待 epfd 上的 IO 事件，最多返回 maxevents 个事件。
+
+在 select/poll 中，进程只有在调用一定的方法后，内核才对所有监视的文件描述符进行扫描，而 epoll 事先通过 epoll_ctl() 来注册一个文件描述符，一旦基于某个文件描述符就绪时，内核会采用类似 callback 的回调机制，迅速激活这个文件描述符，当进程调用 epoll_wait 时便得到通知。
+
+epoll 的优点主要是一下几个方面：
+
+监视的描述符数量不受限制，它所支持的 fd 上限是最大可以打开文件的数目，这个数字一般远大于 2048,举个例子,在 1GB 内存的机器上大约是 10 万左右，具体数目可以 cat /proc/sys/fs/file-max 察看,一般来说这个数目和系统内存关系很大。select 的最大缺点就是进程打开的 fd 是有数量限制的。这对于连接数量比较大的服务器来说根本不能满足。虽然也可以选择多进程的解决方案( Apache 就是这样实现的)，不过虽然 linux 上面创建进程的代价比较小，但仍旧是不可忽视的，加上进程间数据同步远比不上线程间同步的高效，所以也不是一种完美的方案。
+IO 的效率不会随着监视 fd 的数量的增长而下降。epoll 不同于 select 和 poll 轮询的方式，而是通过每个 fd 定义的回调函数来实现的。只有就绪的 fd 才会执行回调函数。
+支持水平触发和边沿触发两种模式：
+水平触发模式，文件描述符状态发生变化后，如果没有采取行动，它将后面反复通知，这种情况下编程相对简单，libevent 等开源库很多都是使用的这种模式。
+边沿触发模式，只告诉进程哪些文件描述符刚刚变为就绪状态，只说一遍，如果没有采取行动，那么它将不会再次告知。理论上边缘触发的性能要更高一些，但是代码实现相当复杂（Nginx 使用的边缘触发）。
+mmap 加速内核与用户空间的信息传递。epoll 是通过内核于用户空间 mmap 同一块内存，避免了无谓的内存拷贝。
+
+
+简介
+
+OpenResty（也称为 ngx_openresty）是一个全功能的 Web 应用服务器。它打包了标准的 Nginx 核心，很多的常用的第三方模块，以及它们的大多数依赖项。
+
+通过柔和众多设计良好的 Nginx 模块，OpenResty 有效地把 Nginx 服务器转变为一个强大的 Web 应用服务器，基于它开发人员可以使用 Lua 编程语言对 Nginx 核心以及现有的各种 Nginx C 模块进行脚本编程，构建出可以处理一万以上并发请求的极端高性能的 Web 应用。
+
+OpenResty 致力于将你的服务器端应用完全运行于 Nginx 服务器中，充分利用 Nginx 的事件模型来进行非阻塞 I/O 通信。不仅仅是和 HTTP 客户端间的网络通信是非阻塞的，与MySQL、PostgreSQL、Memcached 以及 Redis 等众多远方后端之间的网络通信也是非阻塞的。
+
+因为 OpenResty 软件包的维护者也是其中打包的许多 Nginx 模块的作者，所以 OpenResty 可以确保所包含的所有组件可以可靠地协同工作。
+
+OpenResty 最早是雅虎中国的一个公司项目，起步于 2007 年 10 月。当时兴起了 OpenAPI 的热潮，用于满足各种 Web Service 的需求，就诞生了 OpenResty。在公司领导的支持下，最早的 OpenResty 实现从一开始就开源了。最初的定位是服务于公司外的开发者，像其他的 OpenAPI 那样，但后来越来越多地是为雅虎中国的搜索产品提供内部服务。这是第一代的 OpenResty，当时的想法是，提供一套抽象的 web service，能够让用户利用这些 web service 构造出新的符合他们具体业务需求的 Web Service 出来，所以有些“meta web servie”的意味，包括数据模型、查询、安全策略都可以通过这种 meta web service 来表达和配置。同时这种 web service 也有意保持 REST 风格。与这种概念相对应的是纯 AJAX 的 web 应用，即 web 应用几乎都使用客户端 JavaScript 来编写，然后完全由 web service 让 web 应用“活”起来。用户把 .html, .js, .css, .jpg 等静态文件下载到 web browser 中，然后 js 开始运行，跨域请求雅虎提供的经过站长定制过的 web service，然后应用就可以运行起来。不过随着后来的发展，公司外的用户毕竟还是少数，于是应用的重点是为公司内部的其他团队提供 web service，比如雅虎中国的全能搜索产品，及其外围的一些产品。从那以后，开发的重点便放在了性能优化上面。章亦春在加入淘宝数据部门的量子团队之后，决定对 OpenResty 进行重新设计和彻底重写，并把应用重点放在支持像量子统计这样的 web 产品上面，所以量子统计 3.0 开始也几乎完全是 web service 驱动的纯 AJAX 应用。
+
+这是第二代的 OpenResty，一般称之为 ngx_openresty，以便和第一代基于 Perl 和 Haskell 实现的 OpenResty 加以区别。章亦春和他的同事王晓哲一起设计了第二代的 OpenResty。在王晓哲的提议下，选择基于 nginx 和 lua 进行开发。
+
+为什么要取 OpenResty 这个名字呢？OpenResty 最早是顺应 OpenAPI 的潮流做的，所以 Open 取自“开放”之意，而Resty便是 REST 风格的意思。虽然后来也可以基于 ngx_openresty 实现任何形式的 web service 或者传统的 web 应用。
+
+也就是说 Nginx 不再是一个简单的静态网页服务器，也不再是一个简单的反向代理了。第二代的 openresty 致力于通过一系列 nginx 模块，把nginx扩展为全功能的 web 应用服务器。
+
+ngx_openresty 是用户驱动的项目，后来也有不少国内用户的参与，从 openresty.org 的点击量分布上看，国内和国外的点击量基本持平。
+
+ngx_openresty 目前有两大应用目标：
+
+通用目的的 web 应用服务器。在这个目标下，现有的 web 应用技术都可以算是和 OpenResty 或多或少有些类似，比如 Nodejs, PHP 等等。ngx_openresty 的性能（包括内存使用和 CPU 效率）算是最大的卖点之一。
+Nginx 的脚本扩展编程，用于构建灵活的 Web 应用网关和 Web 应用防火墙。有些类似的是 NetScaler。其优势在于 Lua 编程带来的巨大灵活性。
+ngx_openresty 从一开始就是公司实际的业务需求的产物。在过去的几年中的大部分开发工作也是由国内外许多公司和个人的实际业务需求驱动的。这种模型在实践中工作得非常好，可以确保我们做的就是大家最迫切需要的。在此过程中，慢慢形成了 ngx_openresty 的两大应用方向，也就是前面提到的那两大方向。是我们的用户帮助我们确认了这两个方向，事实上，这并不等同于第一代 OpenResty 的方向，而是变得更加底层和更加通用了。
+
+开源精神的核心是分享而非追求流行。毕竟开源界不是娱乐圈，也不是时尚圈。如果我们的开源项目有越来越多的人开始使用，只是一个“happy accident”，我们自然会很高兴，但这并不是我们真正追求的。
+
+开放源码只是开源项目生命周期中的“万里长征第一步”，国内的许多开源项目止步于开放源码，而没有后续投入长期的时间和精力去跟进响应用户的各种需求和反馈，但不免夭折。这种现象在国外的不少开源项目中也很常见。
+
+国外成功的开源项目比较多，或许跟许多发达国家的程序员们的精神状态有关系。比如我认识的一些国外的黑客都非常心思单纯，热情似火。他们在精神上的束缚非常少，做起事来多是不拘一格。有的人即便长期没有工作单纯靠抵押和捐赠过活，也会不遗余力地投身于开源项目。而我接触到的国内许多程序员的精神负担一般比较重，经济上的压力也比较大，自然难有“玩开源”的心思。
+
+不过，国内也是有一些程序员拥有国外优秀黑客的素质的，而且他们通过网络和全球的黑客紧密联系在一起，所以我们完全可以期待他们未来有挎奋人心的产出。在互联网时代的今天，或许按国界的划分来讨论这样的问题会变得越来越不合时宜。
+
+
+环境搭建
+
+实践的前提是搭建环境，本节的几个小节将介绍在几种常见操作平台上 OpenResty 的安装。
+
+为了降低用户安装门槛，对于不同系统安装，部分章节存在比较大的重复内容。读者只需要选择自己需要的平台并尝试安装即可。除了 windows 版本是以二进制发行，其他平台由于系统自身的兼容性，推荐的都是源码编译方式。
+
+在 OpenResty 的规划路线中，准备发行独立的 opm 安装工具（截止到目前，目前还没完成，名称可能依然会变），帮会我们完成从环境到周边库的下载、更新。
+
+CentOS 平台安装
+
+源码包准备
+
+我们首先要在官网下载 OpenResty 的源码包。官网上会提供很多的版本，各个版本有什么不同也会有说明，我们可以按需选择下载。 笔者选择下载的源码包为 ngx_openresty-1.9.7.1.tar.gz（请大家跟进使用最新版本，这里只是个例子）。
+
+依赖库安装
+
+将这些相关的库perl 5.6.1+,libreadline, libpcre, libssl安装在系统中。 按照以下步骤：
+
+输入以下命令yum install readline-devel pcre-devel openssl-devel perl，一次性安装需要的库。
+相关库安装成功。安装成功后会有 “Complete！” 字样。
+OpenResty 安装
+
+在命令行中切换到源码包所在目录。
+解压源码包，tar xzvf ngx_openresty-1.9.7.1.tar.gz。若你下载的源码包版本不一样，将相应的版本号改为你所下载的即可。
+切换工作目录到 cd ngx_openresty-1.9.7.1。
+了解默认激活的组件。OpenResty 官网有组件列表,我们可以参考，列表中大部分组件默认激活，也有部分默认不激活。 默认不激活的组件，我们可以在编译的时激活，后面步骤详说明。
+配置安装目录及需要激活的组件。使用选项 --prefix=install_path，指定安装目录（默认为/usr/local/openresty）。
+
+使用选项 --with-Components 激活组件，--without 则是禁止组件。 你可以根据自己实际需要选择 with 或 without。如下命令，OpenResty 将配置安装在 /opt/openresty 目录下（注意使用 root 用户）,并激活luajit、http_iconv_module 并禁止 http_redis2_module 组件。
+
+  # ./configure --prefix=/opt/openresty\
+              --with-luajit\
+              --without-http_redis2_module \
+              --with-http_iconv_module
+在上一步中，最后没有什么 error 的提示就是最好的。若有错误，最后会显示 具体原因可以看源码包目录下的 build/nginx-VERSION/objs/autoconf.err文件查看。若没有错误，则会出现如下信息：
+
+   Type the following commands to build and install:
+       gmake
+       gmake install
+编译：根据上一步命令提示，输入gmake。
+安装：输入gmake install。
+上面的步骤顺利完成之后，安装已经完成。可以在你指定的安装目录下看到一些相关目录及文件。
+设置环境变量
+
+为了后面启动 OpenResty 的命令简单一些，不用在 OpenResty 的安装目录下进行启动，我们设置环境变量来简化操作。 将 nginx 目录添加到 PATH 中。打开文件 /etc/profile， 在文件末尾加入export PATH=$PATH:/opt/openresty/nginx/sbin，若你的安装目录不一样，则做相应修改。 注意：这一步操作需要重新加载环境变量才会生效，可通过命令source /etc/profile或者重启服务器等方式实现。
+
+接下来，我们就可以进入到后面的章节 HelloWorld 学习。
+
+Mac OS X 平台安装
+
+源码包准备
+
+我们首先要在官网下载OpenResty的源码包。官网上会提供很多的版本，各个版本有什么不同也会有说明，我们可以按需选择下载。笔者选择下载的源码包 ngx_openresty-1.9.7.1.tar.gz。
+
+相关库的安装
+
+将这些相关库安装到系统中，推荐如 Homebrew 这类包管理方式完成包管理：
+
+$ brew update
+$ brew install pcre openssl
+OpenResty 安装
+
+在命令行中切换到源码包所在目录。
+输入命令tar xzvf ngx_openresty-1.9.7.1.tar.gz，按回车键解压源码包。若你下载的源码包版本不一样， 将相应的版本号改为你所下载的即可，或者直接拷贝源码包的名字到命令中。 此时当前目录下会出现一个ngx_openresty-1.9.7.1文件夹。
+在命令行中切换工作目录到ngx_openresty-1.9.7.1。输入命令cd ngx_openresty-1.9.7.1。
+配置安装目录及需要激活的组件。使用选项 --prefix=install_path ，指定其安装目录（默认为/usr/local/openresty）。 使用选项 --with-Components 激活组件， --without 则是禁止组件，你可以根据自己实际需要选择 with 及 without 。 输入如下命令，OpenResty 将配置安装在 /opt/openresty 目录下（注意使用root用户），激活 LuaJIT、HTTP_iconv_module 并禁止 http_redis2_module 组件。
+
+  ./configure --prefix=/opt/openresty\
+              --with-cc-opt="-I/usr/local/include"\
+              --with-luajit\
+              --without-http_redis2_module \
+              --with-ld-opt="-L/usr/local/lib"
+在上一步中，最后没有什么error的提示就是最好的。若有错误，最后会显示error字样， 具体原因可以看源码包目录下的build/nginx-VERSION/objs/autoconf.err文件查看。 若没有错误，则会出现如下信息，提示下一步操作：
+
+   Type the following commands to build and install:
+   gmake
+   gmake install
+编译。根据上一步命令提示，输入gmake。
+安装。输入gmake install，这里可能需要输入你的管理员密码。
+上面的步骤顺利完成之后，安装已经完成。可以在你指定的安装目录下看到一些相关目录及文件。
+设置环境变量
+
+为了后面启动OpenResty的命令简单一些，不用在OpenResty的安装目录下进行启动，我们通过设置环境变量来简化操作。 将OpenResty目录下的 nginx/sbin 目录添加到 PATH 中。
+
+接下来，我们就可以进入到后面的章节 Hello World 学习。
+
+HelloWorld
+
+HelloWorld 是我们亘古不变的第一个入门程序。但是 OpenResty 不是一门编程语言，跟其他编程语言的 HelloWorld 不一样，让我们看看都有哪些不一样吧。
+
+创建工作目录
+
+OpenResty 安装之后就有配置文件及相关的目录的，为了工作目录与安装目录互不干扰，并顺便学下简单的配置文件编写，我们另外创建一个 OpenResty 的工作目录来练习，并且另写一个配置文件。我选择在当前用户目录下创建 openresty-test 目录，并在该目录下创建 logs 和 conf 子目录分别用于存放日志和配置文件。
+
+$ mkdir ~/openresty-test ~/openresty-test/logs/ ~/openresty-test/conf/
+$
+$ tree ~/openresty-test
+/Users/yuansheng/openresty-test
+├── conf
+└── logs
+
+2 directories, 0 files
+创建配置文件
+
+在 conf 目录下创建一个文本文件作为配置文件，命名为 nginx.conf，文件内容如下:
+
+worker_processes  1;        #nginx worker 数量
+error_log logs/error.log;   #指定错误日志文件路径
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        #监听端口，若你的6699端口已经被占用，则需要修改
+        listen 6699;
+        location / {
+            default_type text/html;
+
+            content_by_lua_block {
+                ngx.say("HelloWorld")
+            }
+        }
+    }
+}
+提示：openresty 1.9.3.1 及以下版本，请使用 content_by_lua 命令；在 openresty 1.9.3.2 以上，content_by_lua 改成了 content_by_lua_block。可使用 nginx -V 命令查看版本号。
+
+万事俱备只欠东风
+
+我们启动 nginx 即可，输入命令形式为：nginx -p ~/openresty-test，如果没有提示错误。如果提示 nginx 不存在，则需要在环境变量中加入安装路径，可以根据你的操作平台，参考前面的安装章节（一般需要重启生效）。
+
+启动成功后，我们可以查看 nginx 进程是否存在，并通过访问 HTTP 页面查看应答内容。操作提示如下：
+
+➜  ~ nginx -p ~/openresty-test
+➜  ~ ps -ef | grep nginx
+  501 88620     1   0 10:58AM ?? 0:00.00 nginx: master process nginx -p
+                                    /Users/yuansheng/openresty-test
+  501 88622 88620   0 10:58AM ?? 0:00.00 nginx: worker process
+➜  ~ curl http://localhost:6699 -i
+HTTP/1.1 200 OK
+Server: openresty/1.9.7.3
+Date: Sun, 20 Mar 2016 03:01:35 GMT
+Content-Type: text/html
+Transfer-Encoding: chunked
+Connection: keep-alive
+
+HelloWorld
+在浏览器中完成同样的访问：
+
+与其他 location 配合
+
+nginx 世界的 location 是异常强大的，毕竟 nginx 的主要应用场景是在负载均衡、API server，在不同 server、location 之间跳转更是家常便饭。利用不同 location 的功能组合，我们可以完成内部调用、流水线方式跳转、外部重定向等几大不同方式，下面将给大家介绍几个主要应用，就当抛砖引玉。
+
+内部调用
+例如对数据库、内部公共函数的统一接口，可以把它们放到统一的 location 中。通常情况下，为了保护这些内部接口，都会把这些接口设置为 internal 。这么做的最主要好处就是可以让这个内部接口相对独立，不受外界干扰。
+
+示例代码：
+
+location = /sum {
+    # 只允许内部调用
+    internal;
+
+    # 这里做了一个求和运算只是一个例子，可以在这里完成一些数据库、
+    # 缓存服务器的操作，达到基础模块和业务逻辑分离目的
+    content_by_lua_block {
+        local args = ngx.req.get_uri_args()
+        ngx.say(tonumber(args.a) + tonumber(args.b))
+    }
+}
+
+location = /app/test {
+    content_by_lua_block {
+        local res = ngx.location.capture(
+                        "/sum", {args={a=3, b=8}}
+                        )
+        ngx.say("status:", res.status, " response:", res.body)
+    }
+}
+紧接着，稍微扩充一下，并行请求的效果，示例如下：
+
+location = /sum {
+    internal;
+    content_by_lua_block {
+        ngx.sleep(0.1)
+        local args = ngx.req.get_uri_args()
+        ngx.print(tonumber(args.a) + tonumber(args.b))
+    }
+}
+
+location = /subduction {
+    internal;
+    content_by_lua_block {
+        ngx.sleep(0.1)
+        local args = ngx.req.get_uri_args()
+        ngx.print(tonumber(args.a) - tonumber(args.b))
+    }
+}
+
+location = /app/test_parallels {
+    content_by_lua_block {
+        local start_time = ngx.now()
+        local res1, res2 = ngx.location.capture_multi( {
+                        {"/sum", {args={a=3, b=8}}},
+                        {"/subduction", {args={a=3, b=8}}}
+                    })
+        ngx.say("status:", res1.status, " response:", res1.body)
+        ngx.say("status:", res2.status, " response:", res2.body)
+        ngx.say("time used:", ngx.now() - start_time)
+    }
+}
+
+location = /app/test_queue {
+    content_by_lua_block {
+        local start_time = ngx.now()
+        local res1 = ngx.location.capture_multi( {
+                        {"/sum", {args={a=3, b=8}}}
+                    })
+        local res2 = ngx.location.capture_multi( {
+                        {"/subduction", {args={a=3, b=8}}}
+                    })
+        ngx.say("status:", res1.status, " response:", res1.body)
+        ngx.say("status:", res2.status, " response:", res2.body)
+        ngx.say("time used:", ngx.now() - start_time)
+    }
+}
+测试结果：
+
+➜  ~ curl 127.0.0.1/app/test_parallels
+status:200 response:11
+status:200 response:-5
+time used:0.10099983215332
+➜  ~ curl 127.0.0.1/app/test_queue
+status:200 response:11
+status:200 response:-5
+time used:0.20199990272522
+利用 ngx.location.capture_multi 函数，直接完成了两个子请求并行执行。当两个请求没有相互依赖，这种方法可以极大提高查询效率。两个无依赖请求，各自是 100ms，顺序执行需要 200ms，但通过并行执行可以在 100ms 完成两个请求。实际生产中查询时间可能没这么规整，但思想大同小异，这个特性是很有用的。
+
+图例
+
+该方法，可以被广泛应用于广告系统（1：N模型，一个请求，后端从N家供应商中获取条件最优广告）、高并发前端页面展示（并行无依赖界面、降级开关等）。
+
+流水线方式跳转
+现在的网络请求，已经变得越来越拥挤。各种不同 API 、下载请求混杂在一起，就要求不同厂商对下载的动态调整有各种不同的定制策略，而这些策略在一天的不同时间段，规则可能还不一样。这时候我们还可以效仿工厂的流水线模式，逐层过滤、处理。
+
+示例代码：
+
+location ~ ^/static/([-_a-zA-Z0-9/]+).jpg {
+    set $image_name $1;
+    content_by_lua_block {
+        ngx.exec("/download_internal/images/"
+                .. ngx.var.image_name .. ".jpg");
+    };
+}
+
+location /download_internal {
+    internal;
+    # 这里还可以有其他统一的 download 下载设置，例如限速等
+    alias ../download;
+}
+注意，ngx.exec 方法与 ngx.redirect 是完全不同的，前者是个纯粹的内部跳转并且没有引入任何额外 HTTP 信号。 这里的两个 location 更像是流水线上工人之间的协作关系。第一环节的工人对完成自己处理部分后，直接交给第二环节处理人（实际上可以有更多环节），它们之间的数据流是定向的。
+
+图例
+
+外部重定向
+不知道大家什么时候开始注意的，百度的首页已经不再是 HTTP 协议，它已经全面修改到了 HTTPS 协议上。但是对于大家的输入习惯，估计还是在地址栏里面输入 baidu.com ，回车后发现它会自动跳转到 https://www.baidu.com ，这时候就需要的外部重定向了。
+
+location = /foo {
+    content_by_lua_block {
+        ngx.say([[I am foo]])
+    }
+}
+
+location = / {
+    rewrite_by_lua_block {
+        return ngx.redirect('/foo');
+    }
+}
+执行测试，结果如下：
+
+➜  ~  curl 127.0.0.1 -i
+HTTP/1.1 302 Moved Temporarily
+Server: openresty/1.9.3.2rc3
+Date: Sun, 22 Nov 2015 11:04:03 GMT
+Content-Type: text/html
+Content-Length: 169
+Connection: keep-alive
+Location: /foo
+
+<html>
+<head><title>302 Found</title></head>
+<body bgcolor="white">
+<center><h1>302 Found</h1></center>
+<hr><center>openresty/1.9.3.2rc3</center>
+</body>
+</html>
+
+➜  ~  curl 127.0.0.1/foo -i
+HTTP/1.1 200 OK
+Server: openresty/1.9.3.2rc3
+Date: Sun, 22 Nov 2015 10:43:51 GMT
+Content-Type: text/html
+Transfer-Encoding: chunked
+Connection: keep-alive
+
+I am foo
+当我们使用浏览器访问页面 http://127.0.0.1 就可以发现浏览器会自动跳转到 http://127.0.0.1/foo 。
+
+与之前两个应用实例不同的，外部重定向是可以跨域名的。例如从 A 网站跳转到 B 网站是绝对允许的。在 CDN 场景的大量下载应用中，一般分为调度、存储两个重要环节。调度就是通过根据请求方 IP 、下载文件等信息寻找最近、最快节点，应答跳转给请求方完成下载。
+
+获取 uri 参数
+
+上一章节，主要介绍了一下如何使用不同 location 进行协作，对 location 进行柔和，往往都是要需要参数的二次调整。如何正确获取传递参数、设置参数，就是你的必修课了。本章目的是给出在 OpenResty 的世界中，我们如何正确获取、设置 uri 参数。
+
+获取请求 uri 参数
+
+首先看一下官方 API 文档，获取一个 uri 有两个方法：ngx.req.get_uri_args、ngx.req.get_post_args，二者主要的区别是参数来源有区别。
+
+参考下面例子：
+
+server {
+   listen    80;
+   server_name  localhost;
+
+   location /print_param {
+       content_by_lua_block {
+           local arg = ngx.req.get_uri_args()
+           for k,v in pairs(arg) do
+               ngx.say("[GET ] key:", k, " v:", v)
+           end
+
+           ngx.req.read_body() -- 解析 body 参数之前一定要先读取 body
+           local arg = ngx.req.get_post_args()
+           for k,v in pairs(arg) do
+               ngx.say("[POST] key:", k, " v:", v)
+           end
+       }
+   }
+}
+输出结果：
+
+➜  ~  curl '127.0.0.1/print_param?a=1&b=2%26' -d 'c=3&d=4%26'
+[GET ] key:b v:2&
+[GET ] key:a v:1
+[POST] key:d v:4&
+[POST] key:c v:3
+从这个例子中，我们可以很明显看到两个函数 ngx.req.get_uri_args、ngx.req.get_post_args 获取数据来源是有明显区别的，前者来自 uri 请求参数，而后者来自 post 请求内容。
+
+传递请求 uri 参数
+
+当我们可以获取到请求参数，自然是需要这些参数来完成业务控制目的。大家都知道，URI 内容传递过程中是需要调用 ngx.encode_args 进行规则转义。
+
+参看下面例子：
+
+   location /test {
+       content_by_lua_block {
+           local res = ngx.location.capture(
+                    '/print_param',
+                    {
+                       method = ngx.HTTP_POST,
+                       args = ngx.encode_args({a = 1, b = '2&'}),
+                       body = ngx.encode_args({c = 3, d = '4&'})
+                   }
+                )
+           ngx.say(res.body)
+       }
+   }
+输出结果：
+
+➜  ~  curl '127.0.0.1/test'
+[GET]  key:b v:2&
+[GET]  key:a v:1
+[POST] key:d v:4&
+[POST] key:c v:3
+与我们预期是一样的。
+
+如果这里不调用ngx.encode_args ，可能就会比较丑了，看下面例子：
+
+local res = ngx.location.capture('/print_param',
+         {
+            method = ngx.HTTP_POST,
+            args = 'a=1&b=2%26',  -- 注意这里的 %26 ,代表的是 & 字符
+            body = 'c=3&d=4%26'
+        }
+     )
+ngx.say(res.body)
+PS：对于 ngx.location.capture 这里有个小技巧，args 参数可以接受字符串或Lua 表的，这样我们的代码就更加简洁直观。
+
+local res = ngx.location.capture('/print_param',
+         {
+            method = ngx.HTTP_POST,
+            args = {a = 1, b = '2&'},
+            body = 'c=3&d=4%26'
+        }
+     )
+ngx.say(res.body)
+
+获取请求 body
+
+在 Nginx 的典型应用场景中，几乎都是只读取 HTTP 头即可，例如负载均衡、正反向代理等场景。但是对于 API Server 或者 Web Application ，对 body 可以说就比较敏感了。由于 OpenResty 基于 Nginx ，所以天然的对请求 body 的读取细节与其他成熟 Web 框架有些不同。
+
+最简单的 “Hello ****”
+
+我们先来构造最简单的一个请求，POST 一个名字给服务端，服务端应答一个 “Hello ****”。
+
+http {
+    server {
+        listen    80;
+
+        location /test {
+            content_by_lua_block {
+                local data = ngx.req.get_body_data()
+                ngx.say("hello ", data)
+            }
+        }
+    }
+}
+测试结果：
+
+➜  ~  curl 127.0.0.1/test -d jack
+hello nil
+大家可以看到 data 部分获取为空，如果你熟悉其他 web 开发框架，估计立刻就觉得 OpenResty 弱爆了。查阅一下官方 wiki 我们很快知道，原来我们还需要添加指令 lua_need_request_body 。究其原因，主要是 Nginx 诞生之初主要是为了解决负载均衡情况，而这种情况，是不需要读取 body 就可以决定负载策略的，所以这个点对于 API Server 和 Web Application 开发的同学有点怪。
+
+参看下面例子：
+
+http {
+    server {
+        listen    80;
+
+        # 默认读取 body
+        lua_need_request_body on;
+
+        location /test {
+            content_by_lua_block {
+                local data = ngx.req.get_body_data()
+                ngx.say("hello ", data)
+            }
+        }
+    }
+}
+再次测试，符合我们预期：
+
+➜  ~  curl 127.0.0.1/test -d jack
+hello jack
+如果你只是某个接口需要读取 body（并非全局行为），那么这时候也可以显示调用 ngx.req.read_body() 接口，参看下面示例：
+
+http {
+    server {
+        listen    80;
+
+        location /test {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local data = ngx.req.get_body_data()
+                ngx.say("hello ", data)
+            }
+        }
+    }
+}
+body 偶尔读取不到？
+
+ngx.req.get_body_data() 读请求体，会偶尔出现读取不到直接返回 nil 的情况。
+
+如果请求体尚未被读取，请先调用 ngx.req.read_body (或打开 lua_need_request_body 选项强制本模块读取请求体，此方法不推荐）。
+
+如果请求体已经被存入临时文件，请使用 ngx.req.get_body_file 函数代替。
+
+如需要强制在内存中保存请求体，请设置 client_body_buffer_size 和 client_max_body_size 为同样大小。
+
+参考下面代码：
+
+http {
+    server {
+        listen    80;
+
+        # 强制请求 body 到临时文件中（仅仅为了演示）
+        client_body_in_file_only on;
+
+        location /test {
+            content_by_lua_block {
+                function getFile(file_name)
+                    local f = assert(io.open(file_name, 'r'))
+                    local string = f:read("*all")
+                    f:close()
+                    return string
+                end
+
+                ngx.req.read_body()
+                local data = ngx.req.get_body_data()
+                if nil == data then
+                    local file_name = ngx.req.get_body_file()
+                    ngx.say(">> temp file: ", file_name)
+                    if file_name then
+                        data = getFile(file_name)
+                    end
+                end
+
+                ngx.say("hello ", data)
+            }
+        }
+    }
+}
+测试结果：
+
+➜  ~  curl 127.0.0.1/test -d jack
+>> temp file: /Users/rain/Downloads/nginx/client_body_temp/0000000018
+hello jack
+由于 Nginx 是为了解决负载均衡场景诞生的，所以它默认是不读取 body 的行为，会对 API Server 和 Web Application 场景造成一些影响。根据需要正确读取、丢弃 body 对 OpenResty 开发是至关重要的。
+
+输出响应体
+
+HTTP响应报文分为三个部分：
+
+响应行
+响应头
+响应体
+
+
+对于 HTTP 响应体的输出，在 OpenResty 中调用 ngx.say 或 ngx.print 即可。经过查看官方 wiki ，这两者都是输出响应体，区别是 ngx.say 会对输出响应体多输出一个 \n 。如果你用的是浏览器完成的功能调试，使用这两着是没有区别的。但是如果使用各种终端工具，这时候使用 ngx.say 明显就更方便了。
+
+ngx.say 与 ngx.print 均为异步输出
+
+首先需要明确一下的，是这两个函数都是异步输出的，也就是说当调用 ngx.say 后并不会立刻输出响应体。参考下面的例子：
+
+    server {
+        listen    80;
+
+        location /test {
+            content_by_lua_block {
+                ngx.say("hello")
+                ngx.sleep(3)
+                ngx.say("the world")
+            }
+        }
+
+        location /test2 {
+            content_by_lua_block {
+                ngx.say("hello")
+                ngx.flush() -- 显式的向客户端刷新响应输出
+                ngx.sleep(3)
+                ngx.say("the world")
+            }
+        }
+    }
+测试接口可以观察到， /test 响应内容实在触发请求 3s 后一起接收到响应体，而 /test2 则是先收到一个 hello 停顿 3s 后又接收到后面的 the world。
+
+再看下面的例子：
+
+    server {
+        listen    80;
+        lua_code_cache off;
+
+        location /test {
+            content_by_lua_block {
+                ngx.say(string.rep("hello", 1000))
+                ngx.sleep(3)
+                ngx.say("the world")
+            }
+        }
+    }
+执行测试，可以发现首先收到了所有的 "hello" ，停顿大约 3 秒后，接着又收到了 "the world" 。
+
+通过两个例子对比，可以知道，因为是异步输出，两个响应体的输出时机是 不一样 的。
+
+如何优雅处理响应体过大的输出
+
+如果响应体比较小，这时候相对就比较随意。但是如果响应体过大（例如超过 2G），是不能直接调用 API 完成响应体输出的。响应体过大，分两种情况：
+
+输出内容本身体积很大，例如超过 2G 的文件下载
+输出内容本身是由各种碎片拼凑的，碎片数量庞大，例如应答数据是某地区所有人的姓名
+第①个情况，要利用 HTTP 1.1 特性 CHUNKED 编码来完成，一起来看看 CHUNKED 编码格式样例：
+
+
+
+可以利用 CHUNKED 格式，把一个大的响应体拆分成多个小的应答体，分批、有节制的响应给请求方。
+
+参考下面的例子：
+
+location /test {
+    content_by_lua_block {
+        -- ngx.var.limit_rate = 1024*1024
+        local file, err = io.open(ngx.config.prefix() .. "data.db","r")
+        if not file then
+            ngx.log(ngx.ERR, "open file error:", err)
+            ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
+        end
+
+        local data
+        while true do
+            data = file:read(1024)
+            if nil == data then
+                break
+            end
+            ngx.print(data)
+            ngx.flush(true)
+        end
+        file:close()
+    }
+}
+按块读取本地文件内容（每次 1KB），并以流式方式进行响应。笔者本地文件 data.db 大小是 4G ， Nginx 服务可以稳定运行，并维持内存占用在 几MB 范畴。
+
+注：其实 nginx 自带的静态文件解析能力已经非常好了。这里只是一个例子，实际中过大响应体都是后端服务生成的，为了演示环境相对封闭，所以这里选择本地文件。
+
+第②个情况，其实就是要利用 ngx.print 的特性了，它的输入参数可以是单个或多个字符串参数，也可以是 table 对象。
+
+参考官方示例代码：
+
+local table = {
+     "hello, ",
+     {"world: ", true, " or ", false,
+         {": ", nil}}
+ }
+ ngx.print(table)
+将输出：
+
+ hello, world: true or false: nil
+也就是说当有非常多碎片数据时，没有必要一定连接成字符串后再进行输出。完全可以直接存放在 table 中，用数组的方式把这些碎片数据统一起来，直接调用 ngx.print(table) 即可。这种方式效率更高，并且更容易被优化。
+
+日志输出
+
+你如何测试和调试你的代码呢？Lua 的两个主力作者是这样回复的：
+
+Luiz Henrique de Figueiredo：我主要是一块一块的构建，分块测试。我很少使用调试器。即使用调试器，也只是调试 C 代码。我从不用调试器调试 Lua 代码。对于 Lua 来说，在适当的位置放几条打印语句通常就可以胜任了。
+
+Roberto Ierusalimschy：我差不多也是这样。当我使用调试器时，通常只是用来查找代码在哪里崩溃了。对于 C 代码，有个像 Valgrind 或者 Purify 这样的工具是必要的。
+
+摘自《编程之魂 -- 采访 Lua 发明人的一篇文章》。
+
+由此可见掌握日志输出是多么重要，下至入门同学，上至 Lua 作者，使用日志输出来确定问题，是很必要的基本手段。
+
+标准日志输出
+
+OpenResty 的标准日志输出原句为 ngx.log(log_level, ...) ，几乎可以在任何 ngx_lua 阶段进行日志的输出。
+
+请看下面的示例：
+
+#user  nobody;
+worker_processes  1;
+
+error_log  logs/error.log error;    # 日志级别
+#pid        logs/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    server {
+        listen    80;
+        location / {
+            content_by_lua_block {
+                local num = 55
+                local str = "string"
+                local obj
+                ngx.log(ngx.ERR, "num:", num)
+                ngx.log(ngx.INFO, " string:", str)
+                print([[i am print]])
+                ngx.log(ngx.ERR, " object:", obj)
+            }
+        }
+    }
+}
+访问网页，生成日志（logs/error.log 文件）结果如下：
+
+2016/01/22 16:43:34 [error] 61610#0: *10 [lua] content_by_lua(nginx.conf:26):5:
+ num:55, client: 127.0.0.1, server: , request: "GET /hello HTTP/1.1",
+ host: "127.0.0.1"
+2016/01/22 16:43:34 [error] 61610#0: *10 [lua] content_by_lua(nginx.conf:26):7:
+ object:nil, client: 127.0.0.1, server: , request: "GET /hello HTTP/1.1",
+ host: "127.0.0.1"
+大家可以在单行日志中获取很多有用的信息，例如：时间、日志级别、请求ID、错误代码位置、内容、客户端 IP 、请求参数等等，这些信息都是环境信息，可以用来辅助完成更多其他操作。当然我们也可以根据自己需要定义日志格式，具体可以参考 nginx 的 log_format 章节。
+
+细心的读者发现了，中间的两行日志哪里去了？这里不卖关子，其实是日志输出级别的原因。上面的例子，日志输出级别使用的 error，只有等于或大于这个级别的日志才会输出。这里还有一个知识点就是 OpenResty 里面的 print 语句是 INFO 级别。
+
+有关 Nginx 的日志级别，请看下表：
+
+ngx.STDERR     -- 标准输出
+ngx.EMERG      -- 紧急报错
+ngx.ALERT      -- 报警
+ngx.CRIT       -- 严重，系统故障，触发运维告警系统
+ngx.ERR        -- 错误，业务不可恢复性错误
+ngx.WARN       -- 告警，业务中可忽略错误
+ngx.NOTICE     -- 提醒，业务比较重要信息
+ngx.INFO       -- 信息，业务琐碎日志信息，包含不同情况判断等
+ngx.DEBUG      -- 调试
+他们是一些常量，越往上等级越高。读者朋友可以尝试把 error log 日志级别修改为 info，然后重新执行一下测试用例，就可以看到全部日志输出结果了。
+
+对于应用开发，一般使用 ngx.INFO 到 ngx.CRIT 就够了。生产中错误日志开启到 error 级别就够了。如何正确使用这些级别呢？可能不同的人、不同的公司可能有不同见解。
+
+网络日志输出
+
+如果你的日志需要归集，并且对时效性要求比较高那么这里要推荐的库可能就让你很喜欢了。 lua-resty-logger-socket ，可以说很好的解决了上面提及的几个特性。
+
+lua-resty-logger-socket 的目标是替代 Nginx 标准的 ngx_http_log_module 以非阻塞 IO 方式推送 access log 到远程服务器上。对远程服务器的要求是支持 syslog-ng 的日志服务。
+
+引用官方示例：
+
+lua_package_path "/path/to/lua-resty-logger-socket/lib/?.lua;;";
+
+    server {
+        location / {
+            log_by_lua '
+                local logger = require "resty.logger.socket"
+                if not logger.initted() then
+                    local ok, err = logger.init{
+                        host = 'xxx',
+                        port = 1234,
+                        flush_limit = 1234,
+                        drop_limit = 5678,
+                    }
+                    if not ok then
+                        ngx.log(ngx.ERR, "failed to initialize the logger: ",
+                                err)
+                        return
+                    end
+                end
+
+                -- construct the custom access log message in
+                -- the Lua variable "msg"
+
+                local bytes, err = logger.log(msg)
+                if err then
+                    ngx.log(ngx.ERR, "failed to log message: ", err)
+                    return
+                end
+            ';
+        }
+    }
+例举几个好处：
+
+基于 cosocket 非阻塞 IO 实现
+日志累计到一定量，集体提交，增加网络传输利用率
+短时间的网络抖动，自动容错
+日志累计到一定量，如果没有传输完毕，直接丢弃
+日志传输过程完全不落地，没有任何磁盘 IO 消耗
+
+简单API Server框架
+
+实现一个最最简单的数学计算：加、减、乘、除，给大家演示如何搭建简单的 API Server。
+
+按照前面几章的写法，先来看看加法、减法示例代码：
+
+worker_processes  1;        #nginx worker 数量
+error_log logs/error.log;   #指定错误日志文件路径
+events {
+    worker_connections 1024;
+}
+http {
+    server {
+        listen 80;
+
+        # 加法
+        location /addition {
+           content_by_lua_block {
+                local args = ngx.req.get_uri_args()
+                ngx.say(args.a + args.b)
+            }
+        }
+
+        # 减法
+        location /subtraction {
+            content_by_lua_block {
+                local args = ngx.req.get_uri_args()
+                ngx.say(args.a - args.b)
+            }
+        }
+
+        # 乘法
+        location /multiplication {
+            content_by_lua_block {
+                local args = ngx.req.get_uri_args()
+                ngx.say(args.a * args.b)
+            }
+        }
+
+        # 除法
+        location /division {
+            content_by_lua_block {
+                local args = ngx.req.get_uri_args()
+                ngx.say(args.a / args.b)
+            }
+        }
+    }
+}
+代码写多了一眼就可以看出来，这么简单的加减乘除，居然写了这么长，而且还要对每个 API 都写一个 location ，作为有追求的人士，怎能容忍这种代码风格？
+
+首先是需要把这些 location 合并；
+其次是这些接口的实现放到独立文件中，保持 nginx 配置文件的简洁；
+基于这两点要求，可以改成下面的版本，看上去有那么几分模样的样子：
+
+nginx.conf 内容：
+worker_processes  1;        #nginx worker 数量
+error_log logs/error.log;   #指定错误日志文件路径
+events {
+    worker_connections 1024;
+}
+
+http {
+    # 设置默认 lua 搜索路径，添加 lua 路径
+    lua_package_path 'lua/?.lua;/blah/?.lua;;';
+
+    # 对于开发研究，可以对代码 cache 进行关闭，这样不必每次都重新加载 nginx。
+    lua_code_cache off;
+
+    server {
+        listen 80;
+
+        # 在代码路径中使用nginx变量
+        # 注意： nginx var 的变量一定要谨慎，否则将会带来非常大的风险
+        location ~ ^/api/([-_a-zA-Z0-9/]+) {
+            # 准入阶段完成参数验证
+            access_by_lua_file  lua/access_check.lua;
+
+            #内容生成阶段
+            content_by_lua_file lua/$1.lua;
+        }
+    }
+}
+其他文件内容：
+--========== {$prefix}/lua/addition.lua
+local args = ngx.req.get_uri_args()
+ngx.say(args.a + args.b)
+
+--========== {$prefix}/lua/subtraction.lua
+local args = ngx.req.get_uri_args()
+ngx.say(args.a - args.b)
+
+--========== {$prefix}/lua/multiplication.lua
+local args = ngx.req.get_uri_args()
+ngx.say(args.a * args.b)
+
+--========== {$prefix}/lua/division.lua
+local args = ngx.req.get_uri_args()
+ngx.say(args.a / args.b)
+既然对外提供的是 API Server，作为一个服务端程序员，怎么可以容忍输入参数不检查呢？万一对方送过来的不是数字或者为空，这些都要过滤掉嘛。参数检查过滤的方法是统一，在这几个 API 中如何共享这个方法呢？这时候就需要 Lua 模块来完成了。
+
+使用统一的公共模块，完成参数验证；
+验证入口最好也统一，不要分散在不同地方；
+nginx.conf 内容：
+worker_processes  1;        #nginx worker 数量
+error_log logs/error.log;   #指定错误日志文件路径
+events {
+    worker_connections 1024;
+}
+http {
+    server {
+        listen 80;
+
+        # 在代码路径中使用nginx变量
+        # 注意： nginx var 的变量一定要谨慎，否则将会带来非常大的风险
+        location ~ ^/api/([-_a-zA-Z0-9/]+) {
+            access_by_lua_file  /path/to/lua/access_check.lua;
+            content_by_lua_file /path/to/lua/$1.lua;
+        }
+    }
+}
+新增文件内容：
+--========== {$prefix}/lua/comm/param.lua
+local _M = {}
+
+-- 对输入参数逐个进行校验，只要有一个不是数字类型，则返回 false
+function _M.is_number(...)
+    local arg = {...}
+
+    local num
+    for _,v in ipairs(arg) do
+        num = tonumber(v)
+        if nil == num then
+            return false
+        end
+    end
+
+    return true
+end
+
+return _M
+
+--========== {$prefix}/lua/access_check.lua
+local param= require("comm.param")
+local args = ngx.req.get_uri_args()
+
+if not param.is_number(args.a, args.b) then
+    ngx.exit(ngx.HTTP_BAD_REQUEST)
+    return
+end
+看看curl测试结果吧：
+
+$  nginx  curl '127.0.0.1:80/api/addition?a=1'
+<html>
+<head><title>400 Bad Request</title></head>
+<body bgcolor="white">
+<center><h1>400 Bad Request</h1></center>
+<hr><center>openresty/1.9.3.1</center>
+</body>
+</html>
+$  nginx  curl '127.0.0.1:80/api/addition?a=1&b=3'
+4
+基本是按照预期执行的。参数不全、错误时，会提示400错误。正常处理，可以返回预期结果。
+
+来整体看一下目前的目录关系：
+
+.
+├── conf
+│   ├── nginx.conf
+├── logs
+│   ├── error.log
+│   └── nginx.pid
+├── lua
+│   ├── access_check.lua
+│   ├── addition.lua
+│   ├── subtraction.lua
+│   ├── multiplication.lua
+│   ├── division.lua
+│   └── comm
+│       └── param.lua
+└── sbin
+    └── nginx
+怎么样，有点 magic 的味道不？其实你的接口越是规范，有固定规律可寻，那么 OpenResty 就总是很容易能找到适合你的位置。当然这里你也可以把 access_check.lua 内容分别复制到加、减、乘、除实现的四个 Lua 文件中，肯定也是能用的。这里只是为了给大家提供更多的玩法，需要的时候可以有更多的选择。
+
+本章目的是搭建一个简单API Server，记住这绝对不是终极版本。这里面还有很多需要进一步去考虑的地方，但是作为最基本的框架已经有了。
+
+使用 Nginx 内置绑定变量
+
+Nginx作为一个成熟、久经考验的负载均衡软件，与其提供丰富、完整的内置变量是分不开的，它极大增加了对Nginx网络行为的控制细度。这些变量大部分都是在请求进入时解析的，并把他们缓存到请求cycle中，方便下一次获取使用。首先来看看Nginx对都开放了那些API。
+
+参看下表：
+
+名称  说明
+$arg_name   请求中的name参数
+$args   请求中的参数
+$binary_remote_addr 远程地址的二进制表示
+$body_bytes_sent    已发送的消息体字节数
+$content_length HTTP请求信息里的"Content-Length"
+$content_type   请求信息里的"Content-Type"
+$document_root  针对当前请求的根路径设置值
+$document_uri   与$uri相同; 比如 /test2/test.php
+$host   请求信息中的"Host"，如果请求中没有Host行，则等于设置的服务器名
+$hostname   机器名使用 gethostname系统调用的值
+$http_cookie    cookie 信息
+$http_referer   引用地址
+$http_user_agent    客户端代理信息
+$http_via   最后一个访问服务器的Ip地址。
+$http_x_forwarded_for   相当于网络访问路径
+$is_args    如果请求行带有参数，返回“?”，否则返回空字符串
+$limit_rate 对连接速率的限制
+$nginx_version  当前运行的nginx版本号
+$pid    worker进程的PID
+$query_string   与$args相同
+$realpath_root  按root指令或alias指令算出的当前请求的绝对路径。其中的符号链接都会解析成真是文件路径
+$remote_addr    客户端IP地址
+$remote_port    客户端端口号
+$remote_user    客户端用户名，认证用
+$request    用户请求
+$request_body   这个变量（0.7.58+）包含请求的主要信息。在使用proxy_pass或fastcgi_pass指令的location中比较有意义
+$request_body_file  客户端请求主体信息的临时文件名
+$request_completion 如果请求成功，设为"OK"；如果请求未完成或者不是一系列请求中最后一部分则设为空
+$request_filename   当前请求的文件路径名，比如/opt/nginx/www/test.php
+$request_method 请求的方法，比如"GET"、"POST"等
+$request_uri    请求的URI，带参数
+$scheme 所用的协议，比如http或者是https
+$server_addr    服务器地址，如果没有用listen指明服务器地址，使用这个变量将发起一次系统调用以取得地址(造成资源浪费)
+$server_name    请求到达的服务器名
+$server_port    请求到达的服务器端口号
+$server_protocol    请求的协议版本，"HTTP/1.0"或"HTTP/1.1"
+$uri    请求的URI，可能和最初的值有不同，比如经过重定向之类的
+其实这还不是全部，Nginx在不停迭代更新是一个原因，还有一个是有些变量太冷门，借助它们，会有很多玩法。
+
+首先，在OpenResty中如何引用这些变量呢？参考 ngx.var.VARIABLE 小节。
+
+利用这些内置变量，来做一个简单的数学求和运算例子：
+
+    server {
+        listen    80;
+        server_name  localhost;
+
+        location /sum {
+            #处理业务
+           content_by_lua_block {
+                local a = tonumber(ngx.var.arg_a) or 0
+                local b = tonumber(ngx.var.arg_b) or 0
+                ngx.say("sum: ", a + b )
+            }
+        }
+    }
+验证一下：
+
+➜  ~  curl 'http://127.0.0.1/sum?a=11&b=12'
+sum: 23
+也许你笑了，这个API太简单没有实际意义。我们做个简易防火墙，看看如何开始玩耍。
+
+参看下面示例代码：
+
+    server {
+        listen    80;
+        server_name  localhost;
+
+        location /sum {
+            # 使用access阶段完成准入阶段处理
+            access_by_lua_block {
+                local black_ips = {["127.0.0.1"]=true}
+
+                local ip = ngx.var.remote_addr
+                if true == black_ips[ip] then
+                    ngx.exit(ngx.HTTP_FORBIDDEN)
+                end
+            };
+
+            #处理业务
+           content_by_lua_block {
+                local a = tonumber(ngx.var.arg_a) or 0
+                local b = tonumber(ngx.var.arg_b) or 0
+                ngx.say("sum:", a + b )
+            }
+        }
+    }
+运行测试：
+
+➜  ~  curl '192.168.1.104/sum?a=11&b=12'
+sum:23
+➜  ~
+➜  ~
+➜  ~  curl '127.0.0.1/sum?a=11&b=12'
+<html>
+<head><title>403 Forbidden</title></head>
+<body bgcolor="white">
+<center><h1>403 Forbidden</h1></center>
+<hr><center>openresty/1.9.3.1</center>
+</body>
+</html>
+通过测试结果看到，提取了终端的IP地址后进行限制。扩充一下，就可以支持 IP 地址段，如果再与系统iptables进行配合，那么就足以达到软防火墙的目的。
+
+目前为止，所有的例子都是对Nginx内置变量的获取，是否可以对其进行设置呢？其实大多数内容都是不允许写入的，例如刚刚的终端IP地址，在请求中是不允许对其进行更新的。对于可写的变量中的limit_rate，值得一提，它能完成传输速率限制，并且它的影响是单个请求级别。
+
+参看下面示例：
+
+        location /download {
+            access_by_lua_block {
+                ngx.var.limit_rate = 1000
+            };
+        }
+下载测试：
+
+➜  ~  wget '127.0.0.1/download/1.cab'
+--2015-09-13 13:59:51--  http://127.0.0.1/download/1.cab
+Connecting to 127.0.0.1... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 135802 (133K) [application/octet-stream]
+Saving to: '1.cab'
+
+1.cab                6%[===>             ]   8.00K  1.01KB/s   eta 1m 53s
+
+子查询
+
+Nginx 子请求是一种非常强有力的方式，它可以发起非阻塞的内部请求访问目标 location。目标 location 可以是配置文件中其他文件目录，或 任何 其他 nginx C 模块，包括 ngx_proxy、ngx_fastcgi、ngx_memc、ngx_postgres、ngx_drizzle，甚至 ngx_lua 自身等等 。
+
+需要注意的是，子请求只是模拟 HTTP 接口的形式， 没有 额外的 HTTP/TCP 流量，也 没有 IPC (进程间通信) 调用。所有工作在内部高效地在 C 语言级别完成。
+
+子请求与 HTTP 301/302 重定向指令 (通过 ngx.redirect) 完全不同，也与内部重定向 ((通过 ngx.exec) 完全不同。
+
+在发起子请求前，用户程序应总是读取完整的 HTTP 请求体 (通过调用 ngx.req.read_body 或设置 lua_need_request_body 指令为 on).
+
+该 API 方法（ngx.location.capture_multi 也一样）总是缓冲整个请求体到内存中。因此，当需要处理一个大的子请求响应，用户程序应使用 cosockets 进行流式处理，
+
+下面是一个简单例子：
+
+
+ res = ngx.location.capture(uri)
+返回一个包含四个元素的 Lua 表 (res.status, res.header, res.body, 和 res.truncated)。
+
+res.status (状态) 保存子请求的响应状态码。
+
+res.header (头) 用一个标准 Lua 表储子请求响应的所有头信息。如果是“多值”响应头，这些值将使用 Lua (数组) 表顺序存储。例如，如果子请求响应头包含下面的行：
+
+
+ Set-Cookie: a=3
+ Set-Cookie: foo=bar
+ Set-Cookie: baz=blah
+则 res.header["Set-Cookie"] 将存储 Lua 表 {"a=3", "foo=bar", "baz=blah"}。
+
+res.body (体) 保存子请求的响应体数据，它可能被截断。用户需要检测 res.truncated (截断) 布尔值标记来判断 res.body 是否包含截断的数据。这种数据截断的原因只可能是因为子请求发生了不可恢复的错误，例如远端在发送响应体时过早中断了连接，或子请求在接收远端响应体时超时。
+
+URI 请求串可以与 URI 本身连在一起，例如，
+
+
+ res = ngx.location.capture('/foo/bar?a=3&b=4')
+因为 Nginx 内核限制，子请求不允许类似 @foo 命名 location。请使用标准 location，并设置 internal 指令，仅服务内部请求。
+
+例如，发送一个 POST 子请求，可以这样做：
+
+
+ res = ngx.location.capture(
+     '/foo/bar',
+     { method = ngx.HTTP_POST, body = 'hello, world' }
+ )
+除了 POST 的其他 HTTP 请求方法请参考 HTTP method constants。 method 选项默认值是 ngx.HTTP_GET。
+
+args 选项可以设置附加的 URI 参数，例如：
+
+
+ ngx.location.capture('/foo?a=1',
+     { args = { b = 3, c = ':' } }
+ )
+等同于
+
+
+ ngx.location.capture('/foo?a=1&b=3&c=%3a')
+也就是说，这个方法将根据 URI 规则转义参数键和值，并将它们拼接在一起组成一个完整的请求串。args 选项要求的 Lua 表的格式与 ngx.encode_args 方法中使用的完全相同。
+
+args 选项也可以直接包含 (转义过的) 请求串：
+
+
+ ngx.location.capture('/foo?a=1',
+     { args = 'b=3&c=%3a' } }
+ )
+这个例子与上个例子的功能相同。
+
+请注意，通过 ngx.location.capture 创建的子请求默认继承当前请求的所有请求头信息，这有可能导致子请求响应中不可预测的副作用。例如，当使用标准的 ngx_proxy 模块服务子请求时，如果主请求头中包含 "Accept-Encoding: gzip"，可能导致子请求返回 Lua 代码无法正确处理的 gzip 压缩过的结果。通过设置 proxy_pass_request_headers 为 off ，在子请求 location 中忽略原始请求头。
+
+注：ngx.location.capture 和 ngx.location.capture_multi 指令无法抓取包含以下指令的 location： add_before_body, add_after_body, auth_request, echo_location, echo_location_async, echo_subrequest, 或 echo_subrequest_async 。
+
+
+ location /foo {
+     content_by_lua '
+         res = ngx.location.capture("/bar")
+     ';
+ }
+ location /bar {
+     echo_location /blah;
+ }
+ location /blah {
+     echo "Success!";
+ }
+
+ $ curl -i http://example.com/foo
+他们将不会按照预期工作。
+
+不同阶段共享变量
+
+在 OpenResty 的体系中，可以通过共享内存的方式完成不同工作进程的数据共享，可以通过 Lua 模块方式完成单个进程内不同请求的数据共享。如何完成单个请求内不同阶段的数据共享呢？最典型的例子，估计就是在 log 阶段记录一些请求的特殊变量。
+
+ngx.ctx 表就是为了解决这类问题而设计的。参考下面例子：
+
+location /test {
+     rewrite_by_lua '
+         ngx.ctx.foo = 76
+     ';
+     access_by_lua '
+         ngx.ctx.foo = ngx.ctx.foo + 3
+     ';
+     content_by_lua '
+         ngx.say(ngx.ctx.foo)
+     ';
+ }
+首先 ngx.ctx 是一个表，所以我们可以对他添加、修改。它用来存储基于请求的 Lua 环境数据，其生存周期与当前请求相同 (类似 Nginx 变量)。它有一个最重要的特性：单个请求内的 rewrite (重写)，access (访问)，和 content (内容) 等各处理阶段是保持一致的。
+
+额外注意，每个请求，包括子请求，都有一份自己的 ngx.ctx 表。例如：
+
+ location /sub {
+     content_by_lua '
+         ngx.say("sub pre: ", ngx.ctx.blah)
+         ngx.ctx.blah = 32
+         ngx.say("sub post: ", ngx.ctx.blah)
+     ';
+ }
+
+ location /main {
+     content_by_lua '
+         ngx.ctx.blah = 73
+         ngx.say("main pre: ", ngx.ctx.blah)
+         local res = ngx.location.capture("/sub")
+         ngx.print(res.body)
+         ngx.say("main post: ", ngx.ctx.blah)
+     ';
+ }
+访问 GET /main 输出
+
+ main pre: 73
+ sub pre: nil
+ sub post: 32
+ main post: 73
+任意数据值，包括 Lua 闭包与嵌套表，都可以被插入这个“魔法”表，也允许注册自定义元方法。
+
+也可以将 ngx.ctx 覆盖为一个新 Lua 表，例如，
+
+ ngx.ctx = { foo = 32, bar = 54 }
+ngx.ctx 表查询需要相对昂贵的元方法调用，这比通过用户自己的函数参数直接传递基于请求的数据要慢得多。所以不要为了节约用户函数参数而滥用此 API，因为它可能对性能有明显影响。
+
+由于 ngx.ctx 保存的是指定请求资源，所以这个变量是不能直接共享给其他请求使用的。
+
+防止 SQL 注入
+
+所谓 SQL 注入，就是通过把 SQL 命令插入到 Web 表单提交或输入域名或页面请求的查询字符串，最终达到欺骗服务器执行恶意的 SQL 命令。具体来说，它是利用现有应用程序，将（恶意）的 SQL 命令注入到后台数据库引擎执行的能力，它可以通过在 Web 表单中输入（恶意）SQL 语句得到一个存在安全漏洞的网站上的数据库，而不是按照设计者意图去执行 SQL 语句。比如先前的很多影视网站泄露 VIP 会员密码大多就是通过 Web 表单递交查询字符暴出的，这类表单特别容易受到 SQL 注入式攻击。
+
+SQL 注入例子
+
+下面给了一个完整的可复现的 SQL 注入例子，实际上注入的 SQL 语句写法有很多，下例是比较简单的。
+
+location /test {
+    content_by_lua_block {
+        local mysql = require "resty.mysql"
+        local db, err = mysql:new()
+        if not db then
+            ngx.say("failed to instantiate mysql: ", err)
+            return
+        end
+
+        db:set_timeout(1000) -- 1 sec
+
+        local ok, err, errno, sqlstate = db:connect{
+            host = "127.0.0.1",
+            port = 3306,
+            database = "ngx_test",
+            user = "ngx_test",
+            password = "ngx_test",
+            max_packet_size = 1024 * 1024 }
+
+        if not ok then
+            ngx.say("failed to connect: ", err, ": ", errno, " ", sqlstate)
+            return
+        end
+
+        ngx.say("connected to mysql.")
+
+        local res, err, errno, sqlstate =
+            db:query("drop table if exists cats")
+        if not res then
+            ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+            return
+        end
+
+        res, err, errno, sqlstate =
+            db:query("create table cats "
+                     .. "(id serial primary key, "
+                     .. "name varchar(5))")
+        if not res then
+            ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+            return
+        end
+
+        ngx.say("table cats created.")
+
+        res, err, errno, sqlstate =
+            db:query("insert into cats (name) "
+                     .. "values (\'Bob\'),(\'\'),(null)")
+        if not res then
+            ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+            return
+        end
+
+        ngx.say(res.affected_rows, " rows inserted into table cats ",
+                "(last insert id: ", res.insert_id, ")")
+
+        -- 这里有 SQL 注入（后面的 drop 操作）
+        local req_id = [[1'; drop table cats;--]]
+        res, err, errno, sqlstate =
+            db:query(string.format([[select * from cats where id = '%s']], req_id))
+        if not res then
+            ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+            return
+        end
+
+        local cjson = require "cjson"
+        ngx.say("result: ", cjson.encode(res))
+
+        -- 再次查询，table 被删
+        res, err, errno, sqlstate =
+            db:query([[select * from cats where id = 1]])
+        if not res then
+            ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+            return
+        end
+
+        db:set_keepalive(10000, 100)
+    }
+}
+其他变种，大家可以自行爬行搜索引擎了解。
+
+OpenResty 中如何规避
+
+其实大家可以大概网络爬行一下看看如何解决 SQL 注入，可以发现实现放法很多，比如替换各种关键字等。在 OpenResty 中，其实就简单很多了，只需要对输入参数进行一层过滤即可。
+
+对于 MySQL ，可以调用 ndk.set_var.set_quote_sql_str ，进行一次过滤即可。
+
+-- for MySQL
+local req_id = [[1'; drop table cats;--]]
+res, err, errno, sqlstate =
+    db:query(string.format([[select * from cats where id = '%s']],
+    ndk.set_var.set_quote_sql_str(req_id)))
+if not res then
+    ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+    return
+end
+如果恰巧你使用的是 PostgreSQL ，调用 ndk.set_var.set_quote_pgsql_str 过滤输入变量。读者这时候可以再次把这段代码放到刚刚的示例代码中，如果您可以得到下面的错误，恭喜您，以正确的姿势防止 SQL 注入。
+
+bad result: You have an error in your SQL syntax; check the manual that
+corresponds to your MySQL server version for the right syntax to use near
+'1\'; drop table cats;--''' at line 1: 1064: 42000.
+
+如何发起新 HTTP 请求
+
+OpenResty 最主要的应用场景之一是 API Server，有别于传统 Nginx 的代理转发应用场景，API Server 中心内部有各种复杂的交易流程和判断逻辑，学会高效的与其他 HTTP Server 调用是必备基础。本文将介绍 OpenResty 中两个最常见 HTTP 接口调用方法。
+
+我们先来模拟一个接口场景，一个公共服务专门用来对外提供加了“盐” md5 计算，业务系统调用这个公共服务完成业务逻辑，用来判断请求本身是否合法。
+
+利用 proxy_pass
+
+参考下面示例，利用 proxy_pass 完成 HTTP 接口访问的成熟配置+调用方法。
+
+http {
+    upstream md5_server{
+        server 127.0.0.1:81;        # ①
+        keepalive 20;               # ②
+    }
+
+    server {
+        listen    80;
+
+        location /test {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local args, err = ngx.req.get_uri_args()
+
+                -- ③
+                local res = ngx.location.capture('/spe_md5',
+                    {
+                        method = ngx.HTTP_POST,
+                        body = args.data
+                    }
+                )
+
+                if 200 ~= res.status then
+                    ngx.exit(res.status)
+                end
+
+                if args.key == res.body then
+                    ngx.say("valid request")
+                else
+                    ngx.say("invalid request")
+                end
+            }
+        }
+
+        location /spe_md5 {
+            proxy_pass http://md5_server;   -- ④
+        }
+    }
+
+    server {
+        listen    81;           -- ⑤
+
+        location /spe_md5 {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local data = ngx.req.get_body_data()
+                ngx.print(ngx.md5(data .. "*&^%$#$^&kjtrKUYG"))
+            }
+        }
+    }
+}
+重点说明： ① 上游访问地址清单(可以按需配置不同的权重规则)； ② 上游访问长连接，是否开启长连接，对整体性能影响比较大（大家可以实测一下）； ③ 接口访问通过 ngx.location.capture 的子查询方式发起； ④ 由于 ngx.location.capture 方式只能是 nginx 自身的子查询，需要借助 proxy_pass 发出 HTTP 连接信号； ⑤ 公共 API 输出服务；
+
+这里大家可以看到，借用 nginx 周边成熟组件力量，为了发起一个 HTTP 请求，我们需要绕好几个弯子，甚至还有可能踩到坑（upstream 中长连接的细节处理），显然没有足够优雅，所以我们继续看下一章节。
+
+利用 cosocket
+
+立马开始我们的新篇章，给大家展示优雅的解决方式。
+
+http {
+    server {
+        listen    80;
+
+        location /test {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local args, err = ngx.req.get_uri_args()
+
+                local http = require "resty.http"   -- ①
+                local httpc = http.new()
+                local res, err = httpc:request_uri( -- ②
+                    "http://127.0.0.1:81/spe_md5",
+                        {
+                        method = "POST",
+                        body = args.data,
+                      }
+                )
+
+                if 200 ~= res.status then
+                    ngx.exit(res.status)
+                end
+
+                if args.key == res.body then
+                    ngx.say("valid request")
+                else
+                    ngx.say("invalid request")
+                end
+            }
+        }
+    }
+
+    server {
+        listen    81;
+
+        location /spe_md5 {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local data = ngx.req.get_body_data()
+                ngx.print(ngx.md5(data .. "*&^%$#$^&kjtrKUYG"))
+            }
+        }
+    }
+}
+重点解释： ① 引用 resty.http 库资源，它来自 github https://github.com/pintsized/lua-resty-http。 ② 参考 resty-http 官方 wiki 说明，我们可以知道 request_uri 函数完成了连接池、HTTP 请求等一系列动作。
+
+题外话，为什么这么简单的方法我们还要求助外部开源组件呢？其实我也觉得这个功能太基础了，真的应该集成到 OpenResty 官方包里面，只不过目前官方默认包里还没有。
+
+如果你的内部请求比较少，使用 ngx.location.capture+proxy_pass 的方式还没什么问题。但如果你的请求数量比较多，或者需要频繁的修改上游地址，那么 resty.http就更适合你。
+
+另外 ngx.thread.* 与 resty.http 相互结合也是很不错的玩法，推荐大家有时间研究一下。
+
+
+
+
+
+
+
+
+
+
+
+访问有授权验证的 Redis
+
+对于有授权验证的 redis ，正确的认证方法，请参考下面例子：
+
+server {
+    location /test {
+        content_by_lua_block {
+            local redis = require "resty.redis"
+            local red = redis:new()
+
+            red:set_timeout(1000) -- 1 sec
+
+            local ok, err = red:connect("127.0.0.1", 6379)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            -- 请注意这里 auth 的调用过程
+            local count
+            count, err = red:get_reused_times()
+            if 0 == count then
+                ok, err = red:auth("password")
+                if not ok then
+                    ngx.say("failed to auth: ", err)
+                    return
+                end
+            elseif err then
+                ngx.say("failed to get reused times: ", err)
+                return
+            end
+
+            ok, err = red:set("dog", "an animal")
+            if not ok then
+                ngx.say("failed to set dog: ", err)
+                return
+            end
+
+            ngx.say("set result: ", ok)
+
+            -- 连接池大小是100个，并且设置最大的空闲时间是 10 秒
+            local ok, err = red:set_keepalive(10000, 100)
+            if not ok then
+                ngx.say("failed to set keepalive: ", err)
+                return
+            end
+        }
+    }
+}
+这里解释一下 tcpsock:getreusedtimes() 方法，如果当前连接不是从内建连接池中获取的，该方法总是返回 0 ，也就是说，该连接还没有被使用过。如果连接来自连接池，那么返回值永远都是非零。所以这个方法可以用来确认当前连接是否来自池子。
+
+对于 Redis 授权，实际上只需要建立连接后，首次认证一下，后面只需直接使用即可。换句话说，从连接池中获取的连接都是经过授权认证的，只有新创建的连接才需要进行授权认证。所以大家就看到了 count, err = red:get_reused_times() 这段代码，并有了下面 if 0 == count then 的判断逻辑。
+
+select+set_keepalive组合操作引起的数据读写错误
+
+在高并发编程中，必须要使用连接池技术，通过减少建连、拆连次数来提高通讯速度。
+
+错误示例代码：
+
+local redis = require "resty.redis"
+local red = redis:new()
+
+red:set_timeout(1000) -- 1 sec
+
+-- or connect to a unix domain socket file listened
+-- by a redis server:
+--     local ok, err = red:connect("unix:/path/to/redis.sock")
+
+local ok, err = red:connect("127.0.0.1", 6379)
+if not ok then
+    ngx.say("failed to connect: ", err)
+    return
+end
+
+ok, err = red:select(1)
+if not ok then
+    ngx.say("failed to select db: ", err)
+    return
+end
+
+ngx.say("select result: ", ok)
+
+ok, err = red:set("dog", "an animal")
+if not ok then
+    ngx.say("failed to set dog: ", err)
+    return
+end
+
+ngx.say("set result: ", ok)
+
+-- put it into the connection pool of size 100,
+-- with 10 seconds max idle time
+local ok, err = red:set_keepalive(10000, 100)
+if not ok then
+    ngx.say("failed to set keepalive: ", err)
+    return
+end
+如果单独执行这个用例，没有任何问题，用例是成功的。但是这段“没问题”的代码，却导致了诡异的现象。
+
+大部分 redis 请求的代码应该是类似这样的：
+
+local redis = require "resty.redis"
+local red = redis:new()
+
+red:set_timeout(1000) -- 1 sec
+
+-- or connect to a unix domain socket file listened
+-- by a redis server:
+--     local ok, err = red:connect("unix:/path/to/redis.sock")
+
+local ok, err = red:connect("127.0.0.1", 6379)
+if not ok then
+    ngx.say("failed to connect: ", err)
+    return
+end
+
+ok, err = red:set("cat", "an animal too")
+if not ok then
+    ngx.say("failed to set cat: ", err)
+    return
+end
+
+ngx.say("set result: ", ok)
+
+-- put it into the connection pool of size 100,
+-- with 10 seconds max idle time
+local ok, err = red:set_keepalive(10000, 100)
+if not ok then
+    ngx.say("failed to set keepalive: ", err)
+    return
+end
+这时候第二个示例代码在生产运行中，会出现cat偶会被写入到数据库1上，且几率大约 1% 左右。出错的原因在于错误示例代码使用了select(1)操作，并且使用了长连接，并潜伏在连接池中。当下一个请求刚好从连接池中把他选出来，又没有重置select(0)操作，后面所有的数据操作就都会默认触发在数据库 1 上了。
+
+怎么解决这个问题？
+
+谁制造问题，谁把问题遗留尾巴擦干净；
+处理业务前，先把前辈的尾巴擦干净；
+这里明显是第一个好，对吧。
+
+redis接口的二次封装
+
+先看一下官方的调用示例代码：
+local redis = require "resty.redis"
+local red = redis:new()
+
+red:set_timeout(1000) -- 1 sec
+
+local ok, err = red:connect("127.0.0.1", 6379)
+if not ok then
+    ngx.say("failed to connect: ", err)
+    return
+end
+
+ok, err = red:set("dog", "an animal")
+if not ok then
+    ngx.say("failed to set dog: ", err)
+    return
+end
+
+ngx.say("set result: ", ok)
+
+-- put it into the connection pool of size 100,
+-- with 10 seconds max idle time
+local ok, err = red:set_keepalive(10000, 100)
+if not ok then
+    ngx.say("failed to set keepalive: ", err)
+    return
+end
+这是一个标准的 redis 接口调用，如果你的代码中 redis 被调用频率不高，那么这段代码不会有任何问题。但如果你的项目重度依赖 redis，工程中有大量的代码在重复创建连接-->数据操作-->关闭连接（或放到连接池）这个完整的链路调用完毕，甚至还要考虑不同的 return 情况做不同处理，就很快发现代码中有大量的重复。
+
+Lua是不支持面向对象的。很多人用尽各种招术利用元表来模拟。可是，Lua的发明者似乎不想看到这样的情形，因为他们把取长度的__len方法以及析构函数__gc留给了 C API，纯 Lua 只能望洋兴叹。
+
+我们期望的代码应该是这样的：
+local red = redis:new()
+local ok, err = red:set("dog", "an animal")
+if not ok then
+    ngx.say("failed to set dog: ", err)
+    return
+end
+
+ngx.say("set result: ", ok)
+
+local res, err = red:get("dog")
+if not res then
+    ngx.say("failed to get dog: ", err)
+    return
+end
+
+if res == ngx.null then
+    ngx.say("dog not found.")
+    return
+end
+
+ngx.say("dog: ", res)
+期望它自身具备以下几个特征：
+
+new、connect 函数合体，使用时只负责申请，尽量少关心什么时候具体连接、释放；
+默认 redis 数据库连接地址，但是允许自定义；
+每次 redis 使用完毕，自动释放 redis 连接到连接池供其他请求复用；
+要支持 redis 的重要优化手段 pipeline；
+不卖关子，只要干货，我们最后是这样干的，可以这里看到 gist代码
+-- file name: resty/redis_iresty.lua
+local redis_c = require "resty.redis"
+
+local ok, new_tab = pcall(require, "table.new")
+if not ok or type(new_tab) ~= "function" then
+    new_tab = function (narr, nrec) return {} end
+end
+
+local _M = new_tab(0, 155)
+_M._VERSION = '0.01'
+
+local commands = {
+    "append",            "auth",              "bgrewriteaof",
+    "bgsave",            "bitcount",          "bitop",
+    "blpop",             "brpop",
+    "brpoplpush",        "client",            "config",
+    "dbsize",
+    "debug",             "decr",              "decrby",
+    "del",               "discard",           "dump",
+    "echo",
+    "eval",              "exec",              "exists",
+    "expire",            "expireat",          "flushall",
+    "flushdb",           "get",               "getbit",
+    "getrange",          "getset",            "hdel",
+    "hexists",           "hget",              "hgetall",
+    "hincrby",           "hincrbyfloat",      "hkeys",
+    "hlen",
+    "hmget",              "hmset",      "hscan",
+    "hset",
+    "hsetnx",            "hvals",             "incr",
+    "incrby",            "incrbyfloat",       "info",
+    "keys",
+    "lastsave",          "lindex",            "linsert",
+    "llen",              "lpop",              "lpush",
+    "lpushx",            "lrange",            "lrem",
+    "lset",              "ltrim",             "mget",
+    "migrate",
+    "monitor",           "move",              "mset",
+    "msetnx",            "multi",             "object",
+    "persist",           "pexpire",           "pexpireat",
+    "ping",              "psetex",            "psubscribe",
+    "pttl",
+    "publish",      --[[ "punsubscribe", ]]   "pubsub",
+    "quit",
+    "randomkey",         "rename",            "renamenx",
+    "restore",
+    "rpop",              "rpoplpush",         "rpush",
+    "rpushx",            "sadd",              "save",
+    "scan",              "scard",             "script",
+    "sdiff",             "sdiffstore",
+    "select",            "set",               "setbit",
+    "setex",             "setnx",             "setrange",
+    "shutdown",          "sinter",            "sinterstore",
+    "sismember",         "slaveof",           "slowlog",
+    "smembers",          "smove",             "sort",
+    "spop",              "srandmember",       "srem",
+    "sscan",
+    "strlen",       --[[ "subscribe",  ]]     "sunion",
+    "sunionstore",       "sync",              "time",
+    "ttl",
+    "type",         --[[ "unsubscribe", ]]    "unwatch",
+    "watch",             "zadd",              "zcard",
+    "zcount",            "zincrby",           "zinterstore",
+    "zrange",            "zrangebyscore",     "zrank",
+    "zrem",              "zremrangebyrank",   "zremrangebyscore",
+    "zrevrange",         "zrevrangebyscore",  "zrevrank",
+    "zscan",
+    "zscore",            "zunionstore",       "evalsha"
+}
+
+local mt = { __index = _M }
+
+local function is_redis_null( res )
+    if type(res) == "table" then
+        for k,v in pairs(res) do
+            if v ~= ngx.null then
+                return false
+            end
+        end
+        return true
+    elseif res == ngx.null then
+        return true
+    elseif res == nil then
+        return true
+    end
+
+    return false
+end
+
+-- change connect address as you need
+function _M.connect_mod( self, redis )
+    redis:set_timeout(self.timeout)
+    return redis:connect("127.0.0.1", 6379)
+end
+
+function _M.set_keepalive_mod( redis )
+    -- put it into the connection pool of size 100, with 60 seconds max idle time
+    return redis:set_keepalive(60000, 1000)
+end
+
+function _M.init_pipeline( self )
+    self._reqs = {}
+end
+
+function _M.commit_pipeline( self )
+    local reqs = self._reqs
+
+    if nil == reqs or 0 == #reqs then
+        return {}, "no pipeline"
+    else
+        self._reqs = nil
+    end
+
+    local redis, err = redis_c:new()
+    if not redis then
+        return nil, err
+    end
+
+    local ok, err = self:connect_mod(redis)
+    if not ok then
+        return {}, err
+    end
+
+    redis:init_pipeline()
+    for _, vals in ipairs(reqs) do
+        local fun = redis[vals[1]]
+        table.remove(vals , 1)
+
+        fun(redis, unpack(vals))
+    end
+
+    local results, err = redis:commit_pipeline()
+    if not results or err then
+        return {}, err
+    end
+
+    if is_redis_null(results) then
+        results = {}
+        ngx.log(ngx.WARN, "is null")
+    end
+    -- table.remove (results , 1)
+
+    self.set_keepalive_mod(redis)
+
+    for i,value in ipairs(results) do
+        if is_redis_null(value) then
+            results[i] = nil
+        end
+    end
+
+    return results, err
+end
+
+function _M.subscribe( self, channel )
+    local redis, err = redis_c:new()
+    if not redis then
+        return nil, err
+    end
+
+    local ok, err = self:connect_mod(redis)
+    if not ok or err then
+        return nil, err
+    end
+
+    local res, err = redis:subscribe(channel)
+    if not res then
+        return nil, err
+    end
+
+    res, err = redis:read_reply()
+    if not res then
+        return nil, err
+    end
+
+    redis:unsubscribe(channel)
+    self.set_keepalive_mod(redis)
+
+    return res, err
+end
+
+local function do_command(self, cmd, ... )
+    if self._reqs then
+        table.insert(self._reqs, {cmd, ...})
+        return
+    end
+
+    local redis, err = redis_c:new()
+    if not redis then
+        return nil, err
+    end
+
+    local ok, err = self:connect_mod(redis)
+    if not ok or err then
+        return nil, err
+    end
+
+    local fun = redis[cmd]
+    local result, err = fun(redis, ...)
+    if not result or err then
+        -- ngx.log(ngx.ERR, "pipeline result:", result, " err:", err)
+        return nil, err
+    end
+
+    if is_redis_null(result) then
+        result = nil
+    end
+
+    self.set_keepalive_mod(redis)
+
+    return result, err
+end
+
+for i = 1, #commands do
+    local cmd = commands[i]
+    _M[cmd] =
+            function (self, ...)
+                return do_command(self, cmd, ...)
+            end
+end
+
+function _M.new(self, opts)
+    opts = opts or {}
+    local timeout = (opts.timeout and opts.timeout * 1000) or 1000
+    local db_index= opts.db_index or 0
+
+    return setmetatable({
+            timeout = timeout,
+            db_index = db_index,
+            _reqs = nil }, mt)
+end
+
+return _M
+调用示例代码：
+local redis = require "resty.redis_iresty"
+local red = redis:new()
+
+local ok, err = red:set("dog", "an animal")
+if not ok then
+    ngx.say("failed to set dog: ", err)
+    return
+end
+
+ngx.say("set result: ", ok)
+在最终的示例代码中看到，所有的连接创建、销毁连接、连接池部分，都被完美隐藏了，我们只需要业务就可以了。妈妈再也不用担心我把 redis 搞垮了。
+
+Todo list： 目前resty.redis并没有对redis 3.0的集群API做支持，既然统一了 redis 的入口、出口，那么对这个 redis_iresty 版本做适当调整完善，就可以支持 redis 3.0 的集群协议。由于我们目前还没引入 redis 集群，这里也希望有使用的同学贡献自己的补丁或文章。
+
+redis接口的二次封装（发布订阅）
+
+其实这一小节完全可以放到上一个小结，只是这里用了完全不同的玩法，所以我还是决定单拿出来分享一下这个小细节。
+
+上一小结有关订阅部分的代码，请看：
+
+function _M.subscribe( self, channel )
+    local redis, err = redis_c:new()
+    if not redis then
+        return nil, err
+    end
+
+    local ok, err = self:connect_mod(redis)
+    if not ok or err then
+        return nil, err
+    end
+
+    local res, err = redis:subscribe(channel)
+    if not res then
+        return nil, err
+    end
+
+    res, err = redis:read_reply()
+    if not res then
+        return nil, err
+    end
+
+    redis:unsubscribe(channel)
+    self.set_keepalive_mod(redis)
+
+    return res, err
+end
+其实这里的实现是有问题的，各位看官，你能发现这段代码的问题么？给个提示，在高并发订阅场景下，极有可能存在漏掉部分订阅信息。原因在与每次订阅到内容后，都会把redis对象进行释放，处理完订阅信息后再次去连接redis，在这个时间差里面，很可能有消息已经漏掉了。
+
+正确的代码应该是这样的：
+
+function _M.subscribe( self, channel )
+    local redis, err = redis_c:new()
+    if not redis then
+        return nil, err
+    end
+
+    local ok, err = self:connect_mod(redis)
+    if not ok or err then
+        return nil, err
+    end
+
+    local res, err = redis:subscribe(channel)
+    if not res then
+        return nil, err
+    end
+
+    local function do_read_func ( do_read )
+        if do_read == nil or do_read == true then
+            res, err = redis:read_reply()
+            if not res then
+                return nil, err
+            end
+            return res
+        end
+
+        redis:unsubscribe(channel)
+        self.set_keepalive_mod(redis)
+        return 
+    end
+
+    return do_read_func
+end
+调用示例代码：
+
+local red     = redis:new({timeout=1000})  
+local func  = red:subscribe( "channel" )
+if not func then
+  return nil
+end
+
+while true do
+    local res, err = func()
+    if err then
+        func(false)
+    end
+    ... ...
+end
+
+return cbfunc
+
+pipeline压缩请求数量
+
+通常情况下，我们每个操作redis的命令都以一个TCP请求发送给redis，这样的做法简单直观。然而，当我们有连续多个命令需要发送给redis时，如果每个命令都以一个数据包发送给redis，将会降低服务端的并发能力。
+
+为什么呢？大家知道每发送一个TCP报文，会存在网络延时及操作系统的处理延时。大部分情况下，网络延时要远大于CPU的处理延时。如果一个简单的命令就以一个TCP报文发出，网络延时将成为系统性能瓶颈，使得服务端的并发数量上不去。
+
+首先检查你的代码，是否明确完整使用了redis的长连接机制。作为一个服务端程序员，要对长连接的使用有一定了解，在条件允许的情况下，一定要开启长连接。验证方式也比较简单，直接用tcpdump或wireshark抓包分析一下网络数据即可。
+
+set_keepalive的参数：按照业务正常运转的并发数量设置，不建议使用峰值情况设置。
+如果我们确定开启了长连接，发现这时候Redis的CPU的占用率还是不高，在这种情况下，就要从Redis的使用方法上进行优化。
+
+如果我们可以把所有单次请求，压缩到一起，如下图：
+
+请求示意图
+
+很庆幸Redis早就为我们准备好了这道菜，就等着我们吃了，这道菜就叫pipeline。pipeline机制将多个命令汇聚到一个请求中，可以有效减少请求数量，减少网络延时。下面是对比使用pipeline的一个例子：
+
+# you do not need the following line if you are using
+    # the ngx_openresty bundle:
+    lua_package_path "/path/to/lua-resty-redis/lib/?.lua;;";
+
+    server {
+        location /withoutpipeline {
+           content_by_lua_block {
+                local redis = require "resty.redis"
+                local red = redis:new()
+
+                red:set_timeout(1000) -- 1 sec
+
+                -- or connect to a unix domain socket file listened
+                -- by a redis server:
+                --     local ok, err = red:connect("unix:/path/to/redis.sock")
+
+                local ok, err = red:connect("127.0.0.1", 6379)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                local ok, err = red:set("cat", "Marry")
+                ngx.say("set result: ", ok)
+                local res, err = red:get("cat")
+                ngx.say("cat: ", res)
+
+                ok, err = red:set("horse", "Bob")
+                ngx.say("set result: ", ok)
+                res, err = red:get("horse")
+                ngx.say("horse: ", res)
+
+                -- put it into the connection pool of size 100,
+                -- with 10 seconds max idle time
+                local ok, err = red:set_keepalive(10000, 100)
+                if not ok then
+                    ngx.say("failed to set keepalive: ", err)
+                    return
+                end
+            }
+        }
+
+        location /withpipeline {
+            content_by_lua_block {
+                local redis = require "resty.redis"
+                local red = redis:new()
+
+                red:set_timeout(1000) -- 1 sec
+
+                -- or connect to a unix domain socket file listened
+                -- by a redis server:
+                --     local ok, err = red:connect("unix:/path/to/redis.sock")
+
+                local ok, err = red:connect("127.0.0.1", 6379)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                red:init_pipeline()
+                red:set("cat", "Marry")
+                red:set("horse", "Bob")
+                red:get("cat")
+                red:get("horse")
+                local results, err = red:commit_pipeline()
+                if not results then
+                    ngx.say("failed to commit the pipelined requests: ", err)
+                    return
+                end
+
+                for i, res in ipairs(results) do
+                    if type(res) == "table" then
+                        if not res[1] then
+                            ngx.say("failed to run command ", i, ": ", res[2])
+                        else
+                            -- process the table value
+                        end
+                    else
+                        -- process the scalar value
+                    end
+                end
+
+                -- put it into the connection pool of size 100,
+                -- with 10 seconds max idle time
+                local ok, err = red:set_keepalive(10000, 100)
+                if not ok then
+                    ngx.say("failed to set keepalive: ", err)
+                    return
+                end
+            }
+        }
+    }
+在我们实际应用场景中，正确使用pipeline对性能的提升十分明显。我们曾经某个后台应用，逐个处理大约100万条记录需要几十分钟，经过pileline压缩请求数量后，最后时间缩小到20秒左右。做之前能预计提升性能，但是没想到提升如此巨大。
+
+script压缩复杂请求
+
+从pipeline章节，我们知道对于多个简单的redis命令可以汇聚到一个请求中，提升服务端的并发能力。然而，在有些场景下，我们每次命令的输入需要引用上个命令的输出，甚至可能还要对第一个命令的输出做一些加工，再把加工结果当成第二个命令的输入。pipeline难以处理这样的场景。庆幸的是，我们可以用redis里的script来压缩这些复杂命令。
+
+script的核心思想是在redis命令里嵌入Lua脚本，来实现一些复杂操作。Redis中和脚本相关的命令有：
+
+- EVAL
+- EVALSHA
+- SCRIPT EXISTS
+- SCRIPT FLUSH
+- SCRIPT KILL
+- SCRIPT LOAD
+官网上给出了这些命令的基本语法，感兴趣的同学可以到这里查阅。其中EVAL的基本语法如下：
+
+EVAL script numkeys key [key ...] arg [arg ...]
+EVAL的第一个参数script是一段 Lua 脚本程序。 这段Lua脚本不需要（也不应该）定义函数。它运行在 Redis 服务器中。 EVAL的第二个参数numkeys是参数的个数，后面的参数key（从第三个参数），表示在脚本中所用到的那些 Redis 键(key)，这些键名参数可以在 Lua 中通过全局变量 KEYS 数组，用 1 为基址的形式访问( KEYS[1] ， KEYS[2] ，以此类推)。 在命令的最后，那些不是键名参数的附加参数arg [arg ...] ，可以在 Lua 中通过全局变量 ARGV 数组访问，访问的形式和 KEYS 变量类似( ARGV[1] 、 ARGV[2] ，诸如此类)。下面是执行eval命令的简单例子：
+
+eval "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}" 2 key1 key2 first second
+1) "key1"
+2) "key2"
+3) "first"
+4) "second"
+openresty中已经对redis的所有原语操作进行了封装。下面我们以EVAL为例，来看一下openresty中如何利用script来压缩请求：
+
+# you do not need the following line if you are using
+    # the ngx_openresty bundle:
+    lua_package_path "/path/to/lua-resty-redis/lib/?.lua;;";
+
+    server {
+        location /usescript {
+            content_by_lua_block {
+            local redis = require "resty.redis"
+            local red = redis:new()
+
+            red:set_timeout(1000) -- 1 sec
+
+            -- or connect to a unix domain socket file listened
+            -- by a redis server:
+            --     local ok, err = red:connect("unix:/path/to/redis.sock")
+
+            local ok, err = red:connect("127.0.0.1", 6379)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            --- use scripts in eval cmd
+            local id = "1"
+            ok, err = red:eval([[
+                local info = redis.call('get', KEYS[1])
+                info = json.decode(info)
+                local g_id = info.gid
+
+                local g_info = redis.call('get', g_id)
+                return g_info
+                ]], 1, id)
+
+            if not ok then
+               ngx.say("failed to get the group info: ", err)
+               return
+            end
+
+            -- put it into the connection pool of size 100,
+            -- with 10 seconds max idle time
+            local ok, err = red:set_keepalive(10000, 100)
+            if not ok then
+                ngx.say("failed to set keepalive: ", err)
+                return
+            end
+
+            -- or just close the connection right away:
+            -- local ok, err = red:close()
+            -- if not ok then
+            --     ngx.say("failed to close: ", err)
+            --     return
+            -- end
+            }
+        }
+      }
+从上面的例子可以看到，我们要根据一个对象的id来查询该id所属gourp的信息时，我们的第一个命令是从redis中读取id为1（id的值可以通过参数的方式传递到script中）的对象的信息（由于这些信息一般json格式存在redis中，因此我们要做一个解码操作，将info转换成Lua对象）。然后提取信息中的groupid字段，以groupid作为key查询groupinfo。这样我们就可以把两个get放到一个TCP请求中，做到减少TCP请求数量，减少网络延时的效果啦。
+
+
+
+
+
+
+
+
+
+
+
+LuaCjsonLibrary
+
+JSON(JavaScript Object Notation) 是一种轻量级的数据交换格式。它基于ECMAScript的一个子集。 JSON采用完全独立于语言的文本格式，但是也使用了类似于C语言家族的习惯（包括C、C++、C#、Java、JavaScript、Perl、Python等）。这些特性使JSON成为理想的数据交换语言。 易于人阅读和编写，同时也易于机器解析和生成(网络传输速率)。
+
+JSON 格式被广泛的使用于各类不同应用场景，有些是REST+JSON api，还有大部分不同应用、组件之间沟通的中间数据也是有JSON来完成的。由于他可读性、体积、编解码效率相比XML有很大优势，非常值得推荐。
+
+json解析的异常捕获
+
+首先来看最最普通的一个json解析的例子（被解析的json字符串是错误的，缺少一个双引号）：
+
+-- http://www.kyne.com.au/~mark/software/lua-cjson.php
+-- version: 2.1 devel
+
+local json = require("cjson")
+local str  = [[ {"key:"value"} ]]
+
+local t    = json.decode(str)
+ngx.say(" --> ", type(t))
+
+-- ... do the other things
+ngx.say("all fine")
+代码执行错误日志如下：
+
+2015/06/27 00:01:42 [error] 2714#0: *25 lua entry thread aborted: runtime error: ...ork/git/github.com/lua-resty-memcached-server/t/test.lua:8: Expected colon but found invalid token at character 9
+stack traceback:
+coroutine 0:
+    [C]: in function 'decode'
+    ...ork/git/github.com/lua-resty-memcached-server/t/test.lua:8: in function <...ork/git/github.com/lua-resty-memcached-server/t/test.lua:1>, client: 127.0.0.1, server: localhost, request: "GET /test HTTP/1.1", host: "127.0.0.1:8001"
+这可不是我们期望的，decode失败，居然500错误直接退了。改良了一下我们的代码：
+
+local json = require("cjson")
+
+function json_decode( str )
+    local json_value = nil
+    pcall(function (str) json_value = json.decode(str) end, str)
+    return json_value
+end
+如果需要在Lua中处理错误，必须使用函数pcall（protected call）来包装需要执行的代码。 pcall接收一个函数和要传递给后者的参数，并执行，执行结果：有错误、无错误；返回值true或者或false, errorinfo。pcall以一种"保护模式"来调用第一个参数，因此pcall可以捕获函数执行中的任何错误。有兴趣的同学，请更多了解下Lua中的异常处理。
+
+另外，可以使用CJSON 2.1.0，该版本新增一个cjson.safe模块接口，该接口兼容cjson模块，并且在解析错误时不抛出异常，而是返回nil。
+
+local json = require("cjson.safe")
+local str  = [[ {"key:"value"} ]]
+
+local t    = json.decode(str)
+if t then
+    ngx.say(" --> ", type(t))
+end
+
+稀疏数组
+
+请看示例代码（注意data的数组下标）：
+
+-- http://www.kyne.com.au/~mark/software/lua-cjson.php
+-- version: 2.1 devel
+
+local json = require("cjson")
+
+local data = {1, 2}
+data[1000] = 99
+
+-- ... do the other things
+ngx.say(json.encode(data))
+运行日志报错结果：
+
+2015/06/27 00:23:13 [error] 2714#0: *40 lua entry thread aborted: runtime error: ...ork/git/github.com/lua-resty-memcached-server/t/test.lua:13: Cannot serialise table: excessively sparse array
+stack traceback:
+coroutine 0:
+    [C]: in function 'encode'
+    ...ork/git/github.com/lua-resty-memcached-server/t/test.lua:13: in function <...ork/git/github.com/lua-resty-memcached-server/t/test.lua:1>, client: 127.0.0.1, server: localhost, request: "GET /test HTTP/1.1", host: "127.0.0.1:8001"
+如果把data的数组下标修改成5，那么这个json.encode就会是成功的。 结果是：[1,2,null,null,99]
+
+为什么下标是1000就失败呢？实际上这么做是cjson想保护你的内存资源。她担心这个下标过大直接撑爆内存（贴心小棉袄啊）。如果我们一定要让这种情况下可以decode，就要尝试encode_sparse_array api了。有兴趣的同学可以自己试一试。我相信你看过有关cjson的代码后，就知道cjson的一个简单危险防范应该是怎样完成的。
+
+编码为array还是object
+
+首先大家请看这段源码：
+
+-- http://www.kyne.com.au/~mark/software/lua-cjson.php
+-- version: 2.1 devel
+
+local json = require("cjson")
+ngx.say("value --> ", json.encode({dogs={}}))
+输出结果
+
+value --> {"dogs":{}}
+注意看下encode后key的值类型，"{}" 代表key的值是个object，"[]" 则代表key的值是个数组。对于强类型语言(c/c++, java等)，这时候就有点不爽。因为类型不是他期望的要做容错。对于Lua本身，是把数组和字典融合到一起了，所以他是无法区分空数组和空字典的。
+
+参考openresty-cjson中额外贴出测试案例，我们就很容易找到思路了。
+
+-- 内容节选lua-cjson-2.1.0.2/tests/agentzh.t
+=== TEST 1: empty tables as objects
+--- lua
+local cjson = require "cjson"
+print(cjson.encode({}))
+print(cjson.encode({dogs = {}}))
+--- out
+{}
+{"dogs":{}}
+
+=== TEST 2: empty tables as arrays
+--- lua
+local cjson = require "cjson"
+cjson.encode_empty_table_as_object(false)
+print(cjson.encode({}))
+print(cjson.encode({dogs = {}}))
+--- out
+[]
+{"dogs":[]}
+综合本章节提到的各种问题，我们可以封装一个json encode的示例函数：
+
+function json_encode( data, empty_table_as_object )
+  --Lua的数据类型里面，array和dict是同一个东西。对应到json encode的时候，就会有不同的判断
+  --对于linux，我们用的是cjson库：A Lua table with only positive integer keys of type number will be encoded as a JSON array. All other tables will be encoded as a JSON object.
+  --cjson对于空的table，就会被处理为object，也就是{}
+  --dkjson默认对空table会处理为array，也就是[]
+  --处理方法：对于cjson，使用encode_empty_table_as_object这个方法。文档里面没有，看源码
+  --对于dkjson，需要设置meta信息。local a= {}；a.s = {};a.b='中文';setmetatable(a.s,  { __jsontype = 'object' });ngx.say(comm.json_encode(a))
+
+    local json_value = nil
+    if json.encode_empty_table_as_object then
+        json.encode_empty_table_as_object(empty_table_as_object or false) -- 空的table默认为array
+    end
+    if require("ffi").os ~= "Windows" then
+        json.encode_sparse_array(true)
+    end
+    pcall(function (data) json_value = json.encode(data) end, data)
+    return json_value
+end
+
+跨平台的库选择
+
+大家看过上面三个json的例子就发现，都是围绕cjson库的。原因也比较简单，就是cjson是默认绑定到openresty上的。很多开发喜欢 windows 系统，可以选择 dkjson（编解码效率没有cjson快，优势是纯Lua，完美跨任何平台）。
+
+并且我们的代码肯定不会因为 win、linux 的并存而写两套程序。那么我们就必须要把json处理部分封装一下，隐藏系统差异造成的差异化处理。
+
+local _M = { _VERSION = '1.0' }
+-- require("ffi").os 获取系统类型
+local json = require(require("ffi").os == "Windows" and "dkjson" or "cjson")
+
+function _M.json_decode( str )
+    return json.decode(str)
+end
+function _M.json_encode( data )
+    return json.encode(data)
+end
+
+return _M
+在我们的应用中，对于操作系统版本差异、操作系统位数差异、同时支持不同数据库使用等，几乎都是使用这个方法完成的，十分值得推荐。
+
+额外说个点，github上有个项目cloudflare/lua-resty-json，从官方资料上介绍decode的速度更快，我们也做了小范围应用。所以上面的json_decode对象来源，就可以改成这个库。
+
+外面总是有新鲜玩意，多抬头多发现，充实自己，站在巨人肩膀上，总是能够更容易够到高峰。
+
+
+
+
+
+
+
+
+
+
+
+
+PostgresNginxModule
+
+PostgreSQL 是加州大学博客利分校计算机系开发的对象关系型数据库管理系统(ORDBMS)，目前是免费开源的，且是全功能的自由软件数据库。 PostgreSQL 支持大部分 SQL 标准，其特性覆盖了 SQL-2/SQL-92 和 SQL-3/SQL-99，并且提供了许多其他现代特点，如复杂查询、外键、触发器、视图、事务完整性、多版本并行控制系统（MVCC）等。 PostgreSQL 可以使用许多方法扩展，比如，通过增加新的数据类型、函数、操作符、聚集函数、索引方法、过程语言等。
+
+PostgreSQL 在灵活的 BSD 风格许可证下发行，任何人都可以根据自己的需要免费使用、修改和分发 PostgreSQL，不管是用于私人、商业、还是学术研究。
+
+ngx_postgres 是一个提供 nginx 与 PostgreSQL 直接通讯的 upstream 模块。应答数据采用了 rds 格式,所以模块与 ngx_rds_json 和 ngx_drizzle 模块是兼容的。
+
+
+PostgresNginxModule模块的调用方式
+
+ngx_postgres模块使用方法
+
+location /postgres {
+    internal;
+
+    default_type text/html;
+    set_by_lua $query_sql 'return ngx.unescape_uri(ngx.var.arg_sql)';
+
+    postgres_pass   pg_server;
+    rds_json          on;
+    rds_json_buffer_size 16k;
+    postgres_query  $query_sql;
+    postgres_connect_timeout 1s;
+    postgres_result_timeout 2s;
+}
+这里有很多指令要素：
+
+internal 这个指令指定所在的 location 只允许使用于处理内部请求，否则返回 404 。
+set_by_lua 这一段内嵌的 Lua 代码用于计算出 $query_sql 变量的值，即后续通过指令 postgres_query 发送给 PostgreSQL 处理的 SQL 语句。这里使用了GET请求的 query 参数作为 SQL 语句输入。
+postgres_pass 这个指令可以指定一组提供后台服务的 PostgreSQL 数据库的 upstream 块。
+rds_json 这个指令是 ngx_rds_json 提供的，用于指定 ngx_rds_json 的 output 过滤器的开关状态，其模块作用就是一个用于把 rds 格式数据转换成 json 格式的 output filter。这个指令在这里出现意思是让 ngx_rds_json 模块帮助 ngx_postgres 模块把模块输出数据转换成 json 格式的数据。
+rds_json_buffer_size 这个指令指定 ngx_rds_json 用于每个连接的数据转换的内存大小. 默认是 4/8k,适当加大此参数，有利于减少 CPU 消耗。
+postgres_query 指定 SQL 查询语句，查询语句将会直接发送给 PostgreSQL 数据库。
+postgres_connect_timeout 设置连接超时时间。
+postgres_result_timeout 设置结果返回超时时间。
+这样的配置就完成了初步的可以提供其他 location 调用的 location 了。但这里还差一个配置没说明白，就是这一行：
+
+postgres_pass   pg_server;
+其实这一行引入了 名叫 pg_server 的 upstream 块，其定义应该像如下：
+
+upstream pg_server {
+    postgres_server  192.168.1.2:5432 dbname=pg_database
+            user=postgres password=postgres;
+    postgres_keepalive max=800 mode=single overflow=reject;
+}
+这里有一些指令要素：
+
+postgres_server 这个指令是必须带的，但可以配置多个，用于配置服务器连接参数，可以分解成若干参数：
+
+直接跟在后面的应该是服务器的 IP:Port
+dbname 是服务器要连接的 PostgreSQL 的数据库名称。
+user 是用于连接 PostgreSQL 服务器的账号名称。
+password 是账号名称对应的密码。
+postgres_keepalive 这个指令用于配置长连接连接池参数，长连接连接池有利于提高通讯效率，可以分解为若干参数：
+max 是工作进程可以维护的连接池最大长连接数量。
+mode 是后端匹配模式，在postgres_server 配置了多个的时候发挥作用，有 single 和 multi 两种值，一般使用 single 即可。
+overflow 是当长连接数量到达 max 之后的处理方案，有 ignore 和 reject 两种值。
+ignore 允许创建新的连接与数据库通信，但完成通信后马上关闭此连接。
+reject 拒绝访问并返回 503 Service Unavailable
+这样就构成了我们 PostgreSQL 后端通讯的通用 location，在使用 Lua 业务编码的过程中可以直接使用如下代码连接数据库（折腾了这么老半天）：
+
+local json = require "cjson"
+
+function test()
+    local res = ngx.location.capture('/postgres',
+        { args = {sql = "SELECT * FROM test" } }
+    )
+
+    local status = res.status
+    local body = json.decode(res.body)
+
+    if status == 200 then
+        status = true
+    else
+        status = false
+    end
+    return status, body
+end
+与resty-mysql调用方式的不同
+
+先来看一下lua-resty-mysql模块的调用示例代码。
+
+# you do not need the following line if you are using
+# the ngx_openresty bundle:
+lua_package_path "/path/to/lua-resty-mysql/lib/?.lua;;";
+
+server {
+    location /test {
+       content_by_lua_block {
+            local mysql = require "resty.mysql"
+            local db, err = mysql:new()
+            if not db then
+                ngx.say("failed to instantiate mysql: ", err)
+                return
+            end
+
+            db:set_timeout(1000) -- 1 sec
+
+            local ok, err, errno, sqlstate = db:connect{
+                host = "127.0.0.1",
+                port = 3306,
+                database = "ngx_test",
+                user = "ngx_test",
+                password = "ngx_test",
+                max_packet_size = 1024 * 1024 }
+
+            if not ok then
+                ngx.say("failed to connect: ", err, ": ", errno, " ", sqlstate)
+                return
+            end
+
+            ngx.say("connected to mysql.")
+
+            -- run a select query, expected about 10 rows in
+            -- the result set:
+            res, err, errno, sqlstate =
+                db:query("select * from cats order by id asc", 10)
+            if not res then
+                ngx.say("bad result: ", err, ": ", errno, ": ", sqlstate, ".")
+                return
+            end
+
+            local cjson = require "cjson"
+            ngx.say("result: ", cjson.encode(res))
+
+            -- put it into the connection pool of size 100,
+            -- with 10 seconds max idle timeout
+            local ok, err = db:set_keepalive(10000, 100)
+            if not ok then
+                ngx.say("failed to set keepalive: ", err)
+                return
+            end
+        }
+    }
+}
+看过这段代码，大家肯定会说：这才是我熟悉的，我想要的。为什么刚刚ngx_postgres模块的调用这么诡异，配置那么复杂，其实这是发展历史造成的。ngx_postgres起步比较早，当时OpenResty也还没开始流行，所以更多的 Nginx 数据库都是以 ngx_c_module 方式存在。有了OpenResty，才让我们具有了使用完整的语言来描述我们业务能力。
+
+后面我们会单独说一说使用ngx_c_module的各种不方便，也就是我们所踩过的坑。希望能给大家一个警示，能转到lua-resty-***这个方向的，就千万不要和ngx_c_module玩，ngx_c_module的扩展性、可维护性、升级等各方面都没有lua-resty-***好。
+
+这绝对是经验的总结。不服来辩！
+
+不支持事务
+
+我们继续上一章节的内容，大家应该记得我们Lua代码中是如何完成ngx_postgres模块调用的。我们把他简单改造一下，让他更接近真实代码。
+
+    local json = require "cjson"
+
+    function db_exec(sql_str)
+        local res = ngx.location.capture('/postgres',
+            { args = {sql = sql_str } }
+        )
+
+        local status = res.status
+        local body = json.decode(res.body)
+
+        if status == 200 then
+            status = true
+        else
+            status = false
+        end
+        return status, body
+    end
+
+    -- 转账操作，对ID=100的用户加10，同时对ID=200的用户减10。
+?   local status 
+?   status = db_exec("BEGIN")
+?   if status then
+?       db_exec("ROLLBACK")
+?   end
+?
+?   status = db_exec("UPDATE ACCOUNT SET MONEY=MONEY+10  WHERE ID = 100")
+?   if status then
+?       db_exec("ROLLBACK")
+?   end
+?
+?   status = db_exec("UPDATE ACCOUNT SET MONEY=MONEY-10  WHERE ID = 200")
+?   if status then
+?       db_exec("ROLLBACK")
+?   end
+?
+?   db_exec("COMMIT")
+后面这部分有问题的代码，在没有并发的场景下使用，是不会有任何问题的。但是这段代码在高并发应用场景下，错误百出。你会发现最后执行结果完全摸不清楚。明明是个转账逻辑，一个收入，一直支出，最后却发现总收入比支出要大。如果这个错误发生在金融领域，那不知道要赔多少钱。
+
+如果你能靠自己很快明白错误的原因，那么恭喜你你对数据库连接、Nginx机理都是比较清楚的。如果你想不明白，那就听我给你掰一掰这面的小知识。
+
+数据库的事物成功执行，事物相关的所有操作是必须执行在一条连接上的。SQL的执行情况类似这样：
+
+连接：`BEGIN` -> `SQL(UPDATE、DELETE... ...)` -> `COMMIT`。
+但如果你创建了两条连接，每条连接提交的SQL语句是下面这样：
+
+连接1：`BEGIN` -> `SQL(UPDATE、DELETE... ...)` 
+连接2：`COMMIT`
+这时就会出现连接1的内容没有被提交，行锁产生。连接2提交了一个空的COMMIT。
+
+说到这里你可能开始鄙视我了，谁疯了非要创建两条连接来这么用SQL啊。有麻烦，又不好看，貌似从来没听说过还有人在一次请求中创建多个数据库连接，简直就是非人类嘛。
+
+或许你不会主动、显示的创建多个连接，但是刚刚的示例代码，高并发下这个事物的每个SQL语句都可能落在不同的连接上。为什么呢？这是因为通过ngx.location.capture跳转到/postgres小节后，Nginx每次都会从连接池中挑选一条空闲连接，二当时那条连接是空闲的，完全没法预估。所以上面的第二个例子，就这么静悄悄的发生了。如果你不了解Nginx的机理，那么他肯定会一直困扰你。为什么一会儿好，一会儿不好。
+
+同样的道理，我们推理到DrizzleNginxModule、RedisNginxModule、Redis2NginxModule，他们都是无法做到在两次连续请求落到同一个连接上的。
+
+由于这个Bug藏得比较深，并且不太好讲解，所以我觉得生产中最好用lua-resty-*这类的库，更符合标准调用习惯，直接可以绕过这些坑。不要为了一点点的性能，牺牲了更大的蛋糕。看得见的，看不见的，都要了解用用，最后再做决定，肯定不吃亏。
+
+超时
+
+当我们所有数据库的SQL语句是通过子查询方式完成，对于超时的控制往往很容易被大家忽略。因为大家在代码里看不到任何调用set_timeout的地方。实际上PostgreSQL已经为我们预留好了两个设置。
+
+请参考下面这段配置：
+
+location /postgres {
+    internal;
+
+    default_type text/html;
+    set_by_lua $query_sql 'return ngx.unescape_uri(ngx.var.arg_sql)';
+
+    postgres_pass   pg_server;
+    rds_json          on;
+    rds_json_buffer_size 16k;
+    postgres_query  $query_sql;
+    postgres_connect_timeout 1s;
+    postgres_result_timeout 2s;
+}
+生产中使用这段配置，遇到了一个不大不小的坑。在我们的开发机、测试环境上都没有任何问题的安装包，到了用户那边出现所有数据库操作异常，而且是数据库连接失败，但手工连接本地数据库，发现没有任何问题。同样的执行程序再次copy回来后，公司内环境不能复现问题。考虑到我们当次升级刚好修改了postgres_connect_timeout和postgres_result_timeout的默认值，所以我们尝试去掉了这两行个性设置，重启服务后一切都好了。
+
+起初我们也很怀疑出了什么诡异问题，要知道我们的nginx和PostgreSQL可是安装在本机，都是使用127.0.0.1这样的 IP 来完成通信的，难道客户的机器在这个时间内还不能完成连接建立？
+
+经过后期排插问题，发现是客户的机器上安装了一些趋势科技的杀毒客户端，而趋势科技为了防止无效连接，对所有连接的建立均阻塞了一秒钟。就是这一秒钟，让我们的服务彻底歇菜。
+
+本以为是一次比较好的优化，没想到因为这个原因没能保留下来，反而给大家带来麻烦。只能说企业版环境复杂，边界比较多。但也好在我们一直使用最常见的技术、最常见的配置解决各种问题，让我们的经验可以复用到其他公司里。
+
+SQL注入
+
+有使用 SQL 语句操作数据库的经验朋友，应该都知道使用 SQL 过程中有一个安全问题叫 SQL 注入。所谓 SQL 注入，就是通过把 SQL 命令插入到 Web 表单提交或输入域名或页面请求的查询字符串，最终达到欺骗服务器执行恶意的 SQL 命令。 为了防止 SQL 注入，在生产环境中使用 Openresty 的时候就要注意添加防范代码。
+
+延续之前的 ngx_postgres 调用代码的使用，
+
+    local sql_normal = [[select id, name from user where name=']] .. ngx.var.arg_name .. [[' and password=']] .. ngx.var.arg_password .. [[' limit 1;]]
+
+    local res = ngx.location.capture('/postgres',
+        { args = {sql = sql } }
+    )
+
+    local body = json.decode(res.body)
+
+    if (table.getn(res) > 0) {
+        return res[1];
+    }
+
+    return nil;
+假设我们在用户登录使用上 SQL 语句查询账号是否账号密码正确，用户可以通过 GET 方式请求并发送登录信息比如：
+
+#    http://localhost/login?name=person&password=12345
+那么我们上面的代码通过 ngx.var.arg_name 和 ngx.var.arg_password 获取查询参数，并且与 SQL 语句格式进行字符串拼接，最终 sql_normal 会是这个样子的：
+
+    local sql_normal = [[select id, name from user where name='person' and password='12345' limit 1;]]
+正常情况下，如果 person 账号存在并且 password 是 12345，那么sql执行结果就应该是能返回id号的。这个接口如果暴露在攻击者面前，那么攻击者很可能会让参数这样传入：
+
+    name="' or ''='"
+    password="' or ''='"
+那么这个 sql_normal 就会变成一个永远都能执行成功的语句了。
+
+    local sql_normal = [[select id, name from user where name='' or ''='' and password='' or ''='' limit 1;]]
+这就是一个简单的 sql inject （注入）的案例，那么问题来了，面对这么凶猛的攻击者，我们有什么办法防止这种 SQL 注入呢？
+
+很简单，我们只要 把 传入参数的变量 做一次字符转义，把不该作为破坏SQL查询语句结构的双引号或者单引号等做转义，把 ' 转义成 \'，那么变量 name 和 password 的内容还是乖乖的作为查询条件传入，他们再也不能为非作歹了。
+
+那么怎么做到字符转义呢？要知道每个数据库支持的SQL语句格式都不太一样啊，尤其是双引号和单引号的应用上。有几个选择：
+
+    ndk.set_var.set_quote_sql_str()
+    ndk.set_var.set_quote_pgsql_str()
+    ngx.quote_sql_str()
+这三个函数，前面两个是 ndk.set_var 跳转调用，其实是 HttpSetMiscModule 这个模块提供的函数，是一个 C 模块实现的函数，ndk.set_var.set_quote_sql_str() 是用于 MySQL 格式的 SQL 语句字符转义，而 set_quote_pgsql_str 是用于 PostgreSQL 格式的 SQL 语句字符转义。最后 ngx.quote_sql_str 是一个 ngx_lua 模块中实现的函数，也是用于 MySQL 格式的 SQL 语句字符转义。
+
+让我们看看代码怎么写：
+
+    local name = ngx.quote_sql_str(ngx.var.arg_name)
+    local password = ngx.quote_sql_str(ngx.var.arg_password)
+    local sql_normal = [[select id, name from user where name=]] .. name .. [[ and password=]] .. password .. [[ limit 1;]]
+
+    local res = ngx.location.capture('/postgres',
+        { args = {sql = sql } }
+    )
+
+    local body = json.decode(res.body)
+
+    if (table.getn(res) > 0) {
+        return res[1];
+    }
+
+    return nil;
+注意上述代码有两个变化：
+
+用 ngx.quote_sql_str 把 ngx.var.arg_name 和 ngx.var.arg_password 包了一层，把返回值作为 sql 语句拼凑起来。
+原本在 sql 语句中添加的单引号去掉了，因为 ngx.quote_sql_str 的返回值正确的带上引号了。
+这样已经可以抵御 SQL 注入的攻击手段了，但开发过程中需要不断的产生新功能新代码，这时候也一定注意不要忽视 SQL 注入的防护，安全防御代码就想织网一样，只要有一处漏洞，鱼儿可就游走了。
+
+
+
+
+
+
+
+
+
+
+
+
+
+执行阶段概念
+
+Nginx处理一个请求，它的处理流程请参考下图：
+
+nginx_internet_request
+
+我们OpenResty做个测试，示例代码如下：
+
+location /mixed {
+    set_by_lua $a 'ngx.log(ngx.ERR, "set_by_lua")';
+    rewrite_by_lua 'ngx.log(ngx.ERR, "rewrite_by_lua")';
+    access_by_lua 'ngx.log(ngx.ERR, "access_by_lua")';
+    header_filter_by_lua 'ngx.log(ngx.ERR, "header_filter_by_lua")';
+    body_filter_by_lua 'ngx.log(ngx.ERR, "body_filter_by_lua")';
+    log_by_lua 'ngx.log(ngx.ERR, "log_by_lua")';
+    content_by_lua 'ngx.log(ngx.ERR, "content_by_lua")';
+}
+执行结果日志(截取了一下)：
+
+set_by_lua
+rewrite_by_lua
+access_by_lua
+content_by_lua
+header_filter_by_lua
+body_filter_by_lua
+log_by_lua
+这几个阶段的存在，应该是openresty不同于其他多数Web server编程的最明显特征了。由于nginx把一个请求分成了很多阶段，这样第三方模块就可以根据自己行为，挂载到不同阶段进行处理达到目的。
+
+这样我们就可以根据我们的需要，在不同的阶段直接完成大部分典型处理了。
+
+set_by_lua: 流程分支处理判断变量初始化
+rewrite_by_lua: 转发、重定向、缓存等功能(例如特定请求代理到外网)
+access_by_lua: IP准入、接口权限等情况集中处理(例如配合iptable完成简单防火墙)
+content_by_lua: 内容生成
+header_filter_by_lua: 应答HTTP过滤处理(例如添加头部信息)
+body_filter_by_lua: 应答BODY过滤处理(例如完成应答内容统一成大写)
+log_by_lua: 回话完成后本地异步完成日志记录(日志可以记录在本地，还可以同步到其他机器)
+实际上我们只使用其中一个阶段content_by_lua，也可以完成所有的处理。但这样做，会让我们的代码比较臃肿，越到后期越发难以维护。把我们的逻辑放在不同阶段，分工明确，代码独立，后期发力可以有很多有意思的玩法。
+
+举一个例子，如果在最开始的开发中，使用的是http明文协议，后面需要修改为aes加密协议，利用不同的执行阶段，我们可以非常简单的实现：
+
+# 明文协议版本
+location /mixed {
+    content_by_lua '...';       # 请求处理
+}
+
+# 加密协议版本
+location /mixed {
+    access_by_lua '...';        # 请求加密解码
+    content_by_lua '...';       # 请求处理，不需要关心通信协议
+    body_filter_by_lua '...';   # 应答加密编码
+}
+内容处理部分都是在content_by_lua阶段完成，第一版本API接口开发都是基于明文。为了传输体积、安全等要求，我们设计了支持压缩、加密的密文协议(上下行)，痛点就来了，我们要更改所有API的入口、出口么？
+
+最后我们是在access_by_lua完成密文协议解码，body_filter_by_lua完成应答加密编码。如此一来世界都宁静了，我们没有更改已实现功能的一行代码，只是利用ngx-lua的阶段处理特性，非常优雅的解决了这个问题。
+
+前两天看到春哥的微博，里面说到github的某个应用里面也使用了openresty做了一些东西。发现他们也是利用阶段特性+Lua脚本处理了很多用户证书方面的东东。最终在性能、稳定性都十分让人满意。使用者选型很准，不愧是github的工程师。
+
+不同的阶段，有不同的处理行为，这是openresty的一大特色。学会他，适应他，会给你打开新的一扇门。这些东西不是openresty自身所创，而是nginx c module对外开放的处理阶段。理解了他，也能更好的理解nginx的设计思维。
+
+正确的记录日志
+
+看过本章第一节的同学应该还记得，log_by_lua是一个请求阶段最后发生的，文件操作是阻塞的（FreeBSD直接无视），nginx为了实时高效的给请求方应答后，日志记录是在应答后异步记录完成的。由此可见如果我们有日志输出的情况，最好统一到log_by_lua阶段。如果我们自定义放在content_by_lua阶段，那么将线性的增加请求处理时间。
+
+在公司某个定制化项目中，nginx上的日志内容都要输送到syslog日志服务器。我们使用了lua-resty-logger-socket这个库。
+
+调用示例代码如下（有问题的）：
+-- lua_package_path "/path/to/lua-resty-logger-socket/lib/?.lua;;";
+--
+--    server {
+--        location / {
+--            content_by_lua_file lua/log.lua;
+--        }
+--    }
+
+-- lua/log.lua
+local logger = require "resty.logger.socket"
+if not logger.initted() then
+    local ok, err = logger.init{
+        host = 'xxx',
+        port = 1234,
+        flush_limit = 1,   --日志长度大于flush_limit的时候会将msg信息推送一次
+        drop_limit = 99999,
+    }
+    if not ok then
+        ngx.log(ngx.ERR, "failed to initialize the logger: ",err)
+        return
+    end
+end
+
+local msg = string.format(.....)
+local bytes, err = logger.log(msg)
+if err then
+    ngx.log(ngx.ERR, "failed to log message: ", err)
+    return
+end
+在实测过程中我们发现了些问题：
+
+缓存无效：如果flush_limit的值稍大一些（例如 2000），会导致某些体积比较小的日志出现莫名其妙的丢失，所以我们只能把flush_limit调整的很小
+自己拼写msg所有内容，比较辛苦
+那么我们来看lua-resty-logger-socket这个库的log函数是如何实现的呢，代码如下：
+
+function _M.log(msg)  
+   ...
+
+    if (debug) then
+        ngx.update_time()
+        ngx_log(DEBUG, ngx.now(), ":log message length: " .. #msg)
+    end
+
+    local msg_len = #msg
+
+    if (is_exiting()) then
+        exiting = true
+        _write_buffer(msg)
+        _flush_buffer()
+        if (debug) then
+            ngx_log(DEBUG, "Nginx worker is exiting")
+        end
+        bytes = 0
+    elseif (msg_len + buffer_size < flush_limit) then  -- 历史日志大小+本地日志大小小于推送上限
+        _write_buffer(msg)
+        bytes = msg_len
+    elseif (msg_len + buffer_size <= drop_limit) then
+        _write_buffer(msg)
+        _flush_buffer()
+        bytes = msg_len
+    else
+        _flush_buffer()
+        if (debug) then
+            ngx_log(DEBUG, "logger buffer is full, this log message will be "
+                    .. "dropped")
+        end
+        bytes = 0
+        --- this log message doesn't fit in buffer, drop it  
+
+        ...
+由于在content_by_lua阶段变量的生命周期会随着请求的终结而终结，所以当日志量小于flush_limit的情况下这些日志就不能被累积，也不会触发_flush_buffer函数，所以小日志会丢失。
+
+这些坑回头看来这么明显，所有的问题都是因为我们把lua/log.lua用错阶段了，应该放到log_by_lua阶段，所有的问题都不复存在。
+
+修正后：
+ lua_package_path "/path/to/lua-resty-logger-socket/lib/?.lua;;";
+
+    server {
+        location / {
+            content_by_lua_file lua/content.lua;
+            log_by_lua lua/log.lua;
+        }
+    }
+这里有个新问题，如果我的log里面需要输出一些content的临时变量，两阶段之间如何传递参数呢？
+
+方法肯定有，推荐下面这个：
+    location /test {
+        rewrite_by_lua '
+            ngx.say("foo = ", ngx.ctx.foo)
+            ngx.ctx.foo = 76
+        ';
+        access_by_lua '
+            ngx.ctx.foo = ngx.ctx.foo + 3
+        ';
+        content_by_lua_block {
+            ngx.say(ngx.ctx.foo)
+        }
+    }
+更多有关ngx.ctx信息，请看这里。
+
+热装载代码
+
+在Openresty中，提及热加载代码，估计大家的第一反应是 lua_code_cache 这个开关。在开发阶段我们把它配置成lua_code_cache off，是很方便、有必要的，修改完代码，肯定都希望自动加载最新的代码（否则我们就要噩梦般的reload服务，然后再测试脚本）。
+
+禁用 Lua 代码缓存（即配置 lua_code_cache off）只是为了开发便利，一般不应以高于 1 并发来访问，否则可能会有race condition等等问题。同时因为它会有带来严重的性能衰退，所以不应在生产上使用此种模式。生产上应当总是启用Lua代码缓存，即配置lua_code_cache on。
+
+那么我们是否可以在生产环境中完成热加载呢？
+
+代码有变动时，自动加载最新Lua代码，但是nginx本身，不做任何reload
+自动加载后的代码，享用lua_code_cache on带来的高效特性
+这里有多种玩法（引自Openresty讨论组）：
+
+使用 HUP reload 或者 binary upgrade 方式动态加载 nginx 配置或重启 nginx。这不会导致中间有请求被 drop 掉。
+当 content_by_lua_file 里使用 nginx 变量时，是可以动态加载新的 Lua 脚本的，不过要记得对 nginx 变量的值进行基本的合法性验证，以免被注入攻击。
+    location ~ '^/lua/(\w+(?:\/\w+)*)$' { 
+        content_by_lua_file $1; 
+    } 
+自己从外部数据源（包括文件系统）加载 Lua 源码或字节码，然后使用 loadstring() “eval”进 Lua VM. 可以通过 package.loaded 自己来做缓存，毕竟频繁地加载源码和调用 loadstring()，以及频繁地 JIT 编译还是很昂贵的（类似 lua_code_cache off 的情形）。 比如CloudFlare公司采用的方法是从 modsecurity 规则编译出来的 Lua 代码就是通过 KyotoTycoon 动态分发到全球网络中的每一个 nginx 服务器的。无需 reload 或者 binary upgrade.
+自定义module的动态装载
+对于已经装载的module，我们可以通过package.loaded.* = nil的方式卸载（注意：如果对应模块是通过本地文件 require 加载的，该方式失效，ngx_lua_module 里面对以文件加载模块的方式做了特殊处理）。
+
+不过，值得提醒的是，因为 require 这个内建函数在标准 Lua 5.1 解释器和 LuaJIT 2 中都被实现为 C 函数，所以你在自己的 loader 里可能并不能调用 ngx_lua 那些涉及非阻塞 IO 的 Lua 函数。因为这些 Lua 函数需要 yield 当前的 Lua 协程，而 yield 是无法跨越 Lua 调用栈上的 C 函数帧的。细节见
+
+https://github.com/openresty/lua-nginx-module#lua-coroutine-yieldingresuming
+
+所以直接操纵 package.loaded 是最简单和最有效的做法。CloudFlare 的 Lua WAF 系统中就是这么做的。
+
+不过，值得提醒的是，从 package.loaded 解注册的 Lua 模块会被 GC 掉。而那些使用下列某一个或某几个特性的 Lua 模块是不能被安全的解注册的：
+
+使用 FFI 加载了外部动态库
+使用 FFI 定义了新的 C 类型
+使用 FFI 定义了新的 C 函数原型
+这个限制对于所有的 Lua 上下文都是适用的。
+
+这样的 Lua 模块应避免手动从 package.loaded 卸载。当然，如果你永不手工卸载这样的模块，只是动态加载的话，倒也无所谓了。但在我们的 Lua WAF 的场景，已动态加载的一些 Lua 模块还需要被热替换掉（但不重新创建 Lua VM）。
+
+自定义Lua script的动态装载实现
+引自Openresty讨论组
+一方面使用自定义的环境表 [1]，以白名单的形式提供用户脚本能访问的 API；另一方面，（只）为用户脚本禁用 JIT 编译，同时使用 Lua 的 debug hooks [2] 作脚本 CPU 超时保护（debug hooks 对于 JIT 编译的代码是不会执行的，主要是出于性能方面的考虑）。
+
+下面这个小例子演示了这种玩法：
+
+local user_script = [[ 
+    local a = 0 
+    local rand = math.random 
+    for i = 1, 200 do 
+        a = a + rand(i) 
+    end 
+    ngx.say("hi") 
+]] 
+
+local function handle_timeout(typ) 
+    return error("user script too hot") 
+end 
+
+local function handle_error(err) 
+    return string.format("%s: %s", err or "", debug.traceback()) 
+end 
+
+-- disable JIT in the user script to ensure debug hooks always work: 
+user_script = [[jit.off(true, true) ]] .. user_script 
+
+local f, err = loadstring(user_script, "=user script") 
+if not f then 
+    ngx.say("ERROR: failed to load user script: ", err) 
+    return 
+end 
+
+-- only enable math.*, and ngx.say in our sandbox: 
+local env = { 
+    math = math, 
+    ngx = { say = ngx.say }, 
+    jit = { off = jit.off }, 
+} 
+setfenv(f, env) 
+
+local instruction_limit = 1000 
+debug.sethook(handle_timeout, "", instruction_limit) 
+local ok, err = xpcall(f, handle_error) 
+if not ok then 
+    ngx.say("failed to run user script: ", err) 
+end 
+debug.sethook()  -- turn off the hooks 
+这个例子中我们只允许用户脚本调用 math 模块的所有函数、ngx.say() 以及 jit.off(). 其中 jit.off()是必需引用的，为的是在用户脚本内部禁用 JIT 编译，否则我们注册的 debug hooks 可能不会被调用。
+
+另外，这个例子中我们设置了脚本最多只能执行 1000 条 VM 指令。你可以根据你自己的场景进行调整。
+
+这里很重要的是，不能向用户脚本暴露 pcall 和 xpcall 这两个 Lua 指令，否则恶意用户会利用它故意拦截掉我们在 debug hook 里为中断脚本执行而抛出的 Lua 异常。
+
+另外，require()、loadstring()、loadfile()、dofile()、io.、os. 等等 API 是一定不能暴露给不被信任的 Lua 脚本的。
+
+阻塞操作
+
+Openresty的诞生，一直对外宣传是非阻塞(100% noblock)的。基于事件通知的Nginx给我们带来了足够强悍的高并发支持，但是也对我们的编码有特殊要求。这个特殊要求就是我们的代码，也必须是非阻塞的。如果你的服务端编程生涯一开始就是从异步框架开始的，恭喜你了。但如果你的编程生涯是从同步框架过来的，而且又是刚刚开始深入了解异步框架，那你就要小心了。
+
+Nginx为了减少系统上下文切换，它的worker是用单进程单线程设计的，事实证明这种做法运行效率很高。Nginx要么是在等待网络讯号，要么就是在处理业务（请求数据解析、过滤、内容应答等），没有任何额外资源消耗。
+
+常见语言代表异步框架
+Golang ：使用协程技术实现
+Python ：gevent基于协程的Python网络库
+Rust ：用的少，只知道语言完备支持异步框架
+Openresty：基于Nginx，使用事件通知机制
+Java ：Netty，使用网络事件通知机制
+异步编程的噩梦
+异步编程，如果从零开始，难度是非常大的。一个完整的请求，由于网络传输的非连续性，这个请求要被多次挂起、恢复、运行，一旦网络有新数据到达，都需要立刻唤醒恢复原始请求处于运行状态。开发人员不仅仅要考虑异步api接口本身的使用规范，还要考虑业务请求的完整处理，稍有不慎，全盘皆输。
+
+最最重要的噩梦是，我们好不容易搞定异步框架和业务请求完整性，但是却在我们的业务请求上使用了阻塞函数。一开始没有任何感知，只有做压力测试的时候才发现我们的并发量上不去，各种卡顿，甚至开始怀疑人生：异步世界也就这样。
+
+Openresty中的阻塞函数
+官方有明确说明，Openresty的官方API绝对100% noblock，所以我们只能在她的外面寻找了。我这里大致归纳总结了一下，包含下面几种情况：
+
+高CPU的调用（压缩、解压缩、加解密等）
+高磁盘的调用（所有文件操作）
+非Openresty提供的网络操作（luasocket等）
+系统命令行调用（os.execute等）
+这些都应该是我们尽量要避免的。理想丰满，现实骨感，谁能保证我们的应用中不使用这些类型的API？没人保证，我们能做的就是把他们的调用数量、频率降低再降低，如果还是不能满足我们需要，那么就考虑把他们封装成独立服务，对外提供TCP/HTTP级别的接口调用，这样我们的Openresty就可以同时享受异步编程的好处又能达到我们的目的。
+
+缓存
+
+缓存的原则
+
+缓存是一个大型系统中非常重要的一个组成部分。在硬件层面，大部分的计算机硬件都会用缓存来提高速度，比如CPU会有多级缓存、RAID卡也有读写缓存。在软件层面，我们用的数据库就是一个缓存设计非常好的例子，在SQL语句的优化、索引设计、磁盘读写的各个地方，都有缓存，建议大家在设计自己的缓存之前，先去了解下MySQL里面的各种缓存机制，感兴趣的可以去看下High Permance MySQL这本非常有价值的书。
+
+一个生产环境的缓存系统，需要根据自己的业务场景和系统瓶颈，来找出最好的方案，这是一门平衡的艺术。
+
+一般来说，缓存有两个原则。一是越靠近用户的请求越好，比如能用本地缓存的就不要发送HTTP请求，能用CDN缓存的就不要打到Web服务器，能用nginx缓存的就不要用数据库的缓存；二是尽量使用本进程和本机的缓存解决，因为跨了进程和机器甚至机房，缓存的网络开销就会非常大，在高并发的时候会非常明显。
+
+OpenResty的缓存
+
+我们介绍下在 OpenResty 里面，有哪些缓存的方法。
+
+使用 Lua shared dict
+
+我们看下面这段代码：
+
+function get_from_cache(key)
+    local cache_ngx = ngx.shared.my_cache
+    local value = cache_ngx:get(key)
+    return value
+end
+
+function set_to_cache(key, value, exptime)
+    if not exptime then
+        exptime = 0
+    end
+
+    local cache_ngx = ngx.shared.my_cache
+    local succ, err, forcible = cache_ngx:set(key, value, exptime)
+    return succ
+end
+这里面用的就是ngx shared dict cache。你可能会奇怪，ngx.shared.my_cache是从哪里冒出来的？没错，少贴了nginx.conf里面的修改：
+
+lua_shared_dict my_cache 128m;
+如同它的名字一样，这个cache是nginx所有worker之间共享的，内部使用的LRU算法（最近最少使用）来判断缓存是否在内存占满时被清除。
+
+使用Lua LRU cache
+
+直接复制下春哥的示例代码：
+
+local _M = {}
+
+-- alternatively: local lrucache = require "resty.lrucache.pureffi"
+local lrucache = require "resty.lrucache"
+
+-- we need to initialize the cache on the Lua module level so that
+-- it can be shared by all the requests served by each nginx worker process:
+local c = lrucache.new(200)  -- allow up to 200 items in the cache
+if not c then
+    return error("failed to create the cache: " .. (err or "unknown"))
+end
+
+function _M.go()
+    c:set("dog", 32)
+    c:set("cat", 56)
+    ngx.say("dog: ", c:get("dog"))
+    ngx.say("cat: ", c:get("cat"))
+
+    c:set("dog", { age = 10 }, 0.1)  -- expire in 0.1 sec
+    c:delete("dog")
+end
+
+return _M
+可以看出来，这个cache是worker级别的，不会在nginx wokers之间共享。并且，它是预先分配好key的数量，而shared dcit需要自己用key和value的大小和数量，来估算需要把内存设置为多少。
+
+如何选择？
+
+shared.dict 使用的是共享内存，每次操作都是全局锁，如果高并发环境，不同worker之间容易引起竞争。所以单个shared.dict的体积不能过大。lrucache是worker内使用的，由于nginx是单进程方式存在，所以永远不会触发锁，效率上有优势，并且没有shared.dict的体积限制，内存上也更弹性，但不同worker之间数据不同享，同一缓存数据可能被冗余存储。
+
+你需要考虑的，一个是Lua lru cache提供的API比较少，现在只有get、set和delete，而ngx shared dict还可以add、replace、incr、get_stale（在key过期时也可以返回之前的值）、get_keys（获取所有key，虽然不推荐，但说不定你的业务需要呢）；第二个是内存的占用，由于ngx shared dict是workers之间共享的，所以在多worker的情况下，内存占用比较少。
+
+sleep
+
+这是一个比较常见的功能，你会怎么做呢？Google一下，你会找到Lua的官方指南，
+
+里面介绍了10种sleep不同的方法（操作系统不一样，方法还有区别），选择一个用，然后你就杯具了:( 你会发现nginx高并发的特性不见了！
+
+在OpenResty里面选择使用库的时候，有一个基本的原则：尽量使用ngx Lua的库函数，尽量不用Lua的库函数，因为Lua的库都是同步阻塞的。
+
+# you do not need the following line if you are using
+# the ngx_openresty bundle:
+lua_package_path "/path/to/lua-resty-redis/lib/?.lua;;";
+
+server {
+    location /non_block {
+        content_by_lua_block {
+            ngx.sleep(0.1)
+        }
+    }
+}
+本章节内容好少，只是想通过一个真实的例子，来提醒大家，做OpenResty开发，ngx-lua 的文档是你的首选，Lua语言的库都是同步阻塞的，用的时候要三思。
+
+再来一个例子来说明阻塞API的调用对nginx并发性能的影响
+
+location /sleep_1 {
+    default_type 'text/plain';
+    content_by_lua_block {
+        ngx.sleep(0.01)
+        ngx.say("ok")
+    }
+}
+
+location /sleep_2 {
+    default_type 'text/plain';
+    content_by_lua_block {
+        function sleep(n)
+            os.execute("sleep " .. n)
+        end
+        sleep(0.01)
+        ngx.say("ok")
+    }
+}
+ab测试一下
+
+➜  nginx git:(master) ab -c 10 -n 20  http://127.0.0.1/sleep_1
+...
+Requests per second:    860.33 [#/sec] (mean)
+...
+➜  nginx git:(master) ab -c 10 -n 20  http://127.0.0.1/sleep_2
+...
+Requests per second:    56.87 [#/sec] (mean)
+...
+可以看到，如果不使用ngx_lua提供的sleep函数，nginx并发处理性能会下降15倍左右。
+
+为什么会这样？
+原因是sleep_1接口使用了ngx_lua提供的非阻塞API，而sleep_2使用了系统自带的阻塞API。前者只会引起(进程内)协程的切换，但进程还是处于运行状态(其他协程还在运行)，而后者却会触发进程切换，当前进程会变成睡眠状态, 结果CPU就进入空闲状态。很明显，非阻塞的API的性能会更高。
+
+定时任务
+
+在请求返回后继续执行章节中，我们介绍了一种实现的方法，这里我们 介绍一种更优雅更通用的方法：ngx.timer.at()。 这个函数是在后台用nginx轻线程（light thread），在指定的延时后，调用指定的函数。 有了这种机制，ngx_lua的功能得到了非常大的扩展，我们有机会做一些更有想象力的功能出来。比如 批量提交和cron任务。
+
+需要特别注意的是：有一些ngx_lua的API不能在这里调用，比如子请求、ngx.req.*和向下游输出的API(ngx.print、ngx.flush之类)，原因是这些请求都需要绑定某个请求，但是对于 ngx.timer.at 自身的运行，是与当前任何请求都没关系的。
+
+比较典型的用法，如下示例：
+
+ local delay = 5
+ local handler
+ handler = function (premature)
+     -- do some routine job in Lua just like a cron job
+     if premature then
+         return
+     end
+     local ok, err = ngx.timer.at(delay, handler)
+     if not ok then
+         ngx.log(ngx.ERR, "failed to create the timer: ", err)
+         return
+     end
+ end
+
+ local ok, err = ngx.timer.at(delay, handler)
+ if not ok then
+     ngx.log(ngx.ERR, "failed to create the timer: ", err)
+     return
+ end
+
+
+禁止某些终端访问
+
+不同的业务应用场景，会有完全不同的非法终端控制策略，常见的限制策略有终端IP、访问域名端口，这些可以通过防火墙等很多成熟手段完成。可也有一些特定限制策略，例如特定cookie、url、location，甚至请求body包含有特殊内容，这种情况下普通防火墙就比较难限制。
+
+Nginx的是HTTP 7层协议的实现着，相对普通防火墙从通讯协议有自己的弱势，同等的配置下的性能表现绝对远不如防火墙，但它的优势胜在价格便宜、调整方便，还可以完成HTTP协议上一些更具体的控制策略，与iptable的联合使用，让Nginx玩出更多花样。
+
+列举几个限制策略来源
+IP地址
+域名、端口
+Cookie特定标识
+location
+body中特定标识
+示例配置（allow、deny）
+location / {
+    deny  192.168.1.1;
+    allow 192.168.1.0/24;
+    allow 10.1.1.0/16;
+    allow 2001:0db8::/32;
+    deny  all;
+}
+这些规则都是按照顺序解析执行直到某一条匹配成功。在这里示例中，10.1.1.0/16 and 192.168.1.0/24都是用来限制IPv4的，2001:0db8::/32的配置是用来限制IPv6。具体有关allow、deny配置，请参考这里。
+
+示例配置（geo）
+Example:
+
+geo $country {
+    default        ZZ;
+    proxy          192.168.100.0/24;
+
+    127.0.0.0/24   US;
+    127.0.0.1/32   RU;
+    10.1.0.0/16    RU;
+    192.168.1.0/24 UK;
+}
+
+if ($country == ZZ){
+    return 403;
+}
+使用geo，让我们有更多的分支条件。注意：在Nginx的配置中，尽量少用或者不用if，因为"if is evil"。点击查看
+
+目前为止所有的控制，都是用Nginx模块完成，执行效率、配置明确是它的优点。缺点也比较明显，修改配置代价比较高（reload服务）。并且无法完成与第三方服务的对接功能交互（例如调用iptable）。
+
+在Openresty里面，这些问题就都容易解决，还记得access_by_lua么？推荐一个第三方库lua-resty-iputils。
+
+示例代码：
+init_by_lua '
+  local iputils = require("resty.iputils")
+  iputils.enable_lrucache()
+  local whitelist_ips = {
+      "127.0.0.1",
+      "10.10.10.0/24",
+      "192.168.0.0/16",
+  }
+
+  -- WARNING: Global variable, recommend this is cached at the module level
+  -- https://github.com/openresty/lua-nginx-module#data-sharing-within-an-nginx-worker
+  whitelist = iputils.parse_cidrs(whitelist_ips)
+';
+
+access_by_lua '
+    local iputils = require("resty.iputils")
+    if not iputils.ip_in_cidrs(ngx.var.remote_addr, whitelist) then
+      return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+';
+以次类推，我们想要完成域名、Cookie、location、特定body的准入控制，甚至可以做到与本地iptable防火墙联动。 我们可以把IP规则存到数据库中，这样我们就再也不用reload nginx，在有规则变动的时候，刷新下nginx的缓存就行了。
+
+思路打开，大家后面多尝试各种玩法吧。
+
+请求返回后继续执行
+
+在一些请求中，我们会做一些日志的推送、用户数据的统计等和返回给终端数据无关的操作。而这些操作，即使你用异步非阻塞的方式，在终端看来，也是会影响速度的。这个和我们的原则：终端请求，需要用最快的速度返回给终端，是冲突的。
+
+这时候，最理想的是，获取完给终端返回的数据后，就断开连接，后面的日志和统计等动作，在断开连接后，后台继续完成即可。
+
+怎么做到呢？我们先看其中的一种方法：
+
+local response, user_stat = logic_func.get_response(request)
+ngx.say(response)
+ngx.eof()
+
+if user_stat then
+   local ret = db_redis.update_user_data(user_stat)
+end
+没错，最关键的一行代码就是ngx.eof()， 它可以即时关闭连接，把数据返回给终端，后面的数据库操作还会运行。比如上面代码中的
+
+local response, user_stat = logic_func.get_response(request)
+运行了0.1秒，而
+
+db_redis.update_user_data(user_stat)
+运行了0.2秒，在没有使用ngx.eof()之前，终端感知到的是0.3秒，而加上ngx.eof()之后，终端感知到的只有0.1秒。
+
+需要注意的是，你不能任性的把阻塞的操作加入代码，即使在ngx.eof()之后。 虽然已经返回了终端的请求，但是，nginx的worker还在被你占用。所以在keep alive的情况下，本次请求的总时间，会把上一次eof()之后的时间加上。 如果你加入了阻塞的代码，nginx的高并发就是空谈。
+
+有没有其他的方法来解决这个问题呢？我们会在ngx.timer.at里面给大家介绍更优雅的方案。
+
+调试
+
+调试是一个程序猿非常重要的能力，人写的程序总会有bug，所以需要debug。如何方便和快速的定位bug，是我们讨论的重点，只要bug能定位，解决就不是问题。
+
+对于熟悉用Visual Studio和Eclipse这些强大的集成开发环境的来做C++和Java的同学来说，OpenResty的debug要原始很多，但是对于习惯Python开发的同学来说，又是那么的熟悉。 张银奎有本《软件调试》的书，windows客户端程序猿应该都看过，大家可以去试读下，看看里面有多复杂:(
+
+对于OpenResty，坏消息是，没有单步调试这些玩意儿（我们尝试搞出来过ngx Lua的单步调试，但是没人用...）;好消息是，它像Python一样，非常简单，不用复杂的技术，只靠print和log就能定位绝大部分问题，难题有火焰图这个神器。
+
+关闭code cache
+
+这个选项在调试的时候最好关闭。
+
+lua_code_cache off;
+这样，你修改完代码后，不用reload nginx就可以生效了。在生产环境下记得打开这个选项。
+
+记录日志
+
+这个看上去谁都会的东西，要想做好也不容易。
+
+你有遇到这样的情况吗？QA发现了一个bug，开发说我修改代码加个日志看看，然后QA重现这个问题，发现日志不够详细，需要再加，反复几次，然后再给QA一个没有日志的版本，继续测试其他功能。
+
+如果产品已经发布到用户那里了呢？如果用户那里是隔离网，不能远程怎么办？
+
+你在写代码的时候，就需要考虑到调试日志。 比如这个代码：
+
+local response, err = redis_op.finish_client_task(client_mid, task_id)
+if response then
+    put_job(client_mid, result)
+    ngx.log(ngx.WARN, "put job:", common.json_encode({channel="task_status", mid=client_mid, data=result}))
+end
+我们在做一个操作后，就把结果记录到nginx的error.log里面，等级是warn。在生产环境下，日志等级默认为error，在我们需要详细日志的时候，把等级调整为warn即可。在我们的实际使用中，我们会把一些很少发生的重要事件，做为error级别记录下来，即使它并不是nginx的错误。
+
+与日志配套的，你需要logrotate来做日志的切分和备份。
+
+调用其他C函数动态库
+
+Linux下的动态库一般都以 .so 结束命名，而Windows下一般都以 .dll 结束命名。Lua作为一种嵌入式语言，和C具有非常好的亲缘性，这也是LUA赖以生存、发展的根本，所以Nginx+Lua=Openresty，魔法就这么神奇的发生了。
+
+NgxLuaModule里面尽管提供了十分丰富的API，但他一定不可能满足我们的形形色色的需求。我们总是要和各种组件、算法等形形色色的第三方库进行协作。那么如何在Lua中加载动态加载第三方库，就显得非常有用。
+
+扯一些额外话题，Lua解释器目前有两个最主流分支。
+
+Lua官方发布的标准版Lua
+Google开发维护的LuaJIT
+LuaJIT中加入了Just In Time等编译技术，是的Lua的解释、执行效率有非常大的提升。除此以外，还提供了FFI。
+
+什么是FFI？
+The FFI library allows calling external C functions and using C data 
+structures from pure Lua code.
+通过FFI的方式加载其他C接口动态库，这样我们就可以有很多有意思的玩法。
+
+当我们碰到CPU密集运算部分，我们可以把他用C的方式实现一个效率最高的版本，对外到处API，打包成动态库，通过FFI来完成API调用。这样我们就可以兼顾程序灵活、执行高效，大大弥补了LuaJIT自身的不足。
+
+使用FFI判断操作系统
+local ffi = require("ffi")
+if ffi.os == "Windows" then
+    print("windows")
+elseif ffi.os == "OSX" then
+    print("MAC OS X")
+else
+    print(ffi.os)
+end
+调用zlib压缩库
+local ffi = require("ffi")
+ffi.cdef[[
+unsigned long compressBound(unsigned long sourceLen);
+int compress2(uint8_t *dest, unsigned long *destLen,
+          const uint8_t *source, unsigned long sourceLen, int level);
+int uncompress(uint8_t *dest, unsigned long *destLen,
+           const uint8_t *source, unsigned long sourceLen);
+]]
+local zlib = ffi.load(ffi.os == "Windows" and "zlib1" or "z")
+
+local function compress(txt)
+  local n = zlib.compressBound(#txt)
+  local buf = ffi.new("uint8_t[?]", n)
+  local buflen = ffi.new("unsigned long[1]", n)
+  local res = zlib.compress2(buf, buflen, txt, #txt, 9)
+  assert(res == 0)
+  return ffi.string(buf, buflen[0])
+end
+
+local function uncompress(comp, n)
+  local buf = ffi.new("uint8_t[?]", n)
+  local buflen = ffi.new("unsigned long[1]", n)
+  local res = zlib.uncompress(buf, buflen, comp, #comp)
+  assert(res == 0)
+  return ffi.string(buf, buflen[0])
+end
+
+-- Simple test code.
+local txt = string.rep("abcd", 1000)
+print("Uncompressed size: ", #txt)
+local c = compress(txt)
+print("Compressed size: ", #c)
+local txt2 = uncompress(c, #txt)
+assert(txt2 == txt)
+自定义定义C类型的方法
+local ffi = require("ffi")
+ffi.cdef[[
+typedef struct { double x, y; } point_t;
+]]
+
+local point
+local mt = {
+  __add = function(a, b) return point(a.x+b.x, a.y+b.y) end,
+  __len = function(a) return math.sqrt(a.x*a.x + a.y*a.y) end,
+  __index = {
+    area = function(a) return a.x*a.x + a.y*a.y end,
+  },
+}
+point = ffi.metatype("point_t", mt)
+
+local a = point(3, 4)
+print(a.x, a.y)  --> 3  4
+print(#a)        --> 5
+print(a:area())  --> 25
+local b = a + point(0.5, 8)
+print(#b)        --> 12.5
+Lua和LuaJIT对比
+可以这么说，LuaJIT应该是全面胜出，无论是功能、效率都是标准Lua不能比的。目前最新版Openresty默认也都使用LuaJIT。
+
+世界为我所用，总是有惊喜等着你，如果那天你发现自己站在了顶峰，那我们就静下心来改善一下顶峰，把他推到更高吧。
+
+网上有大量对Lua调优的推荐，我们应该如何看待？
+
+Lua的解析器有官方的standard Lua和LuaJIT，需要明确一点的是目前大量的优化文章都比较陈旧，而且都是针对standard Lua解析器的，standard Lua解析器在性能上需要书写着自己规避，才能写出高性能来。需要各位看官注意的是，ngx-lua最新版默认已经绑定LuaJIT，优化手段和方法已经略有不同。我们现在的做法是：代码易读是首位，目前还没有碰到同样代码换个写法就有质的提升，如果我们对某个单点功能有性能要求，那么建议用LuaJIT的FFI方法直接调用C接口更直接一点。
+
+代码出处：http://www.cnblogs.com/lovevivi/p/3284643.html
+
+3.0 避免使用table.insert()
+
+下面来看看4个实现表插入的方法。在4个方法之中table.insert()在效率上不如其他方法，是应该避免使用的。
+使用table.insert
+local a = {}
+local table_insert = table.insert
+for i = 1,100 do
+   table_insert( a, i )
+end
+
+使用循环的计数
+
+local a = {}
+for i = 1,100 do
+   a[i] = i
+end
+使用table的size
+
+local a = {}
+for i = 1,100 do
+   a[#a+1] = i
+end
+使用计数器
+
+local a = {}
+local index = 1
+for i = 1,100 do
+   a[index] = i
+   index = index+1
+end
+
+4.0 减少使用 unpack()函数
+Lua的unpack()函数不是一个效率很高的函数。你完全可以写一个循环来代替它的作用。
+
+使用unpack()
+
+local a = { 100, 200, 300, 400 }
+for i = 1,100 do
+   print( unpack(a) )
+end
+代替方法
+
+local a = { 100, 200, 300, 400 }
+for i = 1,100 do
+   print( a[1],a[2],a[3],a[4] )
+end
+针对这篇文章内容写了一些测试代码：
+
+local start = os.clock()
+
+local function sum( ... )
+    local args = {...}
+    local a = 0
+    for k,v in pairs(args) do
+        a = a + v
+    end
+    return a
+end
+
+local function test_unit(  )
+    -- t1: 0.340182 s
+    -- local a = {}
+    -- for i = 1,1000 do
+    --    table.insert( a, i )
+    -- end
+
+    -- t2: 0.332668 s
+    -- local a = {}
+    -- for i = 1,1000 do
+    --    a[#a+1] = i
+    -- end
+
+    -- t3: 0.054166 s
+    -- local a = {}
+    -- local index = 1
+    -- for i = 1,1000 do
+    --    a[index] = i
+    --    index = index+1
+    -- end
+
+    -- p1: 0.708012 s
+    -- local a = 0
+    -- for i=1,1000 do
+    --     local t = { 1, 2, 3, 4 }
+    --     for i,v in ipairs( t ) do
+    --        a = a + v
+    --     end
+    -- end
+
+    -- p2: 0.660426 s
+    -- local a = 0
+    -- for i=1,1000 do
+    --     local t = { 1, 2, 3, 4 }
+    --     for i = 1,#t do
+    --        a = a + t[i]
+    --     end
+    -- end
+
+    -- u1: 2.121722 s
+    -- local a = { 100, 200, 300, 400 }
+    -- local b = 1
+    -- for i = 1,1000 do
+    --    b = sum(unpack(a))
+    -- end
+
+    -- u2: 1.701365 s
+    -- local a = { 100, 200, 300, 400 }
+    -- local b = 1
+    -- for i = 1,1000 do
+    --    b = sum(a[1], a[2], a[3], a[4])
+    -- end
+
+    return b
+end
+
+for i=1,10 do
+    for j=1,1000 do
+        test_unit()
+    end
+end
+
+print(os.clock()-start)
+从运行结果来看，除了t3有本质上的性能提升（六倍性能差距，但是t3写法相当丑陋），其他不同的写法都在一个数量级上。你是愿意让代码更易懂还是更牛逼，就看各位看官自己的抉择了。不要盲信，也不要不信，各位要睁开眼自己多做测试。
+
+另外说明：文章提及的使用局部变量、缓存table元素，在LuaJIT中还是很有用的。
+
+todo：优化测试用例，让他更直观，自己先备注一下。
+
+变量的共享范围
+
+本章内容来自openresty讨论组 这里
+先看两段代码：
+
+-- index.lua
+local uri_args = ngx.req.get_uri_args()
+local mo = require('mo')
+mo.args = uri_args
+-- mo.lua
+
+local showJs = function(callback, data)
+    local cjson = require('cjson')
+    ngx.say(callback .. '(' .. cjson.encode(data) .. ')')
+end
+local self.jsonp = self.args.jsonp
+local keyList = string.split(self.args.key_list, ',')
+for i=1, #keyList do
+    -- do something
+    ngx.say(self.args.kind)
+end
+showJs(self.jsonp, valList)
+大概代码逻辑如上，然后出现这种情况：
+
+生产服务器中，如果没有用户访问，自己几个人测试，一切正常。
+
+同样生产服务器，我将大量的用户请求接入后，我不停刷新页面的时候会出现部分情况（概率也不低，几分之一，大于10%），输出的callback（也就是来源于self.jsonp，即URL参数中的jsonp变量）和url地址中不一致（我自己测试的值是?jsonp=jsonp1435220570933，而用户的请求基本上都是?jsonp=jquery....)错误的情况都是会出现用户请求才会有的jquery....这种字符串。另外URL参数中的kind是1，我在循环中输出会有“1”或“nil”的情况。不仅这两种参数，几乎所有url中传递的参数，都有可能变成其他请求链接中的参数。
+
+基于以上情况，个人判断会不会是在生产服务器大量用户请求中，不同请求参数串掉了，但是如果这样，是否应该会出现我本次的获取参数是某个其他用户的值，那么for循环中的值也应该固定的，而不会是一会儿是我自己请求中的参数值，一会儿是其他用户请求中的参数值。
+
+问题在哪里？
+
+Lua module 是 VM 级别共享的，见这里。
+
+self.jsonp变量一不留神全局共享了，而这肯定不是作者期望的。所以导致了高并发应用场景下偶尔出现异常错误的情况。
+
+每请求的数据在传递和存储时须特别小心，只应通过你自己的函数参数来传递，或者通过 ngx.ctx 表。前者是推荐的玩法，因为效率高得多。
+
+贴一个ngx.ctx的例子：
+
+    location /test {
+        rewrite_by_lua '
+            ngx.ctx.foo = 76
+        ';
+        access_by_lua '
+            ngx.ctx.foo = ngx.ctx.foo + 3
+        ';
+        content_by_lua_block {
+            ngx.say(ngx.ctx.foo)
+        }
+    }
+Then GET /test will yield the output
+
+NGX_LUA的三种变量范围
+
+进程间
+
+所有Nginx的工作进程共享变量，使用指令lua_shared_dict定义
+
+进程内
+
+Lua源码中声明为全局变量，就是声明变量的时候不使用local关键字，这样的变量在同一个进程内的所有请求都是共享的
+
+每请求
+
+Lua源码中声明变量的时候使用local关键字，和ngx.ctx类似，变量的生命周期只存在同一个请求中
+
+关于进程的变量，有两个前提条件，一是ngx_lua使用LuaJIT编译，二是声明全局变量的模块是require引用。LuaJIT会缓存模块中的全局变量，下面用一个例子来说明这个问题。
+
+nginx.conf
+
+location /index {
+    content_by_lua_file conf/lua/web/index.lua;
+}
+index.lua
+
+local ngx = require "ngx"
+local var = require "var"
+
+if var.calc() == 100 then
+    ngx.say("ok")
+else
+    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
+    ngx.say("error")
+end
+var.lua
+
+local ngx = require "ngx"
+
+count = 100
+
+local _M = {}
+
+local function add()
+    count = count + 1
+end
+
+local function sub()
+    ngx.update_time()
+    ngx.sleep(ngx.time()%0.003) --模拟后端阻塞时间
+    count = count - 1
+end
+
+function _M.calc()
+    add()
+    sub()
+    return count
+end
+
+return _M
+测试结果
+
+➜  web git:(master) ab -c 1 -n 10 http://127.0.0.1:/index
+...
+HTML transferred:       30 bytes
+...
+➜  web git:(master) ab -c 3 -n 10 http://127.0.0.1:10982/index
+...
+HTML transferred:       48 bytes
+...
+并发请求等于1的时候，返回的html文件的大小为3*10bytes，并发等于3的时候，返回的html文件的大小为48bytes，说明30次请求中有多次请求失败，返回了“error”。这个例子可以说明，如果在模块中使用了全局变量，在高并发的情况下可能发生不可知的结果。
+
+建议不要使用模块中的全局变量，最好使用ngx.ctx或share dict替代。如果由于业务需求，非要使用的话，建议该变量的值在也是在一个有限集合内，比方说只有ture和false两个状态。
+
+动态限速
+
+内容来源于openresty讨论组，点击这里
+在我们的应用场景中，有大量的限制并发、下载传输速率这类要求。突发性的网络峰值会对企业用户的网络环境带来难以预计的网络灾难。
+
+nginx示例配置：
+
+location /download_internal/ {
+    internal;
+    send_timeout 10s;
+    limit_conn perserver 100;
+    limit_rate 0k;
+
+    chunked_transfer_encoding off;
+    default_type application/octet-stream;
+
+    alias ../download/;
+}
+我们从一开始，就想把速度值做成变量，但是发现limit_rate不接受变量。我们就临时的修改配置文件限速值，然后给nginx信号做reload。只是没想到这一临时，我们就用了一年多。
+
+直到刚刚，讨论组有人问起网络限速如何实现的问题，春哥给出了大家都喜欢的办法：
+
+地址：https://groups.google.com/forum/#!topic/openresty/aespbrRvWOU
+可以在 Lua 里面（比如 access_by_lua 里面）动态读取当前的 URL 参数，然后设置 nginx 的内建变量$limit_rate（在 Lua 里访问就是 ngx.var.limit_rate）。
+
+http://nginx.org/en/docs/http/ngx_http_core_module.html#var_limit_rate 
+改良后的限速代码：
+
+location /download_internal/ {
+    internal;
+    send_timeout 10s;
+    access_by_lua 'ngx.var.limit_rate = "300K"';
+
+    chunked_transfer_encoding off;
+    default_type application/octet-stream;
+
+    alias ../download/;
+}
+经过测试，绝对达到要求。有了这个东东，我们就可以在Lua上直接操作限速变量实时生效。再也不用之前笨拙的reload方式了。
+
+PS: ngx.var.limit_rate 限速是基于请求的，如果相同终端发起两个连接，那么终端的最大速度将是limit_rate的两倍，原文如下：
+
+Syntax: limit_rate rate;
+Default:    
+limit_rate 0;
+Context: http, server, location, if in location    
+
+Limits the rate of response transmission to a client. The rate is specified in bytes per second. The zero value disables rate limiting. The limit is set per a request, and so if a client simultaneously opens two connections, the overall rate will be twice as much as the specified limit.
+
+
+
+
+
+ngx.shared.DICT 非队列性质
+
+===========
+
+执行阶段和主要函数请参考维基百科 HttpLuaModule#ngx.shared.DICT
+
+非队列性质
+ngx.shared.DICT 的实现是采用红黑树实现，当申请的缓存被占用完后如果有新数据需要存储则采用 LRU 算法淘汰掉“多余”数据。
+
+这样数据结构的在带有队列性质的业务逻辑下会出现的一些问题：
+
+我们用shared作为缓存，接纳终端输入并存储，然后在另外一个线程中按照固定的速度去处理这些输入，代码如下:
+
+
+-- [ngx.thread.spawn](https://github.com/openresty/lua-nginx-module#ngxthreadspawn) #1 存储线程 理解为生产者
+
+    ....
+    local cache_str = string.format([[%s&%s&%s&%s&%s&%s&%s]], net, name, ip,
+                    mac, ngx.var.remote_addr, method, md5)
+    local ok, err = ngx_nf_data:safe_set(mac, cache_str, 60*60)  --这些是缓存数据
+    if not ok then
+        ngx.log(ngx.ERR, "stored nf report data error: "..err)
+    end
+    ....
+
+-- [ngx.thread.spawn](https://github.com/openresty/lua-nginx-module#ngxthreadspawn) #2 取线程 理解为消费者
+
+    while not ngx.worker.exiting() do
+        local keys = ngx_share:get_keys(50)  -- 一秒处理50个数据
+
+        for index, key in pairs(keys) do
+            str = ((nil ~= str) and str..[[#]]..ngx_share:get(key)) or ngx_share:get(key)
+            ngx_share:delete(key)  --干掉这个key
+        end
+        .... --一些消费过程，看官不要在意
+        ngx.sleep(1)
+    end
+在上述业务逻辑下会出现由生产者生产的某些key-val对永远不会被消费者取出并消费，原因就是shared.DICT不是队列，ngx_shared:get_keys(n)函数不能保证返回的n个键值对是满足FIFO规则的，从而导致问题发生。
+
+问题解决
+问题的原因已经找到，解决方案有如下几种： 1.修改暂存机制，采用redis的队列来做暂存； 2.调整消费者的消费速度，使其远远大于生产者的速度； 3.修改ngx_shared:get_keys()的使用方法，即是不带参数；
+
+方法3和2本质上都是一样的，由于业务已经上线，方法1周期太长，于是采用方法2解决，在后续的业务中不再使用shared.DICT来暂存队列性质的数据
+
+KeepAlive
+
+在OpenResty中，连接池在使用上如果不加以注意，容易产生数据写错地方，或者得到的应答数据异常以及类似的问题，当然使用短连接可以规避这样的问题，但是在一些企业用户环境下，短连接+高并发对企业内部的防火墙是一个巨大的考验，因此，长连接自有其勇武之地，使用它的时候要记住，长连接一定要保持其连接池中所有连接的正确性。
+
+-- 错误的代码
+local function send()
+    for i = 1, count do
+        local ssdb_db, err = ssdb:new()
+        local ok, err = ssdb_db:connect(SSDB_HOST, SSDB_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "create new ssdb failed!")
+        else
+            local key,err = ssdb_db:qpop(something)
+            if not key then
+                ngx.log(ngx.ERR, "ssdb qpop err:", err)
+            else
+                local data, err = ssdb_db:get(key[1])
+                -- other operations
+            end
+        end 
+    end
+    ssdb_db:set_keepalive(SSDB_KEEP_TIMEOUT, SSDB_KEEP_COUNT)
+end  
+-- 调用
+while true do
+    local ths = {}
+    for i=1,THREADS do
+        ths[i] = ngx.thread.spawn(send)       ----创建线程
+    end 
+    for i = 1, #ths do 
+        ngx.thread.wait(ths[i])               ----等待线程执行
+    end  
+    ngx.sleep(0.020)
+end
+以上代码在测试中发现，应该得到get(key)的返回值有一定几率为key。
+
+原因即是在ssdb创建连接时可能会失败，但是当得到失败的结果后依然调用ssdb_db：set_keepalive将此连接并入连接池中。
+
+正确地做法是如果连接池出现错误，则不要将该连接加入连接池。
+
+local function send()
+    for i = 1, count do
+        local ssdb_db, err = ssdb:new()
+        local ok, err = ssdb_db:connect(SSDB_HOST, SSDB_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "create new ssdb failed!")
+            return
+        else
+            local key,err = ssdb_db:qpop(something)
+            if not key then
+                ngx.log(ngx.ERR, "ssdb qpop err:", err)
+            else
+                local data, err = ssdb_db:get(key[1])
+                -- other operations
+            end
+            ssdb_db:set_keepalive(SSDB_KEEP_TIMEOUT, SSDB_KEEP_COUNT)
+        end 
+    end
+end
+所以，当你使用长连接操作db出现结果错乱现象时，首先应该检查下是否存在长连接使用不当的情况。
+
+如何引用第三方 resty 库
+
+OpenResty 引用第三方 resty 库非常简单，只需要将相应的文件拷贝到 resty 目录下即可。
+
+我们以 resty.http ( https://github.com/pintsized/lua-resty-http) 库为例。
+
+只要将 lua-resty-http/lib/resty/ 目录下的 http.lua 和 http_headers.lua两个文件拷贝到 /usr/local/openresty/lualib/resty 目录下即可(假设你的openresty安装目录为 /usr/local/openresty)。
+
+验证代码如下：
+
+
+server {
+
+    listen       8080 default_server;
+    server_name  _;
+
+    resolver 8.8.8.8;
+
+    location /baidu {
+        content_by_lua_block {
+            local http = require "resty.http"
+            local httpc = http.new()
+            local res, err = httpc:request_uri("http://www.baidu.com")
+            if res.status == ngx.HTTP_OK then
+                ngx.say(res.body)
+            else
+                ngx.exit(res.status)
+            end
+        }
+    }
+}
+访问 http://127.0.0.1:8080/baidu , 如果出现的是百度的首页，说明你配置成功了。
+
+当然这里也可以自定义 lua_package_path 指定 Lua 的查找路径，这样就可以把第三方代码放到相应的位置下，这么做更加方便归类文件，明确什么类型的文件放到什么地方（比如：公共文件、业务文件）。
+
+典型应用场景
+
+可以这样说，任何一个开发语言、开发框架，都有它存在的明确目的，重心是为了解决什么问题。没有说我们学习一门语言或技术，就可以解决所有的问题。同样的，OpenResty的存在也有其自身适用的应用场景。
+
+其实官网 wiki 已经列了出来：
+
+在lua中混合处理不同nginx模块输出（proxy, drizzle, postgres, redis, memcached等）。
+在请求真正到达上游服务之前，lua中处理复杂的准入控制和安全检查。
+比较随意的控制应答头（通过Lua）。
+从外部存储中获取后端信息，并用这些信息来实时选择哪一个后端来完成业务访问。
+在内容handler中随意编写复杂的web应用，同步编写异步访问后端数据库和其他存储。
+在rewrite阶段，通过Lua完成非常复杂的处理。
+在Nginx子查询、location调用中，通过Lua实现高级缓存机制。
+对外暴露强劲的Lua语言，允许使用各种Nginx模块，自由拼合没有任何限制。该模块的脚本有充分的灵活性，同时提供的性能水平与本地C语言程序无论是在CPU时间方面以及内存占用差距非常小。所有这些都要求LuaJIT 2.x是启用的。其他脚本语言实现通常很难满足这一性能水平。
+不擅长的应用场景
+
+前面的章节，我们是从它适合的场景出发，OpenResty不适合的场景又有哪些？以及我们在使用中如何规避这些问题呢？
+
+这里官网并没有给出答案，我根据我们的应用场景给大家列举，并简单描述一下原因：
+
+有长时间阻塞调用的过程
+例如通过 Lua 完成系统命令行调用
+使用阻塞的Lua API完成相应操作
+单个请求处理逻辑复杂，尤其是需要和请求方多次交互的长连接场景
+Nginx的内存池 pool 是每次新申请内存存放数据
+所有的内存释放都是在请求退出的时候统一释放
+如果单个请求处理过于复杂，将会有过多内存无法及时释放
+内存占用高的处理
+受制于Lua VM的最大使用内存 1G 的限制
+这个限制是单个Lua VM，也就是单个Nginx worker
+两个请求之间有交流的场景
+例如你做个在线聊天，要完成两个用户之间信息的传递
+当前OpenResty还不具备这个通讯能力（后面可能会有所完善）
+与行业专用的组件对接
+最好是 TCP 协议对接，不要是 API 方式对接，防止里面有阻塞 TCP 处理
+由于OpenResty必须要使用非阻塞 API ，所以传统的阻塞 API ，我们是没法直接使用的
+获取 TCP 协议，使用 cosocket 重写（重写后的效率还是很赞的）
+每请求开启的 light thread 过多的场景
+虽然已经是light thread，但它对系统资源的占用相对是比较大的
+这些适合、不适合信息可能在后面随着 OpenResty 的发展都会有新的变化，大家拭目以待。
+
+怎样理解 cosocket
+
+笔者认为，cosocket 是 OpenResty 世界中技术、实用价值最高的部分。让我们可以用非常低廉的成本，优雅的姿势，比传统 socket 编程效率高好几倍的方式进行网络编程。无论资源占用、执行效率、并发数等都非常出色。
+
+鲁迅有句名言“其实世界上本没有路，走的人多了便有了路”，其实对于 cosocket 的中文翻译貌似我也碰到了类似的问题。当我想给大家一个正面解释，爬过了官方 wiki 发现，原来作者本人（章亦春）也没有先给出 cosocket 定义。
+
+看来只能通过一些侧面信息，从而让这条路逐渐的清晰起来。
+
+cosocket = coroutine + socket coroutine：协同程序（后面简称：协程） socket：网络套接字
+OpenResty 中的 cosocket 不仅需要协程特性支撑，它还需 nginx 非常最重要的一部分“事件循环回调机制”，两部分拼在一起才达到了最后的 cosocket 效果，再结合 nginx 自身对各种资源的“小气”，使得整体加分不少。在 Lua 世界中调用任何一个有关 cosocket 网络函数内部关键调用如图所示：
+
+
+
+从该图中我们可以看到，用户的 Lua 脚本每触发一个网络操作，都会触发一个协程的 yield 以及 resume，因为每请求的 Lua 脚本实际上都运行在独享协程之上，可以在任何需要的时候暂停自己（yield），也可以在任何需要的时候被唤醒（resume）。
+
+暂停自己，把网络事件注册到 Nginx 监听列表中，并把运行权限交给 Nginx。当有 Nginx 注册网络事件达到触发条件时，唤醒对应的协程继续处理。
+
+依此为蓝板，封装实现 connect、read、recieve 等操作，形成了大家目前所看到的 cosocket API。
+
+可以看到，cosocket 是依赖 Lua 协程 + nginx 事件通知两个重要特性拼的。
+
+从 0.9.9 版本开始，cosocket 对象是全双工的，也就是说，一个专门读取的 "light thread"，一个专门写入的 "light thread"，它们可以同时对同一个 cosocket 对象进行操作（两个 "light threads" 必须运行在同一个 Lua 环境中，原因见上）。但是你不能让两个 "light threads" 对同一个 cosocket 对象都进行读（或者写入、或者连接）操作，否则当调用 cosocket 对象时，你将得到一个类似 "socket busy reading" 的错误。
+
+所以东西总结下来，到底什么是 cosocket，中文应该怎么翻译，笔者本人都开始纠结了。我们不妨从另外一个角度来审视它，它到底给我们带来了什么。
+
+它是异步的；
+它是非阻塞的；
+它是全双工的；
+同步与异步解释： 同步：做完一件事再去做另一件； 异步：同时做多件事情，某个事情有结果了再去处理。
+
+阻塞与非阻塞解释： 阻塞：不等到想要的结果我就不走了； 非阻塞：有结果我就带走，没结果我就空手而回，总之一句话：爷等不起。
+异步／同步是做事派发方式，阻塞／非阻塞是如何处理事情，两组概念不在同一个层面。
+
+无论 ngx.socket.tcp()、ngx.socket.udp()、ngx.socket.stream()、ngx.req.socket()，它们基本流程都是一样的，只是一些细节参数上有区别（比如 TCP 和 UDP 的区别）。下面这些函数，都是用来辅助完成更高级的 socket 行为控制：
+
+connect
+sslhandshake
+send
+receive
+close
+settimeout
+setoption
+receiveuntil
+setkeepalive
+getreusedtimes
+它们不仅完整兼容 LuaSocket 库的 TCP API，而且还是 100% 非阻塞的。
+
+这里给大家 show 一个例子，对 cosocket 使用有一个整体认识。
+
+location /test {
+    resolver 114.114.114.114;
+
+    content_by_lua_block {
+        local sock = ngx.socket.tcp()
+        local ok, err = sock:connect("www.baidu.com", 80)
+        if not ok then
+            ngx.say("failed to connect to baidu: ", err)
+            return
+        end
+
+        local req_data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\n\r\n"
+        local bytes, err = sock:send(req_data)
+        if err then
+            ngx.say("failed to send to baidu: ", err)
+            return
+        end
+
+        local data, err, partial = sock:receive()
+        if err then
+            ngx.say("failed to recieve to baidu: ", err)
+            return
+        end
+
+        sock:close()
+        ngx.say("successfully talk to baidu! response first line: ", data)
+    }
+}
+可以看到，这里的 socket 操作都是异步非阻塞的，完全不像 node.js 那样充满各种回调，整体看上去非常简洁优雅，效率还非常棒。
+
+对 cosocket 做了这么多铺垫，到底他有多么重要呢？直接看一下官方默认绑定包有多少是基于 cosocket 的：
+
+ngx_stream_lua_module Nginx "stream" 子系统的官方模块版本（通用的下游 TCP 对话）。
+lua-resty-memcached 基于 ngx_lua cosocket 的库。
+lua-resty-redis 基于 ngx_lua cosocket 的库。
+lua-resty-mysql 基于 ngx_lua cosocket 的库。
+lua-resty-upload 基于 ngx_lua cosocket 的库。
+lua-resty-dns 基于 ngx_lua cosocket的库。
+lua-resty-websocket 提供 WebSocket 的客户端、服务端，基于 ngx_lua cosocket 的库。
+效仿这些基础库的封装方法，可以很容易完成不同系统或组件的对接，例如 syslog、beanstalkd、mongodb 等，直接 copy 这些组件的通讯协议即可。
+
+
+
+
+
+
+
+
+
+
+
+LuaRestyDNSLibrary 简介
+
+这个 Lua 库提供了 ngx_lua 模块的 DNS 解析器：
+
+lua-resty-dns
+
+这个 Lua 库基于 ngx_lua 的 cosocket API 实现，可以确定是100%非阻塞的。注意，该模块需要至少需要 ngx_lua 0.5.12 或 ngx_openresty 1.2.1.11 版本。Lua bit 模块也是需要的。如果你的 ngx_lua 中的 LuaJIT 2.0，Lua bit 模块已经被默认开启。注意，这个模块在 ngx_openresty 集成环境中是被默认绑定并开启的。
+
+使用代码示例：
+
+lua_package_path "/path/to/lua-resty-dns/lib/?.lua;;";
+
+ server {
+     location = /dns {
+         content_by_lua_block {
+             local resolver = require "resty.dns.resolver"
+             local r, err = resolver:new{
+                 nameservers = {"8.8.8.8", {"8.8.4.4", 53} },
+                 retrans = 5,  -- 5 retransmissions on receive timeout
+                 timeout = 2000,  -- 2 sec
+             }
+
+             if not r then
+                 ngx.say("failed to instantiate the resolver: ", err)
+                 return
+             end
+
+             local answers, err = r:query("www.google.com")
+             if not answers then
+                 ngx.say("failed to query the DNS server: ", err)
+                 return
+             end
+
+             if answers.errcode then
+                 ngx.say("server returned error code: ", answers.errcode,
+                         ": ", answers.errstr)
+             end
+
+             for i, ans in ipairs(answers) do
+                 ngx.say(ans.name, " ", ans.address or ans.cname,
+                         " type:", ans.type, " class:", ans.class,
+                         " ttl:", ans.ttl)
+             end
+         }
+     }
+ }
+
+
+使用动态DNS来完成HTTP请求
+
+其实针对大多应用场景，DNS是不会频繁变更的，使用nginx默认的resolver配置方式就能解决。
+
+对于部分应用场景，可能需要支持的系统众多：win、centos、ubuntu等，不同的操作系统获取dns的方法都不太一样。再加上我们使用docker，导致我们在容器内部获取dns变得更加难以准确。
+
+如何能够让Nginx使用随时可以变化的DNS源，成为我们急待解决的问题。
+
+当我们需要在某一个请求内部发起这样一个http查询，采用proxy_pass是不行的（依赖resolver的dns，如果dns有变化，必须要重新加载配置），并且由于proxy_pass不能直接设置keepconn，导致每次请求都是短链接，性能损失严重。
+
+使用resty.http，目前这个库只支持ip：port的方式定义url，其内部实现并没有支持domain解析。resty.http是支持set_keepalive完成长连接，这样我们只需要让他支持dns解析就能有完美解决方案了。
+
+local resolver = require "resty.dns.resolver"
+local http     = require "resty.http"
+
+function get_domain_ip_by_dns( domain )
+  -- 这里写死了google的域名服务ip，要根据实际情况做调整（例如放到指定配置或数据库中）
+  local dns = "8.8.8.8"
+
+  local r, err = resolver:new{
+      nameservers = {dns, {dns, 53} },
+      retrans = 5,  -- 5 retransmissions on receive timeout
+      timeout = 2000,  -- 2 sec
+  }
+
+  if not r then
+      return nil, "failed to instantiate the resolver: " .. err
+  end
+
+  local answers, err = r:query(domain)
+  if not answers then
+      return nil, "failed to query the DNS server: " .. err
+  end
+
+  if answers.errcode then
+      return nil, "server returned error code: " .. answers.errcode .. ": " .. answers.errstr
+  end
+
+  for i, ans in ipairs(answers) do
+    if ans.address then
+      return ans.address
+    end
+  end
+
+  return nil, "not founded"
+end
+
+function http_request_with_dns( url, param )
+    -- get domain
+    local domain = ngx.re.match(url, [[//([\S]+?)/]])
+    domain = (domain and 1 == #domain and domain[1]) or nil
+    if not domain then
+        ngx.log(ngx.ERR, "get the domain fail from url:", url)
+        return {status=ngx.HTTP_BAD_REQUEST}
+    end
+
+    -- add param
+    if not param.headers then
+        param.headers = {}
+    end
+    param.headers.Host = domain
+
+    -- get domain's ip
+    local domain_ip, err = get_domain_ip_by_dns(domain)
+    if not domain_ip then
+        ngx.log(ngx.ERR, "get the domain[", domain ,"] ip by dns failed:", err)
+        return {status=ngx.HTTP_SERVICE_UNAVAILABLE}
+    end
+
+    -- http request
+    local httpc = http.new()
+    local temp_url = ngx.re.gsub(url, "//"..domain.."/", string.format("//%s/", domain_ip))
+
+    local res, err = httpc:request_uri(temp_url, param)
+    if err then
+        return {status=ngx.HTTP_SERVICE_UNAVAILABLE}
+    end
+
+    -- httpc:request_uri 内部已经调用了keepalive，默认支持长连接
+    -- httpc:set_keepalive(1000, 100)
+    return res
+end
+动态DNS，域名访问，长连接，这些都具备了，貌似可以安稳一下。在压力测试中发现这里面有个机制不太好，就是对于指定域名解析，每次都要和DNS服务回话询问IP地址，实际上这是不需要的。普通的浏览器，都会对DNS的结果进行一定的缓存，那么这里也必须要使用了。
+
+对于缓存实现代码，请参考ngx_lua相关章节，肯定会有惊喜等着你挖掘碰撞。
+
+
+
+
+
+
+
+缓存失效风暴
+
+看下这个段伪代码：
+
+local value = get_from_cache(key)
+if not value then
+    value = query_db(sql)
+    set_to_cache(value， timeout ＝ 100)
+end
+return value
+看上去没有问题，在单元测试情况下，也不会有异常。
+
+但是，进行压力测试的时候，你会发现，每隔100秒，数据库的查询就会出现一次峰值。如果你的cache失效时间设置的比较长，那么这个问题被发现的机率就会降低。
+
+为什么会出现峰值呢？想象一下，在cache失效的瞬间，如果并发请求有1000条同时到了 query_db(sql) 这个函数会怎样？没错，会有1000个请求打向数据库。这就是缓存失效瞬间引起的风暴。它有一个英文名，叫 "dog-pile effect"。
+
+怎么解决？自然的想法是发现缓存失效后，加一把锁来控制数据库的请求。具体的细节，春哥在lua-resty-lock的文档里面做了详细的说明，我就不重复了，请看这里。多说一句，lua-resty-lock库本身已经替你完成了wait for lock的过程，看代码的时候需要注意下这个细节。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+单元测试
+
+单元测试（unit testing），是指对软件中的最小可测试单元进行检查和验证。对于单元测试中单元的含义，一般来说，要根据实际情况去判定其具体含义，如C语言中单元指一个函数，Java里单元指一个类，图形化的软件中可以指一个窗口或一个菜单等。总的来说，单元就是人为规定的最小的被测功能模块。单元测试是在软件开发过程中要进行的最低级别的测试活动，软件的独立单元将在与程序的其他部分相隔离的情况下进行测试。
+
+单元测试的书写、验证，互联网公司几乎都是研发自己完成的，我们要保证代码出手时可交付、符合预期。如果连自己的预期都没达到，后面所有的工作，都将是额外无用功。
+
+Lua中我们没有找到比较好的测试库，参考了Golang、Python等语言的单元测试书写方法以及调用规则，我们编写了lua-resty-test测试库，这里给自己的库推广一下，希望这东东也是你们的真爱。
+
+nginx示例配置
+    #you do not need the following line if you are using
+    #the ngx_openresty bundle:
+
+    lua_package_path "/path/to/lua-resty-redis/lib/?.lua;;";
+
+    server {
+        location /test {
+            content_by_lua_file test_case_lua/unit/test_example.lua;
+        }
+    }
+test_case_lua/unit/test_example.lua:
+local tb    = require "resty.iresty_test"
+local test = tb.new({unit_name="bench_example"})
+
+function tb:init(  )
+    self:log("init complete")
+end
+
+function tb:test_00001(  )
+    error("invalid input")
+end
+
+function tb:atest_00002()
+    self:log("never be called")
+end
+
+function tb:test_00003(  )
+   self:log("ok")
+end
+
+-- units test
+test:run()
+
+-- bench test(total_count, micro_count, parallels)
+test:bench_run(100000, 25, 20)
+init里面我们可以完成一些基础、公共变量的初始化，例如特定的url等
+test_*****函数中添加我们的单元测试代码
+搞定测试代码，它即是单元测试，也是成压力测试
+输出日志：
+TIME   Name            Log
+0.000  [bench_example] unit test start
+0.000  [bench_example] init complete
+0.000    \_[test_00001] fail ...de/nginx/test_case_lua/unit/test_example.lua:9: invalid input
+0.000    \_[test_00003] ↓ ok
+0.000    \_[test_00003] PASS
+0.000  [bench_example] unit test complete
+
+0.000  [bench_example] !!!BENCH TEST START!!
+0.484  [bench_example] succ count:   100001     QPS:     206613.65
+0.484  [bench_example] fail count:   100001     QPS:     206613.65
+0.484  [bench_example] loop count:   100000     QPS:     206611.58
+0.484  [bench_example] !!!BENCH TEST ALL DONE!!!
+埋个伏笔：在压力测试例子中，测试到的QPS大约21万的，这是我本机一台Mac Mini压测的结果。构架好，姿势正确，我们可以很轻松做出好产品。
+
+后面会详细说一下用这个工具进行压力测试的独到魅力，做出一个NB的网络处理应用，这个测试库应该是你的利器。
+
+
+代码覆盖率
+
+这是一个重要的可量化指标，如果代码覆盖率很高，你就可以放心的修改代码，在发版本的时候也能睡个安稳觉。否则就是拆东墙补西墙，陷入无尽的 bug 诅咒中。
+
+那么在 OpenResty 里面如何看到代码覆盖率呢？其实很简单，使用 LuaCov 可以很方便的实现。
+
+我们先了解下 LuaCov，这是一个针对 Lua 脚本的代码覆盖率工具，通过 luarocks 来安装：
+
+luarocks install luacov
+当然，你也可以通过 github 上的源码 编译来安装。这个方式你可以修改 LuaCov 的一些默认配置。
+
+比如 LuaCov 的分析文件是按照 100 条一批来写入的，如果你的代码量不大，可能就会不准确。你可以修改 /src/luacov/defaults.lua 里面的 savestepsize，改为 2，来适应你的应用场景。
+
+在 OPenResty 里面使用 LuaCov，只用在 nginx.conf 中增加 init_by_lua_block（只能放在 http 上下文中） 既可。
+
+init_by_lua_block {
+    require 'luacov.tick'
+    jit.off()
+}
+这个 *_bolck 语法在较新的 OpenResty 版本中新引入，如果提示指令不存在，请使用最新的来版本来测试。
+
+重新启动 OpenResty 后，LuaCov 就已经生效了。你可以跑下单元测试，或者访问下 API 接口，在当前工作目录下，就会生成 luacov.stats.out 这个统计文件。然后 cd 到这个目录下，运行：
+
+luacov
+就会生成 luacov.report.out 这个可读性比较好的覆盖率报告。需要注意的是，luacov 这个命令后面不用加任何的参数，这个在官方文档里面有说明，只是比较隐晦。
+
+我们看下 luacov.report.out 里面的一个片段：
+
+1   function get_config(mid, args)
+13    local configs = {}
+13    local res, err = red:hmget("client_".. mid, "tpl_id", "gid")
+13    if err then
+****0     return nil, err
+        end
+      end
+代码前面的数字，代表的是运行的次数。而 ****0 很明确的指出这行代码没有被测试案例覆盖到。
+
+在 luacov.report.out 的最后会有一个汇总的覆盖率报告：
+
+覆盖率报告
+
+可以看到，在我的这个单元测试里面，一共涉及到近 20 个代码文件。其中倒数第三个是我测试的 API 接口， 覆盖到的代码有 19 行，没有覆盖的有 3 行，所以代码覆盖率是 86.36% （19.0 / (19 + 3)）。
+
+最后有一个总的代码覆盖率是 28.3%，这个值在跑完所有单元测试后是有意义的，单跑一个是没有参考价值的，因为很多基础函数可能并没有运行到。
+
+API测试
+
+API（Application Programming Interface）测试的自动化是软件测试最基本的一种类型。从本质上来说，API测试是用来验证组成软件的那些单个方法的正确性，而不是测试整个系统本身。API测试也称为单元测试（Unit Testing）、模块测试（Module Testing）、组件测试（Component Testing）以及元件测试（Element Testing）。从技术上来说，这些术语是有很大的差别的，但是在日常应用中，你可以认为它们大致相同的意思。它们背后的思想就是，必须确定系统中每个单独的模块工作正常，否则，这个系统作为一个整体不可能是正确的。毫无疑问，API测试对于任何重要的软件系统来说都是必不可少的。
+
+我们对API测试的定位是服务对外输出的API接口测试，属于黑盒、偏重业务的测试步骤。
+
+看过上一章内容的朋友还记得lua-resty-test，我们的API测试同样是需要它来完成。get_client_tasks是终端用来获取当前可执行任务清单的API，我们用它当做例子给大家做个介绍。
+
+nginx conf:
+location ~* /api/([\w_]+?)\.json {
+    content_by_lua_file lua/$1.lua;
+}
+
+location ~* /unit_test/([\w_]+?)\.json {
+    lua_check_client_abort on;
+    content_by_lua_file test_case_lua/unit/$1.lua;
+}
+API测试代码：
+-- unit test for /api/get_client_tasks.json 
+local tb = require "resty.iresty_test"
+local json   = require("cjson")
+local test = tb.new({unit_name="get_client_tasks"})
+
+function tb:init(  )
+    self.mid = string.rep('0',32)
+end
+
+function tb:test_0000()
+    -- 正常请求
+    local res = ngx.location.capture(
+        '/api/get_client_tasks.json?mid='..self.mid,
+        { method = ngx.HTTP_POST, body=[[{"type":[1600,1700]}]] }
+    )
+
+    if 200 ~= res.status then
+        error("failed code:" .. res.status)
+    end
+end
+
+function tb:test_0001()
+    -- 缺少body
+    local res = ngx.location.capture(
+        '/api/get_client_tasks.json?mid='..self.mid,
+        { method = ngx.HTTP_POST }
+    )
+
+    if 400 ~= res.status then
+        error("failed code:" .. res.status)
+    end
+end
+
+function tb:test_0002()
+    -- 错误的json内容
+    local res = ngx.location.capture(
+        '/api/get_client_tasks.json?mid='..self.mid,
+        { method = ngx.HTTP_POST, body=[[{"type":"[1600,1700]}]] }
+    )
+
+    if 400 ~= res.status then
+        error("failed code:" .. res.status)
+    end
+end
+
+function tb:test_0003()
+    -- 错误的json格式
+    local res = ngx.location.capture(
+        '/api/get_client_tasks.json?mid='..self.mid,
+        { method = ngx.HTTP_POST, body=[[{"type":"[1600,1700]"}]] }
+    )
+
+    if 400 ~= res.status then
+        error("failed code:" .. res.status)
+    end
+end
+
+test:run()
+nginx output:
+
+0.000  [get_client_tasks] unit test start
+0.001    \_[test_0000] PASS
+0.001    \_[test_0001] PASS
+0.001    \_[test_0002] PASS
+0.001    \_[test_0003] PASS
+0.001  [get_client_tasks] unit test complete
+使用capture来模拟请求，其实是不靠谱的。如果我们要完全100%模拟客户请求，这时候就要使用第三方cosocket库，例如lua-resty-http，这样我们才可以完全指定http参数。
+
+性能测试
+
+性能测试应该有两个方向：
+
+单接口压力测试
+生产环境模拟用户操作高压力测试
+生产环境模拟测试，目前我们都是交给公司的QA团队专门完成的。这块我只能粗略列举一下：
+
+获取1000用户以上生产用户的访问日志（统计学要求1000是最小集合）
+计算指定时间内（例如10分钟），所有接口的触发频率
+使用测试工具（loadrunner, jmeter等）模拟用户请求接口
+适当放大压力，就可以模拟2000、5000等用户数的情况
+ab 压测
+
+单接口压力测试，我们都是由研发团队自己完成的。传统一点的方法，我们可以使用ab(apache bench)这样的工具。
+
+#ab -n10 -c2 http://haosou.com/
+
+-- output:
+...
+Complete requests:      10
+Failed requests:        0
+Non-2xx responses:      10
+Total transferred:      3620 bytes
+HTML transferred:       1780 bytes
+Requests per second:    22.00 [#/sec] (mean)
+Time per request:       90.923 [ms] (mean)
+Time per request:       45.461 [ms] (mean, across all concurrent requests)
+Transfer rate:          7.78 [Kbytes/sec] received
+...
+大家可以看到ab的使用超级简单，简单的有点弱了。在上面的例子中，我们发起了10个请求，每个请求都是一样的，如果每个请求有差异，ab就无能为力。
+
+wrk 压测
+
+单接口压力测试，为了满足每个请求或部分请求有差异，我们试用过很多不同的工具。最后找到了这个和我们距离最近、表现优异的测试工具wrk，这里我们重点介绍一下。
+
+wrk如果要完成和ab一样的压力测试，区别不大，只是命令行参数略有调整。下面给大家举例每个请求都有差异的例子，供大家参考。
+
+scripts/counter.lua
+-- example dynamic request script which demonstrates changing
+-- the request path and a header for each request
+-------------------------------------------------------------
+-- NOTE: each wrk thread has an independent Lua scripting
+-- context and thus there will be one counter per thread
+
+counter = 0
+
+request = function()
+   path = "/" .. counter
+   wrk.headers["X-Counter"] = counter
+   counter = counter + 1
+   return wrk.format(nil, path)
+end
+shell执行
+# ./wrk -c10 -d1 -s scripts/counter.lua http://baidu.com
+Running 1s test @ http://baidu.com
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    20.44ms    3.74ms  34.87ms   77.48%
+    Req/Sec   226.05     42.13   270.00     70.00%
+  453 requests in 1.01s, 200.17KB read
+  Socket errors: connect 0, read 9, write 0, timeout 0
+Requests/sec:    449.85
+Transfer/sec:    198.78KB
+WireShark抓包印证一下
+GET /228 HTTP/1.1
+Host: baidu.com
+X-Counter: 228
+
+...(应答包 省略)
+
+GET /232 HTTP/1.1
+Host: baidu.com
+X-Counter: 232
+
+...(应答包 省略)
+wrk是个非常成功的作品，它的实现更是从多个开源作品中挖掘牛X东西融入自身，如果你每天还在用C/C++，那么wrk的成功，对你应该有绝对的借鉴意义，多抬头，多看牛X代码，我们绝对可以创造奇迹。
+
+引用wrk官方结尾：
+
+wrk contains code from a number of open source projects including the 'ae'
+ event loop from redis, the nginx/joyent/node.js 'http-parser', and Mike
+ Pall's LuaJIT.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+API的设计
+
+OpenResty，最擅长的应用场景之一就是API Server。如果我们只有简单的几个API出口、入口，那么我们可以相对随意简单一些。
+
+举例几个简单API接口输出：
+server {
+    listen       80;
+    server_name  localhost;
+
+    location /app/set {
+        content_by_lua_block {
+             ngx.say('set data')
+        }
+    }
+
+    location /app/get {
+        content_by_lua_block {
+            ngx.say('get data')
+        }
+    }
+
+    location /app/del {
+        content_by_lua_block {
+            ngx.say('del data')
+        }
+    }
+}
+当你的API Server接口服务比较多，那么上面的方法显然不适合我们（太啰嗦）。这里推荐一下REST风格。
+
+什么是REST
+
+从资源的角度来观察整个网络，分布在各处的资源由URI确定，而客户端的应用通过URI来获取资源的表示方式。获得这些表徵致使这些应用程序转变了其状态。随着不断获取资源的表示方式，客户端应用不断地在转变着其状态，所谓表述性状态转移（Representational State Transfer）。
+
+这一观点不是凭空臆造的，而是通过观察当前Web互联网的运作方式而抽象出来的。Roy Fielding 认为，
+
+设计良好的网络应用表现为一系列的网页，这些网页可以看作的虚拟的状态机，用户选择这些链接
+导致下一网页传输到用户端展现给使用的人，而这正代表了状态的转变。
+REST是设计风格而不是标准。
+REST通常基于使用HTTP，URI，和XML以及HTML这些现有的广泛流行的协议和标准。
+
+资源是由URI来指定。
+对资源的操作包括获取、创建、修改和删除资源，这些操作正好对应HTTP协议提供的GET、POST、PUT和DELETE方法。
+通过操作资源的表现形式来操作资源。
+资源的表现形式则是XML或者HTML，取决于读者是机器还是人，是消费Web服务的客户软件还是Web浏览器。当然也可以是任何其他的格式。
+REST的要求
+客户端和服务器结构
+连接协议具有无状态性
+能够利用Cache机制增进性能
+层次化的系统
+REST使用举例
+
+按照REST的风格引导，我们有关数据的API Server就可以变成这样。
+
+server {
+    listen       80;
+    server_name  localhost;
+
+    location /app/task01 {
+        content_by_lua_block {
+            ngx.say(ngx.req.get_method() .. ' task01')
+        }
+    }
+    location /app/task02 {
+        content_by_lua_block {
+            ngx.say(ngx.req.get_method() .. ' task02')
+        }
+    }
+    location /app/task03 {
+        content_by_lua_block {
+            ngx.say(ngx.req.get_method() .. ' task03')
+        }
+    }
+}
+对于/app/task01接口，这时候我们可以用下面的方法，完成对应的方法调用。
+
+# curl -X GET http://127.0.0.1/app/task01
+# curl -X PUT http://127.0.0.1/app/task01
+# curl -X DELETE http://127.0.0.1/app/task01
+还有办法压缩不？
+
+上一个章节，如果task类型非常多，那么后面这个配置依然会随着业务调整而调整。其实每个程序员都有一定的洁癖，是否可以以后直接写业务，而不用每次都修改主配置，万一改错了，服务就起不来了。
+
+引用一下HttpLuaModule官方示例代码。
+
+# use nginx var in code path
+# WARNING: contents in nginx var must be carefully filtered,
+# otherwise there'll be great security risk!
+location ~ ^/app/([-_a-zA-Z0-9/]+) {
+    set $path $1;
+    content_by_lua_file /path/to/lua/app/root/$path.lua;
+}
+这下世界宁静了，每天写Lua代码的同学，再也不用去每次修改Nginx主配置了。有新业务，直接开工。顺路还强制了入口文件命名规则。对于后期检查维护更容易。
+
+REST风格的缺点
+
+需要一定的学习成本，如果你的接口是暴露给运维、售后、测试等不同团队，那么他们经常不去确定当时的method。当他们查看、模拟的时候，具有一定学习难度。
+
+REST 推崇使用 HTTP 返回码来区分返回结果, 但最大的问题在于 HTTP 的错误返回码 (4xx 系列为主) 不够多，而且订得很随意。比如用 API 创建一个用户，那么错误可能有：
+
+调用格式错误(一般返回 400,405)
+授权错误(一般返回 403)
+"运行期"错误
+用户名冲突
+用户名不合法
+email 冲突
+email 不合法
+
+数据合法性检测
+
+对用户输入的数据进行合法性检查，避免错误非法的数据进入服务，这是业务系统最常见的需求。很可惜Lua目前没有特别好的数据合法性检查库。
+
+坦诚我们自己做的也不够好，这里只能抛砖引玉，看看大家是否有更好办法。
+
+我们有这么几个主要的合法性检查场景：
+
+JSON 数据格式
+关键字段编码为 HEX（0-9，a-f，A-F），长度不定
+TABLE 内部字段类型
+JSON 数据格式
+
+这里主要是JSON DECODE时，可能存在 Crash 的问题。我们已经在 JSON 解析的异常捕获 一章中详细说明了问题本身以及解决方法，这里就不再重复。
+
+关键字段编码为 HEX，长度不定
+
+HEX 编码，最常见的存在有 MD5 值等。他们是由 0-9，A-F（或 a-f）组成。笔者把使用过的代码版本逐一罗列，并进行性能测试。通过这个测试，我们不仅仅可以收获参数校验的正确写法，以及可以再次印证一下效率最高的匹配，应该注意什么。
+
+-- 纯 lua 版本，优点是兼容性好，可以使用任何 lua 语言环境
+function check_hex_lua( str, correct_len )
+    if "string" ~= type(str) then
+        return false
+    end
+
+    for i=1, #str do
+        local c = str:sub(i, i)
+        if (c >= 'A' and c <= 'F') or
+         (c >= 'a' and c <= 'f') or
+         (c >= '0' and c <= '9')
+         then
+            -- print(c)
+        else
+            return false
+        end
+    end
+
+    if correct_len and correct_len ~= #str then
+      return false
+    end
+
+    return true
+end
+
+-- 使用 ngx.re.* 完成，没有使用任何调优参数
+function check_hex_default( str )
+    if "string" ~= type(str) then
+        return false
+    end
+
+    return ngx.re.find(str, "([^0-9^a-f^A-F])")
+end
+
+-- 使用 ngx.re.* 完成，使用调优参数 "jo"
+function check_hex_jo( str )
+    if "string" ~= type(str) then
+        return false
+    end
+
+    return ngx.re.find(str, "([^0-9^a-f^A-F])", "jo")
+end
+
+-- 下面就是测试用例部分代码
+function do_test( name, fun )
+    ngx.update_time()
+    local start = ngx.now()
+
+    local t = "012345678901234567890123456789abcdefABCDEF"
+    for i=1,10000*300 do
+        fun(t)
+    end
+
+    ngx.update_time()
+    print(name, "\ttimes:", ngx.now() - start)
+end
+
+do_test("check_hex_lua", check_hex_lua)
+do_test("check_hex_default", check_hex_default)
+do_test("check_hex_jo", check_hex_jo)
+把上面的源码在 OpenResty 环境中运行，输出结果如下：
+
+➜  resty test.lua
+check_hex_lua   times:2.8619999885559
+check_hex_default   times:4.1790001392365
+check_hex_jo    times:0.91899991035461
+不知道这个结果大家是否有些意外，check_hex_default 的运行效率居然比 check_hex_lua 要差。不过所幸的是我们对正则开启了 jo 参数优化后，速度上有明显提升。
+
+引用一下 ngx.re.* 官方 wiki 的原文：在优化性能时，o 选项非常有用，因为正则表达式模板将仅仅被编译一次，之后缓存在 worker 级的缓存中，并被此 nginx worker 处理的所有请求共享。缓存数量上限可以通过 lua_regex_cache_max_entries 指令调整。
+
+课后小作业：为什么测试用例中要使用 ngx.update_time() 呢？好好想一想。
+TABLE 内部字段类型
+
+当我们接收客户端请求，除了指定字段的特殊校验外，我们最常见的需求就是对指定字段的类型做限制了。比如用户注册接口，我们就要求对方姓名、邮箱等是个字符串，手机号、电话号码等是个数字类型，详细信息可能是个图片又或者是个嵌套的 TABLE 。
+
+例如我们接受用户的注册请求，注册接口示例请求 body 如下：
+
+{
+    "username":"myname",
+    "age":8,
+    "tel":88888888,
+    "mobile_no":13888888888,
+    "email":"***@**.com",
+    "love_things":["football", "music"]
+}
+这时候可以用一个简单的字段描述格式来表达限制关系，如下：
+
+{
+    "username":"",
+    "age":0,
+    "tel":0,
+    "mobile_no":0,
+    "email":"",
+    "love_things":[]
+}
+对于有效字段描述格式，数据值是不敏感的，但是数据类型是敏感的，只要数据类型能匹配，就可以让我们轻松不少。
+
+来看下面的参数校验代码以及基本的测试用例：
+
+function check_args_template(args, template)
+    if type(args) ~= type(template) then
+      return false
+    elseif "table" ~= type(args) then
+      return true
+    end
+
+    for k,v in pairs(template) do
+      if type(v) ~= type(args[k]) then
+        return false
+      elseif "table" == type(v) then
+        if not check_args_template(args[k], v) then
+          return false
+        end
+      end
+    end
+
+    return true
+end
+
+local args = {name="myname", tel=888888, age=18,
+    mobile_no=13888888888, love_things = ["football", "music"]}
+
+print("valid   check: ", check_args_template(args, {name="", tel=0, love_things=[]}))
+print("unvalid check: ", check_args_template(args, {name="", tel=0, love_things=[], email=""}))
+运行一下上面的代码，结果如下：
+
+➜  resty test.lua
+valid   check: true
+unvalid check: false
+可以看到，当我们业务层面需要有 email 地址但是请求方没有上送，这时候就能检测出来了。大家看到这里也许会笑，尤其是从其他成熟 web 框架中过来的同学，我们这里的校验可以说是比较粗糙简陋的，很多开源框架中的参数限制，都可以做到更加精确的限制。
+
+如果你有更好更优雅的解决办法，欢迎与我们联系。
+
+协议无痛升级
+
+使用度最高的通讯协议，一定是HTTP了。优点有多少，相信大家肯定有切身体会。我相信每家公司对HTTP的使用都有自己的规则，甚至偏好。这东西没有谁对谁错，符合业务需求、量体裁衣是王道。这里我们想通过亲身体会，告诉大家利用好OpenResty的一些特性，会给我们带来惊喜。
+
+在产品初期，由于产品初期存在极大不确定性、不稳定性，所以要暴露给开发团队、测试团队完全透明的传输协议，所以我们1.0版本就是一个没有任何处理的明文版本HTTP+JSON。但随着产品功能的丰富，质量的逐步提高，具备一定的交付能力，这时候通讯协议必须要升级了。
+
+为了更好的安全、效率控制，我们需要支持压缩、防篡改、防重复、简单加密等特性，为此我们设计了全新2.0通讯协议。如何让这个协议升级无感知、改动少，并且简单呢？
+
+1.0明文协议配置
+location ~ ^/api/([-_a-zA-Z0-9/]+).json {
+    content_by_lua_file /path/to/lua/api/$1.lua;
+}
+1.0明文协议引用示例：
+# curl http://ip:port/api/hearbeat.json?key=value -d '...'
+2.0密文协议引用示例：
+# curl http://ip:port/api/hearbeat.json?key=value&ver=2.0 -d '...'
+从引用示例中看到，我们的密文协议主要都是在请求body中做的处理。最生硬的办法就是我们在每个业务入口、出口分别做协议的解析、编码处理。如果你只有几个API接口，那么直来直去的修改所有API接口源码，最为直接，容易理解。但如果你需要修改几十个API入口，那就要静下来考虑一下，修改的代价是否完全可控。
+
+最后我们使用了OpenResty阶段的概念完成协议的转换。
+
+location ~ ^/api/([-_a-zA-Z0-9/]+).json {
+    access_by_lua_file  /path/to/lua/api/protocal_decode.lua;
+    content_by_lua_file /path/to/lua/api/$1.lua;
+    body_filter_by_lua_file  /path/to/lua/api/protocal_encode.lua;
+}
+内部处理流程说明
+Nginx中这三个阶段的执行顺序：access --> content --> body_filter；
+access_by_lua_file：获取协议版本 --> 获取body数据 --> 协议解码 --> 设置body数据；
+content_by_lua_file：正常业务逻辑处理，零修改；
+body_filter_by_lua_file：判断协议版本 --> 协议编码。
+刚好前些日子春哥公开了一篇Github中引入了OpenResty解决SSL证书的问题，他们的解决思路和我们差不多。都是利用access阶段做一些非标准HTTP(S)上的自定义修改，但对于已有业务是不需要任何感知的。
+
+我们这个通讯协议的无痛升级，实际上是有很多玩法可以实现，如果我们的业务从一开始有个相对稳定的框架，可能完全不需要操这个心。没有引入框架，一来是现在没有哪个框架比较成熟，而来是从基础开始更容易摸到细节。对于目前OpenResty可参考资料少的情况下，我们更倾向于从最小工作集开始，减少不确定性、复杂度。
+
+也许在后面，我们会推出我们的开发框架，用来统一规避现在碰到的问题，提供完整、可靠、高效的解决方法，我们正在努力ing，请大家拭目以待。
+
+代码规范
+
+其实选择OpenResty的同学，应该都是对执行性能、开发效率比较在乎的，而对于代码风格、规范等这些小事不太在意。作为一个从Linux C/C++转过来的研发，脚本语言的开发速度，接近C/C++的执行速度，在我轻视了代码规范后，一个BUG的发生告诉我，没规矩不成方圆。
+
+既然我们玩的是OpenResty，那么很自然的联想到，OpenResty自身组件代码风格是怎样的呢？
+
+lua-resty-string 的 string.lua
+local ffi = require "ffi"
+local ffi_new = ffi.new
+local ffi_str = ffi.string
+local C = ffi.C
+local setmetatable = setmetatable
+local error = error
+local tonumber = tonumber
+
+local _M = { _VERSION = '0.09' }
+
+ffi.cdef[[
+typedef unsigned char u_char;
+
+u_char * ngx_hex_dump(u_char *dst, const u_char *src, size_t len);
+
+intptr_t ngx_atoi(const unsigned char *line, size_t n);
+]]
+
+local str_type = ffi.typeof("uint8_t[?]")
+
+function _M.to_hex(s)
+    local len = #s * 2
+    local buf = ffi_new(str_type, len)
+    C.ngx_hex_dump(buf, s, #s)
+    return ffi_str(buf, len)
+end
+
+function _M.atoi(s)
+    return tonumber(C.ngx_atoi(s, #s))
+end
+
+return _M
+代码虽短，但我们可以从中获取很多信息：
+
+没有全局变量，所有的变量均使用local限制作用域
+提取公共函数到本地变量，使用本地变量缓存函数指针，加速下次使用
+函数名称全部小写，使用下划线进行分割
+两个函数之间距离两个空行
+这里的第2条，是有争议的。当你按照这个方式写业务的时候，会有些痛苦。因为我们总是把标准API命名成自己的别名，不同开发协作人员，命名结果一定不一样，最后导致同一个标准API在不同地方变成不同别名，会给开发造成极大困惑。
+
+因为这个可预期的麻烦，我们没有遵循第2条标准，尤其是具体业务上游模块。但对于被调用的次数比较多基础模块，可以使用这个方式进行调优。其实这里最好最完美的方法，应该是Lua编译成Luac的时候，直接做Lua Byte Code的调优，直接隐藏这个简单的处理逻辑。
+
+有关更多代码细节，其实我觉得主要还是多看写的漂亮的代码，一旦看他们看的顺眼、形成习惯，那么就很自然能写出风格一致的代码。规定的条条框框死记硬背总是很不爽的，所以多去看看春哥开源的resty系列代码，顺手品一品一下不同组件的玩法也别有一番心得。
+
+说说我上面提及的因为风格问题造出来的坑吧。
+
+local 
+function test()
+    -- do something
+end
+
+function test2()
+    -- do something
+end
+这是我当时不记得从哪里看到的一个Lua风格，在被引入项目初期，自我感觉良好。可突然从某个时间点开始，新合并进来的代码无法正常工作。查看最后的代码发现原来是test()函数作废，被删掉，手抖没有把上面的local也删掉。这个隐形的local就作用到了下一个函数，最终导致异常。
+
+连接池
+
+作为一个专业的服务端开发工程师，我们必须要对连接池、线程池、内存池等有较深理解，并且有自己熟悉的库函数可以让我们轻松驾驭这些不同的池子。既然他们都叫某某池，那么他们从基础概念上讲，原理和目的几乎是一样的，那就是复用。
+
+以连接池做引子，我们说说服务端工程师基础必修课。
+
+从我们应用最多的HTTP连接、数据库连接、消息推送、日志存储等，所有点到点之间，都需要花样繁多的各色连接。为了传输数据，我们需要完成创建连接、收发数据、拆除连接。对并发量不高的场景，我们为每个请求都完整走这三步（短连接），开发工作基本只考虑业务即可，基本上也不会有什么问题。一旦挪到高并发应用场景，那么可能我们就要郁闷了。
+
+你将会碰到下面几个常见问题：
+
+性能普遍上不去
+CPU大量资源被系统消耗
+网络一旦抖动，会有大量TIME_WAIT产生，不得不定期重启服务或定期重启机器
+服务器工作不稳定，QPS忽高忽低
+这时候我们可以优化的第一件事情就是把短链接改成长连接。也就是改成创建连接、收发数据、收发数据...拆除连接，这样我们就可以减少大量创建连接、拆除连接的时间。从性能上来说肯定要比短连接好很多。但这里还是有比较大的浪费。
+
+举例：请求进入时，直接分配数据库长连接资源，假设有 80% 时间在与关系型数据库通讯，20% 时间是在与 Nosql 数据库通讯。当有 50K 个并行请求时，后端要分配 50K*2=100K 的长连接支撑请求。无疑这时候系统压力是非常大的。数据库再牛也抵不住滥用不是？
+
+连接池终于要出场了，它的解决思路是先把所有长连接存起来，谁需要使用，从这里取走，干完活立马放回来。那么按照这个思路，刚刚的 50K 的并发请求，最多占用后端 50K 的长连接就够了。省了一半啊有木有？
+
+在 OpenResty 中，所有具备 set_keepalive 的类、库函数，说明他都是支持连接池的。
+
+来点代码，给大家提提神，看看连接池使用时的一些注意点，麻雀虽小，五脏俱全。
+
+server {
+    location /test {
+        content_by_lua_block {
+            local redis = require "resty.redis"
+            local red = redis:new()
+
+            local ok, err = red:connect("127.0.0.1", 6379)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            -- red:set_keepalive(10000, 100)       -- 坑①
+
+            ok, err = red:set("dog", "an animal")
+            if not ok then
+                -- red:set_keepalive(10000, 100)   -- 坑②
+                return
+            end
+
+            -- 坑③
+            red:set_keepalive(10000, 100)
+        }
+    }
+}
+坑①：只有数据传输完毕了，才能放到池子里，系统无法帮你自动做这个事情
+坑②：不能把状态未知的连接放回池子里，设想另一个请求如果获取到一个不能用的连接，他不得哭死啊
+坑③：逗你玩，这个不是坑，是正确的
+尤其是掉进了第二个坑，你一定会莫名抓狂。不信的话，你就自己模拟试试，老带劲了。
+
+理解了连接池，那么线程池、内存池，就应该都明白了，只是存放的东西不一样，思想没有任何区别。
+
+C10K编程
+
+比较传统的服务端程序（PHP、FAST CGI等），大多都是通过每产生一个请求，都会有一个进程与之相对应，请求处理完毕后相关进程自动释放。由于进程创建、销毁对资源占用比较高，所以很多语言都通过常驻进程、线程等方式降低资源开销。即使是资源占用最小的线程，当并发数量超过1k的时候，操作系统的处理能力就开始出现明显下降，因为有太多的CPU时间都消耗在系统上下文切换。
+
+由此催生了C10K编程，指的是服务器同时支持成千上万个连接，也就是concurrent 10 000 connection（这也是C10K这个名字的由来）。由于硬件成本的大幅度降低和硬件技术的进步，加上一台服务器同时能够服务更多的客户端，就意味着服务每一个客户端的成本大幅度降低，从这个角度来看，C10K问题显得非常有意义。
+
+理想情况下，具备C10K能力的服务端处理能力是c1k的十倍，返回来说我们可以减少90%的服务器资源，多么诱人的结果。
+
+C10K解决了这几个主要问题：
+
+单个进程或线程可以服务于多个客户端请求
+事件触发替代业务轮询
+IO采用非阻塞方式，减少额外不必要性能损耗
+C10K编程的世界，一定是异步编程的世界，他俩绝对是一对儿好基友。服务端一直都不缺乏新秀，各种语言、框架层出不穷。笔者了解的就有OpenResty，Golang，Node.js，Rust，Python(gevent)等。每个语言或解决方案，都有自己完全不同的定位和表现，甚至设计哲学。但是他们从系统底层API应用、基本结构，都是相差不大。这些语言自身的实现机理、运行方式可能差别很大，但只要没有严重的代码错误，他们的性能指标都应该是在同一个级别的。
+
+如果你用了这些解决方案，发现自己的性能非常低，就要好好看看自己是不是姿势有问题。
+
+c1k --> C10K --> c100k --> ???
+人类前进的步伐，没有尽头的，总是在不停的往前跑。C10K的问题，早就被解决，而且方法还不止一个。目前方案优化手段给力，做到c100k也是可以达到的。后面还有世界么？我们还能走么？
+
+告诉你肯定是有的，那就是c10m。推荐大家了解一下dpdk这个项目，并搜索一些相关领域的知识。要做到c10m，可以说系统网络内核、内存管理，都成为瓶颈了。所以要揭竿起义，统统推到重来。直接操作网卡绕过内核对网络的封装，直接使用用户态内存，再次绕过系统内核。
+
+c10m这个动作比较大，而且还需要特定的硬件型号支持（主要是网卡，网络处理嘛），所以目前这个项目进展还比较缓慢。不过对于有追求的人，可能就要两眼放光了。
+
+前些日子dpdk组织国内CDN厂商开了一个小会，阿里的朋友说已经用这个开发出了c10m级别的产品。小伙伴们，你们怎么看？心动了，行动不？
+
+TIME_WAIT
+
+这个是高并发服务端常见的一个问题，一般的做法是修改sysctl的参数来解决。 但是，做为一个有追求的程序猿，你需要多问几个为什么，为什么会出现TIME_WAIT？出现这个合理吗？
+
+我们需要先回顾下tcp的知识，请看下面的状态转换图（图片来自「The TCP/IP Guide」）：
+
+tcp
+
+因为TCP连接是双向的，所以在关闭连接的时候，两个方向各自都需要关闭。 先发FIN包的一方执行的是主动关闭；后发FIN包的一方执行的是被动关闭。 主动关闭的一方会进入TIME_WAIT状态，并且在此状态停留两倍的MSL时长。
+
+修改sysctl的参数，只是控制TIME_WAIT的数量。你需要很明确的知道，在你的应用场景里面，你预期是服务端还是客户端来主动关闭连接的。一般来说，都是客户端来主动关闭的。
+
+nginx在某些情况下，会主动关闭客户端的请求，这个时候，返回值的connection为close。我们看两个例子：
+
+http 1.0协议
+
+请求包：
+
+GET /hello HTTP/1.0
+User-Agent: curl/7.37.1
+Host: 127.0.0.1
+Accept: */*
+Accept-Encoding: deflate, gzip
+应答包：
+
+HTTP/1.1 200 OK
+Date: Wed, 08 Jul 2015 02:53:54 GMT
+Content-Type: text/plain
+Connection: close
+
+hello world
+对于http 1.0协议，如果请求头里面没有包含connection，那么应答默认是返回Connection: close， 也就是说nginx会主动关闭连接。
+
+user agent
+
+请求包：
+
+POST /api/heartbeat.json HTTP/1.1
+
+Content-Type: application/x-www-form-urlencoded
+Cache-Control: no-cache
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT)
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: Keep-Alive
+Content-Length: 0
+应答包：
+
+HTTP/1.1 200 OK
+Date: Mon, 06 Jul 2015 09:35:34 GMT
+Content-Type: text/plain
+Transfer-Encoding: chunked
+Connection: close
+Content-Encoding: gzip
+这个请求包是http1.1的协议，也声明了Connection: Keep-Alive，为什么还会被nginx主动关闭呢？ 问题出在User-Agent，nginx认为终端的浏览器版本太低，不支持keep alive，所以直接close了。
+
+在我们应用的场景下，终端不是通过浏览器而是后台请求的， 而我们也没法控制终端的User-Agent，那有什么方法不让nginx主动去关闭连接呢？ 可以用keepalive_disable这个参数来解决。这个参数并不是字面的意思，用来关闭keepalive， 而是用来定义哪些古代的浏览器不支持keepalive的，默认值是MSIE6。
+
+keepalive_disable none;
+修改为none，就是认为不再通过User-Agent中的浏览器信息，来决定是否keepalive。
+
+注：本文内容参考了火丁笔记和Nginx开发从入门到精通，感谢大牛的分享。
+
+与 Docker 使用的网络瓶颈
+
+Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖包到一个可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制，相互之间不会有任何接口（类似 iPhone 的 app）。几乎没有性能开销,可以很容易地在机器和数据中心中运行。最重要的是,他们不依赖于任何语言、框架包括系统。
+
+Docker自2013年以来非常火热，无论是从 github 上的代码活跃度，还是Redhat在RHEL6.5中集成对Docker的支持, 就连 Google 的 Compute Engine 也支持 docker 在其之上运行。
+
+笔者使用 Docker 的原因和目的，可能与其他公司不太一样。我们一直存在"分发"需求，Docker 主要是用来屏蔽企业用户平台的不一致性。我们的企业用户使用的系统比较杂，仅仅主流系统就有 Ubuntu, Centos，RedHat，AIX 还有一些定制裁减系统等，可谓百花齐放。
+
+虽然 OpenResty 具有良好的跨平台特性，无奈我们的安全项目比较重，组件比较多，是不可能逐一适配不同平台的，工作量、稳定性等，难度和后期维护复杂度是难以想象的。如果您的应用和我们一样需要二次分发，非常建议考虑使用 docker。这个年代是云的时代，二次分发其实成本很高，后期维护成本也很高，所以尽量做到云端。
+
+说说 Docker 与 OpenResty 之间的"坑"吧，你们肯定对这个更感兴趣。
+
+我们刚开始使用的时候，是这样启动的：
+
+docker run -d -p 80:80 openresty
+首次压测过程中发现Docker进程CPU占用率100%，单机接口4-5万的QPS就上不去了。经过我们多方探讨交流，终于明白原来是网络瓶颈所致（OpenResty太彪悍，Docker默认的虚拟网卡受不了了 ^_^）。
+
+最终我们绕过这个默认的桥接网卡，使用--net参数即可完成。
+
+docker run -d --net=host openresty
+多么简单，就这么一个参数，居然困扰了我们好几天。一度怀疑我们是否要忍受引入docker带来的低效率网络。所以有时候多出来交流、学习，真的可以让我们学到好多。虽然这个点是我们自己挖出来的，但是在交流过程中还学到了很多好东西。
+
+Docker Network settings，引自：http://www.lupaworld.com/article-250439-1.html
+默认情况下，所有的容器都开启了网络接口，同时可以接受任何外部的数据请求。
+--dns=[]         : Set custom dns servers for the container
+--net="bridge"   : Set the Network mode for the container
+                          'bridge': creates a new network stack for the container on the docker bridge
+                          'none': no networking for this container
+                          'container:<name|id>': reuses another container network stack
+                          'host': use the host network stack inside the container
+--add-host=""    : Add a line to /etc/hosts (host:IP)
+--mac-address="" : Sets the container's Ethernet device's MAC address
+你可以通过docker run --net none来关闭网络接口，此时将关闭所有网络数据的输入输出，你只能通过STDIN、STDOUT或者files来完成I/O操作。默认情况下，容器使用主机的DNS设置，你也可以通过--dns来覆盖容器内的DNS设置。同时Docker为容器默认生成一个MAC地址，你可以通过--mac-address 12:34:56:78:9a:bc来设置你自己的MAC地址。
+
+Docker支持的网络模式有：
+
+none。关闭容器内的网络连接
+bridge。通过veth接口来连接容器，默认配置。
+host。允许容器使用host的网络堆栈信息。 注意：这种方式将允许容器访问host中类似D-BUS之类的系统服务，所以认为是不安全的。
+container。使用另外一个容器的网络堆栈信息。 　　
+None模式
+
+将网络模式设置为none时，这个容器将不允许访问任何外部router。这个容器内部只会有一个loopback接口，而且不存在任何可以访问外部网络的router。
+
+Bridge模式
+
+Docker默认会将容器设置为bridge模式。此时在主机上面将会存在一个docker0的网络接口，同时会针对容器创建一对veth接口。其中一个veth接口是在主机充当网卡桥接作用，另外一个veth接口存在于容器的命名空间中，并且指向容器的loopback。Docker会自动给这个容器分配一个IP，并且将容器内的数据通过桥接转发到外部。
+
+Host模式
+
+当网络模式设置为host时，这个容器将完全共享host的网络堆栈。host所有的网络接口将完全对容器开放。容器的主机名也会存在于主机的hostname中。这时，容器所有对外暴露的端口和对其它容器的连接，将完全失效。
+
+Container模式
+
+当网络模式设置为Container时，这个容器将完全复用另外一个容器的网络堆栈。同时使用时这个容器的名称必须要符合下面的格式：--net container:<name|id>.
+
+比如当前有一个绑定了本地地址localhost的Redis容器。如果另外一个容器需要复用这个网络堆栈，则需要如下操作：
+
+$ sudo docker run -d --name redis example/redis --bind 127.0.0.1
+$ # use the redis container's network stack to access localhost
+$ sudo docker run --rm -ti --net container:redis example/redis-cli -h 127.0.0.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+如何对nginx Lua module添加新api
+
+本文真正的目的，绝对不是告诉大家如何在nginx Lua module添加新api这么点东西。而是以此为例，告诉大家nginx模块开发环境搭建、码字编译、编写测试用例、代码提交、申请代码合并等。给大家顺路普及一下git的使用。
+
+目前有个应用场景，需要获取当前nginx worker数量的需要，所以添加一个新的接口ngx.config.workers()。由于这个功能实现简单，非常适合大家当做例子。废话不多说，let's fly now！
+
+获取openresty默认安装包（辅助搭建基础环境）：
+$ wget http://openresty.org/download/ngx_openresty-1.7.10.1.tar.gz
+$ tar -xvf ngx_openresty-1.7.10.1.tar.gz
+$ cd ngx_openresty-1.7.10.1
+从github上fork代码
+进入lua-nginx-module，点击右侧的Fork按钮
+Fork完毕后，进入自己的项目，点击 Clone in Desktop 把项目clone到本地
+预编译，本步骤参考这里：
+$ ./configure
+$ make
+注意这里不需要make install
+
+修改自己的源码文件
+# ngx_lua-0.9.15/src/ngx_http_lua_config.c
+编译变化文件
+$ rm ./nginx-1.7.10/objs/addon/src/ngx_http_lua_config.o
+$ make
+搭建测试模块
+
+安装perl cpan 点击查看
+$ cpan
+cpan[2]> install Test::Nginx::Socket::Lua
+书写测试单元
+$ cat 131-config-workers.t
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+use lib 'lib';
+use Test::Nginx::Socket::Lua;
+
+#worker_connections(1014);
+#master_on();
+#workers(2);
+#log_level('warn');
+
+repeat_each(2);
+#repeat_each(1);
+
+plan tests => repeat_each() * (blocks() * 3);
+
+#no_diff();
+#no_long_string();
+run_tests();
+
+__DATA__
+
+=== TEST 1: content_by_lua
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("workers: ", ngx.config.workers())
+        }
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^workers: 1$
+--- no_error_log
+[error]
+$ cat 132-config-workers_5.t
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+use lib 'lib';
+use Test::Nginx::Socket::Lua;
+
+#worker_connections(1014);
+#master_on();
+workers(5);
+#log_level('warn');
+
+repeat_each(2);
+#repeat_each(1);
+
+plan tests => repeat_each() * (blocks() * 3);
+
+#no_diff();
+#no_long_string();
+run_tests();
+
+__DATA__
+
+=== TEST 1: content_by_lua
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("workers: ", ngx.config.workers())
+        }
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^workers: 5$
+--- no_error_log
+[error]
+单元测试
+
+$ export PATH=/path/to/your/nginx/sbin:$PATH    #设置nginx查找路径
+$ cd ngx_lua-0.9.15                     # 进入你修改的模块
+$ prove t/131-config-workers.t          # 测试指定脚本
+t/131-config-workers.t .. ok
+All tests successful.
+Files=1, Tests=6,  1 wallclock secs ( 0.04 usr  0.00 sys +  0.18 cusr  0.05 csys =  0.27 CPU)
+Result: PASS
+$
+$ prove t/132-config-workers_5.t        # 测试指定脚本
+t/132-config-workers_5.t .. ok
+All tests successful.
+Files=1, Tests=6,  0 wallclock secs ( 0.03 usr  0.00 sys +  0.17 cusr  0.04 csys =  0.24 CPU)
+Result: PASS
+提交代码，推动我们的修改被官方合并
+
+首先把代码commit到github
+commit成功后，以次点击github右上角的Pull request -> New pull request
+这时候github会弹出一个自己与官方版本对比结果的页面，里面包含有我们所有的修改，确定我们的修改都被包含其中，点击Create pull request按钮
+输入标题、内容（you'd better write in english）,点击Create pull request按钮
+提交完成，就可以等待官方作者是否会被采纳了（代码+测试用例，必不可少）
+
+
+
+
+
+
+
+

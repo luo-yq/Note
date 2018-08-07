@@ -1,0 +1,38 @@
+top 查看cpu最高的几个进程
+
+linux top -H -p pid 查看进程下cpu最高的几个线程
+mac top -pid 进程id  
+jstack 进程id > tmp.log  打印堆栈信息到指定文件
+vi tmp.log 
+
+grep 线程id tmp.log 在文件中查找包含查询项的行
+
+linux下查看线程的堆栈 jstack [进程] | grep -A 10 [线程的16进制]
+    jstack 21125|grep -A 10 52f1
+
+
+ps -mp pid -o THREAD,tid,time 或者 ps -Lfp pid 来查看繁忙的线程信息
+
+
+使用jmap -heap pid查看进程堆内存使用情况，包括使用的GC算法、堆配置参数和各代中堆内存使用情况。
+jmap -heap pid
+
+使用jmap -histo[:live] pid查看堆内存中的对象数目、大小统计直方图，如果带上live则只统计活对象，如下：
+jmap -histo:live pid | more
+
+
+
+用jmap把进程内存使用情况dump到文件中，再用jhat分析查看。jmap进行dump命令格式如下：
+jmap -dump:format=b,file=dumpFileName
+jmap -dump:format=b,file=/tmp/dump.dat 96251   
+
+dump出来的文件可以用MAT、VisualVM等工具查看，这里用jhat查看：
+jhat -port 9998 /tmp/dump.dat
+然后就可以在浏览器中输入主机地址:9998查看了
+
+
+jstat（JVM统计监测工具）
+    语法格式如下：
+jstat [ generalOption | outputOptions vmid [interval[s|ms] [count]] ]
+    vmid是虚拟机ID，在Linux/Unix系统上一般就是进程ID。interval是采样时间间隔。count是采样数目。比如下面输出的是GC信息，采样时间间隔为250ms，采样数为4：
+jstat -gc 96251 250 4

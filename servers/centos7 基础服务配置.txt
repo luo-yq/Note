@@ -1,0 +1,375 @@
+ip配置
+
+使用网络地址转换（NAT），虚拟机连外网
+#vi /etc/sysconfig/network-scripts/ifcfg-enp0s3 [编辑网卡的配置文件]
+光标移动到”ONBOOT=no”这一行，更改为ONBOOT=yes
+
+重启服务
+service network restart
+
+
+dns配置：
+
+wget：无法解析主机地址。这就能看出是DNS解析的问题。
+
+解决办法：
+
+登入root（VPS）。 进入/etc/resolv.conf。
+修改内容为下
+nameserver 8.8.8.8 #google域名服务器
+nameserver 8.8.4.4 #google域名服务器
+
+
+
+
+
+基础环境安装：
+sudo yum -y install gcc    （memcached等需要）
+
+安装telnet
+yum list |grep telnet
+yum install telnet-server.x86_64
+yum install telnet.x86_64
+yum list |grep xinetd
+yum install xinetd.x86_64
+ 
+安装完成后，将xinetd服务加入开机自启动:
+    systemctl enable xinetd.service
+将telnet服务加入开机自启动：
+    systemctl enable telnet.socket
+最后，启动以上两个服务即可：
+    systemctl start telnet.socket
+    systemctl start xinetd（或service xinetd start）
+
+
+
+yum list installed  
+yum list installed | grep libevent
+
+
+Debian/Ubuntu: apt-get install libevent-dev 
+Redhat/Centos: yum  -y install libevent-devel
+
+yum install perl    
+
+
+
+
+/**
+wget http://www.cpan.org/src/5.0/perl-5.24.1.tar.gz
+tar -xf perl-5.24.1.tar
+cd perl-5.24.1
+./Configure -des -Dprefix=/usr/local/perl
+#./Configure -des -Dprefix=/usr/bin
+make
+make test
+make install
+
+在安装时，指定路径  --prefix=/usr/bin
+如果已经安装，你可以修改系统环境变量，或者做一个链接即可
+修改系统环境变量在：/etc/profile 做链接  ln -s
+ln -s /usr/local/perl/bin/perl /usr/bin/perl  //做一个软链接，使用新的perl
+
+安装路径为/url/local/perl
+设置一下环境变量PATH=/url/local/perl:$PATH
+**/
+
+
+
+
+
+
+
+安装mysql
+
+wget http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+rpm -ivh mysql-community-release-el7-5.noarch.rpm
+yum install mysql-community-server
+yum install mysql-community-devel
+
+service mysqld restart
+初次安装mysql，root账户没有密码。
+
+mysql -u root 
+
+设置密码登录
+set password for 'root'@'localhost' =password('root');
+
+修改权限
+service mysqld stop
+mysqld_safe –skip-grant-tables &
+update user set Update_priv =’Y’ where user = ‘root';
+
+
+创建用户并设置登录权限
+create user 'pallasli'@'%' identified by 'pallasi';  
+set password for 'pallasli'@'%' =password('pallasli');//localhost用户仍然免密码登录
+
+
+create user 'pallasli'@'localhost' identified by 'pallasi';  
+set password for 'pallasli'@'localhost' =password('pallasli');
+
+远程连接设置
+把在所有数据库的所有表的所有权限赋值给位于所有IP地址的root用户。
+grant all privileges on *.* to root@'%'identified by 'root';
+
+
+
+设置环境
+mysql配置文件为/etc/my.cnf
+
+[mysqld]
+lower_case_table_names =1 # 忽略大小写
+
+最后加上编码配置
+[mysql]
+default-character-set =utf8 #编码
+
+
+mysql> grant all privileges on *.* to root@'%'identified by 'password';
+如果是新用户而不是root，则要先新建用户
+
+mysql>create user 'username'@'%' identified by 'password';  
+此时就可以进行远程连接了。
+
+
+create database pallasli;
+grant all privileges on pallasli.* to pallasli@'%'identified by 'pallasli';
+grant all privileges on pallasli.* to pallasli@'localhost'identified by 'pallasli';
+
+mysql -upallasli -p
+
+
+
+
+
+
+缓存安装 
+
+memcached
+
+使用超级用户安装
+
+wget http://memcached.org/latest
+tar -zxvf memcached-1.x.x.tar.gz
+cd memcached-1.x.x
+./configure && make && make test && sudo make install
+会看到错误日志
+make: prove: Command not found
+make: *** [test] Error 127
+可以无视，再直接运行一下make install即可
+直接运行memcached -u others -p 11211 & 即可启动memcached
+
+telnet localhost 11211
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+get foo
+VALUE foo 0 2
+hi
+END
+stats
+STAT pid 8861
+(etc)
+
+
+quit
+
+redis
+
+
+
+wget http://download.redis.io/releases/redis-3.2.6.tar.gz
+wget https://codeload.github.com/antirez/redis/tar.gz/3.2.6
+
+tar xzf redis-3.2.6.tar.gz
+cd redis-3.2.6
+make
+
+src/redis-server
+
+
+src/redis-cli 
+shutdown
+quit
+
+yum install tcl
+make test 
+make install
+
+
+
+
+
+分配用户 
+
+oracle oracle  /home/oracle
+mysql mysql  /home/mysql
+tomcat tomcat /home/tomcat
+others others /home/others
+
+useradd -d /home/oracle -m oracle
+useradd -d /home/mysql -m mysql
+useradd -d /home/tomcat -m tomcat
+useradd -d /home/others -m others
+passwd oracle  
+passwd mysql  
+passwd tomcat  
+passwd others  
+
+
+
+
+visudo 修改sudoer，添加others拥有超级用户命令权限
+
+　　## Allow root to run any commands anywhere
+　　root    ALL=（ALL）       ALL
+    others     ALL=（ALL）       ALL
+    mysql     ALL=（ALL）       ALL
+    oracle     ALL=（ALL）       ALL
+    tomcat     ALL=（ALL）       ALL
+
+
+
+wget http://apache.fayea.com/tomcat/tomcat-7/v7.0.75/bin/apache-tomcat-7.0.75.tar.gz
+
+
+
+安装防火墙
+
+yum -y install iptables-services
+启动防火墙
+systemctl enable iptables.service
+关闭防火墙
+systemctl disable iptables.service
+
+放开防火墙端口
+/sbin/iptables -I INPUT -p tcp --dport 8080 -j ACCEPT  
+/sbin/iptables -I INPUT -p tcp --dport 80 -j ACCEPT  
+/sbin/iptables -I INPUT -p tcp --dport 21 -j ACCEPT  
+/sbin/iptables -I INPUT -p tcp --dport 20 -j ACCEPT   
+
+	或直接修改文件
+    # vi /etc/sysconfig/iptables
+    -A INPUT -p tcp -m tcp --dport 8080 -j ACCEPT
+
+service iptables save  
+service iptables restart  
+
+
+
+
+配置web管理帐号
+   修改文件conf/tomcat-users.xml，在<tomcat-users>元素中添加帐号密码，需要指定角色.
+   # vi /usr/local/tomcat/server/conf/tomcat-users.xml
+     <tomcat-users>
+       <user name="admin" password="admin" roles="admin-gui,manager-gui" />
+     </tomcat-users>
+
+
+配置web访问端口
+   可以修改conf目录下的文件server.xml，修改Connector元素(Tomcat的默认端口是8080)，需要重新启动Tomcat服务生效.
+   # vi /usr/local/tomcat/server/conf/server.xml
+   <Connector port="80" protocol="HTTP/1.1" connectionTimeout="20000" redirectPort="8443" /> 
+
+
+80 8005 8009
+8080 8805 8809
+
+
+
+6.配置https安全连接(ssl加密连接)
+   https连接需要用到数字证书与数字签名(MD5算法)
+   网站https连接首先需要申请数字证书，配置加密连接器，浏览器安装证书.
+   ·使用java的工具keytool产生数字证书
+     # keytool -genkey -alias tomcat -keyalg RSA
+     生成文件.keystore
+     注意:CN为主机名称，本机可用localhost
+   ·将文件.keystore放到Tomcat服务器的conf目录下
+     # cp .keystore /usr/local/tomcat/server/conf/
+   ·修改conf/server.xml文件，修改加密连接器，添加keystoreFile与keystorePass
+    <Connector port="8443" protocol="HTTP/1.1" SSLEnabled="true"
+               maxThreads="150" scheme="https" secure="true"
+               clientAuth="false" sslProtocol="TLS" 
+               keystoreFile="conf/.keystore" keystorePass="123456"/>    
+   ·重新启动tomcat.浏览器输入https://localhost:8443访问,并安装证书.
+
+
+9.虚拟主机的配置
+   指定虚拟主机名,修改conf/server.xml,添加<host>元素.
+   <host name="hostname.domainname" appBase="/webapps">
+     <Context path="/webapp" docBase="/webapps/webapp"/>
+   </host>
+   例:
+   <host name="www.163.com" appBase="/webapps">
+   </host>
+   <host name="mail.163.com" appBase="/mailapps">
+   </host>
+   须设置DNS解析(host文件或DNS系统).
+
+
+
+
+10.web应用和虚拟目录的映射.
+   可以修改xml配置文件的<Context>元素来设置web应用和虚拟目录的映射.
+   ·conf/server.xml         //在<host>元素下添加<Context path="/webdir" docBase="/webappdir"/>,需要重新启动Tomcat服务生效，不建议使用.
+   ·conf/context.xml        //添加<Context>元素所有web应用有效.
+   ·conf/[enginename]/[hostname]/context.xml.default  //[enginename]一般是Catalina，主机[hostname]的所有web应用有效.
+   ·conf/[enginename]/[hostname]/   //在目录下任意建一个文件(扩展名xml),文件名即为虚拟目录名.多级目录使用#分割. <Context docBase="/webappdir"/>
+                                     //缺省值web应用目录可以定义为ROOT.xml，添加<Context docBase="/webappdir"/>,需重新启动Tomcat服务器.
+   ·META-INF/context.xml    //
+   可以将web应用放在webapps目录下让Tomcat服务器自动映射，适用开发环境，实际运用环境中不用自动映射。
+   如没有修改配置文件，web应用目录为ROOT时则为默认web应用。
+
+
+11.web应用首页(welcome file)的配置
+   修改web应用的配置文件: [webapp]/WEB-INF/web.xml
+    <welcome-file-list>
+       <welcome-file>index.html</welcome-file>
+       <welcome-file>index.htm</welcome-file>
+       <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+
+
+
+
+数据库安装
+
+
+orcale
+
+mysql
+
+
+
+首先更新源　　
+sudo apt-get update
+安装ssh服务
+sudo apt-get install openssh-server
+检测是否已启动
+ps -e | grep ssh
+看到有ssh字样，说明已启动，如果没有就手动启动
+
+/etc/init.d/ssh start
+配置ssh-server，配置文件位于/etc/ssh/sshd_config，默认端口为22，为了安全，一般自定义为其他端口，然后重启
+sudo /etc/init.d/ssh resart
+
+
+
+使用桥接方式
+设置ip与主机ip在同一网段
+
+#vi /etc/sysconfig/network-scripts/ifcfg-enp0s3 [编辑网卡的配置文件]
+配置
+IPADDR=192.168.2.122
+NETMASK=255.255.255.0
+GATEWAY=192.168.2.1
+另外光标移动到”ONBOOT=no”这一行，更改为ONBOOT=yes
+“BOOTPROTO=dhcp”，更改为BOOTPROTO=none 
+
+
+
+
+
+

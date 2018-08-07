@@ -1,0 +1,159 @@
+
+只允许Linux安装  使用tcpcopy拷贝线上流量压测测试环境
+
+
+拦截器：git clone git://github.com/session-replay-tools/intercept.git
+git clone git://github.com/session-replay-tools/tcpcopy.git
+
+
+cd intercept
+./configure
+	choose appropriate configure options if needed
+	--single            run intercept at non-distributed mode
+	--with-pfring=PATH  set path to PF_RING library sources
+	--with-debug        compile intercept with debug support (saved in a log file)
+make
+make install
+
+cd tcpcopy
+./configure
+	choose appropriate configure options if needed
+	--offline                   replay TCP streams from the pcap file
+	--pcap-capture              capture packets at the data link
+	--pcap-send                 send packets at the data link layer instead of the IP layer
+	--with-pfring=PATH          set path to PF_RING library sources
+	--set-protocol-module=PATH  set tcpcopy to work for an external protocol module
+	--single                    if intercept and tcpcopy are both configured with "--single" option, 
+	                            only one tcpcopy works together with intercept, 
+	                            and better performance is achieved.
+	--with-debug                compile tcpcopy with debug support (saved in a log file)
+make
+make install
+
+
+
+
+1：环境描述
+架设三台服务器   10.53.132.52     10.53.132.55     10.53.132.101
+101我们认为是线上服务器，52和55是测试环境。我们在101上运行tcpcopy把线上流量拷贝到55，在55上我们通过路由将应答转向52，在52上把应答丢弃。
+分别在101和55上部署apache，端口是8090
+
+2：步骤
+
+101上部署tcpcopy
+tcpcopy -x 8090-10.53.132.55:8090 -s 10.53.132.52 -c 192.168.100.x -n 5
+
+将本机8090上的流量复制到55的8090端口。
+-s指定intercept进程所在的服务器。（丢包服务器）
+-c修改请求的host地址为192.168.100.x，以便在55上设置路由（设置路由是为了将应答转向52【丢包服务器】）
+-n流量放大倍数
+
+55上设置路由
+route add -net 192.168.100.0 netmask 255.255.255.0 gw 10.53.132.52
+
+52上运行intercept
+intercept -i eth1 -F tcp and src port 8090 -d
+
+
+
+
+
+运行tcpcopy
+假设tcpcopy和intercept都配置了“./configure”。
+1）在运行服务器应用程序的目标服务器上：
+适当设置路由命令以将响应数据包路由到辅助服务器
+例如:
+假设61.135.233.161为辅助服务器的IP地址。我们以下路由命令的所有反应的62.135.200.X的客户到助理服务器。
+We set the  following route command to route all responses to the 62.135.200.x's clients to the assistant server.
+
+       route add -net 62.135.200.0 netmask 255.255.255.0 gw 61.135.233.161
+
+2）在辅助服务器上运行拦截（root权限或cap_net_raw能力）：
+./intercept -F <filter> -i <device,>
+注意过滤格式为PCAP滤波器相同。
+例如:
+./intercept -i eth0 -F 'tcp and src port 8080' -d
+intercept捕捉从设备eth0端口8080监听的TCP响应包
+
+3）对在线源服务器（root权限或cap_net_raw能力）：
+./tcpcopy -x localServerPort-targetServerIP:targetServerPort -s <intercept server,>  [-c <ip range,>]
+例如（假设61.135.233.160是目标服务器的IP地址）：
+./tcpcopy -x 80-61.135.233.160:8080 -s 61.135.233.161 -c 62.135.200.x
+tcpcopy会捕获端口80的数据包流服务器，更改客户端的IP地址
+一个62.135.200。X系列，将这些数据包发送到目标端口“8080”的
+目标服务器“61.135.233.160 '，并连接61.135.233.161问拦截
+将响应数据包传递给它。
+虽然“C”参数是可选的，它是在这里设置，以简化路由
+命令。
+注
+这是测试的Linux只（核2.6或以上）
+tcpcopy可能丢失数据包从而失去请求
+root权限或cap_net_raw能力（如setcap cap_net_raw = EP tcpcopy）是必需的
+tcpcopy只支持客户端发起的连接现在
+tcpcopy不支持使用SSL / TLS服务器应用的重播
+MySQL会话重放，请参阅https://github.com/session-replay-tools
+ip_forward不应该设置辅助服务器
+请执行”。/ tcpcopy -H”或“。/拦截- H”的更多细节。
+影响因素
+有几个因素可能会影响tcpcopy，这将在下面的章节中详细介绍。
+   tcpcopy would capture port '80' packets on current server, change client IP address 
+    to one of 62.135.200.x series, send these packets to the target port '8080' of the 
+    target server '61.135.233.160', and connect 61.135.233.161 for asking intercept to 
+    pass response packets to it.
+
+    Although "-c" parameter is optional, it is set here in order to simplify route 
+    commands.
+Note
+
+It is tested on Linux only (kernal 2.6 or above)
+TCPCopy may lose packets hence lose requests
+Root privilege or the CAP_NET_RAW capability(e.g. setcap CAP_NET_RAW=ep tcpcopy) is required
+TCPCopy only supports client-initiated connections now
+TCPCopy does not support replay for server applications which use SSL/TLS
+For MySQL session replay, please refer to https://github.com/session-replay-tools
+ip_forward should not be set on the assistant server
+Please execute "./tcpcopy -h" or "./intercept -h" for more details.
+Influential Factors
+
+There are several factors that could influence TCPCopy, which will be introduced in detail in the following sections.
+
+1。采集接口
+tcpcopy利用原始套接字输入界面默认情况下在网络服务器的网络层的数据包捕获。当系统忙时，系统内核可能会丢失一些数据包。
+如果配置tcpcopy”——pcap捕获”，然后tcpcopy可以在数据链路层的数据包捕获和过滤数据包也可以在内核。与pf_ring，tcpcopy会输少当使用pcap捕获数据包。
+也许捕获请求的最好方式是镜导入包的开关，然后将巨大的流量到多机负载平衡器。
+tcpcopy utilizes raw socket input interface by default to capture packets at the network layer on the online server. The system kernel may lose some packets when the system is busy.
+
+If you configure tcpcopy with "--pcap-capture", then tcpcopy could capture packets at the data link layer and could also filter packets in the kernel. With PF_RING, tcpcopy would lose less packets when using pcap capturing.
+
+Maybe the best way to capture requests is to mirror ingress packets by switch and then divide the huge traffic to several machines by load balancer.
+2。发送接口
+tcpcopy利用原始套接字输出接口默认情况下发送数据包在网络层到目标服务器。如果你想避免ip_conntrack问题或得到更好的性能，用“-- tcpcopy PCAP发送”配置，然后用适当的参数tcpcopy可以发送数据包在数据链路层到目标服务器。
+tcpcopy utilizes raw socket output interface by default to send packets at the network layer to a target server. If you want to avoid ip_conntrack problems or get better performance, configure tcpcopy with "--pcap-send", then with appropriate parameters tcpcopy could send packets at the data link layer to a target server.
+3、在发送到目标服务器的过程中
+当一个数据包被发送到tcpcopy，它可能会遇到很多的挑战，在到达目标服务器。由于在数据包中的源IP地址仍然是最终用户的IP地址（默认情况下）以外的在线服务器的，一些安全设备可能会采取它为无效或伪造的数据包，并放弃它。在这种情况下，当你使用tcpdump捕捉到目标服务器上的数据包，从预期的最终用户没有数据包将被捕获。要知道您是否在这种情况下，可以在同一个网络段中选择一个目标服务器来做测试。如果数据包可以被发送到目标服务器成功地在同一网段但失败的跨网段，你的包可能会下降一半。
+为了解决这个问题，我们建议部署tcpcopy，应用目标和拦截在同一网段的服务器。在同一个网络段中的代理的帮助下，也有另一个解决方案。tcpcopy可以将数据包发送到代理，代理将发送相应的请求，在另一个网络段的目标服务器。
+请注意，部署目标服务器在同一个段中的一个虚拟机上的应用程序可能会面临上述问题。
+
+When a packet is sent by tcpcopy, it may encounter many challenges before reaching the target server. As the source IP address in the packet is still the end-user’s IP address(by default) other than the online server’s, some security devices may take it for an invalid or forged packet and drop it. In this case, when you use tcpdump to capture packets on the target server, no packets from the expected end-users will be captured. To know whether you are under such circumstances, you can choose a target server in the same network segment to do a test. If packets could be sent to the target server successfully in the same network segment but unsuccessfully across network segments, your packets may be dropped halfway.
+
+To solve this problem, we suggest deploying tcpcopy, target applications and intercept on servers in the same network segment. There’s also another solution with the help of a proxy in the same network segment. tcpcopy could send packets to the proxy and then the proxy would send the corresponding requests to the target server in another network segment.
+
+Note that deploying the target server's application on one virtual machine in the same segment may face the above problems.
+4。目标服务器的操作系统
+目标服务器可以设置rpfilter，将检查包中的源IP地址是伪造的。如果是的话，该数据包将被丢弃在网络层。
+如果目标服务器无法接受任何请求，尽管数据包可以在目标服务器tcpdump捕获，你应该检查你是否有相应的rpfilter设置。如果设置，您必须删除相关设置，让数据包通过网络层。
+还有，因为tcpcopy不工作的其他原因，如iptables的设置问题。
+The target server may set rpfilter, which would check whether the source IP address in the packet is forged. If yes, the packet will be dropped at the network layer.
+
+If the target server could not receive any requests although packets can be captured by tcpdump on the target server, you should check if you have any corresponding rpfilter settings. If set, you have to remove the related settings to let the packets pass through the network layer.
+
+There are also other reasons that cause tcpcopy not working, such as iptables setting problems.
+5。目标服务器上的应用程序
+目标服务器上的应用程序可能无法处理所有的时间请求。一方面，在应用程序中的错误可能会使请求不被回应很长一段时间。另一方面，在TCP层协议可以在套接字缓冲区的第一个请求过程和剩下的请求处理缓冲区的插座。
+
+It is likely that the application on the target server could not process all the requests in time. On the one hand, bugs in the application may make the request not be responded for a long time. On the other hand, some protocols above TCP layer may only process the first request in the socket buffer and leave the remaining requests in the socket buffer unprocessed.
+6。助理服务器的操作系统
+你不应该ip_forward真或辅助服务器不能作为一个黑洞。
+
+You should not set ip_forward true or the assistant server can't act as a black hole.
+

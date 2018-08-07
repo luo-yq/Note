@@ -1,0 +1,362 @@
+
+
+分布式锁
+
+首先，Redis 是单进程单线程的工作模式，所有前来申请锁资源的请求都被排队处理，能保证锁资源的同步访问。
+
+可以借助 Redis 管理锁资源，来实现网络资源的互斥。
+
+我们可以在 Redis 服务器设置一个键值对，用以表示一把互斥锁，当申请锁的时候，要求申请方设置（SET）这个键值对，当释放锁的时候，要求释放方删除（DEL）这个键值对。譬如申请锁的过程，可以用下面的伪代码表示：
+
+lock = redis.get("mutex_lock");
+if(!lock)
+    error("apply the lock error.");
+else
+    -- 确定可以申请锁
+    redis.set("mutex_lock","locking");
+    do_something();
+这种申请锁的方法，涉及到客户端和 Redis 服务器的多次交互，当客户端确定可以加锁的时候，可能这时候锁已经被其他客户端申请了，最终导致两个客户端同时持有锁，互斥的语意非常容易被打破。在 Redis 官方文档描述了一些方法并且参看了网上的文章，好些方法都提及了这个问题。我们会发现，这些方法的共同特点就是申请锁资源的整个过程分散在客户端和服务端，如此很容易出现数据一致性的问题。
+
+因此，最好的办法是将“申请/释放锁”的逻辑操作都放在服务器上，Redis Lua 脚本可以胜任。下面给出申请互斥锁的 Lua 脚本：
+
+-- apply for lock
+local key = KEYS[1]
+local res = redis.call('get', key)
+
+-- 锁被占用，申请失败
+if res == '0' then
+return -1
+
+-- 锁可以被申请
+else
+local setres = redis.call('set', key, 0)
+if setres['ok'] == 'OK' then
+return 0
+end
+end
+return -1
+
+get 命令不成功返回(nil).
+实验命令：保存lua 脚本redis-cli script load ”$(cat mutex_lock.lua)”
+同样，释放锁的操作也可以在 Lua 脚本中实现：
+
+-- releae lock
+local key = KEYS[1]
+local setres = redis.call('set', key, 1)
+if setres['ok'] == 'OK' then
+return 0
+return -1
+如上 Lua 脚本基本的锁管理的问题，将锁的管理逻辑放在服务器端，可见 Lua 能拓展 Redis 服务器的功能。但上面的锁管理方案是有问题的。
+
+死锁的问题
+首先是客户端崩溃导致的死锁。按照上面的方法，当某个客户端申请锁后因崩溃等原因无法释放锁，那么其他客户端无法申请锁，会导致死锁。
+
+一般，申请锁是为了让多个访问方对某块数据作互斥访问（修改），而我们应该将访问的时间控制在足够短，如果持有锁的时间过长，系统整体的性能肯定是下降的。可以给定一个足够长的超时时间，当访问方超时后尚未释放锁，可以自动把锁释放。
+
+Redis 提供了 TTL 功能，键值对在超时后会自动被剔除，在 Redis 的数据集中有一个哈希表专门用作键值对的超时。所以，我们有下面的 Lua 代码：
+
+-- apply for lock
+local key = KEYS[1]
+local timeout = KEYS[2]
+
+local res = redis.call('get', key)
+
+-- 锁被占用，申请失败
+if res == '0' then
+return -1
+-- 锁可以被申请
+else
+local setres = redis.call('set', key, 0)
+local exp_res = redis.call('pexpire', key, timeout)
+if exp_res == 1 then
+return 0
+end
+end
+return -1
+如此能够解决锁持有者崩溃而锁资源无法释放带来的死锁问题。
+
+再者是 Redis 服务器崩溃导致的死锁。当管理锁资源的 Redis 服务器宕机了，客户端既无法申请也无法释放锁，死锁形成了。一种解决的方法是设置一个备份 Redis 服务器，当 Redis 主机宕机后，可以使用备份机，但这需要保证主备的数据是同步的，不允许有延迟。
+
+在同步有延迟的情况下，依旧会出现两个客户端同时持有锁的问题。
+
+
+
+
+消息中间件
+
+消息队列简介
+接触 Linux 系统编程的时候，曾经学到消息队列是 IPC 的一种方式，这种通讯方式通常只用于本地的进程，基于共享内存的《无锁消息队列》即是一个很好的中间件，详见这里。但这篇提到的消息队列，也被称为消息中间件，通常在分布式系统中用到。
+
+提及消息中间件的时候，还会涉及生产者和消费者两个概念。消息中间件是负责接收来自生产者的消息，并存储并转发给对应的消费者，生产者可以按 topic 发布各样消息，消费者也可以按 topic 订阅各样消息。生产者只管往消息队列里推送消息，不用等待消费者的回应；消费者只管从消息队列中取出数据并处理，可用可靠性等问题都交由消息中间件来负责。
+
+
+
+说白了，这种分布式的消息中间件即是网络上一个服务器，我们可以往里面扔数据，里面的数据会被消息中间件推送或者被别人拉取，消息中间件取到一个数据中转的作用。生产者和消费者通常有两种对应关系，一个生产者对应一个消费者，以及一个生产者对应多个消费者。在这篇文章中，介绍了消息中间件的三个特点：解耦，异步和并行。读者可以自行理解。一些不需要及时可靠响应的业务场景，消息中间件可以大大提高业务上层的 吞吐量。
+
+目前消息中间件一族里边有一些优秀的作品，RabbitMQ, Jafka/Kafka。redis 也可以作为一个入门级的消息队列。上面提到的一个生产者对应一个消费者，Redis 的 blist 可以实现；一个生产者对应多个消费者，Redis 的pub/sub 模式可以实现。值得注意的是，使用 Redis 作为消息中间件，假如消费者有一段时间断开了与 Redis 的连接，它将不会收到这段时间内 Redis 内的数据，这一点从 pub/sub 的实现可以知道。严格意义上的消息中间件，需要保证数据的可靠性。
+
+分布式的消息队列
+在平时的开发当中，消息队列算是最常见的应用了。在本机的时候，可以使用系统提供的消息队列，或者基于共享内存的循环消息队列，来实现本机进程以及进程之间的通信。对于异机部署的多个进程，就需要用到分布式的消息队列了，来看看这个场景：
+
+
+
+生产者，基于 Redis 的消息队列，3 个 worker 组都分别部署在不同的机器上，生产者会快速将产出内容（如需要存储的数据或者日志等）推送到消息队列服务器上，这是 worker group 就能消费了。
+
+这种实现可以借助 Redis 中的 blist 实现。在这里用 C 实现了一个生产者和 worker group 的示例代码：
+
+// comm.h
+#ifndef COMM_H__
+#define COMM_H__
+#include <inttypes.h>
+typedef struct {
+    char ip[32];
+    uint16_t port;
+    char queue_name[256];
+} config_t ;
+void Usage(char *program) {
+    printf("Usage: %s -h ip -p port -l test\n",program);
+    abort();
+}
+const size_t max_cmd_len = 512;
+#endif
+
+生产者的代码：
+// producer.cc
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include "comm.h"
+
+#include "hiredis/hiredis.h"
+
+void test_redis_client()
+{
+    redisContext *rc = redisConnect("127.0.0.1",6379);
+    if(NULL == rc || rc != NULL && rc->err) {
+        fprintf(stderr,"error: %s\n",rc->errstr);
+        return;
+    }
+    // set name
+    redisReply *reply = (redisReply *)redisCommand(rc,"set name dylan");
+    printf("%s\n",reply->str);
+    // get name
+    reply = (redisReply *)redisCommand(rc,"get name");
+    printf("%s\n",reply->str);
+    }
+    int main(int argc, char *argv[]) {
+    if (argc < 7)
+        Usage(argv[0]);
+    config_t config;
+    for (int i = EOF;
+            (i = getopt(argc, argv, "h:p:l:")) != EOF;) {
+        switch (i) {
+            case 'h': snprintf(config.ip,sizeof(config.ip),"%s",optarg); break;
+            case 'p': config.port = atoi(optarg); break;
+            case 'l': snprintf(config.queue_name,sizeof(config.queue_name),"%s",
+            optarg); break;
+            default: Usage(argv[0]); break;
+        }
+    }
+    redisContext *rc = redisConnect(config.ip,config.port);
+    if (NULL == rc || rc != NULL && rc->err) {
+        fprintf(stderr,"error: %s\n",rc->errstr);
+        return -1;
+    }
+    redisReply *reply = NULL;
+    char cmd[max_cmd_len];
+    snprintf(cmd,sizeof(cmd),"LPUSH %s task",config.queue_name);
+    printf("cmd=%s\n",cmd);
+    int count = 100;
+    while (count--) {
+        reply = (redisReply *)redisCommand(rc,cmd);
+    if (reply && reply->type == REDIS_REPLY_INTEGER) {
+    } else {
+        printf("BLPUSH error\n");
+        }
+    }
+return 0;
+}
+
+消费者的代码：
+// consumer.cc
+#include "comm.h"
+#include "hiredis/hiredis.h"
+int DoLogic(char *data, size_t len);
+int main(int argc, char *argv[]) {
+    if (argc < 7)
+        Usage(argv[0]);
+    config_t config;
+        for (int i = EOF;
+            (i = getopt(argc, argv, "h:p:l:")) != EOF;) {
+        switch (i) {
+            case 'h': snprintf(config.ip,sizeof(config.ip),"%s",optarg); break;
+            case 'p': config.port = atoi(optarg); break;
+            case 'l': snprintf(config.queue_name,sizeof(config.queue_name),"%s",
+            optarg); break;
+            default: Usage(argv[0]); break;
+        }
+    }
+    redisContext *rc = redisConnect(config.ip,config.port);
+    if (NULL == rc || rc != NULL && rc->err) {
+        fprintf(stderr,"error: %s\n",rc->errstr);
+        return -1;
+    }
+    redisReply *reply = NULL;
+    char cmd[max_cmd_len];
+    snprintf(cmd,sizeof(cmd),"BRPOP %s task 30",config.queue_name);
+    int seq = 0;
+    while (true) {
+        reply = (redisReply *)redisCommand(rc,cmd);
+    if (reply && reply->type == REDIS_REPLY_STRING) {
+        DoLogic(reply->str,reply->len);
+    } else if (reply && reply->type == REDIS_REPLY_ARRAY) {
+        for (size_t i=0; i<reply->elements; i+=2) {
+        printf("%d->%s\n",seq++,reply->element[i]->str);
+    }
+    } else {
+    printf("BRPOP error, reply->type=%d\n",reply->type);
+    break;
+        }
+    }
+    return 0;
+}
+    int DoLogic(char *data, size_t len) {
+        printf("reply=%s\n",data);
+return 0;
+}
+
+
+
+
+Web 服务器存储 session
+
+HTTP 是无状态的协议，上一条和下一条没有什么联系，要建立联系需要在客户端和服务器作一些数据记录。
+
+在 Web 的应用上，用 Redis/Memcached 来做 session 的存储，以加速后台业务的处理速度。譬如用户的购物车的数据，可以在服务端作存储。传统里把 session 数据库中，可以放在内存中，存储系统就派上有用场了。
+
+下面的一段简单的 Python 的代码，如果 Redis 缓存的数据，先从 Redis 中取，否则从数据库中查询，接着返回数据给到前端。
+
+def GetUserShopingCart(user_session):
+    goods = Redis.Get(user_session)
+    if goods is not null:
+        return goods
+    ret = Mysql.Query("select * from user_shoping_cart where sessionid = %d" %
+            (user_session))
+    return ret
+
+def SaveUserShopingCart(user_session, goods):
+    ret = Redis.Set(user_session,goods)
+    if not ret:
+        Log("save redis error")
+    ret = Mysql.Query("insert into user_shoping_cart (sessionid, goods) values"
+        "(%s)",goods)
+    return ret
+
+
+
+
+
+内存数据管理
+
+共享对象
+在 Redis 服务器初始化的时候，便将一些常用的字符串变量创建好了，免去 Redis 在线服务时不必要的字符串创建。共享对象的结构体为 struct sharedObjectsStruct，摘抄它的内容如下：
+
+struct sharedObjectsStruct {
+robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,
+......
+};
+譬如在 Redis 通信协议里面，会较多使用的”\r\n”这些字符串都在 initServer() 函数被初始化。
+
+两种内存分配策略
+在 zmalloc.c 中 Redis 对内存分配策略做了包装。Redis 允许使用四种内存管理策略，分别是jemalloc,tcmalloc, 苹果系统自带的malloc 和其他系统自带的malloc。当有前面三种分配策略的时候，就使用前面三种，最后一个种分配策略是不选之选。
+
+jemalloc 是 freebsd 操作系统自带的内存分配策略，它具有速度快，多线程优化的特点 TODO，firefox 以及facebook 都在使用 jemalloc。而 tcmalloc 是google 开发的，内部集成了很多内存分配的测试工具，chrome 浏览器和 protobuf TODO 用的都是 tcmalloc。两者在业界都很出名，性能也不分伯仲。Redis 是一个内存数据库，对存取的速度要求非常高，因此一个好的内存分配策略能帮助提升 Redis 的性能。
+
+本篇不对这两种内存分配策略做深入的讲解。
+
+memory aware 支持
+Redis 所说的 memory aware 即为能感知所使用内存总量的特性，能够实时获取 Redis 所使用内存的大小，从而监控内存。所使用的思路较为简单，每次分配/释放内存的时候都更新一个全局的内存使用值。我们先来看malloc_size(void *ptr) 函数，这种类似的函数的存在只是为了方便开发人员监控内存。
+
+上述的内存分配策略 jemalloc,tcmalloc 和苹果系统自带的内存分配策略可以实时获取指针所指内存的大小，如果上述三种内存分配策略都不支持，Redis 有一个种近似的方法来记录指针所指内存的大小，这个 trick 和 sds 字符串的做法是类似的。
+
+zmalloc() 函数会在所需分配内存大小的基础上，预留一个整型的空间，来存储指针所指内存的大小。这种办法是备选的，其所统计的所谓“指针所指内存大小”不够准确。因为，平时我们所使用的 malloc() 申请内存空间的时候，可能实际申请的内存大小会比所需大，也就是说有一部分内存被浪费了，所以 Redis 提供的这种方法不能统计浪费的内存空间。
+
+
+update_zmalloc_stat_alloc() 宏所要做的即为更新内存占用数值大小，因为这个数值是全局的，所以 Redis 做了互斥的保护。有同学可能会有疑问，Redis 服务器的工作模式不是单进程单线程的么，这里不需要做互斥的保护。在 Redis 关闭一些客户端连接的时候，有时 TODO 交给后台线程来做。因此，严格意义上来讲，互斥是要做的。
+
+update_zmalloc_stat_alloc() 宏首先会检测 zmalloc_threadsafe 值是否为 1，zmalloc-thread_safe 默认为 0，也就是说 Redis 默认不考虑互斥的情况；倘若 zmalloc_thread_safe 为 1，会使用原子操作函数或加锁的方式更新内存占用数值。
+
+// 更新已使用内存大小
+#define update_zmalloc_stat_alloc(__n) do { \
+    size_t _n = (__n); \
+    // 按4 字节向上取整
+    if (_n&(sizeof(long)-1)) _n += sizeof(long)-(_n&(sizeof(long)-1)); \
+        // 如果设置了线程安全，调用专门线程安全函数
+    if (zmalloc_thread_safe) { \
+        // 使用院子操作或者互斥锁，更新内存占用数值used_memory
+        update_zmalloc_stat_add(_n); \
+    } else { \
+        used_memory += _n; \
+    } \
+} while(0)
+上述是分配内存的情况，释放内存的情况则反过来。
+
+zmalloc_get_private_dirty() 函数
+在 RDB 持久化的篇章中，曾经提到这函数，我打算在这一节中稍微详细展开讲。操作系统为每一个进程维护了一个虚拟地址空间，虚拟地址空间对应着物理地址空间，在虚拟地址空间上的连续并不代表物理地址空间上的连续。
+
+
+
+在 linux 编程中，进程调用 fork() 函数后会产生子进程。之前的做法是，将父进程的物理空间为子进程拷贝一份。出于效率的考虑，可以只在父子进程出现写内存操作的时候，才为子进程拷贝一份。如此不仅节省了内存空间，且提高了 fork() 的效率。在 RDB 持久化过程中，父进程继续提供服务，子进程进行 RDB 持久化。持久化完毕后，会调用 zmalloc_get_private_dirty() 获取写时拷贝的内存大小，此值实际为子进程在 RDB 持久化操作过程中所消耗的内存。
+
+总结
+Redis 是内存数据库，对内存的使用较为谨慎。
+
+有一点建议。我们前面讲过，Redis 服务器中有多个数据集，在平时的数据集的选择上，可以按业务来讲不同来将数据存储在不同的数据集中。将数据集中在一两个数据集，查询的效率会降低。
+
+
+
+
+
+Redis 与 Memcache
+
+单进程单线程与单进程多线程
+Redis 是单进程单线程的工作模式，所有的请求都被排队处理处理，因此缓存数据没有互斥的需求。而 Memcached 是单进程多线程的工作模式，请求到达时，主线程会将请求分发给多个工作线程，因此必须要做数据的互斥。
+
+在处理请求的能力上，两者是不相上下的。理论上在一台支持多线程的机器上，Memecached 的 get 操作的吞吐量会较 Redis 高。
+
+那到底是多线程还是单线程优秀？多线程一般会增加程序逻辑的复杂度，需要考虑线程与线程之间的同步与互斥，一定程度上拉低了每个线程的吞吐量（工作量），更多的时间是花在了等待互斥锁上。一般建议在系统设计的时候多考虑系统的横向扩展性。
+
+使用每个进程单个线程的模式。这里没有信条，不是非黑即白，就看什么样的方法解决什么样的问题了。
+
+丰富与简单的数据结构
+Redis 有丰富的原生数据结构，包括字符串，链表，集合，有序集合，哈希表，二进制数组等，可见 Redis 能适用于更多的场景，可以当作一个数据结构数据库。Memcached 在这方面较 Redis 逊色，只能做简单的 key/value 存储。
+
+其他
+除了上面所说，与 Memcached 比较：
+
+Redis 原生支持主从复制，可以实现一主多从的场景，提高了可用性
+Redis 原生支持 RDB 和 AOF 两种持久化方式。前者是将内存中的数据整体落地，后者是将数据的更新落地，类似于 MySQL 中的 binlog。Memcached 原生并不支持持久化
+Redis 支持事务
+Redis 支持键值对的过期时间设置
+Redis 3.0 中已经开始支持 Redis 集群了
+对比下来，Redis 好玩多了。
+
+性能测试
+曾经被问到 Redis 和 Memcached 哪个更快？在测试的时候，需要保证测试的客观环境是一样的，这包括测试机器，客户端除了在构造协议的逻辑部分不一样外，其他都应该是保持一致的。
+
+测试环境：
+
+ubuntu, Intel(R) Core(TM) i5-3210M CPU @ 2.50GHz 4 核心
+memcache 1.4.14
+redis 3.1.99
+测试概括了一些结论：
+
+随着 payload 增大，会越影响读写性能，尤其是 Redis
+Redis，Memcache（worker 线程数为1），读写性能不分上下，Redis 更优一点
+Memcache 的 worker 线程达到一定个数，会导致读写的性能下降
+默认情况下，Memcached 默认键长设置为 256B，存储数据长度限制为 1M。可以通过 Memcached 的 -I 选项调整默认 slab 页面大小，从而可以调整存储数据长度的限制，但 Memcached 官方是不建议这种做法的。
+
+没有非黑即白的答案，只有哪个工具在哪种场景下更为适用。
+

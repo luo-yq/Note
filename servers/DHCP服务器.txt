@@ -1,0 +1,127 @@
+
+DHCP是一种简化IP配置管理工作的一个非常高效的TCP/IP工具。在本章中我们向大家介绍DHCP服务在LINUX系统上的安装、配置等方面的内容。
+本章的主要内容有：
+ 
+l         DHCP服务器简介
+l         DHCP服务器安装
+l         DHCP服务器配置
+ 
+14.1  DHCP服务器简介
+ 
+DHCP是BOOTP的扩展，是基于C/S模式的，它提供了一种动态指定IP地址和配置参数的机制。这主要用于大型网络环境和配置比较困难的地方。DHCP服务器自动为客户机指定IP地址，指定的配置参数有些和IP协议并不相关，但这必没有关系，它的配置参数使得网络上的计算机通信变得方便而容易实现了。DHCP使IP地址的可以租用，对于许多拥有许多台计算机的大型网络来说，每台计算机拥有一个IP地址有时候可能是不必要的。租期从1分钟到100年不定，当租期到了的时候，服务器可以把这个IP地址分配给别的机器使用。客户也可以请求使用自己喜欢的网络地址及相应的配置参数。
+DHCP是对BOOTP的扩展，它的包格式和BOOTP也一样，这样它就可以使用BOOTP的中转发代理来发送DHCP包了，这使得BOOTP和DHCP之间可以实现互操作。对于BOOTP转发代理来说，发的是DHCP包还是BOOTP包，它根本分不清楚。它们使用的服务器端口号是67和68，但是有些地方还有些不同：
+ 
+l         DHCP定义了一种可以使IP地址使用一段有限时间的机制，在客户期限到了的时候可以重新分配这个IP地址。
+l         DHCP为用户提供所有IP配置参数。DHCP包长度比BOOTP包长度稍长。既然包比BOOTP的长，那也不是白带的，这多出的长度里包括了网络配置参数。
+l         DHCP的包都比BOOTP的长，那协议也复杂了。
+l         DHCP有七种消息类型，而BOOTP只有两种。
+ 
+下面我们看一下客户机请求获得网络地址和配置参数的最初几个步骤：
+ 
+第一步的时候客户发出包的名称叫DHCPDISCOVER，而服务器返回包的名称叫DHCPOFFER。
+1.      BOOTP转发代理接收到请求包，并负责向DHCP其它网络内的DHCP服务器转发。
+2.      DHCP服务器以DHCPOFFER响应客户的要求，这个包内包括可用的IP地址和参数。
+3.      BOOTP转发代理接收包，并对它进行检查。如果它觉得没有问题，就向客户转发。
+4.      如果客户在发出DHCPOFFER包后一段时间内没有接收到回应，它有机会重新发送请求10次，否则就通知用户。客户机可以同时接收到许多个服务器的应答，它可以自己决定用哪一个。下图是客户决定了以后，向服务器发送应答时的情况。
+5.      当客户选定了某个目标服务器后，它会广播DHCPREQUEST包，用以通知选定的服务器和未选定的服务器。
+6.      转发工作仍然由BOOTP转发担任。
+7.      收到DHCPREQUEST包服务器会检查收到的包，如果包内的地址和提供的地址一致，证明现在客户机选择的是这台服务器提供的地址，如果不是，自己提供的地址被拒绝了。
+8.      被选定的服务器在接收到DHCPREQUEST包以后，因为某些原因可能不能向客户提供这个网络地址或参数，它可以向客户发送DHCPNAK包，如果可以提供则可以发送DHCPACK包。
+客户在收到包后，检查内部的网络地址和租用时间，如果客户觉得这个包有问题，它可以发送DHCPDECLINE包拒绝这个地址，然后重新发送DHCP DISCOVER包。如果觉得没有问题，就可以接受这个配置参数。同样当客户接收到DHCPNAK包时，它也可以发送DHCPDISCOVER包。客户可以在租期到期之前释放网络地址，这通过发送DHCPRELEASE包来实现。
+用户下一次可以再次获得相同的IP地址。在这一过程中，许多步骤就可以不用麻烦了，老客户当然要方便一点了。
+ 
+1.      客户在发送的DHCPREQUEST包内包括自己以前使用的IP地址。
+2.      此包由BOOTP转发代理转发。
+3.      DHCP服务器检查DHCPREQUEST包内包括的配置参数。
+4.      它如果是原来提供这个网络地址的参数的服务器，它会认出这些数来，并以DHCPACK包回应。
+5.      客户接收到DHCPACK包后，它可以接收或拒绝，如果拒绝它可以申请新的网络地址。
+当然了，如果服务器觉得客户的请求是无效的，服务器会以DHCPNAK包响应，客户接收到这个包后，会重新会获得网络地址而发送DHCPDISCOVER包。
+ 
+注意：
+作为准备安装DHCP服务的计算机一定要有自己的IP地址和网卡，否则不能提供DHCP服务，而且DHCP服务也不能启动。
+ 
+14.2  安装DHCP服务器
+ 
+运行下面的命令来下载DHCP的源代码安装包到文件夹/home/pub/中：
+ 
+[root@linux pub]# wget http://systeng.net/source/dhcp-3.0.1rc13.tar.gz
+ 
+运行下面的命令来解压已经下载的软件包：
+ 
+[root@linux pub]# tar –zxvf dhcp-3.0.1rc13.tar.gz
+ 
+进入软件包目录并开始编译安装DHCP服务器，在编译安装DHCP服务器之前要看一下操作系统上是否已经安装了RPM包的DHCP。如果确实有RPM包的DHCP软件，要先卸载它，然后再进行下面的编译安装。
+ 
+[root@linux pub]# cd dhcp-3.0.1rc13
+[root@linux dhcp-3.0.1rc13]# ./configure
+[root@linux dhcp-3.0.1rc13]# make
+[root@linux dhcp-3.0.1rc13]# make install
+复制DHCP的配置文件到/etc/目录：
+ 
+[root@linux dhcp-3.0.1rc13]# cd server
+[root@linux server]# cp dhcpd.conf /etc/dhcpd.conf
+ 
+创建DHCP的LEASES文件，LEASES文件是DHCP服务器用来记录给客户计算机分配IP地址情况的文件：
+ 
+[root@linux server]# touch /var/state/dhcp/dhcpd.leases
+ 
+到这里DHCP服务器的安装工作结束了，下面我们来配置DHCP服务器。
+ 
+14.3  配置DHCP服务器
+ 
+DHCP服务器的配置参数都保存在一个叫dhcpd.conf的文件，在上面安装DHCP服务器的过程中我们把它放到了/etc/目录中。现在我们就来配置这个文件。
+ 
+vi /etc/dhcpd.conf
+ 
+============== dhcpd.conf================
+option domain-name "systeng.net";
+default-lease-time 6000;
+max-lease-time 11400;
+authoritative; 为网络设置权威的DHCP服务器
+ddns-update-style ad-hoc; 动态DNS更新。两个已经实施的草案是ad-hoc  DNS 更新模式和interim DHCP-DNS 交互更新模式。
+log-facility local7; 使DHCP服务器把它的所有日志记录到一个指定的日志设备上
+# 定义一个地址池，对应的网络接口是eth0
+subnet 192.168.0.0 netmask 255.255.255.0 {
+    range 192.168.0.150 192.168.0.200;
+    option domain-name-servers 202.99.160.68;
+    option domain-name "systeng.net";
+    option netbios-name-servers 192.168.0.1;
+    option routers 192.168.0.1;
+    option broadcast-address 192.168.0.255;
+    default-lease-time 6000;
+    max-lease-time 11400;
+}
+# 为一个用户指定一个特定的IP
+host fantasia {
+    hardware ethernet 00:D0:F8:31:F8:EE;
+    fixed-address 192.168.0.220;
+}
+============== dhcpd.conf================
+ 
+接下来我们为DHCP服务器建立一个启动教本，这样可以方便我们随时启动或关闭DHCP服务器。
+ 
+vi /etc/init.d/dhcpd
+ 
+============================== dhcpd =============================
+#!/bin/sh
+# chkconfig: 2635 91 91
+# description: isc-dhcpd auto start/stop scripts.
+. /etc/rc.d/init.d/functions
+case "$1" in
+start)
+echo -n "start dhcpd"
+/usr/sbin/dhcpd eth0 &     //这里可以使DHCP服务运行在指定的网络接口上
+echo "."
+;;
+ 
+stop)
+echo "stop dhcpd"
+killproc dhcpd
+;;
+*)
+exit 1
+;;
+esac
+exit 0
+============================== dhcpd =============================
+ 

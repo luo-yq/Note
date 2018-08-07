@@ -1,0 +1,11 @@
+安装
+brew install haproxy
+
+
+
+sudo haproxy -f /Users/lyt1987/Desktop/GitHub/servers/haproxy/haproxy.cfg
+
+ 
+
+haproxy web端：
+http://localhost:8888/haproxy-stats

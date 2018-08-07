@@ -1,0 +1,62 @@
+WebLogic10设置虚拟内存大小.txt
+
+对 JRockit JVM优化
+     Task
+  Options
+ Comments
+ Setting the Nursery
+ -Xns
+尽力使Nursery最够大，来减少GC停顿时间。最大最好不要超过最大Heap 95%。
+ Setting minimum heap size
+ -Xms
+
+BEA 推荐这个值最好等于最大的heap。
+ Setting maximum heap size
+ -Xmx
+
+Heap最大值，当然越大越好。
+ Setting garbage collection
+ -Xgc: parallel
+ 
+ Performs adaptive optimizations as early as possible in the Java application run.
+ -XXaggressive:memory
+ 
+For example
+      $ java -Xns10m -Xms512m -Xmx512m
+对 SUN  JVM优化
+  Task
+ Options
+ Comments
+ Setting the New generation heap size
+ -XX:NewSize
+默认 NewSize大小是Heap的四分之一，类似Nursery，尽量设置大点减少GC停顿时间。
+ Setting the maximum New generation heap size
+ -XX:MaxNewSize
+ 设置 New Generation heap 最大值.
+ Setting New heap size ratios
+ -XX:SurvivorRatio
+在Sun generation分为3个区域，一个Edgn和两个survivors。该值是设置Edgn与Surviors的比例。最好设置为8.
+ Setting minimum heap size
+ -Xms
+ 推荐这个值最好等于最大的heap。
+ Setting Big Heaps and Intimate Shared Memory
+ -XX:+UseISM -XX:+AggressiveHeap
+ See http://java.sun.com/docs/hotspot/ism.html
+ Setting maximum heap size
+ -Xmx
+ Heap最大值，当然越大越好。
+ For example
+  $ java -XX:NewSize=128m -XX:MaxNewSize=128m -XX:SurvivorRatio=8 -Xms512m -Xmx512m
+修改方法一：
+直接修改user_projects\domains\base_domain\bin下的startWebLogic.cmd文件，找到：
+Java代码
+@REM JAVA_OPTIONS - Java command-line options for running the server. (These    will be tagged on to the end of the JAVA_VM and  MEM_ARGS)  
+在下面增加上文提到的example的代码，启动配置信息即可生效。
+修改方法二：
+修改user_projects\domains\base_domain\bin下的setDomainEnv.cmd文件，找到：
+Java代码
+set MEM_ARGS=-Xms256m -Xmx512m     
+set MEM_PERM_SIZE=-XX:PermSize=48m   
+set MEM_MAX_PERM_SIZE=-XX:MaxPermSize=128m  
+修改Xms参
+ Copyright ©2011 lyt. All Rights Reserved.

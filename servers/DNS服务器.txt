@@ -1,0 +1,406 @@
+
+在本章中我们将向大家介绍什么是DNS服务器，怎样架设DNS服务器以及DNS服务器对互联网的特殊意义。
+本章主要内容有：
+ 
+l         介绍DNS服务器
+l         BIND服务器简介
+l         安装BIND服务器
+l         配置BIND服务器
+l         测试BIND服务器
+ 
+13.1  介绍DNS服务器
+ 
+13.1.1  什么是DNS服务器
+ 
+初学者可能不理解DNS到底是什么，干什么用。我是在1998年大学毕业时才听说这个词的。那时我在聊天室碰到潍坊信息港的一个网管，我恬不知耻地说我也是个网管，他说也维护DNS吗？我说，DNS是什么？
+　　——DNS，Domain Name Service，或者Domain Name Server，域名服务/域名服务器。
+　　你在你的浏览器里面输入http://www.systeng.net之后，之所以可以上去，就是因为有了DNS。
+　　简单地说，DNS把一串名字，转换成了IP地址。你可能会说：如果我直接使用IP地址，那就不需要DNS了吗？对！不过，请你接着往下看。
+ 
+13.1.2  为什么要用DNS服务器
+ 
+现在几乎整个互联网都是基于TCP/IP的。在这个世界里，不管你访问哪个网站、哪台机器，必须得知道它的IP地址才可以。好，我告诉你，202.106.185.203这个地址，是新浪网的IP地址，你每次上网，都得在浏览器的地址栏里面输入http://202.106.185.203才可以访问新浪。你可能会说：没问题，不就一串数字嘛，我记得住！可是，你想一下，在Internet上，有多少台主机啊！你可能会记住其中几台甚至几十台的IP地址，但是你肯定记不住全部。
+　　正是由于IP地址不好记，人们才想了个办法，让你只需要记住名字，然后系统通过这个名字，到数据库里面去查找它的IP地址，然后再把查到的IP地址反馈给你，比如反馈给浏览器，最后，浏览器用这个由DNS给的IP地址去访问你想去的站点。
+ 
+13.2  BIND服务器简介
+ 
+Bind是使用最广泛的Domain Name Server，它是Berkeley Internet Name Domain Service的简写，是由美国伯克利大学编写的。这个大学不仅写了BIND服务器程序还写了不少其他著名程序。现在bind的最新版本是9.2.3，下面的内容我们就用这个版本进行安装配置等工作。
+ 
+13.3  安装BIND服务器
+ 
+首先我们从互联网上下载BIND服务器的源代码文件到/home/pub文件夹中。已备后面的安装使用：
+ 
+[root@linux pub]# wget http://systeng.net/source/bind-9.2.3.tar.gz
+ 
+紧接着我们进行解压操作。运行下面的命令就可以把这个源代码包解压到一个文件夹中：
+ 
+[root@linux pub]# tar –zvxf bind-9.2.3.tar.gz
+ 
+最后我们开始进行编译安装操作，以完成BIND服务器的安装。这里需要注意的是：在编译安装BIND之前一定要确定操作系统上没有安装RPM包格式的BIND服务器软件。否则容易重复安装导致新装的BIND服务器不能启动。
+ 
+[root@linux pub]# cd bind-9.2.3
+[root@linux bind-9.2.3]# ./configure \
+--prefix=/usr/local/named \
+--disable-ipv6
+[root@linux bind-9.2.3]# make
+[root@linux bind-9.2.3]# make install
+ 
+到这里我们就完成了BIND的安装操作，想了解编译安装中使用的编译参数的请到本章最后的附录部分。下面我们开始对BIND进行必要的配置。使其满足我们的实际需要。
+ 
+13.4  配置BIND服务器
+ 
+在LINUX/UNIX系统中，一个网络服务器通常是以某个用户的身份运行的。所以我们首先建立BIND服务的启动用户：
+ 
+[root@linux root]# groupadd bind
+[root@linux root]# useradd bind -g bind -d /usr/local/named -s /sbin/nologin
+ 
+建立存放BIND配置文件的目录：
+ 
+[root@linux root]# mkdir /usr/local/named/etc 
+[root@linux root]# chown bind:bind /usr/local/named/etc 
+[root@linux root]# chmod 700 /usr/local/named/etc
+ 
+建立BIND的配置文件。一般情况下一个BIND服务器至少也要提供一个DOMAIN（域）的域名解析服务。在这种情况下需要我们配置5个配置文件。它们分别是：BIND主配置文件、该域正向解析文件、该域反向解析文件、本地主机配置文件和根域配置文件。下面分别配置这5个文件。
+ 
+建立BIND主配置文件。BIND主配置文件（named.conf）是定义BIND服务器全局变量的配置文件。
+ 
+[root@linux root]# vi /usr/local/named/etc/named.conf
+ 
+===========================named.conf=======================
+acl "trust-lan" { 127.0.0.1/8; 192.168.0.0/16;};
+options {
+         directory "/usr/local/named/etc/";
+pid-file "/var/run/named/named.pid";
+version "0.0.0";
+datasize 40M;
+allow-transfer {
+"trust-lan";};
+forwarders {
+202.99.160.68;
+202.99.168.8;};
+};
+logging {
+        channel warning
+        { file "/var/log/named/dns_warnings" versions 3 size 1240k;
+        severity warning;
+        print-category yes;
+        print-severity yes;
+        print-time yes;
+        };
+        channel general_dns
+        { file "/var/log/named/dns_logs" versions 3 size 1240k;
+        severity info;
+        print-category yes;
+        print-severity yes;
+        print-time yes;
+        };
+        category default { warning; };
+        category queries { general_dns; };
+};
+zone "." {
+        type hint;
+        file "named.root";
+};
+ 
+zone "0.0.127.IN-ADDR.ARPA" {
+        type master;
+        file "localhost";
+};
+ 
+zone "hom1e.com" {
+        type slave;
+        file "hom1e.com";
+        masters {
+                192.168.0.1;
+        };
+};
+ 
+zone "0.168.192.in-addr.arpa" {
+        type slave;
+        file "0.168.192.in-addr";
+        masters {
+                192.168.0.1;
+        };
+};
+=========================named.conf==========================
+ 
+建立一个域正向解析文件。我们在这个文件中写出该域中需要正向解析的域名条目：
+ 
+[root@linux root]# vi /usr/local/named/etc/hom1e.com
+ 
+============================ hom1e.com ==========================
+$TTL 86400
+$ORIGIN hom1e.com.
+@        IN      SOA     redhat.hom1e.com. root.hom1e.com (
+            2001111601 ; serial
+            28800 ; refresh
+            14400 ; retry
+3600000 ; expire
+86400 ; default_ttl
+)
+IN      NS      redhat.hom1e.com.
+ 
+;; -- default address -
+ 
+@        IN      A       192.168.0.1
+ 
+;; -- Linux Server --
+ 
+redhat       IN      A           192.168.0.1
+IN      MX      0   www.hom1e.com.
+IN      HINFO       "redhat as 3.0".
+                IN      TXT         "The internet gateway".
+ 
+;; ------ cnames ------
+    ftp     IN      CNAME   redhat
+============================ hom1e.com ==========================
+ 
+建立一个域反向解析文件。我们在这个文件中写出该域中需要反向解析的域名条目：
+ 
+[root@linux root]# vi /usr/local/named/etc/0.168.192.in-addr
+ 
+======================== 0.168.192.in-addr =====================
+$TTL 86400
+@        IN      SOA     redhat.hom1e.com. root.hom1e.com. (
+2001111601      ;Serial
+28800           ;refresh
+14400           ; retry
+3600000         ; expire
+86400 )         ; minimum
+   
+@        IN      NS      redhat.hom1e.com.
+1        IN      PTR     www.hom1e.com.
+1        IN      PTR     ftp.hom1e.com.
+======================== 0.168.192.in-addr ======================
+ 
+建立本地主机配置文件。这个文件是BIND服务器正常工作必须的提供LOCALHOST解析的配置文件：
+ 
+[root@linux root]# vi /usr/local/named/etc/localhost
+ 
+=========================== localhost ===========================
+$TTL 3600
+@        IN      SOA     redhat.hom1e.com. root.hom1e.com.  (
+20040526  ; Serial
+3600       ; Refresh
+900        ; Retry
+3600000   ; Expire
+3600 )    ; Minimum
+IN      NS      redhat.hom1e.com.
+1        IN      PTR     localhost.hom1e.com.
+=========================== localhost ===========================
+ 
+建立根域配置文件。根域配置用来配置本地DNS服务器与互联网上的根域DNS服务器相互通信的文件。根域配置文件中列出了根域DNS服务器在互联网上的具体位置。
+ 
+[root@linux root]# cd /usr/local/named/etc/
+[root@linux root]# wget ftp://ftp.internic.org/domain/named.root
+ 
+好，到这里BIND的配置文件已经创建完毕。下面创建BIND服务的PID文件的存放文件夹和BIND服务的日志文件。PID文件是LINUX/UNIX操作系统用来判断某个网络服务是否在运行的一个标志文件。日志文件用来存放BIND服务产生的一些域名解析信息。
+ 
+[root@linux root]# mkdir /var/run/named/
+[root@linux root]# chmod 777 /var/run/named/
+[root@linux root]# chown bind:bind /var/run/named/
+    
+[root@linux root]# mkdir /var/log/named/
+[root@linux root]# touch /var/log/named/dns_warnings
+[root@linux root]# touch /var/log/named/dns_logs
+[root@linux root]# chown bind:bind /var/log/named/*
+ 
+生成rndc-key。rndc是BIND的管理程序，可以用来启动、停止和重新装入配置文件等。
+
+[root@linux root]# cd /usr/local/named/etc/
+[root@linux root]# ../sbin/rndc-confgen > rndc.conf
+ 
+把rndc.conf中：
+# Use with the following in named.conf, adjusting the allow list as need＃ed: 
+后面的部分加到/usr/local/named/etc/named.conf中并去掉注释。
+ 
+运行测试BIND服务器：
+ 
+[root@linux root]# cd /usr/local/named/sbin
+[root@linux sbin]# ./named -gc /usr/local/named/etc/named.conf &
+ 
+检查一下BIND服务器运行的状态：
+219.149.194.60 
+[root@linux sbin]# /usr/local/named/sbin/rndc status
+ 
+建立BIND服务器的启动脚本：
+ 
+[root@linux sbin]# vi /etc/init.d/named
+======================= named.sh=========================
+#!/bin/bash
+#
+# named        a network name service.
+#
+#
+# chkconfig: 545 35 75
+# description: a name server
+#
+if [ `id -u` -ne 0 ]
+then
+echo "ERROR:For bind to port 53,must run as root."
+exit 1
+fi
+case "$1" in
+ 
+start)
+if [ -x /usr/local/named/sbin/named ]; then
+/usr/local/named/sbin/named -u bind -c /usr/local/named/etc/named.conf && echo . && echo 'BIND9 server started.'
+fi
+;;
+ 
+stop)
+kill `cat /var/run/named/named.pid` && echo . && echo 'BIND9 server stopped.'
+;;
+restart)
+echo .
+echo "Restart BIND9 server"
+$0 stop
+sleep 10
+$0 start
+;;
+*)
+echo "$0 start | stop | restart"
+;;
+esac
+======================= named.sh=========================
+ 
+最后把BIND服务添加为系统服务，这样管理BIND服务会非常方便
+ 
+[root@linux sbin]# chmod 755 /etc/init.d/named
+[root@linux sbin]# chown root:root /etc/init.d/named
+[root@linux sbin]# chkconfig –add named
+[root@linux sbin]# chkconfig named on
+ 
+13.5  附录
+ 
+13.5.1  BIND服务器编译安装参数说明
+ 
+[root@linux bind-9.2.3]# ./configure --help
+`configure' configures this package to adapt to many kinds of systems.
+ 
+Usage: ./configure [OPTION]... [VAR=VALUE]...
+ 
+To assign environment variables (e.g., CC, CFLAGS...), specify them as
+VAR=VALUE.  See below for descriptions of some of the useful variables.
+Defaults for the options are specified in brackets.
+Configuration:
+  -h,  --help              display this help and exit
+       --help=short        display options specific to this package
+       --help=recursive    display the short help of all the included packages
+  -V, --version           display version information and exit
+  -q, --quiet, --silent   do not print `checking...' messages
+       --cache-file=FILE   cache test results in FILE [disabled]
+  -C, --config-cache      alias for `--cache-file=config.cache'
+  -n, --no-create         do not create output files
+      --srcdir=DIR        find the sources in DIR [configure dir or `..']
+ 
+Installation directories:
+  --prefix=PREFIX         install architecture-independent files in PREFIX
+                          [/usr/local]
+  --exec-prefix=EPREFIX   install architecture-dependent files in EPREFIX
+                          [PREFIX]
+ 
+By default, `make install' will install all the files in
+`/usr/local/bin', `/usr/local/lib' etc.  You can specify
+an installation prefix other than `/usr/local' using `--prefix',
+for instance `--prefix=$HOME'.
+ 
+For better control, use the options below.
+ 
+Fine tuning of the installation directories:
+  --bindir=DIR           user executables [EPREFIX/bin]
+  --sbindir=DIR          system admin executables [EPREFIX/sbin]
+  --libexecdir=DIR       program executables [EPREFIX/libexec]
+  --datadir=DIR          read-only architecture-independent data [PREFIX/share]
+  --sysconfdir=DIR       read-only single-machine data [PREFIX/etc]
+  --sharedstatedir=DIR   modifiable architecture-independent data [PREFIX/com]
+  --localstatedir=DIR    modifiable single-machine data [PREFIX/var]
+  --libdir=DIR           object code libraries [EPREFIX/lib]
+  --includedir=DIR       C header files [PREFIX/include]
+  --oldincludedir=DIR    C header files for non-gcc [/usr/include]
+  --infodir=DIR          info documentation [PREFIX/info]
+  --mandir=DIR           man documentation [PREFIX/man]
+ 
+System types:
+  --build=BUILD     configure for building on BUILD [guessed]
+  --host=HOST       cross-compile to build programs to run on HOST [BUILD]
+ 
+Optional Features:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-threads      enable multithreading
+  --enable-shared=PKGS  build shared libraries default=yes
+  --enable-static=PKGS  build static libraries default=yes
+  --enable-fast-install=PKGS  optimize for fast installation default=yes
+  --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-libbind              build libbind default=no
+  --enable-ipv6         use IPv6 default=autodetect
+  --disable-linux-caps  disable linux capabilities
+ 
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-openssl=PATH   Build with OpenSSL yes|no|path.
+                          (Required for DNSSEC)
+  --with-randomdev=PATH Specify path for random device
+  --with-ptl2           on NetBSD, use the ptl2 thread library (experimental)
+  --with-purify=PATH    use Rational purify
+  --with-libtool        use GNU libtool (following indented options supported)
+  --with-gnu-ld           assume the C compiler uses GNU ld default=no
+  --with-pic              try to use only PIC/non-PIC objects default=use both
+  --with-kame=PATH      use Kame IPv6 default path /usr/local/v6
+ 
+Some influential environment variables:
+  CC          C compiler command
+  CFLAGS      C compiler flags
+  LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
+              nonstandard directory <lib dir>
+  CPPFLAGS    C/C++ preprocessor flags, e.g. -I<include dir> if you have
+              headers in a nonstandard directory <include dir>
+  CPP         C preprocessor
+ 
+Use these variables to override the choices made by `configure' or to help
+it to find libraries and programs with nonstandard names/locations.
+ 
+13.5.2  国内只要城市公用DNS服务器列表：
+ 
+省份（城市）      DNS-名称             DNS-IP-ADDRESS
+香港     ns1.netvigator.com      205.252.144.228
+澳门     vassun2.macau.ctm.net   202.175.3.8
+深圳     ns.shenzhen.gd.cn       202.96.134.133
+202.96.154.8 /202.96.154.15
+北京     ns.bta.net.cn           202.96.0.133
+ns.spt.net.cn           202.96.199.133
+ns.cn.net               202.97.16.195
+202.106.0.20/202.106.148.1
+广东     ns.guangzhou.gd.cn      202.96.128.143
+dns.guangzhou.gd.cn     202.96.128.68
+上海     ns.sta.net.cn           202.96.199.132/202.96.199.133
+/202.96.199.133
+浙江     dns.zj.cninfo.net       202.96.102.3/202.96.96.68/202.96.104.18
+陕西     ns.snnic.com            202.100.13.11
+天津     ns.tpt.net.cn           202.99.96.68
+辽宁     ns.dcb.ln.cn            202.96.75.68
+江苏     pub.jsinfo.net          202.102.29.3
+四川     ns.sc.cninfo.net        61.139.2.69
+河北     ns.hesjptt.net.cn       202.99.160.68/202.99.168.8
+山西     ns.sxyzptt.net.cn       202.99.198.6
+吉林     ns.jlccptt.net.cn       202.98.0.68
+山东                             202.102.152.3/202.102.128.68
+福建     dns.fz.fj.cn            202.101.98.55
+湖南                             202.103.100.206
+广西                             10.138.128.40
+江西                             202.109.129.2/202.101.224.68
+/202.101.240.36
+云南     ns.ynkmptt.net.cn       202.98.160.68
+重庆                             61.128.128.68
+河南                             202.102.227.68/202.102.224.68
+/202.102.245.12
+新疆                             61.128.97.73/61.128.97.74
+保定                             202.99.160.68 /202.99.166.4
+武汉                             202.103.24.68 /202.103.0.117
+西安                             202.100.4.15 /202.100.0.68
+成都                             202.98.96.68 /202.98.96.69
+重庆                             61.128.192.4
+乌鲁木齐                         61.128.97.73
+厦门                             202.101.103.55

@@ -1,0 +1,58 @@
+
+jboss在.2的\\192.168.0.2\download\luojun\jboss-eap-4.3.0.GA-1.ep1.8.zip
+1、 jboss安装 
+     (1)、直接解压zip文件，修改bin/run.conf中的JAVA_HOME指向jdk的路径，最好是 jdk5以上的版本。
+(2)、系统环境变量修改： JAVA_HOME：指向jdk的路径，最好是 jdk5以上的版本。
+2、运行jboss
+打开doc窗口，进入路径：%JBoss_HOME%/jboss-as/bin ; 输入命令：run –c default -b 0.0.0.0 ;
+其中  –c default是指向启动加载文件夹；-b 0.0.0.0绑定ip (所有ip)否则只能本机访问;
+部署guiji程序及访问
+(1)、可直接部署(无源码)：
+1、把guiji文件夹名称改为：guiji.war ， copy到%JBoss_HOME%/jboss-as/server/default/deploy文件夹。
+2、修改jndi名称，在web-inf/web.xml，web-inf/applicationContext-resources.xml    中修改 jndi名称  为java: /jdbc/XXX。把sybase-ds.xml文件放入JBoss_HOME/jboss-as/server/default/deploy下。
+3、删除WEB-INF/lib下jta.jar。
+4、访问： http://localhost:8080/guiji/index.jsp
+或者 http://localhost:8080/guiji
+                       5、如需要更改访问路径:可在jboss-web.xml(新增文件，归集标准版已增加)里设置<context-root>参数。   
+(2)、部署Eclipse工程(开发人员)：
+                   1、在JBoss_HOME/jboss-as/server/default/deploy下建立Eclipse工程；注意工程名不要带有*.war后缀。工程下guiji文件夹名称同样修改为guiji.war。
+2、修改jndi名称，在web-inf/web.xml，web-inf/applicationContext-resources.xml中修改 jndi名称为java: /jdbc/XXX。把sybase-ds.xml文件放入JBoss_HOME/jboss-as/server/default/deploy下。注意修改类文件生成路径。
+3、删除WEB-INF/lib下jta.jar。
+ 
+4、访问：  http://localhost:8080/guiji/index.jsp
+或者 http://localhost:8080/guiji
+5、如需要更改访问路径:可在jboss-web.xml(新增文件，归集标准版已增加)里设置<context-root>参数。
+4、部署成功后存在的问题  
+                   (1)、修改不规范的tag使用方式(开发人员)
+                       在系统中有几个地方的tag使用方式不规范，需要改成标准的格式。 
+        比如在添加公司页面中<html:text>标签中有两个 style的属性，会造成页面显示不正常。
+                        解决方案：重复用style标签情况多为设置文本框长度，可以合并两个style属性。去掉或改为用size设置。
+                   (2)、get方式提交参数中有中文字符乱码问题(打印较多)
+                        解决方案：修改%JBoss_HOME%\jboss\server\default\deploy\jboss-web.deployer 下Server.xml文件。<Connector>(第22行)增加属性：URIEncoding="GBK"。          
+5、更改数据库
+                   (1)、sybase-ds.xml(sybase)为数据库连接配置文件。如需个更改数据库连接可修改此文件(或新增)。此文件名称格式必须为：*-ds.xml(oracle：oracle-ds.xml)。
+                        *-ds.xml文件修改：
+ Oracle:
+<exception-sorter-class-name>org.jboss.resource.adapter.jdbc.vendor.OracleExceptionSorter</exception-sorter-class-name>
+<metadata>
+    <type-mapping>Oracle9i</type-mapping>
+</metadata>
+Sybase:
+<exception-sorter-class-name>org.jboss.resource.adapter.jdbc.vendor.SybaseExceptionSorter</exception-sorter-class-name>
+    <metadata>
+     <type-mapping>Sybase</type-mapping>
+</metadata>
+Db2:
+<min-pool-size>0</min-pool-size>
+<metadata>
+      <type-mapping>DB2</type-mapping>
+</metadata>
+As400:
+<min-pool-size>0</min-pool-size>
+<metadata>
+     <type-mapping>DB2/400</type-mapping>
+ </metadata>
+(2)、JNDI名与待部署的归集程序web.xml、web-inf/applicationContext-resources.xml文件JNDI名相对应！
+(3)、归集程序web.xml、web-inf/applicationContext-resources.xml的数据库类型也需做相应修改(同weblogic下一样)。
+ 
+ 

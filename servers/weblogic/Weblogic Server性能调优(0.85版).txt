@@ -1,0 +1,402 @@
+Weblogic Server性能调优(0.85版).txt
+
+摘要：
+      通常应用系统会根据用户数、并发数、用户的行为等等来确定具体的性能目标，如果确定应用程序不能满足性能目标，那么就需要优化、重构程序并调整JVM、应用服务器、数据库、OS或者改变硬件配置等等。本文将阐述和此相关的一些性能考虑和调优技巧(以wls8.1sp2+Solaris9 + Oralcle9为例)。
+关键字：性能调整过程、确定性能瓶颈、Solaris调优、数据库与JDBC优化、JVM调优、Wls优化、应用优化
+性能调整过程
+ 
+ 
+ 
+ 
+ 
+ 
+study
+影响Java性能的的主要因素
+
+影响Java性能的的主要因素有以下一些：
+·  硬件，如CPU、内存、体系结构等等
+·  操作系统
+·  数据库系统
+·  JVM
+·  应用服务器(包括Client to app server, App server to database )
+·  应用架构及程序编写水平
+·  网络环境
+       性能调整本身是一个系统的过程，它贯穿于项目的整个生命周期。一般而言，性能调整包含以下几个步骤：
+1、             使用工具测试系统是否满足性能目标
+2、             发现性能瓶颈
+3、             假设瓶颈的原因
+4、             测试你的假设
+5、             如果假设成立，更改这一部分
+6、             测试确定更改是否可以提高性能，衡量性能提高的程度
+重复以上步骤，直到获得可以接受的性能。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+确定性能瓶颈
+
+确定性能瓶颈
+      一个J2EE应用系统的整体性能往往由很多方面决定的当性能不好时，主要表现在对客户端的请求响应很慢，通常有以下一些现象
+·  一向很慢：应用的响应总是很慢，改变环境(如应用负载、数据库的连接池数量等等)，对响应时间的影响不大。
+·  越来越慢：在相同的负载情况下，随着系统运行的时间的增长，系统越来越慢，这可能是系统已到达极限或是系统死锁和错误引起的。
+·  低于负载时会越来越慢(Slower and slower under load):.
+·  偶尔的挂起或异常错误(Sporadic hangs or aberrant errors):有时这可能是由于负载的变化或其他情况引起的
+·  可以预测的死锁(Foreseeable lock ups): 挂起或最初只有少量错误，但随着时间的推移整个系统都锁上了，典型地这可能是为的适应"management by restarts."
+·  突发性的混乱(Sudden chaos): 系统已运行了一段时间(如一个小时或可能是三、四天)，性能稳定并可以接受, 突然没有任何理由，开始出错或死锁了。
+根据80/20法则，在对系统进行优化的时候，必须把导致最大优化效果的因素找出来。如果客户端与服务端之间传输的数据量比较大，应检查一下网络的速度是不是正常，看网络是不是性能瓶颈；如果客户端与服务端传输的数据量比较小，但服务端有大量的数据库操作，则很有可能数据库是性能的瓶颈，如果增加连接池数量后，没起多大的作用，而且数据库的压力很大，则数据库可能是性能的瓶颈。
+WebLogic Server的控制台提供了丰富的性能监控功能，可以点击相应的”Monitoring”来查看监控信息，同时也需要监测cpu、内存的利用率，以利用这些信息来找出性能瓶颈。
+也可以使用一些辅助的工具，如Jprobe,Optimizit,Vtune以及一些分析的工具如TowerJ Performance等来帮助我们找到性能瓶颈。这些辅助的工具能跟踪应用程序中执行每个函数或方法所消耗掉的时间和资源，从而可以帮助我们找出瓶颈，改善性能。
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+JVM调优
+JVM调优
+      JVM调优主要有以下几个方面
+·  选择JVM 的提供商和版本:建议使用经过WLS谁认证的JVMs,在IA架构的系统上应考虑使用Jrockit,Jrockit特别适合于服务端的应用。
+·  调整堆内存大小和GC: HotSpot JVM的内存堆(heap)包括4种空间，一个permanent generation,一个old generation；一个eden和两个survivor space。一个eden和两个 survivor space合称为young generation。堆是在JVM启动时分配的，所有的对象都是在堆上创建的，堆的大小由参数-Xms和-Xmx，JVM在运行时可以扩展堆的大小，如果-Xms和-Xmx相等，则堆的大小将不会变化。JVM的堆大小决定了JVM在收集垃圾上的时间和频度。如果堆的大小很大，那么完全垃圾收集就会很慢，但是频度会降低，如果堆的大小和内存的需要一致，完全收集就很快，但是会更加频繁。调整堆大小的的目的是最小化垃圾收集的时间，以在特定的时间内最大化处理客户的请求。，建议生产系统最少为256M,一般情况下可以设置为系统剩余物理内存的80%,最小值和最大值设成一样。以下是堆内存的一些设置参数：
+Task
+Option
+Recommended Value
+设置新堆大小
+1           -XX:NewSize
+值应大于1MB且为1024的倍数.新堆大小，通常为堆大小的1/4，多CPU环境下可以适量增大
+设置最大的新堆大小
+2           -XX:MaxNewSize
+值应大于1MB且为1024的倍数.
+新堆大小的比率
+3           -XX:SurvivorRatio
+4           通常设为8
+5           最小的堆内存
+6           -Xms
+7           值应大于1MB且为1024的倍数.
+最大的堆内存
+8           -Xmx
+9           值应大于1MB且为1024的倍数.
+ 
+·  选择GC的方式：可以参考
+http://java.sun.com/docs/hotspot/gc1.4.2/index.html
+·  JVM的运行方式(client/server) 的选择：HotSpot JVM 分为 client 和 server 版本，分别针对典型的客户端应用程序和服务器端应用进行了优化,可以 针对不同的应用，选择Client 或Server HotSpot VM。
+·  UNIX线程模式：在Solaris上，不同的线程模式对性能可能有较大的影响，具体请参考http://java.sun.com/docs/hotspot/threads/threads.html
+–XX:SurvivorRatio，新堆大小的比率。通常设为8
+
+      更多的JVM调优请参考：http://e-docs.bea.com/wls/docs81/perform/appa_reading.html#1035805
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+Swap空间的设置
+
+Swap空间的设置
+      太多的Swap空间会浪费磁盘空间，而太少的Swap空间，则系统会发生错误，如果Swap空间用完，则服务进程无法进动，通常会出现"application is out of memory"的错误，严重时会造成服务进程的死锁。因此Swap空间的分配是很重要的。
+      通常情况下，Swap空间应大于或等于物理内存的大小，最小不应小于64M，通常Swap空间的大小应是物理内存的2－2.5倍(具体请参考Solaris各版本的说明)。但根据不同的应用，应有不同的配置：如果是小的桌面系统，只需要较小的Swap空间，而大的服务器系统则视情况不同需要不同大小的Swap空间。特别是数据库服务器和Web服务器会随着访问量的增加，对Swap 空间的要求也会增加，具体配置参见各自服务器产品的说明。
+另外，Swap分区的数量对性能也有很大的影响。因为Swap交换的操作是磁盘I/O的操作，如果有多个Swap交换区，Swap空间的分配会以轮流的方式操作于所有的Swap，这样会大大均衡I/O的负载，加快Swap交换的速度。如果只有一个交换区，所有的交换操作会使交换区变得很忙，使系统大多数时间位于等待状态，效率很低，用性能监视工具就会发现，此时的CPU并不很忙，而系统却慢，这说明，瓶颈在I/O上，依靠提高CPU的速度是解决不了问题的。
+      在Solaris上，可以使用Vmstat或swap来查看当前swap资源的使用情况，通常应使 swap保持30%的负载以下，才能保证系统的良好性能。
+更多的Solaris的调优信息，请参考Solaris的相关文档：
+Solaris Tunable Parameters Reference Manual (Solaris 8)
+Solaris Tunable Parameters Reference Manual (Solaris 9)
+ 
+在其他操作系统平台上的调优，请参考wls的连机文档：http://e-docs.bea.com/wls/docs81/perform/HWTuning.html
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+网络性能调优
+
+网络性能调优
+      应该确保应用系统有足够的带宽，如客户端到wls,wls到数据库服务器之间的带宽。带宽指的是传输系统能够响应的信号的最高频率，因此它反映了传输系统的容量，带宽的衡量单位是Hz。在一机器上运行的wls必须要有充足的带宽来处理维护所有wls客户端的连接。
+      LAN必须有足够的处理应用高峰的能力。如果网络流量经常大于网络资源的承载能力，则可以需要重新设计网络、减少客户端数量、提高系统对网络负载的处理能力。      可以使用网络性能检测工具来观察网络系统的负载，消除网络瓶颈。如在Solaris上可以通过netstat –s –P tcp来检测。可以根据检测结果来进行相应的调整
+数据库性能调优
+    数据库往往可能是应用性能的主要瓶颈，因此应确保数据库在最佳的性能下运行。在J2EE中，JDBC程序的性能主要由两个因素决定，一是数据服务器本身的性能，如数据库管理系统、数据库结构设计，以及所编写的SQL语句，都很大程序上影响JDBC程序的性能；另一方面，与数据库服务器相对独立的JDBC API的使用也很大程度上影响着JDBC的性能。关于数据库服务器配置、数据库管理系统管理、数据库结构设计或者SQL的性能超出这里的讨论范围，这里只做简单论述，提供一些参考。  以下是一些提高数据库性能通用的建议以及Oracle参数调整的一个实例：
+良好的数据库设计 — 跨磁盘的负载平衡；通过数据的规范化达到快速检索数据的目标；索引会提高查询的性能，但会降低DML操作的性能，因为DML操作必须维护索引，因此设计人员需要和 DBA 以及用户一起来平衡快速地查询数据和快速地改变数据的得失。
+优化磁盘I/O:       /O瓶颈是最容易识别的性能问题。跨所有可用的磁盘均匀地平衡I/O，可以减少磁盘存取的时间。对于较小的数据库和不使用并行查询选项的那些数据库，要确保不同的数据文件和表空间跨可用的磁盘分布。可以调整DBWR(数据库写进程)，增加写带宽；选择合适的文件系统类型，Solaris允许选择文件系统。文件系统有不同特性，它们用于存取数据的技术对数据库性能有实质性的影响
+控制Checkpointing的频率
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+操作系统的调优
+
+操作系统的调优
+每个操作系统的缺省的调优参数是不同的，在Windows平台，缺省的调整通常就足够了，在UNIX和Linux平台通常可能需要调整process and threads、File Descriptor、TCP parameters的参数值以及Swap空间等。在测试调优时应使用系统监控来收集系统级资源利用统计数据，如CPU利用率（例如处理时间百分比）、磁盘I/O（例如磁盘时间、读/写队列长度）、网络I/O（例如I/O 效率、延迟）。
+设置TCP参数
+在Solaris上，wls建议的TCP参数值如下：
+ 
+参数
+建议值
+/dev/tcp tcp_time_wait_interval
+60000
+/dev/tcp tcp_conn_req_max_q
+16384
+/dev/tcp tcp_conn_req_max_q0
+16384
+/dev/tcp tcp_ip_abort_interval
+60000
+/dev/tcp tcp_keepalive_interval
+7200000
+/dev/tcp tcp_rexmit_interval_initial
+4000
+/dev/tcp tcp_rexmit_interval_max
+10000
+/dev/tcp tcp_rexmit_interval_min
+3000
+/dev/tcp tcp_smallest_anon_port
+32768
+/dev/tcp tcp_xmit_hiwat
+131072
+/dev/tcp tcp_recv_hiwat
+131072
+/dev/tcp tcp_naglim_def
+1
+/dev/ce instance
+0
+/dev/ce rx_intr_time
+32
+ 
+在/etc/system文件中设置参数：
+      每个socket连接都需要一个文件描述符，为了提高socket性能，需要设置适当的文件描述符数量，这可以在/etc/system文件中设置，在/etc/system中还可以设置其他的一些参数，下面是wls建议的一些设置值：
+注: 更改/etc/system文件中的参数设置，需要重启系统才能生效.
+参数
+建议值
+Set rlim_fd_cur
+8192
+Set rlim_fd_max
+8192
+Set tcp:tcp_conn_hash_size
+32768
+set shmsys:shminfo_shmmax
+-注: 只有在机器的内存在4G及4G以下时才设置.
+4294967295
+Set autoup
+900
+Set tune_t_fsflushr
+1
+ 
+CE千兆网卡设置(CE Gigabit Network Card Settings):
+如果使用的是CE千兆网卡，wls建议设置以下一些参数：
+参数
+建议值
+Set ce:ce_bcopy_thresh
+256
+set ce:ce_dvma_thresh
+256
+set ce:ce_taskq_disable
+1
+set ce:ce_ring_size
+256
+set ce:ce_comp_ring_size
+1024
+set ce:ce_tx_ring_size
+4096
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+study
+Oracle参数优化
+
+在测试调优时可利用数据库监控工具来收集数据库性能数据，包括缓存命中率、磁盘操作特征（如排序速率、表扫描速率）、SQL响应时间和数据库表活动。例如，可以使用 Oracle 9i性能管理器来监控这些数据。
+ 
+Oracle参数优化(Oracle 9.2.0.1.0 on a 4X 1.6 GHz Intel Pentium 4 Xeon)
+下面是一个调整后的Oracle参数值：(仅供参考)
+# tuning parameters
+db_name=specdb
+control_files           = D:/oracle/oradata/specdb/cntrlspecdb
+compatible=9.2.0.0.0
+cursor_space_for_time = TRUE
+db_block_buffers =   524288
+db_file_multiblock_read_count = 128                                    
+db_files = 256
+dml_locks = 2000                                                      
+enqueue_resources = 2000
+log_buffer = 16777216
+log_checkpoint_interval = 2147483647
+processes = 1000                                                       
+open_cursors = 2000                                                       
+shared_pool_size = 64000000
+sessions = 1500
+transactions = 1500
+transactions_per_rollback_segment = 1
+parallel_max_servers = 100
+undo_management = AUTO
+undo_retention = 5
+undo_suppress_errors          = TRUE
+db_block_checksum = false
+ 
+其他数据库的调优，请参考wls连机文档http://e-docs.bea.com/wls/docs81/perform/topten.html#1125962，以及数据库的相关文档。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+study
+JDBC调优
+
+JDBC调优
+下面主要要说明如何正确使用JDBC编程接口，以获得更好的性能。JDBC对程序性能的影响主要体现在以下几个方面，我们将分别讨论它们的优化:
+ 
+选择正确的JDBC Driver
+    对于Oracle数据库，常用的有Oracle公司提供的OCI和Thin驱动，BEA 提供的OCI和Thin驱动,DataDirect提供的OCI和Thin驱动。对于WebLogic Server 来说，由于BEA提供的Oracle thin驱动(jDriver)对性能的改进可能会快于Oracle的thin驱动程序，尤其对于要完成大量SELECT操作的应用来使用BEA 提供的Oracle thin可能性能会更快。在不同的数据库操作下，特别是有分布式事务操作时，每种数据库驱动的表现会有一些差别，对于Oracle数据库，尽管Oracle说OCI驱动为最佳的客户端访问驱动，但事实上Thin驱动程序可以获得更好的性能。建议进行相关的测试来选择一个最优性能的驱动。
+Connection的优化
+       使用连接池(WLS连接池的设置优化):
+连接池容量的大小应足够容纳所有线程对连接的要求，使服务请求不等待。如果所有对数据库的访问能够在缺省的执行队列中得以实现，则连接数应为执行队列中的线程数，比读取socket的线程（缺省执行队列中用来读取进入请求的线程,）数要少。为了避免在运行期间对连接进行创建和删除，可在初始时即将连接池设置为其最大容量。应该设置数据库连接池等于或大于可用执行线程的数量。
+如果可能的话，应确保参数TestConnectionsOnReserve被设置为假（false，这是缺省设置）。如果此参数设置为真（true），则在连接被分配给调用者之前，都要经过测试，这会额外要求与数据库的反复连接。
+另一个重要的参数是PreparedStatementCacheSize。每个连接都为宏语句设一个静态的缓存，大小由JDBC连接池配置时指定。缓存是静态的，时刻牢记这一点非常重要。这意味着如果缓存的大小是n的话，则只有放在缓存中的前n条语句得到执行。确保昂贵的SQL语句享受到缓存的方法是用一个启动类将这些语句存放到缓存中。尽管缓存技术从很大程度上改进了性能，但也不能盲目使用它。如果数据库的格式有了变化，那么在不重新启动服务器的情况下，无法使缓存中的语句失效或者是用新的进行替换。当然，缓存中的语句会使数据库中的光标得以保留。
+通过管理控制台，你可以对连接池实行监控。在JDBC连接池的Monitoring标签页面上，你可以了解到有关连接池中的实例的统计信息。，可以参考这些监控信息对数据库连接池进行相应的设置：
+许多属性提供了有关管理客户端数据库请求的重要信息。
+Waiters Hight字段指明了最多有多少客户等待数据库连接。Waiters字段告诉你当前有多少客户正在等待连接。Connections Hight字段给出最大的并发连接数。Wait Seconds Hight字段显示了客户等待数据库连接的最长时间。通过这些属性，你可以判断当前的配置在响应用户请求方面是否有效。
+如果Connections High字段的值接近了Maximum Capacity字段的值（该值在Configuration Connection标签页中设置），那么有必要考虑增加Maximum Capacity字段的值（即最大的并发连接数）。如果Waiters Hight字段的值显示用户必须经过长时间等待才能获得数据库连接，那么应该增大连接池的容量。
+Shrink Period字段用来指定JDBC子系统在连接池从最大值开始进行缩减时所要等待的时间。当JDBC子系统要减小连接池的大小时，那么数据库连接将被释放。因为创建数据库连接非常消耗资源和时间，因此如果密集的客户端请求阵歇性地出现，那么比较短的收缩周期将意味数据库连接要不断地被重新创建，从而导致性能的下降。
+更多的JDBC连接池设置请参考http://e-docs.bea.com/wls/docs81/ConsoleHelp/jdbc_connection_pools.html
+控制事务的提交:
+对事务的提交和回滚，JDBC标准提供了一套API，可惜的是，JDBC标准定义的Auto Commit的值为true,很多开发人员往往忽视了这一点，在程序中没有使用setAutoCommit()、commit()和rollback()来控制事务的提交。一这不能保证事务的原子性，二当Auto Commit为 True时 ,每执行一个update、insert、delete操作都要向数据库提交一次，这比批量提交要耗时更多。建议关闭 autocommit ，但不要让事务打开太久。
+设置恰当的事务隔离级别:
+Connection对象允许设置事务的隔离级别。为了保证程序并行运行的正确性，而且以不会造成性能瓶颈，事务隔离级别必须适当地设置。
+Statement的优化:
+选用恰当的Statement接口
+JDBC有三个接口用来处理SQL的执行，分别是Statement、PreparedStatement和CallableStatement。从性能的角度来看，PreparedStatement会比Statement快。PreparedStatement可以对多次重复执行的SQL语句只编译解析一次。
+那么CallableStatement,一般认为CallableStatement比Statement和PreparedStatement的性能要好，因为CallableStatement是用来执行存储过程的，而存储过程比一般SQL执行得要快。这并不完全正确，存储过程的调用本身是需要耗费资源的，对于 一些简单的SQL而言，使用存储过程并不能增加性能，相反很多时候会降低性能。通常如果使用存储过程可以显著降低数据的传输次数，这时候存储过程就是一个可以选择的用来提升性能的方案。但是使用存储过程会让你的程序结构变得难看，如果性能瓶颈不出现在这里，还是不要使用存储过程。
+批处理操作
+批处理操作中通过在一次单独的操作（或批处理）中执行多个数据库更新操作,Statement接口提供了addBatch()和executeBatch()两个方法，这两个方法会使程序的性能有明显的提高。
+批量地从数据库中取数据
+批量读取数据是指Java程序执行一次读操作从数据库中读取的记录条数,可以通过setFetchSize()来设置这个参数 ,也可以通过getFetchSize()来查看 这个参数，这个参数对性能影响也很大，如果设置过低会严重降低性能。
+优化ResultSet
+和优化Statement一样可以批量读取数据，应使用和数据类型最匹配的的get和set方法，而且使用整数而不是字段名作为它们的参数。通过setFetchDirection()来设定恰当的ResultSet对象的滚动方向，
+ 
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+Weblogic Server的调优
+
+Weblogic Server的调优
+使用性能包：
+      WLS为一些平台提供性能包，这些性能包更紧密地结合平台的I/O操作提高了应用程序性能,激活本地的I/O性能包将产生很大的性能提高，设置需在Server的在”Tuning”页面，将”Enable Native IO”激活。
+      如果所使用的平台没有可利用的性能包，Wls就分配一定比例的执行线程用于”Socket Readers”，如果应用程序经常使用I/O,可以通过提高这个比例来获得性能的提高。
+修改执行线程数：
+在WLS内部所有的事情都被拆分成任务，这些任务被送到执行队列，在那里等待一个执行线程来执行该任务。Wls分配给应用程序的执行线程数量严重地影响Wls的内部操作和应用程序的处理。
+增加线程数并非总能提高性能，仅当下列情况成立时再考虑使用这种方法：预定的吞吐量没有达到；等待队列（未开始处理的请求）过长；CPU仍有剩余;重负载下CPU的使用率很低。当然，这样做并不一定能改善性能。CPU使用率低可能是由于对服务器的其它资源竞争所致，如，没有足够的JDBC连接。当改变线程数时应考虑到这些类似的因素。这需要多次测试调整，以确定一个最优值。
+同时必须记住，分配给服务器的线程越多，就越会发生线程间被CPU处理时的转换，这需要付出性能代价，另外线程数量的提高也需要消耗更多的内存，这也可能降低性能。
+在服务器上可以并行处理的线程数量取决于服务器硬件的CPU性能，有效的CPU越多，可以给服务器的线程越多。一个经验值是每颗CPU30~60个线程。修改执行线程需要考虑的另一个因素是使用什么操作系统。一些操作系统可以比其他的处理更多的线程。对于PC Server 和Window 2000,则最好每颗CPU小于50个Thread。
+Wls的管理控制台上可以查看线程的使用情况，，如下图：
+如果闲置的线程量接近０，反映了一个潜在的服务器性能瓶颈，如果在服务器使用高峰，闲置线程的数量非常多，就会损害性能。不断增长的队列长度则暗示服务器收到了超过它的处理能力的请求。这些信息将帮助我们来调整执行线程数。
+线程数的设置：在Server的”Execute Queue”页面，修改”Thread Count”，如下图：
+创建执行队列
+在WebLogic Server 中提供了配置多个执行队列的功能，并且能够在部署中定义处理特殊的EJB或JSP/servlet请求的执行队列。
+对于EJB，只要在运行weblogic.ejbc时将标志 －dispatchPolicy <队列名称> 传送给bean 即可：
+<weblogic-enterprise-bean>
+   <ejb-name>…</ejb-name>
+   <dispatch-policy>CriticalAppQueue</dispatch-policy>
+</weblogic-enterprise-bean>
+对于JSP/servlet，可将设置Web应用的weblogic部署描述符中初始化参数（init-param） wl-dispatch-policy的值设为执行队列的名字即可：
+<servlet>
+   <servlet-name>MainServlet</servlet-name>
+   <jsp-file>/myapplication/critical.jsp</jsp-file>
+   <init-param>
+      <param-name>wl-dispatch-policy</param-name>
+      <param-value>CriticalAppQueue</param-value>
+   </init-param>
+</servlet>
+ 
+有时应用中的某些bean/JSP对操作的响应时间比其它的要长，此时，可以对这些bean/JSP设置单独的执行队列。至于队列的大小，要达到最好的性能，还取决于经验。详细请参考:
+http://e-docs.bea.com/wls/docs81/perform/WLSTuning.html#1140013
+Accept Backlog:
+AcceptBacklog属性决 定了在等待队列中最多可以有多少TCP连接等待处理。如果在许多客户端连接被拒绝，而在服务器端没有错误显示，说明该值设得过低。如果连接时收到了”connection refused”消息，可以适当增大weblogic.system.acceptBacklog的值，每次增加25％
+Cluster环境部署:
+      WLS的强大功能之一是以集群的方式工作，在wls上可以通过配置集群来满足负载均衡和容错的需要，一般最好在部署cluster环境测试之前，在单个服务器中进行应用程序的性能调优和测试。
+会话信息的持久保存:对一个应用来说，如果性能是关键因素，可以选择不保护会话信息，如果既要维护服务器的高性能，以要保护传入信息的情况下，可以考虑采用内存复制技术保护web的会话状态信息。
+无状态会话Bean的集群的故障处理:无状态会话Bean的行为取决于weblogic-ejb.xml中的”stateless-method-are idempotent”标志，如果无状态会话Bean中的所有业务方法都是等幂的，这个标志应设置为true,否则设置为false
+有状态会话Bean及并发性:在一个给定的时间内，任何一个有状态会话实例中只有一个方法调用可以是活动的，在weblogic server中可以在weblogic-ejb.xml中启用”allow-concurrent-calls”来封锁任何并发的调用，直至相应有状态会话Bean实例先前的方法调用已经完成。
+在集群中调优要特别小心，在集群中的wls会比非集群的wls使用更多的执行线程作为socket reader,可以调整执行线程数，也可以增加socket readers的比率。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+应用的调优
+
+应用的调优
+选择适用的设计模式
+就优化性能而言，应用本身的优化属于最艰巨的步骤之一。首先要深入地分析业务逻辑，然后找出满足业务需求的最优解决方案。每一个业务领域都有其与众不同的特点，因此也不存在适用于所有业务领域的万能解决方案。然而，人们在实践中总结出了许多优秀的设计模式，在规划应用的体系结构时合理选用设计模式和设计方法对性能大有好处, 因为它充分利用了各种资源，如内存，CPU,高速缓存，对象缓冲池及多线程，从而设计出高性能和可伸缩性强的系统。
+应用程序打包部署
+使用zip/jar文件，而不是单个的 class文件，对所有的class文件，建议压缩成一个或多个.zip或.jar文件，这样可以减少ClassLoader对文件系统的读操作的次数
+Web应用优化
+Jsp的预编译：WLS提供了二种方法进行Jsp预编译。第一种方法是命令行Java工具（weblogic.jspc）允许过程在完全脱机的情况下处理。第二种方法在服务器启动部署一个特定的Web应用程序的时候执行预编译，这需要在WEB-INF/ weblogic.xml部署描述符添加一些设置如： 
+<weblogic-web-app>
+    …
+    <jsp-descriptor>
+      <jsp-param>
+         <param-name>precompile</param-name>
+         <param-value>true</param-value>
+      </jsp-param>
+   </jsp-descriptor>
+…
+</weblogic-web-app>
+JSP缓存标记符<wl:cache>提供在处理JSP tag lib过程中缓存数据的能力。这些标记符都支持对缓存的输入和输出。它位于%BEA_HOME%\weblogic81\server\ext\ weblogic-tags.jar,要使用它必须在web.xml中定义此jar文件。
+如果不希望Web层频繁变化，则可以通过将ServletReloadCheckSecs 设置为－1，从而关闭自动装载（auto-reloading）功能。使用这种方法以后，服务器将不再轮询Web层是否有变化，如果JSP和servlet的数量很多，则效果是非常明显的。
+对某个文件进行缓存,具体请参考：http://edocs.bea.com/wls/docs70/servlet/progtasks.html#179029 ，下面的例子将缓存web应用中的所有html页面：
+<filter>
+<filter-name>HTML</filter-name>
+<filter-class>weblogic.cache.filter.CacheFilter</filter-class>
+</filter>
+<filter-mapping>
+<filter-name>HTML</filter-name>
+<url-pattern>*.html</url-pattern>
+</filter-mapping>
+Enable Keepalives
+ Copyright ©2011 lyt. All Rights Reserved.
+ 
+
+
+
+
+
+study
+EJB优化
+
+EJB优化
+对无状态SessionBean和MDB。可以在Weblogic-ejb-jar.xml设置实例池，有两个参数控制池的行为<initial-beans-in-free-pool>和<max-beans-in-free-pool>，Bean缓冲池必须足够大，否则的话，业务过程可能要等待一段时间才能获得Bean实例来完成其操作。如果缓冲池太小，有可能会出现许多业务过程等待Bean实例的情形；如果缓冲池太大，它会占用超出其实际需求的系统资源。
+对有状态SessionBean和EntityBean可以在Weblogic-ejb-jar.xml中设置<max-beans-in-cache>，它表示可以放到内存缓存中的有状态SessionBean或EntityBean的最大数量，调整缓冲区的时候，应当记住调整的目标是尽可能提高缓冲区命中的次数，尽可能减少系统颠簸现象。要达到该目标，首先必须深入、全面地理解应用的对象模型以及每一个对象的使用情况。
+设置事务的隔离级别
+更多的设置请参考：http://e-docs.bea.com/wls/docs81/perform/EJBTuning.html#1139147
+JMS优化
+JTA优化
+J2EE定义了事务的不同等级，组件参与事务越深入，开销也越大，同时业务处理过程的可靠性也就越高，应根据需要选择适当的事务等级。
+减少的I/O输出或日志记录
+可以减少不必要的I/O输出以及日志记录，如减少server和http的日志
+ Copyright ©2011 lyt. All Rights Reserved.

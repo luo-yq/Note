@@ -1,0 +1,37 @@
+ab -k -c1 -n100000 'http://127.0.0.1:80/test3'
+
+
+
+
+安装日志分析工具
+brew install goaccess
+
+
+日志分析命令
+goaccess -f /opt/nginx/logs/access.log
+
+goaccess -f /opt/nginx/logs/access.log -s -a -b
+
+goaccess -d -f /opt/nginx/logs/access.log -a -p /Users/lyt1987/Desktop/GitHub/nginx/.goaccessrc > test.html
+
+
+GoAccess的基本语法如下：
+
+goaccess [ -b ][ -s ][ -e IP_ADDRESS][ -a ] <-f log_file >
+参数说明：
+
+-f – 日志文件名
+-b – 开启流量统计，如果希望加快分析速度不建议使用该参数
+-s – 开启HTTP响应代码统计
+-a – 开启用户代理统计
+-e – 开启指定IP地址统计，默认禁用
+用法示例：
+
+最简单、常用的命令就是直接调用goaccess命令啦，不带任何影响效率的其他参数
+
+goaccess -f /opt/nginx/logs/access.log
+如果需要查看其他信息，我们加入如下参数以显示HTTP响应代码、用户代理、流量消耗
+
+goaccess -f /opt/nginx/logs/access.log -s -a -b
+
+tail -f /opt/nginx/logs/access.log  动态监控日志打印信息

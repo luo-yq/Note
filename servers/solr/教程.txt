@@ -1,0 +1,223 @@
+访问solr管理界面 http://ip:port/solr  8983端口
+
+
+
+
+
+
+添加core，solr\server\solr\configsets\目录下有  basic,data_driven,sample_techproducts /conf     
+
+
+
+
+
+3、 Solr原理 
+
+Solr对外提供标准的http接口来实现对数据的索引的增加、删除、修改、查询。在 Solr 中，用户通过向部署在servlet 容器中的 Solr Web 应用程序发送 HTTP 请求来启动索引和搜索。Solr 接受请求，确定要使用的适当SolrRequestHandler，然后处理请求。通过 HTTP 以同样的方式返回响应。默认配置返回Solr 的标准 XML 响应，也可以配置Solr 的备用响应格式。
+
+可以向 Solr 索引 servlet 传递四个不同的索引请求：
+add/update 允许向 Solr 添加文档或更新文档。直到提交后才能搜索到这些添加和更新。
+commit 告诉 Solr，应该使上次提交以来所做的所有更改都可以搜索到。
+optimize 重构 Lucene 的文件以改进搜索性能。索引完成后执行一下优化通常比较好。如果更新比较频繁，则应该在使用率较低的时候安排优化。一个索引无需优化也可以正常地运行。优化是一个耗时较多的过程。
+delete 可以通过 id 或查询来指定。按 id 删除将删除具有指定 id 的文档；按查询删除将删除查询返回的所有文档。 
+
+一个典型的Add请求报文
+
+Xml代码 复制代码
+<add>  
+  <doc>  
+    <field name="id">TWINX2048-3200PRO</field>  
+    <field name="name">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</field>  
+    <field name="manu">Corsair Microsystems Inc.</field>  
+    <field name="cat">electronics</field>  
+    <field name="cat">memory</field>  
+    <field name="features">CAS latency 2, 2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>  
+    <field name="price">185</field>  
+    <field name="popularity">5</field>  
+    <field name="inStock">true</field>  
+  </doc>  
+  <doc>  
+    <field name="id">VS1GB400C3</field>  
+    <field name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</field>  
+    <field name="manu">Corsair Microsystems Inc.</field>  
+    <field name="cat">electronics</field>  
+    <field name="cat">memory</field>  
+    <field name="price">74.99</field>  
+    <field name="popularity">7</field>  
+    <field name="inStock">true</field>  
+  </doc>  
+</add> 
+一个典型的搜索结果报文：
+
+Xml代码 复制代码
+<response>  
+    <lst name="responseHeader">  
+        <int name="status">0</int>  
+        <int name="QTime">6</int>  
+        <lst name="params">  
+            <str name="rows">10</str>  
+            <str name="start">0</str>  
+            <str name="fl">*,score</str>  
+            <str name="hl">true</str>  
+            <str name="q">content:"faceted browsing"</str>  
+        </lst>  
+    </lst>  
+  
+    <result name="response" numFound="1" start="0" maxScore="1.058217">  
+        <doc>  
+            <float name="score">1.058217</float>  
+            <arr name="all">  
+                <str>http://localhost/myBlog/solr-rocks-again.html</str>  
+                <str>Solr is Great</str>  
+                <str>solr,lucene,enterprise,search,greatness</str>  
+                <str>Solr has some really great features, like faceted browsing and replication</str>  
+            </arr>  
+            <arr name="content">  
+                <str>Solr has some really great features, like faceted browsing and replication</str>  
+            </arr>  
+            <date name="creationDate">2007-01-07T05:04:00.000Z</date>  
+            <arr name="keywords">  
+                <str>solr,lucene,enterprise,search,greatness</str>  
+            </arr>  
+            <int name="rating">8</int>  
+            <str name="title">Solr is Great</str>  
+            <str name="url">http://localhost/myBlog/solr-rocks-again.html</str>  
+        </doc>  
+    </result>  
+  
+    <lst name="highlighting">  
+        <lst name="http://localhost/myBlog/solr-rocks-again.html">  
+            <arr name="content">  
+                <str>Solr has some really great features, like <em>faceted</em>  
+                <em>browsing</em> and replication</str>  
+            </arr>  
+        </lst>  
+    </lst>  
+</response>  
+
+关于solr的详细使用说明，请参考
+http://wiki.apache.org/solr/FrontPage
+
+4、 Solr测试使用 
+
+Solr的安装包包含了相关的测试样例，路径在apache-solr-1.2.0/example/exampledocs
+
+1. 使用shell脚本（curl）测试Solr的操作：
+cd apache-solr-1.2.0/example/exampledocs
+vi post.sh，根据tomcat的ip、port修改URL变量的值URL=http://localhost:8080/solr/update
+./post.sh *.xml                 # 
+
+2. 使用Solr的java 包测试Solr的操作：
+查看帮助：java -jar post.jar –help
+提交测试数据：
+java -Durl=http://localhost:8080/solr/update -Ddata=files -jar post.jar  *.xml     
+
+下面以增加索引字段liangchuan、url为例，说明一下Solr中索引命令的使用
+
+1) 修改solr的schema，配置需要索引字段的说明：
+vi /opt/solr-tomcat/solr/conf/schema.xml ,在<fields>中增加如下内容
+
+Xml代码 复制代码
+<field name="liangchuan"  type="string" indexed="true" stored="true"/>  
+<field name="url"  type="string" indexed="true" stored="true"/>  
+[xml] view plain copy
+<field name="liangchuan"  type="string" indexed="true" stored="true"/>  
+<field name="url"  type="string" indexed="true" stored="true"/>  
+
+2) 创建增加索引请求的xml测试文件
+touch /root/apache-solr-1.2.0/example/exampledocs/liangchuan.xml,内容如下：
+
+Xml代码 复制代码
+<add>  
+  <doc>  
+    <field name="id">liangchuan000</field>  
+    <field name="name">Solr, the Enterprise Search Server</field>  
+    <field name="manu">Apache Software Foundation</field>  
+    <field name="liangchuan">liangchuan's solr "hello,world" test</field>  
+    <field name="url">http://www.google.com</field>  
+  </doc>  
+</add>  
+
+3) 提交索引请求
+cd apache-solr-1.2.0/example/exampledocs
+./post.sh liangchuan.xml
+
+4) 查询
+通过solr的管理员界面http://localhost:8080/solr/admin查询
+或通过curl 测试：
+export URL="http://localhost:8080/solr/select/"
+curl "$URL?indent=on&q=liangchuan&fl=*,score"
+
+5、Solr查询条件参数说明
+参数     描述     示例
+q    
+
+Solr 中用来搜索的查询。可以通过追加一个分号和已索引且未进行断词的字段的名称来包含排序信息。默认的排序是 score desc，指按记分降序排序。    
+q=myField:Java AND otherField:developerWorks; date asc
+此查询搜索指定的两个字段并根据一个日期字段对结果进行排序。
+
+ 
+
+start     将初始偏移量指定到结果集中。可用于对结果进行分页。默认值为 0。     
+start=15
+返回从第 15 个结果开始的结果。
+
+ 
+
+rows     返回文档的最大数目。默认值为 10。     rows=25
+
+ 
+
+fq     提供一个可选的筛选器查询。查询结果被限制为仅搜索筛选器查询返回的结果。筛选过的查询由 Solr 进行缓存。它们对提高复杂查询的速度非常有用。
+任何可以用 q 参数传递的有效查询，排序信息除外。
+
+ 
+
+hl     当 hl=true 时，在查询响应中醒目显示片段。默认为 false。参看醒目显示参数上的 Solr Wiki 部分可以查看更多选项     hl=true
+
+ 
+
+fl     作为逗号分隔的列表指定文档结果中应返回的 Field 集。默认为 “*”，指所有的字段。“score” 指还应返回记分。     
+*,score
+
+其中关于Solr查询相关的参数详细的信息请参看：
+http://wiki.apache.org/solr/CommonQueryParameters
+
+Solr的查询条件参数q的格式与Lucene相同，具体参看：
+http://lucene.apache.org/java/docs/queryparsersyntax.html
+
+支持一下吆 请收藏一下：很好
+6、 在门户社区中solr使用模式 
+在门户社区中需要使用solr，可采用如下模式：
+
+ 
+
+对原有系统已有的数据或需要索引的数据量较大的情况 
+直接采用通过http方式调用solr的接口方式，效率较差，采用solr本身对csv 的支持（http://wiki.apache.org/solr/UpdateCSV
+），将数据导出为csv格式，然后调用solr的csv接口http://localhost:8080/solr/update/csv
+
+对系统新增的数据 
+先将需要索引查询的数据组装成xml格式，然后使用httpclient 将数据提交到solr 的http接口，例如   
+http://localhost:8080/solr/update
+
+也可以参考post.jar中的SimplePostTool的实现。
+http://svn.apache.org/viewvc/lucene/solr/trunk/src/java/org/apache/solr/util/SimplePostTool.java?view=co
+
+ 
+
+中文分词
+采用庖丁解牛作为solr（Lucene）缺省的中文分词方案
+项目库：http://code.google.com/p/paoding/
+
+Google groups：http://groups.google.com/group/paoding
+Javaeye的groups：http://analysis.group.javaeye.com/
+
+
+与nutch的集成使用
+http://blog.foofactory.fi/2007/02/online-indexing-integrating-nutch-with.html
+
+嵌入式Solr
+http://wiki.apache.org/solr/Solrj#EmbeddedSolrServer
+
+分布式索引
+http://wiki.apache.org/solr/CollectionDistribution

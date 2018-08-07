@@ -1,0 +1,561 @@
+ 
+ 
+数据存储结构----表名:id:列名 值
+set login:1:login_time 2011-01-02
+
+redis 数据库设计
+set  table:id:column  value
+set  "table:id:column"  value  有特殊符号时用""包含
+
+redis-benchmark.exe：性能测试，用以模拟同时由N个客户端发送M个 SETs/GETs 查询 (类似于 Apache 的ab 工具).
+redis-check-aof.exe：更新日志检查
+redis-check-dump.exe：本地数据库检查
+redis-cli.exe：客户端
+redis-server.exe：服务端　
+
+ 
+
+sudo service redis restart
+#或者
+sudo service redis stop
+sudo redis-server /etc/redis.conf
+这个时候尝试登录redis，发现可以登上，但是执行具体命令是提示操作不允许
+ 
+
+
+5.1 内存、CPU规划
+
+一定要设置最大内存maxmemory参数，否则物理内存用爆了就会大量使用Swap，写RDB文件时的速度很慢。注意这个参数指的是info中的used_memory，在一些不利于jmalloc的时候，内存碎片会很大。
+
+多留55%内存是最安全的。重写AOF文件和RDB文件的进程(即使不做持久化，复制到Slave的时候也要写RDB)会fork出一条新进程来，采用了操作系统的Copy-On-Write策略(子进程与父进程共享Page。如果父进程的Page-每页4K有修改，父进程自己创建那个Page的副本，不会影响到子进程)。
+
+另外，需要考虑内存碎片，假设碎片为1.2，则如果机器为64G，那么64*45%/1.2 = 24G作为maxmemory是比较安全的规划。
+
+留意Console打出来的报告，如"RDB: 1215 MB of memory used by copy-on-write"。在系统极度繁忙时，如果父进程的所有Page在子进程写RDB过程中都被修改过了，就需要两倍内存。
+
+按照Redis启动时的提醒，设置
+
+echo "vm.overcommit_memory = 1" >>  /etc/sysctl.conf
+使得fork()一条10G的进程时，因为COW策略而不一定需要有10G的free memory。
+
+另外，记得关闭THP，这个默认的Linux内存页面大小分配策略会导致RDB时出现巨大的latency和巨大的内存占用。关闭方法为：
+
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+echo never > /sys/kernel/mm/transparent_hugepage/defrag
+当最大内存到达时，按照配置的Policy进行处理， 默认策略为volatile-lru，对设置了expire time的key进行LRU清除(不是按实际expire time)。如果沒有数据设置了expire time或者policy为noeviction，则直接报错，但此时系统仍支持get之类的读操作。 另外还有几种policy，比如volatile-ttl按最接近expire time的，allkeys-lru对所有key都做LRU。注意在一般的缓存系统中，如果没有设置超时时间，则lru的策略需要设置为allkeys-lru，并且应用需要做好未命中的异常处理。特殊的，当redis当做DB时，请使用noneviction策略，但是需要对系统内存监控加强粒度。
+
+CPU不求核数多，但求主频高，Cache大，因为redis主处理模式是单进程的。同时避免使用虚拟机。
+
+
+5.2 网卡RPS设置
+
+RPS就是让网卡使用多核CPU的。传统方法就是网卡多队列（RSS，需要硬件和驱动支持），RPS则是在系统层实现了分发和均衡。如果对redis网络处理能力要求高或者在生产上发现cpu0的，可以在OS层面打开这个内核功能。
+
+设置脚本：
+
+#!/bin/bash  
+# Enable RPS (Receive Packet Steering)  
+
+rfc=32768
+cc=$(grep -c processor /proc/cpuinfo)  
+rsfe=$(echo $cc*$rfc | bc)  
+sysctl -w net.core.rps_sock_flow_entries=$rsfe  
+for fileRps in $(ls /sys/class/net/eth*/queues/rx-*/rps_cpus)  
+do
+echo fff > $fileRps  
+done
+
+for fileRfc in $(ls /sys/class/net/eth*/queues/rx-*/rps_flow_cnt)  
+do
+echo $rfc > $fileRfc  
+done
+
+tail /sys/class/net/eth*/queues/rx-*/{rps_cpus,rps_flow_cnt}
+
+
+
+
+5.3 服务器部署位置
+尽可能把client和server部署在同一台机器上，比如都部署在app server，或者一个网段中，减少网络延迟对于redis的影响。
+如果是同一台机器，又想榨干redis性能可以考虑采用UNIX domain sockets配置方式，配置方式如下
+
+0 = do not listen on a port
+
+port 0
+
+# listen on localhost only
+bind 127.0.0.1
+
+# create a unix domain socket to listen on
+unixsocket /tmp/redis.sock
+
+# set permissions for the socket
+unixsocketperm 755
+这样的配置方式在没有大量pipeline下会有一定性能提升，具体请参见http://redis.io/topics/benchmarks：
+
+另外，对于混合部署即redis和应用部署在同一台服务器上，那么可能会出现如下的情况：
+
+出现瞬时 Redis 大量连接和处理超时，应用业务线程被阻塞，导致服务拒绝，过一段时间可能又自动恢复了。这种瞬时故障非常难抓现场，一天来上几发就会给人业务不稳定的感受，而一般基础机器指标的监控周期在分钟级。瞬时故障可能发生在监控的采集间隙，所以只好上脚本在秒级监控日志，发现瞬时出现大量 Redis 超时错误，就收集当时应用的 JVM 堆栈、内存和机器 CPU Load 等各项指标。终于发现瞬时故障时刻 Redis 机器 CPU Load 出现瞬间飙升几百的现象，应用和 Redis 混合部署时应用可能瞬间抢占了全部 CPU 导致 Redis 没有 CPU 资源可用。而应用处理业务的逻辑又可能需要访问 Redis，而 Redis 又没有 CPU 资源可用导致超时，这不就像一个死锁么。搞清楚了原因其实解决方法也简单，就是分离应用和 Redis 的部署，各自资源隔离
+
+出处： http://mp.weixin.qq.com/s?__biz=MzAxMTEyOTQ5OQ==&mid=402004912&idx=1&sn=7517696a86f54262e60e1b5636d6cbe0&3rd=MzA3MDU4NTYzMw==&scene=6#rd
+因此在混合部署下要对极限性能进行监控，提前将可能出现性能问题的应用迁移出来。
+
+
+
+5.4 持久化设置
+
+RDB和AOF两者毫无关系，完全独立运行，如果使用了AOF，重启时只会从AOF文件载入数据，不会再管RDB文件。在配置上有三种选择：不持久化，RDB，RDB+AOF。官方不推荐只开启AOF（因为恢复太慢另外如果aof引擎有bug），除非明显的读多写少的应用。 开启AOF时应当关闭AOF自动rewrite，并在crontab中启动在业务低峰时段进行的bgrewrite。 如果在一台机器上部署多个redis实例，则关闭RDB和AOF的自动保存（save "", auto-aof-rewrite-percentage 0），通过crontab定时调用保存：
+
+m h * * * redis-cli -p <port> BGSAVE
+m h */4 * * redis-cli -p <port> BGREWRITEAOF
+持久化的部署规划上，如果为主从复制关系，建议主关闭持久化。
+
+
+
+5.5 多实例配置
+
+如果一台机器上防止多个redis实例，为了防止上下文切换导致的开销，可以采用taskset。taskset是LINUX提供的一个命令(ubuntu系统可能需要自行安装，schedutils package)。他可以让某个程序运行在某个（或）某些CPU上。
+
+1）显示进程运行的CPU （6137为redis-server的进程号）
+
+[redis@hadoop1 ~]$ taskset  -p 6137
+pid 6137's current affinity mask: f 
+显示结果的f实际上是二进制4个低位均为1的bitmask，每一个1对应于1个CPU，表示该进程在4个CPU上运行
+
+2）指定进程运行在某个特定的CPU上
+
+[redis@hadoop1 ~]$ taskset -pc 3 6137
+pid 6137's current affinity list: 0-3
+pid 6137's new affinity list: 3 
+注：3表示CPU将只会运行在第4个CPU上（从0开始计数）。
+
+3）进程启动时指定CPU
+
+taskset -c 1 ./redis-server ../redis.conf
+参数：OPTIONS -p, --pid operate on an existing PID and not launch a new task
+
+-c, --cpu-list specify a numerical list of processors instead of a bitmask. The list may contain multiple items, separated by comma, and ranges. For example, 0,5,7,9-11.
+
+
+
+
+5.6 具体设置参数
+
+详见我行自制安装包conf目录中的各个配置文件和上线前检查表格。
+
+redis参数设置技巧列表：
+
+Daemonize 这个参数在使用supervisord这种进程管理工具时一定要设置为no，否则无法使用这些工具将redis启动。
+
+Dir RDB的位置，一定要事先创建好，并且启动redis 的用户对此目录要有读写权限。
+Include 如果是多实例的话可以将公共的设置放在一个conf文件中，然后引用即可： include /redis/conf/redis-common.conf
+
+
+
+5.7 其他好用的配置技巧
+
+5.7.1 使用supervisord进行进程管理
+Supervisord是一个优秀的进程管理工具，一般在部署redis时采用它来进行redis、sentinel等进程的管理，一个已经在生产环境采用的supervisord配置文件如下： ; Sample supervisor config file. ; ; For more information on the config file, please see: ; http://supervisord.org/configuration.html ; ; Notes: ; - Shell expansion ("~" or "$HOME") is not supported. Environment ; variables can be expanded using this syntax: "%(ENV_HOME)s". ; - Comments must have a leading space: "a=b ;comment" not "a=b;comment".
+
+[unix_http_server] 
+file=/smsred/redis-3.0.4/run/supervisor.sock ; (the path to the socket file) 
+;chmod=0700 ; socket file mode (default 0700) 
+;chown=nobody:nogroup ; socket file uid:gid owner 
+;username=user ; (default is no username (open server)) 
+;password=123 ; (default is no password (open server)) 
+
+;[inet_http_server] ; inet (TCP) server disabled by default 
+;port=127.0.0.1:9001 ; (ip_address:port specifier, *:port for all iface) 
+;username=user ; (default is no username (open server)) 
+;password=123 ; (default is no password (open server)) 
+
+[supervisord] 
+logfile=/smsred/redis-3.0.4/log/supervisord.log ; (main log file;default $CWD/supervisord.log) 
+logfile_maxbytes=50MB ; (max main logfile bytes b4 rotation;default 50MB) 
+logfile_backups=10 ; (num of main logfile rotation backups;default 10) 
+loglevel=info ; (log level;default info; others: debug,warn,trace) 
+pidfile=/smsred/redis-3.0.4/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid) 
+nodaemon=false ; (start in foreground if true;default false) 
+minfds=1024 ; (min. avail startup file descriptors;default 1024) 
+minprocs=200 ; (min. avail process descriptors;default 200) 
+;umask=022 ; (process file creation umask;default 022) 
+;user=chrism ; (default is current user, required if root) 
+;identifier=supervisor ; (supervisord identifier, default is 'supervisor') 
+;directory=/tmp ; (default is not to cd during start) 
+;nocleanup=true ; (don't clean up tempfiles at start;default false) 
+;childlogdir=/tmp ; ('AUTO' child log dir, default $TEMP) 
+;environment=KEY="value" ; (key value pairs to add to environment) 
+;strip_ansi=false ; (strip ansi escape codes in logs; def. false) 
+
+; the below section must remain in the config file for RPC 
+; (supervisorctl/web interface) to work, additional interfaces may be 
+; added by defining them in separate rpcinterface: sections 
+[rpcinterface:supervisor] 
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface 
+
+[supervisorctl] 
+serverurl=unix:///smsred/redis-3.0.4/run/supervisor.sock ; use a unix:// URL for a unix socket 
+;serverurl=http://127.0.0.1:9001 ; use an http:// url to specify an inet socket 
+;username=chris ; should be same as http_username if set 
+;password=123 ; should be same as http_password if set 
+;prompt=mysupervisor ; cmd line prompt (default "supervisor") 
+;history_file=~/.sc_history ; use readline history if available 
+
+; The below sample program section shows all possible program subsection values, 
+; create one or more 'real' program: sections to be able to control them under 
+; supervisor. 
+
+;[program:theprogramname] 
+;command=/bin/cat ; the program (relative uses PATH, can take args) 
+;process_name=%(program_name)s ; process_name expr (default %(program_name)s) 
+;numprocs=1 ; number of processes copies to start (def 1) 
+;directory=/tmp ; directory to cwd to before exec (def no cwd) 
+;umask=022 ; umask for process (default None) 
+;priority=999 ; the relative start priority (default 999) 
+;autostart=true ; start at supervisord start (default: true) 
+;autorestart=unexpected ; whether/when to restart (default: unexpected) 
+;startsecs=1 ; number of secs prog must stay running (def. 1) 
+;startretries=3 ; max # of serial start failures (default 3) 
+;exitcodes=0,2 ; 'expected' exit codes for process (default 0,2) 
+;stopsignal=QUIT ; signal used to kill process (default TERM) 
+;stopwaitsecs=10 ; max num secs to wait b4 SIGKILL (default 10) 
+;stopasgroup=false ; send stop signal to the UNIX process group (default false) 
+;killasgroup=false ; SIGKILL the UNIX process group (def false) 
+;user=chrism ; setuid to this UNIX account to run the program 
+;redirect_stderr=true ; redirect proc stderr to stdout (default false) 
+;stdout_logfile=/a/path ; stdout log path, NONE for none; default AUTO 
+;stdout_logfile_maxbytes=1MB ; max # logfile bytes b4 rotation (default 50MB) 
+;stdout_logfile_backups=10 ; # of stdout logfile backups (default 10) 
+;stdout_capture_maxbytes=1MB ; number of bytes in 'capturemode' (default 0) 
+;stdout_events_enabled=false ; emit events on stdout writes (default false) 
+;stderr_logfile=/a/path ; stderr log path, NONE for none; default AUTO 
+;stderr_logfile_maxbytes=1MB ; max # logfile bytes b4 rotation (default 50MB) 
+;stderr_logfile_backups=10 ; # of stderr logfile backups (default 10) 
+;stderr_capture_maxbytes=1MB ; number of bytes in 'capturemode' (default 0) 
+;stderr_events_enabled=false ; emit events on stderr writes (default false) 
+;environment=A="1",B="2" ; process environment additions (def no adds) 
+;serverurl=AUTO ; override serverurl computation (childutils) 
+
+; The below sample eventlistener section shows all possible 
+; eventlistener subsection values, create one or more 'real' 
+; eventlistener: sections to be able to handle event notifications 
+; sent by supervisor. 
+
+;[eventlistener:theeventlistenername] 
+;command=/bin/eventlistener ; the program (relative uses PATH, can take args) 
+;process_name=%(program_name)s ; process_name expr (default %(program_name)s) 
+;numprocs=1 ; number of processes copies to start (def 1) 
+;events=EVENT ; event notif. types to subscribe to (req'd) 
+;buffer_size=10 ; event buffer queue size (default 10) 
+;directory=/tmp ; directory to cwd to before exec (def no cwd) 
+;umask=022 ; umask for process (default None) 
+;priority=-1 ; the relative start priority (default -1) 
+;autostart=true ; start at supervisord start (default: true) 
+;autorestart=unexpected ; whether/when to restart (default: unexpected) 
+;startsecs=1 ; number of secs prog must stay running (def. 1) 
+;startretries=3 ; max # of serial start failures (default 3) 
+;exitcodes=0,2 ; 'expected' exit codes for process (default 0,2) 
+;stopsignal=QUIT ; signal used to kill process (default TERM) 
+;stopwaitsecs=10 ; max num secs to wait b4 SIGKILL (default 10) 
+;stopasgroup=false ; send stop signal to the UNIX process group (default false) 
+;killasgroup=false ; SIGKILL the UNIX process group (def false) 
+;user=chrism ; setuid to this UNIX account to run the program 
+;redirect_stderr=true ; redirect proc stderr to stdout (default false) 
+;stdout_logfile=/a/path ; stdout log path, NONE for none; default AUTO 
+;stdout_logfile_maxbytes=1MB ; max # logfile bytes b4 rotation (default 50MB) 
+;stdout_logfile_backups=10 ; # of stdout logfile backups (default 10) 
+;stdout_events_enabled=false ; emit events on stdout writes (default false) 
+;stderr_logfile=/a/path ; stderr log path, NONE for none; default AUTO 
+;stderr_logfile_maxbytes=1MB ; max # logfile bytes b4 rotation (default 50MB) 
+;stderr_logfile_backups ; # of stderr logfile backups (default 10) 
+;stderr_events_enabled=false ; emit events on stderr writes (default false) 
+;environment=A="1",B="2" ; process environment additions 
+;serverurl=AUTO ; override serverurl computation (childutils) 
+
+; The below sample group section shows all possible group values, 
+; create one or more 'real' group: sections to create "heterogeneous" 
+; process groups. 
+
+;[group:thegroupname] 
+;programs=progname1,progname2 ; each refers to 'x' in [program:x] definitions 
+;priority=999 ; the relative start priority (default 999) 
+
+; The [include] section can just contain the "files" setting. This 
+; setting can list multiple files (separated by whitespace or 
+; newlines). It can also contain wildcards. The filenames are 
+; interpreted as relative to this file. Included files *cannot* 
+; include files themselves. 
+
+;[include] 
+;files = relative/directory/*.ini 
+
+[program:redis-1xxx] 
+command=/smsred/redis-3.0.4/bin/redis-server /smsred/redis-3.0.4/conf/redis-1xxx.conf 
+autostart=true 
+autorestart=false 
+user=smsred 
+stdout_logfile=/smsred/redis-3.0.4/log/redis-1xxx.out.log 
+stderr_logfile=/smsred/redis-3.0.4/log/redis-1xxx.err.log 
+priority=1000 
+
+[program:redis-1xxx] 
+command=/smsred/redis-3.0.4/bin/redis-server /smsred/redis-3.0.4/conf/redis-1xxx.conf 
+autostart=true 
+autorestart=false 
+user=smsred 
+stdout_logfile=/smsred/redis-3.0.4/log/redis-1xxx.out.log 
+stderr_logfile=/smsred/redis-3.0.4/log/redis-1xxx.err.log 
+priority=1000 
+
+[program:redis-1xxx] 
+command=/smsred/redis-3.0.4/bin/redis-server /smsred/redis-3.0.4/conf/redis-1xxx.conf 
+autostart=true 
+autorestart=false 
+user=smsred 
+stdout_logfile=/smsred/redis-3.0.4/log/redis-1xxx.out.log 
+stderr_logfile=/smsred/redis-3.0.4/log/redis-1xxx.err.log 
+priority=1000 
+
+[program:redis-sentinel] 
+command =/smsred/redis-3.0.4/bin/redis-sentinel /smsred/redis-3.0.4/conf/sentinel.conf 
+autostart=true 
+autorestart=true 
+startsecs=3
+5.7.2 使用alias方便操作
+如果开多实例，那么shell下进行操作的次数会很多，因此你需要一些alias进行命令的缩短，这个技巧并不高深，但是很实用。一个实例如下：
+
+alias cli1='$HOME/redis-3.0.4/bin/redis-cli -a xxx -p 1xx' 
+alias cli2='$HOME/redis-3.0.4/bin/redis-cli -a xxx -p 1xx' 
+alias cli3='$HOME/redis-3.0.4/bin/redis-cli -a xxx -p 1xx' 
+alias clis='$HOME/redis-3.0.4/bin/redis-cli -p 26379' 
+
+alias sctl='supervisorctl -c $HOME/redis-3.0.4/conf/redis-supervisord.conf ' 
+alias sstart='supervisord -c $HOME/redis-3.0.4/conf/redis-supervisord.conf' 
+alias see='pdsh -R ssh -w MSMSRED[1-3],PSMSRED1,PSMSAPP1 "/usr/local/bin/supervisorctl -c /smsred/redis-3.0.4/conf/redis-supervisord.conf status "' 
+5.7.3 使用pdsh/pdcp进行多机器操作
+Pdsh/pdcp是一个python ssh多机操作的工具，在部署中可以采用它进行多机的同一操作批量执行，注意编译的时候把ssh编译进去，在执行时指定ssh模式，一个查看多机supervisord管理进程的命令实例如下：
+
+pdsh -R ssh -w MSMSRED[1-3],PSMSRED1,PSMSAPP1 "/usr/local/bin/supervisorctl -c /smsred/redis-3.0.4/conf/redis-supervisord.conf status "
+前提是你这些机器已经建立了ssh互信。建立互信可以用下边这个脚本
+
+#!/bin/bash 
+#2015-12-08 
+#author gnuhpc 
+
+expect -c "spawn ssh-keygen -t rsa 
+expect { 
+\":\" {send \"\r\"; exp_continue} 
+\"*(y/n)*\" {send \"y\r\"; exp_continue} 
+} 
+" 
+for p in $(cat ip.cfg) 
+do 
+ip=$(echo "$p"|cut -f1 -d":") 
+username=$(echo "$p"|cut -f2 -d":") 
+password=$(echo "$p"|cut -f3 -d":") 
+echo $password 
+
+expect -c " 
+spawn ssh-copy-id ${username}@$ip 
+expect { 
+\"*yes/no*\" {send \"yes\r\"; exp_continue} 
+\"*(y/n)*\" {send \"y\r\"; exp_continue} 
+\"*password*\" {send \"$password\r\"; exp_continue} 
+\"*Password*\" {send \"$password\r\"; exp_continue} 
+} 
+" 
+expect -c " 
+spawn ssh ${username}@$ip "hostname" 
+expect { 
+\"*yes/no*\" {send \"yes\r\"; exp_continue} 
+\"*password*\" {send \"$password\r\"; exp_continue} 
+\"*(y/n)*\" {send \"y\r\"; exp_continue} 
+\"*Password*\" {send \"$password\r\";} 
+} 
+" 
+done
+指定一个ip.cfg，里面的格式为：IP（主机名也行，只要能解析）:用户名:密码 例如：
+
+xxxx.139:username:password 
+xxxx.140:username:password 
+xxxx.141:username:password 
+xxxx.142:username:password 
+xxxx.137:username:password
+5.7.4 使用脚本进行sentinel配置文件的备份
+Sentinel在启动、切换时会对config文件进行rewrite，在上线前或者某些手动维护后你可能希望把conf文件都变为最初，当系统中有很多redis实例时，这个手工操作会让人疯掉，那不妨写个脚本在配置好sentinel和redis后不启动先备份一下，测试完毕后再恢复。
+
+一个简单的备份脚本如下：
+
+backupconf.sh 
+#!/bin/bash 
+for i in `find ~/redis-3.0.4/conf -name *.conf` 
+do 
+cp -v $i ${i}.bak 
+done
+恢复脚本：
+
+ recoveryconf.sh
+#!/bin/bash 
+for i in `find ~/redis-3.0.4/conf -name *.conf.bak` 
+do 
+cp -v $i ${i%.*} 
+done
+
+
+
+
+3.1.1 启动  $ redis-server redis.conf
+常见选项： ./redis-server (run the server with default conf) ./redis-server /etc/redis/6379.conf ./redis-server --port 7777 ./redis-server --port 7777 --slaveof 127.0.0.1 8888 ./redis-server /etc/myredis.conf --loglevel verbose
+
+3.1.2 启动redis-sentinel
+   ./redis-server /etc/sentinel.conf –sentinel
+   ./redis-sentinel /etc/sentinel.conf
+部署后可以使用sstart对redis 和sentinel进行拉起，使用sctl进行supervisorctl的控制。（两个alias）
+
+
+3.2 停止  redis-cli shutdown
+sentinel方法一样，只是需要执行sentinel的连接端口
+
+注意：正确关闭服务器方式是redis-cli shutdown 或者 kill，都会graceful shutdown，保证写RDB文件以及将AOF文件fsync到磁盘，不会丢失数据。 如果是粗暴的Ctrl+C，或者kill -9 就可能丢失。如果有配置save，还希望在shutdown时进行RDB写入，那么请使用shutdown save命令。
+
+
+3.3 查看和修改配置
+config get ：获取服务器配置信息。 
+redis 127.0.0.1:6379> config get dir 
+config get *：查看所有配置
+临时设置：config set
+永久设置：config rewrite，将目前服务器的参数配置写入redis conf.
+
+
+
+3.4 批量执行操作
+
+使用telnet也可以连接redis-server。并且在脚本中使用nc命令进行redis操作也是很有效的：
+
+gnuhpc@gnuhpc:~$ (echo -en "ping\r\nset key abc\r\nget key\r\n";sleep 1) | nc 127.0.0.1 6379
++PONG
++OK
+$3
+abc
+另一个方式是使用pipeline：
+
+在一个脚本中批量执行多个写入操作:
+先把插入操作放入操作文本insert.dat：
+set a b
+set 1 2
+set h w
+set f u
+然后执行命令:cat insert.bat | ./redis-cli --pipe，或者如下脚本：
+#!/bin/sh
+host=$1
+port=$；
+password=$3
+cat insert.dat | ./redis-cli -h $host -p $port -a $password --pipe
+
+3.9 设置密码  config set requirepass [passw0rd]
+3.10 验证密码  auth passw0rd
+
+
+
+3.12 Redis-cli命令行其他操作
+1. echo ：在命令行打印一些内容 echo HongWan "HongWan"
+2. quit ：退出连接。 quit
+3. -x选项从标准输入（stdin）读取最后一个参数。 比如从管道中读取输入： echo -en "chen.qun" | redis-cli -x set name
+4. -r -i
+-r 选项重复执行一个命令指定的次数。 -i 设置命令执行的间隔。 比如查看redis每秒执行的commands（qps） redis-cli -r 100 -i 1 info stats | grep instantaneous_ops_per_sec 这个选项在编写一些脚本时非常有用
+5. -c：开启reidis cluster模式，连接redis cluster节点时候使用。
+6. --rdb：获取指定redis实例的rdb文件,保存到本地. redis-cli -h 192.168.44.16 -p 6379 --rdb 6379.rdb
+7. --slave  模拟slave从master上接收到的commands。slave上接收到的commands都是update操作，记录数据的更新行为。
+8. --pipe  这个一个非常有用的参数。发送原始的redis protocl格式数据到服务器端执行。比如下面的形式的数据（linux服务器上需要用unix2dos转化成dos文件）。 linux下默认的换行是\n,windows系统的换行符是\r\n，redis使用的是\r\n. echo -en '*3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n' | redis-cli --pipe
+9. -a  如果开启了requirepass，那么你如果希望调用或者自己编写一些外部脚本通过redis-cli进行操作或者监控redis，那么这个选项可以让你不用再手动输入auth。这个选项很普遍，但是往往被人忽视。
+
+3.13.1 RDB相关操作
+BGSAVE：后台子进程进行RDB持久化 SAVE：主进程进行RDB，生产环境千万别用，服务器将无法响应任何操作。 
+LASTSAVE： 返回上一次成功SAVE的Unix时间
+动态关闭RDB：redis-cli config set save ""
+动态设置RDB：redis-cli config set save "900 1"
+永久关闭RDB：sed -e '/save/ s/^#*/#/' -i /etc/redis/redis.conf
+永久设置RDB：在redis.conf中设置save选项
+查看RDB是否打开：redis-cli config get save
+空的即是关闭，有数字的都是打开的。
+
+3.13.2 AOF相关操作
+BGREWRITEAOF: 在后台执行一个 AOF文件重写操作
+动态关闭AOF： redis-cli config set appendonly no
+动态打开AOF： redis-cli config set appendonly yes
+永久关闭AOF： sed -e '/appendonly/ s/^#*/#/' -i /etc/redis/redis.conf  （默认是关闭的）
+永久打开AOF： 将appendonly yes设置在redis.conf中
+
+3.13.3 备份
+对于RDB和AOF，都是直接拷贝文件即可，可以设定crontab进行定时备份： cp /var/lib/redis/dump.rdb /somewhere/safe/dump.$(date +%Y%m%d%H%M).rdb
+
+3.13.4 恢复
+如果只使用了RDB，则首先将redis-server停掉，删除dump.rdb，最后将备份的dump.rdb文件拷贝回data目录并修改相关属主保证其属主和redis-server启动用户一致，然后启动redis-server。
+如果是RDB+AOF的持久化，只需要将aof文件放入data目录，启动redis-server，查看是否恢复，如无法恢复则应该将aof关闭后重启，redis就会从rdb进行恢复了，随后调用命令BGREWRITEAOF进行AOF文件写入，在info的aof_rewrite_in_progress为0后一个新的aof文件就生成了，此时再将配置文件的aof打开，再次重启redis-server就可以恢复了。注意先不要将dump.rdb放入data目录，否则会因为aof文件万一不可用，则rdb也不会被恢复进内存，此时如果有新的请求进来后则原先的rdb文件被重写。
+如果只配置了AOF，重启时加载AOF文件恢复数据。
+恢复速度参见新浪的测试结果： 
+这个结果是可信的，在一台SSD、4个CPU的虚拟机上测试为28.3G/s.
+检查修复AOF文件：
+redis-check-aof data/appendonly.aof
+
+4.1 将key从当前数据库移动到指定数据库
+move key db-index 
+返回1成功。0 如果key不存在，或者已经在指定数据库中
+
+
+
+8.3.1 系统内存查看
+
+script/下的memstat.sh或者ps_mem.py都可以查看系统的内存情况，两个工具都需要root权限。
+
+8.3.2 系统swap内存查看
+
+#!/bin/bash 
+# Get current swap usage for all running processes
+# Erik Ljungstrom 27/05/2011
+# Modified by Mikko Rantalainen 2012-08-09
+# Pipe the output to "sort -nk3" to get sorted output
+# Modified by Marc Methot 2014-09-18
+# removed the need for sudo
+
+SUM=0
+OVERALL=0
+for DIR in `find /proc/ -maxdepth 1 -type d -regex "^/proc/[0-9]+"`
+do
+    PID=`echo $DIR | cut -d / -f 3`
+    PROGNAME=`ps -p $PID -o comm --no-headers`
+for SWAP in `grep VmSwap $DIR/status 2>/dev/null | awk '{ print $2 }'`
+do
+    let SUM=$SUM+$SWAP
+done
+if (( $SUM > 0 )); then
+    echo "PID=$PID swapped $SUM KB ($PROGNAME)"
+fi
+let OVERALL=$OVERALL+$SUM
+SUM=0
+done
+echo "Overall swap used: $OVERALL KB"
+
+
+8.3.3 info查看内存
+used_memory:859192数据结构的空间 used_memory_rss:7634944实占空间 mem_fragmentation_ratio:8.89前2者的比例,1.N为佳,如果此值过大,说明redis的内存的碎片化严重,可以导出再导入一次.
+
+8.3.4 dump.rdb文件成生内存报告（rdb-tool）
+# rdb -c memory ./dump.rdb > redis_memory_report.csv
+# sort -t, -k4nr redis_memory_report.csv
+
+8.3.5 query在线分析  redis-cli MONITOR | head -n 5000 | ./redis-faina.py
+
+8.3.6 内存抽样分析
+/redis/script/redis-sampler.rb 127.0.0.1 6379 0 10000
+/redis/script/redis-audit.rb  127.0.0.1 6379 0 10000
+
+8.3.7 统计生产上比较大的key   ./redis-cli --bigkeys
+对redis中的key进行采样，寻找较大的keys。是用的是scan方式，不用担心会阻塞redis很长时间不能处理其他的请求。执行的结果可以用于分析redis的内存的只用状态，每种类型key的平均大小。
+
+8.3.8 查看key内部结构和编码等信息    debug object
+查看一个key内部信息，比如refcount、encoding、serializedlength等，结果如下 Value at:0x7f21b9479850 refcount:1 encoding:raw serializedlength:6 lru:8462202 lru_seconds_idle:215
+
+8.3.9 Rss增加，内存碎片增加
+此时可以选择时间进行redis服务器的重新启动，并且注意在rss突然降低观察是否swap被使用，以确定并非是因为swap而导致的rss降低。
+一个典型的例子是：http://grokbase.com/t/gg/redis-db/14ag5n9qhv/redis-memory-fragmentation-ratio-reached-5000

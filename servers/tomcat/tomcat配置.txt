@@ -1,0 +1,387 @@
+tomcat配置.txt
+
+
+
+study
+jdk配置
+
+JAVA_HOME  ------------    C:\Program Files\Java\jdk1.5.0_06
+PATH  -----------------    %JAVA_HOME%\bin;
+CLASSPATH  ------------    .;%JAVA_HOME%\lib\dt.jar;%JAVA_HOME%\lib\tools.jar
+l       jdk环境配置
+变量JAVA_HOME=jdk根目录
+Path 添加%JAVA_HOME%\bin;
+java –version测试安装
+javac –help测试环境配置
+注：由于JRE运行环境在安装时默认在系统文件中布置了java运行环境。但是在jdk开发环境中不仅需要java.exe运行命令，还需要javac.exe编译命令。所以配置环境变量时应将javac.exe的环境变量配置在path的前端，使系统优先考虑jdk开发环境的命令而不是运行环境。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+ 
+l       Tomcat 设置
+             conf文件夹下
+                     context：web.xml寻找路径
+tomcat-users：用户
+server：端口
+       <Host name="localhost"  appBase="webapps"
+        unpackWARs="true" autoDeploy="true"
+        xmlValidation="false" xmlNamespaceAware="false">
+<Context docBase="myapp" path="/ myapp " reloadable="false"
+workDir=" webapps\/myapp ">
+                     </Context>
+    </Host>
+Context 元素为加载项目。Path网络访问路径，doBase为应用程序路径，
+reloadable为运行时classes和lib文件夹下自动加载类包
+webapps文件夹下：原文件
+work文件夹下：class文件
+bin文件夹下
+       startup启动tomcat（或用cmd命令在该目录下执行startup）
+ 
+
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+study
+启动配置
+
+  set JAVA_OPTS= -server -Xms1024m -Xmx1024m -XX:PermSize=256M -XX:MaxNewSize=512m - XX:MaxPermSize=256m -Djava.awt.headless=true
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+study
+启动脚本
+
+catalina.bat
+ set  JAVA_HOME=.....
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+study
+Tomcat启动
+
+
+Tomcat目录/bin/startup.bat文件是tomcat启动程序
+运行前需在Windows系统变量中配置Java_Home变量。
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+study
+session超时
+
+在tomcat的conf目录下的web.xml中：
+<session-config>  
+   <session-timeout>30</session-timeout>  
+ </session-config>  
+ 
+ 这个就是session的超时时间，单位分钟
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+study
+tomcat虚拟机
+
+在 Tomcat 的配置文件server.xml 中，Host 元素代表虚拟主机，在同一个Engine 元素下
+可以配置多个虚拟主机。例如，有两个公司的Web 应用都发布在同一个Tomcat 服务器上，
+可以分别为这两个公司创建一个虚拟主机，分别为：
+www.company1.com
+www.company2.com
+这样当Web客户访问以上两个Web应用时分别拥有各自的主机。此外，还可以为虚拟主
+机建立别名，例如，如果希望Web客户访问www.company1.com或者company1.com连接到同
+一个Web，那么可以把compan1.com作为虚拟主机的别名来处理。
+步骤一： 打开<CATLINA_HOME>/conf/server.xml 文件，发现<Engine>元素中已经有一
+个名为localhost 的<Host>元素，可以在它后面(即</Host>后面)加入如下<Host>元素：
+<Host name="www. company1.com" debug="0" appBase="C:\ company1"
+unpackWARs="true" autoDeploy="true">
+<alias>company1.com</alias>
+<alias>company1</alias>
+<Context path="/helloapp" docBase="helloapp" debug="0"
+reloadable="true" />
+</Host>
+在<Host>的deployOnStarup 属性为true 的情况下，如果你没有在server.xml 中为helloapp
+应用加入<Context>元素，Tomcat 服务器也可以自动发布和运行helloapp 应用。在这种情况
+下，Tomcat 使用默认的DefaultContext。关于DefaultContext 的内容可以参考Tomcat 文档：
+<CATLINA_HOME>/webapps/tomcat-docs/config/defaultcontext.html
+步骤二： 把helloapp 应用（WAR 文件或者整个helloapp 项目的WebRoot 目录）拷贝到
+appBase 属性指定的目录C:\ company1 下。
+步骤三： 为了使配置的虚拟机生效，必须在DNS（域名解析,就是域名对应到IP 地址的
+一种服务）服务器中注册以上虚拟机名和别名，使他们的IP 地址都指向Tomcat 服务
+器所在的机器。必须注册以下名字：
+www.company1.com
+company1.com
+company
+步骤四： 重启Tomcat 服务器，然后通过浏览器访问：
+http://www.company1.com:8080/helloapp/index.htm
+如果返回正常的页面就说明配置成功。
+  注意： 在 开 发 阶 段 我 们 无 法 配 置DNS 服务器， 可以通过修改本机
+C:\WINDOWS\system32\drivers\etc\hosts 文件来解决这个问题，在这个文件的最后一行加入：
+<你的IP 地址> www.company1.com
+<你的IP 地址> company1.com
+<你的IP 地址> company
+ Copyright ©2011 lyt. All Rights Reserved.
+
+
+
+
+
+
+
+
+
+
+
+ 打造高性能应用服务器 4 tomcat 4 linux
+
+1、增加DataService的内存管理，以下是一个比较合理的建议值。
+DataService/run.sh
+export MEM_ARGS="-Xms4g -Xmx4g -XX:PermSize=128M -XX:MaxPermSize=1024M"
+
+2、为了保证应用服务器的管理安全，屏蔽对服务器的管理操作，进行根重定向：
+ROOT/index.jsp
+response.sendRedirect("/portal/");
+
+3、所有查询不到页面指定到固定页面：
+ROOT/WEB-INF/web.xml
+  <error-page>
+    <error-code>404</error-code>
+    <location>/index.jsp</location>
+  </error-page>
+通过这种方式，结合2可以把无效页面引导到门户登录。
+
+4、性能参数调整：
+conf/server.xml
+    Executor：
+  <Executor name="tomcatThreadPool" namePrefix="catalina-exec-" maxThreads="2048" minSpareThreads="128"/>
+
+  Connector：
+    <Connector executor="tomcatThreadPool"
+               port="7001" protocol="org.apache.coyote.http11.Http11NioProtocol"
+               connectionTimeout="30000"
+               redirectPort="8443" 
+         enablelookups="false" acceptCount="1024" maxThreads="2048" URIEncoding="UTF-8"/>
+
+5、调整操作系统打开文件数
+  默认linux的一个进程最多能打开文件数为1024，对于我们的系统来说当部署几个应用以后就会超过这个限制导致部署不成功，而且该参数对即时通讯的连接数也是一个潜在限制，我们可以人为调高该值以支持系统应用，当然该值较高，操作系统会增加一定的管理负担，通过实际考察我们可以把该值固定在一定范围以内。
+比如：ulimit -n 4096
+
+6、防止连接传输的管道破裂
+  export _JAVA_SR_SIGNUM=12
+
+7、设置应用服务器管理安全
+ 调整 conf/tomcat-users.xml
+  <role rolename="manager-gui"/>
+  <user username="tomcat" password="xxx" roles="manager-gui"/>
+
+8、tomcat启动参数内存
+  调整 bin/catalina.sh，增加
+  JAVA_OPTS="-Xms2g -Xmx2g -XX:PermSize=128m -XX:MaxPermSize=1g"
+
+
+MySQL中create table语句的基本语法是：
+CREATE [TEMPORARY] TABLE [IF NOT EXISTS] tbl_name
+    [(create_definition,...)]
+    [table_options] [select_statement]
+
+TEMPORARY：该关键字表示用MySQL create table新建的表为临时表，此表在当前会话结束后将自动消失。临时表主要被应用于存储过程中，对于目前尚不支持存储过程的MySQL，该关键字一般不用。
+IF NOT EXISTS：实际上是在建表前加上一个判断，只有该表目前尚不存在时才执行create table操作。用此选项可以避免出现表已经存在无法再新建的错误。
+tbl_name：你所要创建的表的表名。该表名必须符合标识符规则。通常的做法是在表名中仅使用字母、数字及下划线。例如titles、our_sales、my_user1等都应该算是比较规范的表名。
+create_definition：这是MySQL create table语句中关键部分所在。在该部分具体定义了表中各列的属性。
+
+column_definition:  #对列的属性的定义
+    col_name type [NOT NULL | NULL] [DEFAULT default_value]
+        [AUTO_INCREMENT] [UNIQUE [KEY] | [PRIMARY] KEY]
+        [COMMENT 'string'] 
+
+col_name：表中列的名字。必须符合标识符规则，而且在表中要唯一。
+type：列的数据类型。有的数据类型需要指明长度n，并用括号括起。目前MySQL提供的数据类型详见MySQL进阶_列类型篇。
+NOT NULL | NULL：指定该列是否允许为空。如果既不指定NULL也不指定NOT NULL，列被认为指定了NULL。
+DEFAULT default_value：为列指定默认值。如果没有为列指定默认值，MySQL自动地分配一个。如果列可以取NULL作为值，缺省值是NULL。如果列被声明为NOT NULL，缺省值取决于列类型：
+    1、对于没有声明AUTO_INCREMENT属性的数字类型，缺省值是0。对于一个AUTO_INCREMENT列，缺省值是在顺    序中的下一个值。
+    2、对于除TIMESTAMP的日期和时间类型，缺省值是该类型适当的“零”值。对于表中第一个TIMESTAMP列，    缺省值是当前的日期和时间。
+    3、对于除ENUM的字符串类型，缺省是空字符串。对于ENUM，缺省值是第一个枚举值。
+AUTO_INCREMENT：设置该列有自增属性，只有整型列才能设置此属性。当你插入NULL值或0到一个AUTO_INCREMENT列中时，列被设置为value+1，在这里 value是此前表中该列的最大值。AUTO_INCREMENT顺序从1开始。每个表只能有一个AUTO_INCREMENT列，并且它必须被索引。
+UNIQUE：在UNIQUE索引中，所有的值必须互不相同。如果您在添加新行时使用的关键字与原有行的关键字相同，则会出现错误。
+KEY：KEY通常是INDEX同义词。如果关键字属性PRIMARY KEY在列定义中已给定，则PRIMARY KEY也可以只指定为KEY。这么做的目的是与其它数据库系统兼容。
+PRIMARY KEY:是一个唯一KEY，此时，所有的关键字列必须定义为NOT NULL。如果这些列没有被明确地定义为NOT NULL，MySQL应隐含地定义这些列。一个表只有一个PRIMARY KEY。如果您没有PRIMARY KEY并且一个应用程序要求在表中使用PRIMARY KEY，则MySQL返回第一个UNIQUE索引，此索引没有作为PRIMARY KEY的NULL列。
+COMMENT:对于列的评注可以使用COMMENT选项来进行指定。评注通过SHOW CREATE TABLE和SHOW FULL COLUMNS语句显示。
+-----------------------------------------------------------------------------------------------
+
+table_option:
+    {ENGINE|TYPE} = engine_name
+  | AUTO_INCREMENT = value
+  | AVG_ROW_LENGTH = value
+  | [DEFAULT] CHARACTER SET charset_name [COLLATE collation_name]
+  | CHECKSUM = {0 | 1}
+  | COMMENT = 'string'
+  | CONNECTION = 'connect_string'
+  | MAX_ROWS = value
+  | MIN_ROWS = value
+  | PACK_KEYS = {0 | 1 | DEFAULT}
+  | PASSWORD = 'string'
+  | DELAY_KEY_WRITE = {0 | 1}
+  | ROW_FORMAT = {DEFAULT|DYNAMIC|FIXED|COMPRESSED|REDUNDANT|COMPACT}
+  | UNION = (tbl_name[,tbl_name]...)
+  | INSERT_METHOD = { NO | FIRST | LAST }
+  | DATA DIRECTORY = 'absolute path to directory'
+  | INDEX DIRECTORY = 'absolute path to directory'
+
+
+ENGINE和TYPE选项用于为表指定存储引擎。ENGINE是首选的选项名称。
+
+
+ENGINE和TYPE选项采用以下值：
+
+存储引擎
+
+说明
+
+ARCHIVE
+
+档案存储引擎。请参见15.8节，“ARCHIVE存储引擎”。
+
+BDB
+
+带页面锁定的事务安全表。也称为BerkeleyDB。请参见15.5节，“BDB (BerkeleyDB)存储引擎”。
+
+CSV
+
+值之间用逗号隔开的表。请参见15.9节，“CSV存储引擎。
+
+EXAMPLE
+
+示例引擎。请参见15.6节，“EXAMPLE存储引擎”。
+
+FEDERATED
+
+可以访问远程表的存储引擎。请参见15.7节，“FEDERATED存储引擎”。
+
+HEAP
+
+见15.4节，“MEMORY (HEAP)存储引擎”。
+
+(OBSOLETE)ISAM
+
+在MySQL 5.1中没有此引擎。如果您要从以前的版本升级到MySQL 5.1，您应该在进行升级前把原有的ISAM表转换为MyISAM表。请参见第15章：存储引擎和表类型。
+
+InnoDB
+
+带行锁定和外键的事务安全表。请参见15.2节，“InnoDB存储引擎”。
+
+MEMORY
+
+本表类型的数据只保存在存储器里。（在早期MySQL版本中被称为HEAP。）
+
+MERGE
+
+MyISAM表的集合，作为一个表使用。也称为MRG_MyISAM。请参见15.3节，“MERGE存储引擎”。
+
+MyISAM
+
+二进制轻便式存储引擎，此引擎是MySQL所用的默认存储引擎。请参见15.1节，“MyISAM存储引擎”。
+
+NDBCLUSTER
+
+成簇表，容错表，以存储器为基础的表。也称为NDB。请参见第17章：MySQL簇。
+
+
+要了解有关MySQL存储引擎的更多信息，请参见第15章：存储引擎和表类型。
+如果被指定的存储引擎无法利用，则MySQL使用MyISAM代替。例如，一个表定义包括ENGINE=BDB选项，但是MySQL服务器不支持BDB表，则表被创建为MyISAM表。这样，如果您在主机上有事务表，但在从属机上创建的是非交互式表（以加快速度）时，可以进行复制设置。在MySQL 5.1中，如果没有遵守存储引擎规约，则会出现警告。
+其它表选项用于优化表的性质。在多数情况下，您不必指定表选项。这些选项适用于所有存储引擎，另有说明除外。
+·AUTO_INCREMENT
+表的初始AUTO_INCREMENT值。在MySQL 5.1中，本选项只适用于MyISAM和MEMORY表。InnoDB也支持本选项。如果引擎不支持AUTO_INCREMENT表选项，则要设置引擎的第一个auto-increment值，需插入一个“假”行。该行的值比创建表后的值小一，然后删除该假行。
+对于在CREATE TABLE语句中支持AUTO_INCREMENT表选项的引擎，您也可以使用ALTER TABLE tbl_nameAUTO_INCREMENT = n来重新设置AUTO_INCREMENT值。
+·AVG_ROW_LENGTH
+表中平均行长度的近似值。只需要对含尺寸可变的记录的大型表进行此项设置。
+当创建一个MyISAM表时，MySQL使用MAX_ROWS和AVG_ROW_LENGTH选项的乘积来确定得出的表有多大。如果有一个选项未指定，则表的最大尺寸为65,536TB数据。（如果操作系统不支持这么大的文件，则表的尺寸被限定在操作系统的限值处。）如果您想缩小指针尺寸使索引更小，速度更快，并且您不需要大文件，则您可以通过设置myisam_data_pointer_size系统变量来减少默认指针的尺寸。（见5.3.3节，“服务器系统变量”。）如果您希望所有的表可以扩大，超过默认限值，并且愿意让表稍微慢点，并稍微大点，则您可以通过设置此变量增加默认指针的尺寸。
+·[DEFAULT] CHARACTER SET
+用于为表指定一个默认字符集。CHARSET是CHARACTER SET的同义词。
+·COLLATE
+用于为表指定一个默认整序。
+·CHECKSUM
+如果您希望MySQL随时对所有行进行实时检验求和（也就是，表变更后，MySQL自动更新检验求和），则应把此项设置为1。这样做，表的更新速度会略微慢些，但是更容易寻找到受损的表。CHECKSUM TABLE语句用于报告检验求和（仅限于MyISAM）。
+·COMMENT
+表的注释，最长60个字符。
+·CONNECTION
+FEDERATED表的连接字符串。（ 注释：较早版本的MySQL使用COMMENT选项用于连接字符串。
+·MAX_ROWS
+您打算储存在表中的行数目的最大值。这不是一个硬性限值，而更像一个指示语句，指示出表必须能存储至少这么多行。
+·MIN_ROWS
+您打算存储在表中的行数目的最小值。
+·PACK_KEYS
+如果您希望索引更小，则把此选项设置为1。这样做通常使更新速度变慢，同时阅读速度加快。把选项设置为0可以取消所有的关键字压缩。把此选项设置为DEFAULT时，存储引擎只压缩长的CHAR或VARCHAR列（仅限于MyISAM）。如果您不使用PACK_KEYS，则默认操作是只压缩字符串，但不压缩数字。如果您使用PACK_KEYS=1，则对数字也进行压缩。
+在对二进制数字关键字进行压缩时，MySQL采用前缀压缩：
+o 每个关键字需要一个额外的字节来指示前一个关键字中有多少字节与下一个关键字相同。
+o 指向行的指针以高位字节优先的顺序存储在关键字的后面，用于改进压缩效果。
+这意味着，如果两个连续行中有许多相同的关键字，则后续的“相同”的关键字通常只占用两个字节（包括指向行的指针）。与此相比，常规情况下，后续的关键字占用storage_size_for_key + pointer_size（指针尺寸通常为4）。但是，只有在许多数字相同的情况下，前缀压缩才有好处。如果所有的关键字完全不同，并且关键字不能含有NULL值，则每个关键字要多使用一个字节。（在这种情况中，储存压缩后的关键字的长度的字节与用于标记关键字是否为NULL的字节是同一字节。）
+·PASSWORD
+使用密码对.frm文件加密。在标准MySQL版本中，本选项不起任何作用。
+·DELAY_KEY_WRITE
+如果您想要延迟对关键字的更新，等到表关闭后再更新，则把此项设置为1（仅限于MyISAM）。
+·ROW_FORMAT
+定义各行应如何储存。当前，此选项只适用于MyISAM表。对于静态行或长度可变行，此选项值可以为FIXED或DYNAMIC。myisampack用于把类型设置为COMPRESSED。请参见15.1.3节，“MyISAM表的存储格式”。
+在默认情况下，InnoDB记录以压缩格式存储（ROW_FORMAT=COMPACT）。通过指定ROW_FORMAT=REDUNDANT，仍然可以申请用于较早版本的MySQL中的非压缩格式。
+·RAID_TYPE
+在MySQL 5.0中,RAID支持被删除了。要了解有关RAID的说明，请参见http://dev.mysql.com/doc/refman/4.1/en/create-table.html。
+·UNION
+当您想要把一组相同的表当作一个表使用时，采用UNION。UNION仅适用于MERGE表。请参见15.3节，“MERGE存储引擎”。对于您映射到一个MERGE表上的表，您必须拥有SELECT, UPDATE和DELETE权限。（注释：以前，所有被使用的表必须位于同一个数据库中，并作为MERGE表。这些限制不再适用。）
+·INSERT_METHOD
+如果您希望在MERGE表中插入数据，您必须用INSERT_METHOD指定应插入行的表。INSERT_METHOD选项仅用于MERGE表。使用FIRST或LAST把行插入到第一个或最后一个表中；或者使用NO，阻止插入行。请参见15.3节，“MERGE存储引擎”。
+·DATA DIRECTORY, INDEX DIRECTORY
+通过使用DATA DIRECTORY='directory'或INDEX DIRECTORY='directory'，您可以指定MyISAM存储引擎放置表格数据文件和索引文件的位置。注意，目录应是通向目录的完整路径（不是相对路径）。
+仅当您没有使用--skip-symbolic-links选项时，DATA DIRECTORY, INDEX DIRECTORY才能使用。操作系统必须有一个正在工作的、线程安全的realpath()调用。要了解全面信息，请参见7.6.1.2节，“在Unix平台上使用表的符号链接”。
+--------------------------------------------------------------------------------------
+下面是一些查询示例：
+
+CREATE TABLE table1(
+    column1 varchar(50),
+    column2 varchar(50)
+);
+
+----------------------
+
+CREATE TABLE `dna` (
+  `seq_region_id` int(10) unsigned NOT NULL,
+  `sequence` longtext NOT NULL,     #这个数据类型加上下面的设置，可以导入超大文本数据         
+  PRIMARY KEY (`seq_region_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+
+-----------------------------
+
+CREATE TABLE `mapping_session` (
+  `mapping_session_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `old_db_name` varchar(80) NOT NULL DEFAULT '',
+  `new_db_name` varchar(80) NOT NULL DEFAULT '',
+  `old_release` varchar(5) NOT NULL DEFAULT '',
+  `new_release` varchar(5) NOT NULL DEFAULT '',
+  `old_assembly` varchar(20) NOT NULL DEFAULT '',
+  `new_assembly` varchar(20) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`mapping_session_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=392 DEFAULT CHARSET=latin1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

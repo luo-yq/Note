@@ -1,0 +1,256 @@
+取范围时 -1 表示末尾
+
+
+Redis 数据备份与恢复
+SAVE 命令用于创建当前数据库的备份。 
+Bgsave 该命令在后台执行。
+
+该命令将在 redis 安装目录中创建dump.rdb文件。
+恢复数据
+如果需要恢复数据，只需将备份文件 (dump.rdb) 移动到 redis 安装目录并启动服务即可。
+
+连接操作命令
+quit：关闭连接（connection）
+auth：简单密码认证
+help cmd： 查看cmd帮助，例如：help quit
+ping：测定连接是否存活
+echo：在命令行打印一些内容 
+select：选择数据库
+
+远程服务控制
+info：提供服务器的信息和统计
+monitor：实时转储收到的请求
+slaveof host port 将当前服务器转变为指定服务器的从属服务器(slave server)，改变复制策略设置
+config：在运行时配置Redis服务器
+
+服务器相关指令
+dbsize：返回当前数据库中key的数目
+info：获取服务器的信息和统计 INFO [section] 获取 Redis 服务器的各种信息和统计数值
+monitor：实时转储收到的请求，实时打印出 Redis 服务器接收到的命令，调试用
+config get 配置项：获取服务器配置的信息
+config set 配置项  值：设置配置项信息，无需重启
+flushdb：删除当前选择数据库中所有的key
+flushall：删除所有数据库中的所有的key
+time：显示服务器时间，时间戳（秒），微秒数
+bgrewriteaof：后台保存rdb快照,异步执行一个 AOF（AppendOnly File） 文件重写操作
+bgsave：后台保存rdb快照,在后台异步保存当前数据库的数据到磁盘
+save：保存rdb快照,异步保存数据到硬盘
+lastsave：上次保存时间
+shutdown [save/nosave]:注意：如果不小心运行了flushall，立即shutdown nosave，关闭服务器，然后手工编辑aof文件，去掉文件中的flushall相关行，然后开启服务器，就可以倒回原来是数据。如果flushall之后，系统恰好bgwriteaof了，那么aof就清空了，数据丢失。
+showlog：显示慢查询，SLOWLOG subcommand [argument] 管理 redis 的慢日志
+　　　　　　问：多慢才叫慢？
+　　　　　　答：由slowlog-log-slower-than 10000，来指定（单位为微秒）
+　　　　　　问：服务器存储多少条慢查询记录
+　　　　　　答：由slowlog-max-len 128，来做限制　
+
+CLIENT KILL [ip:port] [ID client-id] 关闭客户端连接
+CLIENT LIST 获取连接到服务器的客户端连接列表
+CLIENT GETNAME 获取连接的名称
+CLIENT PAUSE timeout 在指定时间内终止运行来自客户端的命令
+CLIENT SETNAME connection-name 设置当前连接的名称
+CLUSTER SLOTS 获取集群节点的映射数组
+COMMAND 获取 Redis 命令详情数组
+COMMAND COUNT 获取 Redis 命令总数
+COMMAND GETKEYS 获取给定命令的所有键
+COMMAND INFO command-name [command-name ...] 获取指定 Redis 命令描述的数组
+CONFIG REWRITE 对启动 Redis 服务器时所指定的 redis.conf 配置文件进行改写
+CONFIG RESETSTAT 重置 INFO 命令中的某些统计数据
+DEBUG OBJECT key 获取 key 的调试信息
+DEBUG SEGFAULT 让 Redis 服务崩溃
+MONITORROLE 返回主从实例所属的角色
+SYNC 用于复制功能(replication)的内部命令
+
+redis允许模糊查询key　　有3个通配符  *、?、[]
+
+对value操作的命令
+type key：返回key存储的类型，返回的字符串为string、list、set、hash和zset，如果key不存在返回none。
+exists key：判断某个key是否存在。	1表示存在，0表示不存在。
+del key：删除key
+rename key newkey：改名，如果参数中的两个Keys的命令相同，或者是源Key不存在，该命令都会返回相关的错误信息。
+renamenx key newkey：如果newkey不存在则修改成功。	1表示修改成功，否则0。
+keys(pattern)：O(N) 返回满足给定pattern的所有key，对于大型数据库而言，该命令是非常耗时的，对Redis服务器的性能打击也是比较大的。
+randomkey：从当前数据库中随机返回一个 key 。	返回的随机键，如果该数据库是空的则返回nil。
+ttl key：获得一个key的剩余生存时间（秒），如果该键不存在或没有超时设置，则返回-1。
+pttl key：查询key 的生命周期（毫秒）
+select(index)：按索引查询
+move(key, dbindex)：移动当前数据库中的key到dbindex数据库。  	移动成功返回1，否则0。
+flushdb：删除当前选择数据库中的所有key
+flushall：删除所有数据库中的所有key
+move key db 将当前数据库的 key 移动到给定的数据库 db 当中。
+expire key 整数值：设置key的生命周期以秒为单位。 	1表示超时被设置，0则表示Key不存在，或不能被设置。
+pexpire key 整数值：设置key的生命周期以毫秒为单位
+perisist key：把指定key设置为永久有效。	1表示Key的过期时间被移出，0表示该Key不存在或没有过期时间。
+
+SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination] 	O(N+M*log(M)) 	这个命令相对来说是比较复杂的，因此我们这里只是给出最基本的用法，有兴趣的网友可以去参考redis的官方文档。	返回排序后的原始列表。
+MIGRATE
+OBJECT
+RESTORE
+SCAN
+DUMP key 序列化给定 key ，并返回被序列化的值。
+EXPIREAT key timestamp  EXPIREAT 的作用和 EXPIRE 类似，都用于为 key 设置过期时间。 不同在于 EXPIREAT 命令接受的时间参数是 UNIX 时间戳(unix timestamp)。
+PEXPIREAT key milliseconds-timestamp 设置 key 过期时间的时间戳(unix timestamp) 以毫秒计
+
+  
+5）String
+set key value [ex 秒数] [px 毫秒数] [nx/xx]　ex和px同时写，则以后面的有效期为准,nx：key不存在则建立，存在时失败返回nil,xx：key存在则修改,不存在时失败返回nil
+get key：返回数据库中名称为key的string的value
+getset key nrevalue：获取并返回旧值，在设置新值
+mset key1 value1 key2 value2 一次设置多个值
+mget key1 key2 ：一次获取多个值
+setnx(key, value)：添加string，名称为key，值为value
+setex key time value：向库中添加string，设定过期时间time，以秒为单位
+msetnx(key N, value N)：如果所有名称为key i的string都不存在
+incr key：自增，返回新值，如果incr一个不是int的value则返回错误，incr一个不存在的key，则设置key为1
+incrby key integer：名称为key的string增加integer
+incrbyfloat by float： 自增浮点数　
+decr(key)：名称为key的string减1操作
+decrby(key, integer)：名称为key的string减少integer
+append key value：名称为key的string的值附加value
+substr(key, start, end)：返回名称为key的string的value的子串
+setrange key offset value：把字符串的offset偏移字节改成value，如果偏移量 > 字符串长度，该字符自动补0x00
+getrange key start stop：获取字符串中[start, stop]范围的值
+　　　　　　　　　　　　　　　　　　对于字符串的下标，左数从0开始，右数从-1开始
+　　　　　　　　　　　　　　　　　　注意：当start>length，则返回空字符串
+　　　　　　　　　　　　　　　　　　　　　当stop>=length，则截取至字符串尾
+　　　　　　　　　　　　　　　　　　　　　如果start所处位置在stop右边，则返回空字符串
+setbit key offset value：设置offset对应二进制上的值，返回该位上的旧值
+　　　　　　　　　　　　　　　　　注意：如果offset过大，则会在中间填充0
+　　　　　　　　　　　　　　　　　　　　offset最大到多少
+　　　　　　　　　　　　　　　　　　　　　2^32-1，即可推出最大的字符串为512M
+bitop operation destkey key1 [key2..]    对key1 key2做opecation并将结果保存在destkey上
+　　　　　　　　　　　　　　　　　　　　　　　　　　opecation可以是AND OR NOT XOR
+strlen key：取指定key的value值的长度
+
+GETBIT key offset对 key 所储存的字符串值，获取指定偏移量上的位(bit)。
+PSETEX key milliseconds value这个命令和 SETEX 命令相似，但它以毫秒为单位设置 key 的生存时间，而不是像 SETEX 命令那样，以秒为单位。
+BITCOUNT 
+
+6）List 
+llen key：返回名称为key的list的长度
+lrange key start stop：返回名称为key的list中start至end之间的元素 stop 为 -1 表示末尾
+ltrim key start stop：对一个列表进行修剪(trim)，就是说，让列表只保留指定区间内的元素，不在指定区间之内的元素都将被删除。
+lindex key index：返回名称为key的list中index位置的元素
+lset(key, index, value)：给名称为key的list中index位置的元素赋值
+blpop(key1, … key N,timeout)：lpop命令的block版本。移出并获取列表的第一个元素，如列表没元素会阻塞列表直到超时或发现可弹出元素。场景：长轮询ajax，在线聊天时能用到
+brpop(key1, key2,… key N, timeout)：rpop的block版本。移出并获取列表的最后一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
+lpush key value1 [value2]: 将一个或多个值插入到列表头部
+rpush key value2 [value2]: 在列表中添加一个或多个值
+lpop key ：返回并删除链表头部元素
+rpop key： 返回并删除链表尾部元素
+lrem key count value：从链表中删除value值，删除count的绝对值个value后结束　count > 0 从表头删除　　count < 0 从表尾删除　　count=0 全部删除
+linsert key after|before search value：在key 链表中寻找search，并在search值之前|之后插入value
+rpoplpush source dest：把source 的末尾拿出，放到dest头部，并返回单元值　　
+	应用场景： task + bak 双链表完成安全队列
+  　业务逻辑： rpoplpush task bak
+　　　　　　　　　接收返回值并做业务处理
+　　　　　　　　　如果成功则rpop bak清除任务，如果不成功，下次从bak表取任务
+
+3	BRPOPLPUSH source destination timeout 从列表中弹出一个值，将弹出的元素插入到另外一个列表中并返回它； 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
+LPUSHX key value 将一个或多个值插入到已存在的列表头部
+RPUSHX key value 为已存在的列表添加值
+
+7）Set 无序性、确定性、唯一性
+sadd key value1 value2：向集合添加一个或多个成员
+srem key member [member2]：删除名称为key的set中的元素member,可以是多个
+spop key：随机返回并删除名称为key的set中一个元素
+smove srckey dstkey member ：移到集合元素，把srckey的value移动到dstkey集合中
+scard key ：返回名称为key的set的基数
+sismember key member ：member是否是名称为key的set的元素
+sinter(key1, key2,…key N) ：求交集
+sinterstore(dstkey, (keys)) ：求交集并将交集保存到dstkey的集合
+sunion(key1, (keys)) ：求并集
+sunionstore(dstkey, (keys)) ：求并集并将并集保存到dstkey的集合
+sdiff(key1, (keys)) ：求差集
+sdiffstore(dstkey, (keys)) ：求差集并将差集保存到dstkey的集合
+smembers key：返回名称为key的set的所有元素
+srandmember key [count]：随机返回名称为key的set的一个或多个元素
+sscan key cursor [MATCH pattern] [COUNT count] 迭代集合中的元素
+
+8）Hash
+　　配置： hash_max_zipmap_entries 64 #配置字段最多64个
+　　　　　 hash_max_zipmap_value 512 #配置value最大为512字节
+hmset myhash field1 value1 field2 value2：同时设置多个field
+hget key field：返回名称为key的hash中field对应的value
+hmget key field1 field2：返回名称为key的hash中field i对应的value
+hmset(key, (fields))：向名称为key的hash中添加元素field 
+hincrby(key, field, integer)：将名称为key的hash中field的value增加integer
+hexists key field：名称为key的hash中是否存在键为field的域
+hdel key field2 [field2]: 删除一个或多个名称为key的hash中键为field1...的域
+hlen key：返回名称为key的hash中元素个数
+hkeys key：返回名称为key的hash中所有键
+hvals key：返回名称为key的hash中所有键对应的value
+hgetall key：返回名称为key的hash中所有的键（field）及其对应的value
+hsetnx myhash field value：不存在的情况下设置myhash的field为value
+hincrby myhash field increment：指定的hash field加上给定的值
+hincrbyfloat key field increment 为哈希表 key 中的指定字段的浮点数值加上增量 increment 。
+hscan key cursor [MATCH pattern] [COUNT count] 迭代哈希表中的键值对。
+
+9）zset
+zincrby key increment member：如果在名称为key的zset中已经存在元素member，则该元素的score增加increment；
+否则向集合中添加该元素，其score的值为increment
+zscore key element：返回名称为key的zset中元素element的score 
+zunionstore / zinterstore(dstkeyN, key1,…,keyN, WEIGHTS w1,…wN, AGGREGATE SUM|MIN|MAX)：对N个zset求并集和交集，
+并将最后的集合保存在dstkeyN中。对于集合中每一个元素的score，在进行AGGREGATE运算前，都要乘以对于的WEIGHT参数。
+如果没有提供WEIGHT，默认为1。默认的AGGREGATE是SUM，即结果集合中元素的score是所有集合对应元素进行SUM运算的值，而MIN和MAX是指，
+结果集合中元素的score是所有集合对应元素中最小值和最大值。
+
+zadd key score1 value1 [score2 member2] 向有序集合添加一个或多个成员，或者更新已存在成员的分数
+zrange key start end [withscore]：把集合排序后,返回名次[start,stop]的元素  默认是升续排列  withscores 是把score也打印出来
+zrank key member：查询member的排名（升序0名开始）若没有member元素，返回“nil”
+zrevrank key member：查询member排名（降序 0名开始）若没有member元素，返回“nil”
+zrangebyscore key min max [withscores] limit offset N：集合（升序）排序后取score在[min, max]内的元素，并跳过offset个，取出N个
+ZREVRANGEBYSCORE key max min [WITHSCORES] 返回有序集中指定分数区间内的成员，分数从高到低排序
+zremrangebyscore key min max：按照score来删除元素，删除score在[min, max]之间
+zrem key value1 value2：删除集合中的元素
+zremrangebyrank key start end：按排名删除元素，删除名次在[start, end]之间的
+zcard key：返回zset集合元素的个数
+zcount key min max：返回[min, max]区间内元素数量
+zinterstore dest numkeys key1[key2..] [WEIGHTS weight1 [weight2...]] [AGGREGATE SUM|MIN|MAX]
+　　　　　　求key1，key2的交集，key1，key2的权值分别是weight1，weight2
+　　　　　　聚合方法用 sum|min|max
+　　　　　　聚合结果 保存子dest集合内
+　　　　　　注意：weights,aggregate如何理解？
+　　　　　　　　　　答：如果有交集，交集元素又有score，score怎么处理？aggregate num->score相加，min最小score，max最大score，另外可以通过weights设置不同的key的权重，交集时  score*weight
+
+ZLEXCOUNT key min max 在有序集合中计算指定字典区间内成员数量
+ZRANGEBYLEX key min max [LIMIT offset count] 通过字典区间返回有序集合的成员
+1ZREMRANGEBYLEX key min max 移除有序集合中给定的字典区间的所有成员
+zscan key cursor [MATCH pattern] [COUNT count] 迭代有序集合中的元素（包括元素成员和元素分值）
+
+10)Transaction（事务）
+DISCARD
+EXEC
+MULTI
+UNWATCH
+WATCH
+
+11)Script（脚本）
+
+EVAL script numkeys key [key ...] arg [arg ...] 执行 Lua 脚本。
+	EVAL "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}" 2 key1 key2 first second
+EVALSHA sha1 numkeys key [key ...] arg [arg ...] 执行 Lua 脚本。
+SCRIPT EXISTS script [script ...] 查看指定的脚本是否已经被保存在缓存当中。
+SCRIPT FLUSH 从脚本缓存中移除所有脚本。
+SCRIPT KILL 杀死当前正在运行的 Lua 脚本。
+SCRIPT LOAD script 将脚本 script 添加到脚本缓存中，但并不立即执行这个脚本。
+
+Pub/Sub（发布/订阅）
+
+PSUBSCRIBE pattern [pattern ...] 订阅一个或多个符合给定模式的频道。
+PUBSUB subcommand [argument [argument ...]] 查看订阅与发布系统状态。
+PUBLISH channel message 将信息发送到指定的频道。发布消息后，对应的订阅收到消息
+PUNSUBSCRIBE [pattern [pattern ...]] 退订所有给定模式的频道。
+SUBSCRIBE channel [channel ...] 订阅给定的一个或多个频道的信息。
+UNSUBSCRIBE [channel [channel ...]] 指退订给定的频道。
+
+
+Redis HyperLogLog
+Redis HyperLogLog 是用来做基数统计的算法，HyperLogLog 的优点是，在输入元素的数量或者体积非常非常大时，计算基数所需的空间总是固定 的、并且是很小的。
+在 Redis 里面，每个 HyperLogLog 键只需要花费 12 KB 内存，就可以计算接近 2^64 个不同元素的基 数。这和计算基数时，元素越多耗费内存就越多的集合形成鲜明对比。
+但是，因为 HyperLogLog 只会根据输入元素来计算基数，而不会储存输入元素本身，所以 HyperLogLog 不能像集合那样，返回输入的各个元素。
+什么是基数?
+比如数据集 {1, 3, 5, 7, 5, 7, 8}， 那么这个数据集的基数集为 {1, 3, 5 ,7, 8}, 基数(不重复元素)为5。 基数估计就是在误差可接受的范围内，快速计算基数。
+
+PFADD key element [element ...] 添加指定元素到 HyperLogLog 中。
+PFCOUNT key [key ...] 返回给定 HyperLogLog 的基数估算值。
+PFMERGE destkey sourcekey [sourcekey ...] 将多个 HyperLogLog 合并为一个 HyperLogLog

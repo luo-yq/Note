@@ -1,0 +1,94 @@
+ZooKeeper日志与快照文件简单分析.txt
+
+有用过Zookeeper的都知道zoo.cfg配置文件中有dataDir配置项用于存储数据，不过可能有些人不太清楚这个目录具体存储的是那些数据，默认情况下这个目录是用于存储Log（事务日志）与Snapshot（快照）数据，但是Zookeeper还提供了一个用于Log存储目录的配置项dataLogDir而dataDir用于存储Snapshot数据，Log文件写入频率非常高如果有对Snapshot文件经常操作或是对Zookeeper性能要求非常高可以为Log与Snapshot分别配置不同的目录存储；本文主要是结合源码分析Zookeeper的Log与Snapshot文件，这里我分别为Log与Snapshot配置了不同的存储目录：dataDir=D:/zookeeper-3.4.6/data 、dataLogDir=D:/zookeeper-3.4.6/data/log；
+　　事务日志与Snapshot的操作是在org.apache.zookeeper.server.persistence包中，这里也主要是分析该包下的各个类；在FileTxnSnapLog类中看到了它在我们为事务日志与Snapshot配置的目录下又创建了一个子目录version-2同时又指定为该两种文件的存储目，在里面还可以看到FileTxnLog、FileSnap类分别为处理事务日志和Snapshot的；
+
+事务日志文件
+
+　　在Zab协议中我们知道每当有接收到客户端的事务请求后Leader与Follower都会将把该事务日志存入磁盘日志文件中，该日志文件就是这里所说的事务日志，下面将详细分析该日志文件；
+　　FileTxnLog类用于处理事务日志文件这里就从此类开始，在该类中看到了preAllocSize、TXNLOG_MAGIC、VERSION、lastZxidSeen、dbId等这样的属性：
+　　1. preAllocSize: 默认预分配的日志文件的大小65536*1024字节
+　　2. TXNLOG_MAGIC：日志文件魔数为ZKLG
+　　3. VERSION：日志文件版本号2
+　　4. lastZxidSeen：最后的ZXID
+
+　　类中还有一个静态代码块用于读取配置项中的preAllocSize，也就是说预分配的日志文件大小是可配置的，接下来看看该类中最重要的一个方法append，该方法主要功能是创建新的日志文件与往日志文件中追加新的事务日志记录；从中可以看到日志文件的相关信息：
+
+　　1. 文件名为log，后缀为十六进制的ZXID
+　　2. 日志文件头有：magic、version、dbid
+　　3. 创建文件后分配的文件大小为：67108864字节+16字节，其中16字节为文件头
+　　4. 使用Adler32作为日志文件的校验码
+　　5. 当日志文件写满预分配大大小后就扩充日志文件一倍大小
+
+
+　　　　　　　　1.1 日志文件目录
+
+　　正如从代码中看到的一样version-2目录中存储着Zookeeper的事务日志文件，有看到log.10、log.4f文件，这些都是Zookeeper的事务日志文件；这两个文件都有一个特点就是文件名为log.xx，大小为64MB文件的后缀xx时间最早的 数字总是比最晚的小。如果有了解过Zookeeper的ZAB协议那肯定知道它为每一个事务请求都分配了一个事务ID也就是ZXID，上面章节也知道了xx就是Zookeeper处理请求的ZXID，该ZXID为log文件中第一条事务的ZXID；ZXID规则为前32 字节为Leader周期，后32字节为事务请求序列，所以通过事务日志就可以轻松的知道当前的Leader周期与每个文件所属的Leader周期；
+
+日志文件可视化
+　　事务日志文件中存储的都是二进制的数据，如果不借助其他工具是很难知道里面存储的内容的，Zookeeper也给我们提供了这样的工具，在org.apache.zookeeper.server包中的LogFormatter类为我们提供了把事务日志文件以我们看得懂的数据输出的功能，这里就使用该工具输出该事务日志文件，并解释该数据；
+　　LogFormatter工具的使用方法： java -cp ../../../zookeeper-3.4.6.jar;../../../lib/slf4j-api-1.6.1.jar org.apache.zookeeper.server.LogFormatter log.1
+
+
+
+日志分析：
+　　第一行：ZooKeeper Transactional Log File with dbid 0 txnlog format version 2
+　　上面的代码分析中有说到每个日志文件都有一个这就是那里所说的日志头，这里magic没有输出，只输出了dbid还有version；
+
+　　第二行：15-8-12 下午03时59分53秒 session 0x14f20ea71c10000 cxid 0x0 zxid 0x1 createSession 4000
+　　这也就是具体的事务日志内容了，这里是说xxx时间有一个sessionid为0x14f20ea71c10000、cxid为0x0、zxid为0x1、类型为createSession、超时时间为4000毫秒
+
+　　第三行：15-8-12 下午03时59分54秒 session 0x14f20ea71c10000 cxid 0x1 zxid 0x2 create '/solinx0000000000,#736f6c696e78,v{s{31,s{'world,'anyone}}},F,1
+　　sessionID为0x14f20ea71c10000，cxid：0x01、zxid：0x02、创建了一个节点路径为：/solinx0000000000、节点内容为：#736f6c696e78(经过ASCII，实际内容为solinx)、acl为world:anyone任何人都可以管理该节点、节点不是ephemeral节点的、父节点子版本：1
+
+　　第四行：15-8-12 下午04时15分56秒 session 0x14f20ea71c10000 cxid 0x0 zxid 0x3 closeSession null
+　　这里是说xxx时间有一个sessionid为0x14f20ea71c10000、cxid为0x0、zxid为0x3、类型为closeSession
+
+快照文件
+
+　　快照文件的处理在FileSnap类中，与事务日志文件一样快照文件也一样有SNAP_MAGIC、VERSION、dbId这些，这作用也只是用来标识这是一个快照文件；Zookeeper的数据在内存中是以DataTree为数据结构存储的，而快照就是每间隔一段时间Zookeeper就会把整个DataTree的数据序列化然后把它存储在磁盘中，这就是Zookeeper的快照文件，快照文件是指定时间间隔对数据的备份，所以快照文件中数据通常都不是最新的，多久抓一个快照这也是可以配置的snapCount配置项用于配置处理几个事务请求后生成一个快照文件；
+　　与事务日志文件一样快照文件也是使用ZXID作为快照文件的后缀，在FileTxnSnapLog类中的save方法中生成文件并调用FileSnap类序列化DataTree数据并且写入快照文件中；
+
+
+　　　　　　　　1.2 快照文件目录
+
+快照文件可视化
+　　与日志文件一样Zookeeper也为快照文件提供了可视化的工具org.apache.zookeeper.server包中的SnapshotFormatter类，接下来就使用该工具输出该事务日志文件，并解释该数据；
+　　SnapshotFormatter工具的使用方法： java -cp ../../zookeeper-3.4.6.jar;../../lib/slf4j-api-1.6.1.jar org.apache.zookeeper.server.SnapshotFormatter snapshot.17
+
+
+
+
+快照分析
+　　快照文件就很容易看得懂了，这就是Zookeeper整个节点数据的输出；
+
+　　第一行：ZNode Details (count=11):
+　　ZNode节点数总共有11个
+
+　　/cZxid = 0x00000000000000
+　　ctime = Thu Jan 01 08:00:00 CST 1970
+　　mZxid = 0x00000000000000
+　　mtime = Thu Jan 01 08:00:00 CST 1970
+　　pZxid = 0x00000000000016
+　　cversion = 7
+　　dataVersion = 0
+　　aclVersion = 0
+　　ephemeralOwner = 0x00000000000000
+　　dataLength = 0
+
+这么一段数据是说，根节点/：
+　　cZxid：创建节点时的ZXID
+　　ctime：创建节点的时间
+　　mZxid：节点最新一次更新发生时的zxid
+　　mtime：最近一次节点更新的时间
+　　pZxid：父节点的zxid
+　　cversion：子节点更新次数
+　　dataVersion：节点数据更新次数
+　　aclVersion：节点acl更新次数
+　　ephemeralOwner：如果节点为ephemeral节点则该值为sessionid，否则为0
+　　dataLength：该节点数据的长度
+
+快照文件的末尾：
+　　Session Details (sid, timeout, ephemeralCount): 　　0x14f211584840000, 4000, 0 　　0x14f211399480001, 4000, 0
+　　这里是说当前抓取快照文件的时间Zookeeper中Session的详情，有两个session超时时间都是4000毫秒ephemeral节点为0；
+

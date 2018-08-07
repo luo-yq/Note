@@ -1,0 +1,18 @@
+WebLogic10 JBPM报错hibernate的jar包冲突.txt
+
+WebLogic10 JBPM报错hibernate的jar包冲突问题
+错误信息:org.hibernate.QueryException: ClassNotFoundException: org.hibernate.hql.ast.HqlT主要是因为hibernate3新版本的ASTQueryTranslatorFactory需要ANTLR库的支持，但是在weblogic.jar这个里面已经含有一个版本的ANTLR，从而类装载的问题而已找不到你的那个类
+解决方法:方法一:使用classic的翻译器，但是这样就不能用hql进行update和delete了 在hibernate.cfg.xml文件中设置一下这个property:
+ <property   name="hibernate.query.factory_class">
+       org.hibernate.hql.classic.ClassicQueryTranslatorFactory
+ </property>
+ 删除时会报错:org.hibernate.QueryException: query must begin with SELECT or FROM: delete [
+方法二:在启动项设置classpath
+方法三:删除WEBLOGIC自带ANTLR.jar
+这三种方法都不是很好,不能根本解决问题.最好的办法是在weblogic.xml中进行设置,让weblogic首先加载web工程中的类.这样也同时避免了其他类似问题.
+ <weblogic-web-app>
+ <container-descriptor>   
+   <prefer-web-inf-classes>true</prefer-web-inf-classes>
+ </container-descriptor>
+ </weblogic-web-app>
+ Copyright ©2011 lyt. All Rights Reserved.

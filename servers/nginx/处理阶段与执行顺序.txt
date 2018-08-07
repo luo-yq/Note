@@ -1,0 +1,37 @@
+
+
+rewrite阶段
+set
+set_by_lua
+rewrite_by_lua
+
+
+
+access阶段
+deny
+allow
+access_by_lua
+
+
+
+
+
+
+content阶段
+
+该阶段的指令在同一个location里建议只用一个，因为优先级不确定，当有多种指令时，仅会执行其中的一种
+
+proxy_pass 优先执行导致其他不执行
+echo  与  content_by_lua 放在后面的执行了
+实验以下是不是  先出现的种类不执行，不关心谁在最后
+
+
+
+以下组合可以并用
+echo_before
+proxy_pass
+echo_after
+
+
+echo_exec
+echo_location

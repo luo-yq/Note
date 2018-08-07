@@ -1,0 +1,205 @@
+安装模块
+Nginx 模块必须在编译时就进行选择，目前不支持在运行时进行模块选择。
+
+在编译时，可以通过命令 ./configure --help 运行所提供的配置脚本来查看所有支持的编译选项列表（包含可选模块）。
+
+
+
+Nginx 核心模块
+这些模块是必须的。
+
+名称	说明
+Main	配置错误日志、进程、权限等。
+Events	配置epoll、kqueue、select、poll等。
+
+标准 HTTP 模块
+这些模块是默认均被编译进去的，除非通过configure明确地禁用它们。
+
+名称	说明	版本	禁用选项
+Core	控制端口、location、错误页、别名和其他必要配置。	--without-http
+Access	基于客户端IP地址允许/拒绝Http请求。	--without-http_access_module
+Auth Basic	Basic HTTP 认证。	--without-http_auth_basic_module
+Auto Index	自动为没有索引页面的目录生成文件列表。	--without-http_autoindex_module
+Browser	翻译"User-Agent" 字符串。	0.4.3	--without-http_browser_module
+Charset	对Web页面重新编码。	--without-http_charset_module
+Empty GIF	在内存中生成一个高1像素、宽1像素的GIF图片，并对外提供服务。	0.3.10	--without-http_empty_gif_module
+FastCGI	提供对FastCGI的支持。	--without-http_fastcgi_module
+Geo	通过IP地址的键值对来设置配置参数。	0.1.17	--without-http_geo_module
+Gzip	支持使用Gzip压缩响应内容。	--without-http_gzip_module
+Headers	可以设定任意的HTTP响应头。
+Index	控制将哪些文件作为索引页面。	
+Limit Requests	限定客户端创建连接的频率。	0.7.20	--without-http_limit_req_module
+Limit Zone	限定客户端同时建立连接的最大数。从1.1.8起不再推荐使用，建议使用 Limit Conn。	0.5.6	--without-http_limit_zone_module
+Limit Conn	通过配置参数限定客户端的最大并发连接数。	--without-http_limit_conn_module
+Log	可以定制访问日志。	
+Map	以键值对的方式设定任意配置参数。	0.3.16	--without-http_map_module
+Memcached	支持Memcached。	--without-http_memcached_module
+Proxy	代理上级服务器。	--without-http_proxy_module
+Referer	基于RefererHTTP请求头对请求进行过滤。	--without-http_referer_module
+Rewrite	使用正则表达式对请求进行重写。	--without-http_rewrite_module
+SCGI	支持SCGI协议。	0.8.42	--without-http_scgi_module
+Split Clients	基于某些条件将客户端分类。	0.8.37	--without-http_split_clients_module
+SSI	支持服务器端的include。	--without-http_ssi_module
+Upstream	支持负载均衡。	--without-http_upstream_ip_hash_module (ip_hash directive only)
+User ID	发行用户身份标识cookie。	--without-http_userid_module
+uWSGI	支持uWSGI协议。	0.8.40	--without-http_uwsgi_module
+X-Accel	类X-Sendfile模块。	
+
+可选 HTTP 模块
+下面的模块必须在编译时为 configure 明确地设定相应的启用选项。
+
+名称	说明	版本	启用选项
+Addition	可以为页面追加文本。	--with-http_addition_module
+Degradation	允许当剩余内存较低时对某些位置的请求返回 204 或 404 状态码。	0.8.25	--with-http_degradation_module
+Embedded Perl	允许在配置文件中使用 Perl。	0.3.21	--with-http_perl_module
+FLV	支持 Flash视频(Flash Streaming Video)。	0.4.7	--with-http_flv_module
+GeoIP	根据来自 MaxMind 的 GeoIP 二进制文件中的信息创建变量。	0.8.6, 0.7.63	--with-http_geoip_module
+Google Perftools	支持 Google 性能工具。	0.6.29	--with-google_perftools_module
+Gzip Precompression	提供预压缩的静态文件。	0.6.23	--with-http_gzip_static_module
+Image Filter	支持使用 Libgd 对图片进行变换。	0.7.54	--with-http_image_filter_module
+MP4	允许对 mp4 流进行寻址。	1.1.3, 1.0.7	--with-http_mp4_module
+Random Index	允许使目录索引随机化。	0.7.15	--with-http_random_index_module
+Real IP	允许将 nginx 作为后端服务器。	0.3.8	--with-http_realip_module
+Secure Link	允许通过密钥保护指定的文件。	0.7.18	--with-http_secure_link_module
+SSL	支持 HTTPS/SSL。	--with-http_ssl_module
+Stub Status	提供查看服务器统计信息的能力。	0.1.18	--with-http_stub_status_module
+Substitution	可以替换页面中的文本。	--with-http_sub_module
+WebDAV	支持 WebDAV 穿透。	0.3.38	--with-http_dav_module
+XSLT	允许对页面使用 XSLT 进行后处理。	0.7.8	--with-http_xslt_module
+
+邮件模块
+名称	说明	配置参数
+Core	使 Nginx 能够处理/代理 IMAP、POP3、SMTP协议。	--with-mail
+		--without-mail_pop3_module
+		--without-mail_imap_module
+		--without-mail_smtp_module
+Auth	使用 Nginx 为邮件服务进行认证。	
+Proxy	使 Nginx 能够代理 IMAP、POP3、SMTP协议。	
+SSL	该模块可以让 POP3/IMAP/SMTP 使用 SSL/TLS。	--with-mail_ssl_module
+
+
+
+第三方模块和补丁
+https://www.nginx.com/resources/wiki/modules/
+
+
+Module	Description	Repository
+Accept Language Module	Accept-Language header parser	giom/nginx_accept_language_module
+AFCGI	Asynchronous/multiplexing FastCGI for NGINX	rsms/afcgi
+Akamai G2O	Restricts access to content to Akamai edge servers using G2O headers	refractalize/nginx_mod_akamai_g2o
+Array Var	Add support for array variables to NGINX config files	openresty/array-var-nginx-module
+Audio Track for HTTP Live Streaming	Generate audio track for HTTP Live Streaming (HLS) streams on the fly	flavioribeiro/nginx-audio-track-for-hls-module
+HTTP Digest Authentication	HTTP Digest Authentication	atomx/nginx-http-auth-digest
+PAM Authentication	HTTP Basic Authentication using PAM	stogh/ngx_http_auth_pam_module
+Request Authentication	Allows authorization based on subrequest result	ngx_http_auth_request_module
+Auto Lib	Reuse pre-compiled/installed versions of OpenSSL, PCRE and Zlib	simpl/ngx_auto_lib
+AWS Auth	Generate security headers for GET requests to Amazon S3	anomalizer/ngx_aws_auth
+Backtrace	A NGINX module to dump backtrace case a worker process exits abnormally	alibaba/nginx-backtrace
+Brotli	Serves dynamically or statically compressed responses with brotli	google/ngx_brotli
+Cache Purge	Adds ability to purge content from FastCGI, proxy, and uWSGI caches	FRiCKLE/ngx_cache_purge
+Circle Gif	Generates simple circle images with colors/size specified in the URL	evanmiller/nginx_circle_gif
+Clojure	A module for embedding Clojure, Java, and Groovy programs	nginx-clojure/nginx-clojure
+Concat	Concatenates files in a given context	alibaba/nginx-http-concat
+Upstream Consistent Hash	Select backend based on Consistent hash ring	replay/ngx_http_consistent_hash
+Development Kit	An extension to the core functionality of NGINX	simpl/ngx_devel_kit
+Upstream Domain Resolve	An asynchronous domain name resolve module for NGINX upstream	wdaike/ngx_upstream_jdomain/
+HTTP Drizzle	Make NGINX talk directly to MySQL or Drizzle database servers	openresty/drizzle-nginx-module
+Dynamic etags	NGINX module for etags on dynamic content	kali/nginx-dynamic-etags
+Dynamic Upstream	Update upstreams’ config by restful interface	yzprofile/ngx_http_dyups_module
+HTTP Echo	Provides familiar shell-style commands to NGINX HTTP servers	openresty/echo-nginx-module
+Stream Echo	Provides familiar shell-style commands to NGINX stream servers	openresty/stream-echo-nginx-module
+Encrypted Session	Encrypt NGINX variables for light-weight session-based authentication	openresty/encrypted-session-nginx-module
+Enhanced Memcached	Repackaging of the standard memcached module to add features	bpaquet/ngx_http_enhanced_memcached_module
+Eval	A module for evaluating memcached or proxy response into variable	vkholodkov/nginx-eval-module
+Eval (OpenResty’s fork)	Captures arbitrary subrequests’ responses into custom NGINX variables	openresty/nginx-eval-module
+EY Balancer	Provides a request queue for limiting concurrent requests	ezmobius/nginx-ey-balancer
+Upstream Fair Balancer	Distributes incoming requests to least-busy servers	gnosek/nginx-upstream-fair
+Fancy Index	Like the built-in autoindex module, but fancier	aperezdc/ngx-fancyindex
+Foot Filter	Implements a body filter that adds a given string to the page footer	alibaba/nginx-http-footer-filter
+Footer If Filter	Applies a footer if a response meets a specified condition	flygoast/ngx_http_footer_if_filter/
+Form Input	Parses HTTP POST request bodies and saves results to NGINX variables	calio/form-input-nginx-module
+GeoIP2	City and country code lookups via the MaxMind GeoIP2 API	leev/ngx_http_geoip2_module
+GridFS	NGINX module for serving files from MongoDB’s GridFS	mdirolf/nginx-gridfs
+Groovy	A module for embedding Clojure, Java, and Groovy programs	nginx-clojure/nginx-clojure
+Headers More	Set and clear input and output headers... more than “add”!	openresty/headers-more-nginx-module
+HTTP Healthcheck	Health check HTTP servers inside an upstream	cep21/healthcheck_nginx_upstreams
+HTTP Accounting	Realtime netflow and status code monitoring	Lax/ngx_http_accounting_module
+HTTP Iconv	Converts character encodings	calio/iconv-nginx-module
+Internal Redirect	A NGINX module for internal redirection	flygoast/ngx_http_internal_redirect/
+IP2Location	Identifies the country name/code of an IP address	chrislim2888/ip2location-nginx
+Java	A module for embedding Clojure, Java, and Groovy programs	nginx-clojure/nginx-clojure
+JavaScript	Embedding SpiderMonkey, a full port of Perl module, and more	peter-leonov/ngx_http_js_module#readme
+Upstream Ketama CHash	Provides upstream load distribution by hashing a configurable variable	flygoast/ngx_http_upstream_ketama_chash/releases/
+Limit Upload Rate	Limit the transmission rate of request body from a client	cfsego/limit_upload_rate
+Limit Upstream Connection	Limits the maximum connections to each server in a upstream	cfsego/nginx-limit-upstream/
+Log If	Log the requests only when given conditions are met	cfsego/ngx_log_if/
+Log ZMQ	Log the requests via ZeroMQ	sapo/nginx-log-zmq/
+Lower Upper Case	Provides upper/lowercase string functions in NGINX config files	replay/ngx_http_lower_upper_case
+HTTP Lua	Embed the power of Lua into NGINX HTTP servers (OpenResty Official)	openresty/lua-nginx-module
+Stream Lua	Embed the power of Lua into NGINX TCP servers (OpenResty Official)	openresty/stream-lua-nginx-module
+Luafile	Embed the power of Lua into NGINX	alacner/nginx_lua_module
+HTTP Lua Upstream	Make Nginx http upstream configurations scriptable by Lua	openresty/lua-upstream-nginx-module
+MD5 Filter	Returns the MD5 sum of content that would’ve otherwise been served	kainswor/nginx_md5_filter
+HTTP Memc	Extension of the standard memcached module	openresty/memc-nginx-module
+ModSecurity	Web application firewall	spiderlabs/modsecurity/
+Mogilefs	Implements a MogileFS client	Download
+Mongo	Upstream module for direct communication with MongoDB	simpl/ngx_mongo
+MP4 Streaming Lite	Seeks time within H.264/MP4 files if a “start” parameter is in the URL	Download
+Nchan	Pubsub server for Websockets, Long-Poll, EventSource etc.	slact/nchan
+Naxsi	Web Application Firewall for NGINX	nbs-system/naxsi
+Notice	Serve static file to POST requests	kr/nginx-notice
+OCSP proxy	OCSP processing module designed for response caching	kyprizel/nginx_ocsp_proxy-module
+OpenSSL Version	OpenSSL minimum version constraints in configuration	apcera/nginx-openssl-version
+Owner Match	Provides a simple file owner-based access control	Download
+PageSpeed	Rewrites webpages and associated assets to reduce latency and bandwidth	pagespeed/ngx_pagespeed
+PHP Session Parser	Extract values that are stored in a serialized PHP session	replay/ngx_http_php_session
+PHP-Memache Standard Hash	Load balancer that imitates the PHP-Memcache standard hash’s behaviour	replay/ngx_http_php_memcache_standard_balancer
+POST authentication	Authentication and authorization via POST request and PAM	veruu/ngx_form_auth
+Postgres	Allows NGINX to communicate directly with PostgreSQL database	Download
+Pubcookie	Adds Pubcookie-based cross-site authentication method to NGINX	Download
+HTTP Push Stream	Turns NGINX into an adept stream HTTP Push server	wandenberg/nginx-push-stream-module
+HTTP rDNS	Makes a reverse DNS lookup and provides control of incoming hostname	flant/nginx-http-rdns
+RDS CSV	Helps ngx_drizzle, ngx_postgres, and others emit Comma-Separated Values	openresty/rds-csv-nginx-module
+RDS JSON	Helps ngx_drizzle, ngx_postgres, and others emit JSON data	openresty/rds-json-nginx-module
+HTTP Redis	Redis support module	Download
+HTTP Redis2	HTTP Upstream module for the full Redis 2.0 protocol	openresty/redis2-nginx-module
+Replace Filter	Performs regular expression substitutions on response bodies	openresty/replace-filter-nginx-module
+Roboo	HTTP Robot Mitigator that integrates easily with NGINX	yuri-gushin/Roboo/downloads
+RRD Graph	This module provides an HTTP interface to RRDtool’s graphing facilities	evanmiller/mod_rrd_graph
+RTMP	RTMP protocol support. Live streaming and video on demand	arut/nginx-rtmp-module
+Sass	Compiles SASS files in NGINX before sending the response	mneudert/sass-nginx-module
+Secure Download	Create expiring links	replay/ngx_http_secure_download
+Selective Cache Purge	A cache purge module that allows GLOB expressions like .jpg or /test	wandenberg/nginx-selective-cache-purge-module
+Set CConv	Conversion between Simplified and Traditional Chinese at rewrite phase	liseen/set-cconv-nginx-module
+Set Hash	Set a variable to hash functions, including MD5, SHA1 and Murmurhash 2	simpl/ngx_http_set_hash
+Set Lang	Set a variable to indicate the language based on a variety of sources	simpl/ngx_http_set_lang/downloads
+HTTP Set Misc	Various set_xxx directives added to NGINX’s rewrite module	openresty/set-misc-nginx-module
+sFlow	Operational performance monitoring with standard sFlow protocol	Download
+Shibboleth Auth	Perform authorization based on subrequest to Shibboleth FastCGI app	nginx-shib/nginx-http-shibboleth
+Slice	NGINX module for serving a file in slices (reverse byte-range)	alibaba/nginx-http-slice
+SlowFS Cache	Adds ability to cache static files	Download
+SmallLight	Dynamic Image Transformation Module For NGINX	cubicdaiya/ngx_small_light
+Sorted Querystring	Expose a variable with the parameters ordered to be used as a cache_key	wandenberg/nginx-sorted-querystring-module
+Sphinx	NGINX upstream module for Sphinx 2.x	reeteshranjan/sphinx2-nginx-module
+SPNEGO	Support for SPNEGO/gssapi in NGINX	stnoonan/spnego-http-auth-nginx-module
+HTTP SRCache	Transparent subrequest-based caching layout for NGINX locations	openresty/srcache-nginx-module
+Static etags	Generates etags for static content	mikewest/nginx-static-etags
+Statsd	Adds the ability for NGINX to interacting with Statsd	zebrafishlabs/nginx-statsd
+Sticky upstream	Adds an upstream server persistance using cookies	nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz
+Subrange	Split one big HTTP/Range request to multiple subrange requesets	Qihoo360/ngx_http_subrange_module
+Substitutions	Performs regular expression and string substitutions on response bodies	yaoweibin/ngx_http_substitutions_filter_module
+Summarizer	An upstream module for Summarizer 1.0	reeteshranjan/summarizer-nginx-module
+Supervisord	Communicate with supervisord and manage backends on-demand	Download
+SysGuard	Protects servers when system load or memory use goes too high	alibaba/nginx-http-sysguard
+TCP Proxy	TCP proxy with NGINX, includes health check and status monitor	yaoweibin/nginx_tcp_proxy_module
+TestCookie module	Simple robot (DDoS) mitigation module	kyprizel/testcookie-nginx-module
+Types Filter	Changes the Content-Type output header on specified conditions	flygoast/ngx_http_types_filter
+UnZip	serve file directly from the archives	youzee/nginx-unzip-module
+Upload	Handles file uploads using multipart/form-data encoding (RFC 1867)	vkholodkov/nginx-upload-module
+NGINX Upload Progress Module	Tracks and reports upload progress	masterzen/nginx-upload-progress-module
+Url	A module to convert uri to user-defined encoding	vozlt/nginx-module-url
+User Agent	A more powerful module than the native BrowserModule	alibaba/nginx-http-user-agent
+Video Thumb Extractor	NGINX module to extract thumbs from a video file	wandenberg/nginx-video-thumbextractor-module
+VTS	A virtual host and upstream traffic status module	vozlt/nginx-module-vts
+XSS	Native support for cross-site scripting (XSS)	openresty/xss-nginx-module
+Zip	Assemble ZIP archives on the fly	evanmiller/mod_zip
