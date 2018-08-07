@@ -1,0 +1,85 @@
+
+
+服务安装
+docker pull rocketchat/rocket.chat:latest
+docker pull rocket.chat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+开发环境
+
+安装nodeJs和npm
+测试 node -v  ; npm -v
+
+安装meteor
+curl https://install.meteor.com/ | sh
+
+测试 
+meteor create ~/my_cool_app
+cd ~/my_cool_app
+meteor
+
+如果报错
+Error: Cannot find module ‘@babel/runtime/helpers/builtin/interopRequireDefault’
+做以下操作
+Copy “${path_to_app}\node_modules\@babel\runtime\helpers” (just files, not folder “esm”)
+to “${path_to_app}\node_modules\@babel\runtime\helpers\builtin” (create builtin folder)
+
+
+
+在浏览器中输入：http://localhost:3000/ 
+
+
+下载和运行Rocket.chat
+下载Rocket.chat 最好使用git 的命令：
+
+git clone https://github.com/RocketChat/Rocket.Chat.git
+
+cd Rocket.Chat
+meteor npm start
+
+在执行meteor 命令，运行时可能会遇到如下的错误信息：
+
+=> Started proxy.                             
+=> Started MongoDB.                                                             
+/Users/yf/.meteor/packages/meteor-tool/.1.4.2.zi1w5b++os.osx.x86_64+web.browser+web.cordova/mt-os.osx.x86_64/dev_bundle/lib/node_modules/meteor-promise/promise_server.js:190
+      throw error;
+      ^
+
+Error: EBADF: bad file descriptor, read
+    at Error (native)
+ => awaited here:
+    at Promise.await (/Users/yf/.meteor/packages/meteor-tool/.1.4.2.zi1w5b++os.osx.x86_64+web.browser+web.cordova/mt-os.osx.x86_64/dev_bundle/lib/node_modules/meteor-promise/promise_server.js:39:12)
+    at Object.wrapper [as readFile] (/tools/fs/files.js:1522:32)
+    at /tools/isobuild/isopack.js:979:15
+    at Array.forEach (native)
+    at Function._.each._.forEach (/Users/yf/.meteor/packages/meteor-tool/.1.4.2.zi1w5b++os.osx.x86_64+web.browser+web.cordova/mt-os.osx.x86_64/dev_bundle/lib/node_modules/underscore/underscore.js:79:11)
+
+这个错误提示，我怀疑是工程未下载完整，或者有文件缺失导致的。
+
+我的做法：删除工程，然后在网络较好的情况下，重新执行 git clone 命令 下载工程。这个错误没有再出现。
+
+如果遇到下面这个错误： 
+这里写图片描述
+
+解决办法： 执行 npm cache clean 命令，清除npm 下载的库的缓存，然后再次运行，项目就会正常跑起来。
+
+当项目正常运行，我们会看到如下提示信息： 
+这里写图片描述
+
+如果你到了这里，恭喜你！ 
+Rocket.chat 已经正常跑起来了，我们可以在浏览器内输入http://localhost:3000/ ，就会看到Rocket.chat的登录页面。
+
