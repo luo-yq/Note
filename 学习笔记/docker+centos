@@ -406,6 +406,40 @@ bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --topic mykafka --from-
 
 
 
+docker pull tvial/docker-mailserver:latest
+
+curl -o setup.sh https://raw.githubusercontent.com/tomav/docker-mailserver/master/setup.sh
+chmod a+x ./setup.sh
+curl -o docker-compose.yml https://raw.githubusercontent.com/tomav/docker-mailserver/master/docker-compose.yml.dist
+curl -o .env https://raw.githubusercontent.com/tomav/docker-mailserver/master/.env.dist
+
+#修改主机
+vi .env 
+
+./setup.sh email add admin@192.168.1.107 123456
+./setup.sh config dkim
+
+#Creating DKIM private key /tmp/docker-mailserver/opendkim/keys/192.168.1.107/mail.private
+#Creating DKIM KeyTable
+#Creating DKIM SigningTable
+#Creating DKIM TrustedHosts
+#Now the keys are generated, you can configure your DNS server by just pasting the content of config/opendkim/keys/192.168.1.107/mail.txt 
+
+docker-compose up -d mail
+
+
+
+
+
+
+
+docker run -p "25:25" -p "143:143" -p "9999:9999" -p "110:110" linagora/james-jpa-sample:3.0.1
+
+
+
+
+
+
 
 
 

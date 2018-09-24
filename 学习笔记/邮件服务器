@@ -1,0 +1,73 @@
+sudo scutil --set HostName pallasli.cn 
+
+
+docker pull centos:7
+docker run -i -t -v /Volumes/card/docker/share:/media/data --name james centos:7 /bin/bash
+
+yum -y update
+# glibc-devel中包含libc6
+yum -y install vim wget zip unzip glibc-devel
+
+
+  *	JRE 1.6+
+  * root (linux/unix) or Administrator (Windows)
+  * libc6 (linux)
+  * 512MB RAM (launches with -Xmx512M - can use less, can need more, depending on load)
+
+
+tar -zxvf jdk-8u181-linux-x64.tar.gz
+mv jdk1.8.0_181/ /opt/jdk
+
+在 /etc/profile 最后加入：
+
+export JAVA_HOME=/opt/jdk/
+export JRE_HOME=/opt/jdk/jre
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib:$JRE_HOME/lib:$CLASSPATH
+export PATH=$JAVA_HOME/bin:$PATH
+
+让环境变量生效：
+
+$ source /etc/profile
+
+
+
+wget http://mirror.bit.edu.cn/apache/james/server/james-server-app-3.0.1-app.zip
+
+
+unzip james-server-app-3.0.1-app.zip
+cp -r james-server-app-3.0.1/ /opt/james
+cd /opt/james
+
+
+
+将所有的模板拷贝一份：如
+cp conf/indexer-template.xml conf/indexer.xml
+cp conf/quota-template.xml conf/quota.xml
+cp conf/events-template.xml conf/events.xml
+cp conf/managesieveserver-template.xml conf/managesieveserver.xml
+./bin/james console
+
+
+./bin/james-cli.sh -h localhost -p 9999 adddomain 192.168.1.107
+./bin/james-cli.sh -h localhost -p 9999 adduser user01@192.168.1.107 123456
+./bin/james-cli.sh -h localhost -p 9999 adduser user02@192.168.1.107 123456
+./bin/james-cli.sh -h localhost -p 9999 adduser user03@192.168.1.107 123456
+
+
+
+exit
+生成镜像
+# 将容器生成镜像
+docker commit -m="has java" -a="pallasli" james pallasli/centos7:james-0.1
+
+# 开启容器，并进行映射
+docker run -t -i -v /Volumes/card/docker/share:/media/data --name james -p 110:110 -p 25:25 pallasli/centos7:james-0.1 /bin/bash
+
+#将镜像打包并推到仓库
+docker push ccoke/centos:james-0.1
+
+
+
+docker exec james /bin/bash -c "source /etc/profile && /opt/james/bin/james-cli.sh -h localhost -p 9999 adduser user05@192.168.1.107 123456" 
+
+

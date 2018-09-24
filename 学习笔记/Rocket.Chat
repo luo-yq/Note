@@ -51,6 +51,13 @@ git clone https://github.com/RocketChat/Rocket.Chat.git
 cd Rocket.Chat
 meteor npm start
 
+
+
+无法连接Google，使用淘宝镜像源
+npm install chromedriver --chromedriver_cdnurl=http://cdn.npm.taobao.org/dist/chromedriver
+meteor npm install --save bcrypt
+meteor npm install sharp
+
 在执行meteor 命令，运行时可能会遇到如下的错误信息：
 
 => Started proxy.                             
@@ -82,4 +89,11 @@ Error: EBADF: bad file descriptor, read
 
 如果你到了这里，恭喜你！ 
 Rocket.chat 已经正常跑起来了，我们可以在浏览器内输入http://localhost:3000/ ，就会看到Rocket.chat的登录页面。
+
+
+
+
+
+
+
 
