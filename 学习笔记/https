@@ -1,1 +1,36 @@
 https:  let encrypt
+
+
+普通java证书
+keytool -genkeypair -alias tomcat -keyalg RSA -keystore /tmp/tomcat.key
+//其中-alias是证书的别名,RSA是加密算法,-keystore后是输出证书的路径所在
+
+
+let's encrypt
+git clone https://github.com/letsencrypt/letsencrypt
+cd letsencrypt
+#生成证书
+./letsencrypt-auto certonly --standalone --email 邮箱 -d 域名
+
+
+第三、Let's Encrypt免费SSL证书获取与应用
+在完成Let's Encrypt证书的生成之后，我们会在"/etc/letsencrypt/live/zhaoheqiang.me/"域名目录下有4个文件就是生成的密钥证书文件。
+cert.pem  - Apache服务器端证书
+chain.pem  - Apache根证书和中继证书
+fullchain.pem  - Nginx所需要ssl_certificate文件
+privkey.pem - 安全证书KEY文件
+如果我们使用的Nginx环境，那就需要用到fullchain.pem和privkey.pem两个证书文件，在部署Nginx的时候需要用到。在Nginx环境中，只要将对应的ssl_certificate和ssl_certificate_key路径设置成我们生成的2个文件就可以。
+#打开linux配置文件，找到HTTPS 443端口配置的server
+ ssl_certificate /etc/letsencrypt/live/zhaoheqiang.me/fullchain.pem;
+ ssl_certificate_key /etc/letsencrypt/live/zhaoheqiang.me/privkey.pem;
+
+生成jks证书
+# openssl pkcs12 -export -in fullchain.pem -inkey privkey.pem -out fullchain_and_key.p12 -name tomcat
+# keytool -importkeystore -deststorepass 'yourJKSpass' -destkeypass 'yourKeyPass' -destkeystore MyDSKeyStore.jks -srckeystore fullchain_and_key.p12 -srcstoretype PKCS12 -srcstorepass 'yourPKCS12pass' -alias tomcat
+openssl pkcs12 -export -in fullchain.pem -inkey privkey.pem -out fullchain_and_key.p12 -name tomcat
+keytool -importkeystore -deststorepass 'yourJKSpass' -destkeypass 'yourKeyPass' -destkeystore MyDSKeyStore.jks -srckeystore fullchain_and_key.p12 -srcstoretype PKCS12 -srcstorepass 'yourPKCS12pass' -alias tomcat
+
+
+第四、解决Let's Encrypt免费SSL证书有效期问题
+#自动延期
+./letsencrypt-auto --renew certonly --email 邮箱 -d 域名
