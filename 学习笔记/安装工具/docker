@@ -1,0 +1,47 @@
+基本命令
+
+
+#下载
+docker pull 镜像名:镜像标记
+#打标记
+docker tag 镜像名:镜像标记 镜像库/镜像名:镜像标记
+#上传
+docker push 镜像库/镜像名:镜像标记
+#查找镜像
+docker search 镜像名
+#生成镜像
+docker save -o 路径.tar 镜像名:镜像标记
+#进入容器客户端
+docker exec -it 容器id zkCli.sh  
+#加载镜像
+docker load -i 路径.tar  
+#列出本机上的镜像列表
+docker images
+#生成镜像-m:提交的描述信息   -a:指定镜像作者    e218edb10161：容器ID     runoob/ubuntu:v2:指定要创建的目标镜像名
+docker commit -m="web项目" -a="lyt" e218edb10161 lyt/ubuntu:web.1
+#登录容器
+docker attach 容器id  
+#查看已启动的容器
+docker ps 
+#停止容器
+docker stop  容器id
+
+
+
+
+#启动
+docker run 参数 镜像名:镜像标记
+守护进程： --restart=always 
+后台启动：-d 
+交互式启动：-it 
+映射端口：-p 端口号:原端口号
+映射路径：-v 路径：原路径
+命名：--name 镜像名
+
+
+
+常用镜像
+
+
+镜像安装
+

@@ -9,3 +9,7 @@ XWPF (XML字处理器格式) : 它是用来读取和写入MS-Word的docx扩展�
 HSLF (可怕的幻灯片版式格式) : 它是用于读取，创建和编辑PowerPoint演示文稿。
 HDGF (可怕的图表格式) : 它包含类和方法为MS-Visio的二进制文件。
 HPBF (可怕的出版商格式) : 它被用来读取和写入MS-Publisher文件。
+
+
+
+

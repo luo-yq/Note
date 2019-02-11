@@ -1,7 +1,3 @@
-
-
-
-
 Maven导出Project依赖的jar包
 
 从Maven仓库中导出jar包：
@@ -18,15 +14,6 @@ mvn dependency:copy-dependencies -DoutputDirectory=lib   -DincludeScope=compile
 
 打包
 mvn install -Dmaven.test.skip=true 
-
-
-
-
-
-
-
-
-
 
 
 <?xml version="1.0" encoding="UTF-8"?>
