@@ -1,0 +1,46 @@
+配置 Docker 加速器
+Linux
+curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://f1361db2.m.daocloud.io
+该脚本可以将 --registry-mirror 加入到你的 Docker 配置文件 /etc/docker/daemon.json 中。适用于 Ubuntu14.04、Debian、CentOS6 、CentOS7、Fedora、Arch Linux、openSUSE Leap 42.1，其他版本可能有细微不同。更多详情请访问文档。
+
+macOS
+Docker For Mac
+右键点击桌面顶栏的 docker 图标，选择 Preferences ，在 Daemon 标签（Docker 17.03 之前版本为 Advanced 标签）下的 Registry mirrors 列表中加入下面的镜像地址: http://f1361db2.m.daocloud.io
+点击 Apply & Restart 按钮使设置生效。
+
+Docker Toolbox 等配置方法请参考帮助文档。
+
+Windows
+Docker For Windows
+在桌面右下角状态栏中右键 docker 图标，修改在 Docker Daemon 标签页中的 json ，把地址:http://f1361db2.m.daocloud.io
+加到" registry-mirrors"的数组里。点击 Apply 。
+
+使用 Docker 需要经常从官方获取镜像，国内拉取镜像的过程非常耗时。
+DaoCloud 推出DaoCloud 加速器 ，通过智能路由和缓存机制，极大提升了国内网络访问 Docker Hub 的速度，并得到了 Docker 官方的大力推荐。
+linux
+自动配置 Docker 加速器（推荐）
+适用于 Ubuntu14.04、Debian、CentOS6 、CentOS7、Fedora、Arch Linux、openSUSE Leap 42.1
+registry-mirror配置命令  如下（注意修改为自己的地址）：
+curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://你的的地址.m.daocloud.io
+
+在配置完成后根据终端中的提示重启 docker使配置生效。
+手动配置 Docker 加速器
+Docker 版本在 1.8 - 1.11
+找到 Docker 配置文件，不同的 Linux 发行版的配置路径不同，具体路径请参考 Docker官方文档
+在配置文件中的 DOCKER_OPTS 加入 --registry-mirror=你的加速地址
+重启Docker（不同的 Linux 发行版的重启命令不一定相同）
+service docker restart
+
+Docker for Mac
+建议加入其他国内镜像
+https://docker.mirrors.ustc.edu.cn
+https://hub-mirror.c.163.com
+
+Docker for Windows
+在桌面右下角状态栏中右键 docker 图标，修改在 Docker Daemon 标签页中的 json ，把 加速地址(在加速器页面获取)加到"registry-mirrors"的数组里。点击 Apply 使设置生效。
+
+注意!上方的文本为 json 语法，请确定您的修改符合语法规则，否则将无法配置成功。
+Docker Toolbox
+（不推荐使用 docker toolbox，建议使用新的 docker for mac 及 docker for windows 以在这两种平台运行 docker ）
+请确认你的 Docker Toolbox 已经启动，并执行下列命令（请将 加速地址 替换为在加速器页面获取的专属地址）
+docker-machine ssh defaultsudo sed -i "s|EXTRA_ARGS='|EXTRA_ARGS='--registry-mirror=加速地址 |g" /var/lib/boot2docker/profileexitdocker-machine restart default

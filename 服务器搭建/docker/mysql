@@ -1,0 +1,9 @@
+docker pull mysql:5.6
+
+
+#启动mysql
+mkdir -p ~/mysql/data ~/mysql/logs ~/mysql/conf
+cd ~/mysql
+docker run --name mysql -m 16GB -p 3306:3306 -v $PWD/conf:/etc/mysql/conf.d -v $PWD/logs:/logs -v $PWD/data:/var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD=123456 -d mysql:5.6
+

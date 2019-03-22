@@ -5,8 +5,6 @@
 1. kill -TERM pid
 2. kill -KILL pid
 
-
-
 jvm选项（当最大内存相对于服务器内存不太大时，最好设置启动内存=最大内存，可减少tomcat重新分配内存时占用的时间）
 -Xms256M :设置jvm启动时堆栈内存的大小
 -Xmx512M :设置jvm可扩展的最大堆栈内存
@@ -18,8 +16,6 @@ bin/digest.sh -a MD5 tomcat
 
 server.xml 中配置<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
                resourceName="UserDatabase" digest=“MD5”/>
-
-
 
 权限多种管理方式，单一签入，会话管理
 
@@ -75,14 +71,6 @@ cgi???
 
 
 
-
-
-
-
-
-
-
-
 管理员用户设置
 
 You are not authorized to view this page.
@@ -110,5 +98,3 @@ Note that for Tomcat 7 onwards, the roles required to use the host manager appli
 The HTML interface is protected against CSRF but the text interface is not. To maintain the CSRF protection:
 	•	Users with the admin-gui role should not be granted the admin-script role.
 	•	If the text interface is accessed through a browser (e.g. for testing since this interface is intended for tools not humans) then the browser must be closed afterwards to terminate the session.
-
-

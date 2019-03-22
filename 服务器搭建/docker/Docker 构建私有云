@@ -1,9 +1,7 @@
 安装
-
 支持的Ubuntu版本  12.0.4，14.0.4，16.0.4
 支持的cpu 64位 x86或arm
 支持内核  >=3.10
-
 
 #查看内核与操作系统
 uname -a  
@@ -13,9 +11,7 @@ sudo apt-get install -y --install-recommends linux-generic-lts-trusty
 #14.0.4升级内核到xenial
 sudo apt-get install -y --install-recommends linux-generic-lts-xenial
 
-
 以下以Ubuntu xenial 16.0.4 lts 为例
-
 
 
 如果需要swap limit这些功能，就需要修改 GRUB 的配置文件 /etc/default/grub ，在 GRUB_CMDLINE_LINUX 中添加内核引导参数
@@ -25,7 +21,6 @@ vim /etc/default/grub
 
 。 然后不要忘记了更新 GRUB:
 使用脚本自动安装
-
 
 $ sudo update-grub
 $ sudo reboot
@@ -60,7 +55,6 @@ sudo systemctl start docker
 # sudo apt-get -y install docker-ce=[VERSION]
 
 
-
 #14.0.4配置加速器 vim /etc/default/docker
 #DOCKER_OPTS="--registry-mirror=https://jxus37ad.mirror.aliyuncs.com"
 
@@ -75,12 +69,6 @@ sudo systemctl restart docker
 firewall-cmd --zone=public --add-port=80/tcp --permanent
 firewall-cmd --reload
 
- 
-
-
-
-
-
 
 修改存储目录
 centos7下，也可以
@@ -92,19 +80,7 @@ vi /usr/lib/systemd/system/docker.service
 ExecStart=/usr/bin/dockerd --graph /new-path/docker 
 
  // reload配置文件 
-
 systemctl daemon-reload 
 
  // 重启docker 
-
-
-
 systemctl restart docker.service
-
-
-
-
-
-
-
-

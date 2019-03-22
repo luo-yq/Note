@@ -1,0 +1,12 @@
+docker pull redis
+docker pull redis:alpine
+
+
+
+#启动redis
+mkdir -p ~/redis ~/redis/data
+cd ~/redis
+docker run --name redis -p 6379:6379 -v $PWD/data:/data  -d redis:alpine redis-server --appendonly yes
+
+docker exec -it redis redis-cli
+

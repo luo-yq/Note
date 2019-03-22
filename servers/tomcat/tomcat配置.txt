@@ -127,15 +127,6 @@ C:\WINDOWS\system32\drivers\etc\hosts 文件来解决这个问题，在这个文
 <你的IP 地址> www.company1.com
 <你的IP 地址> company1.com
 <你的IP 地址> company
- Copyright ©2011 lyt. All Rights Reserved.
-
-
-
-
-
-
-
-
 
 
 
@@ -245,51 +236,39 @@ ENGINE和TYPE选项采用以下值：
 说明
 
 ARCHIVE
-
 档案存储引擎。请参见15.8节，“ARCHIVE存储引擎”。
 
 BDB
-
 带页面锁定的事务安全表。也称为BerkeleyDB。请参见15.5节，“BDB (BerkeleyDB)存储引擎”。
 
 CSV
-
 值之间用逗号隔开的表。请参见15.9节，“CSV存储引擎。
 
 EXAMPLE
-
 示例引擎。请参见15.6节，“EXAMPLE存储引擎”。
 
 FEDERATED
-
 可以访问远程表的存储引擎。请参见15.7节，“FEDERATED存储引擎”。
 
 HEAP
-
 见15.4节，“MEMORY (HEAP)存储引擎”。
 
 (OBSOLETE)ISAM
-
 在MySQL 5.1中没有此引擎。如果您要从以前的版本升级到MySQL 5.1，您应该在进行升级前把原有的ISAM表转换为MyISAM表。请参见第15章：存储引擎和表类型。
 
 InnoDB
-
 带行锁定和外键的事务安全表。请参见15.2节，“InnoDB存储引擎”。
 
 MEMORY
-
 本表类型的数据只保存在存储器里。（在早期MySQL版本中被称为HEAP。）
 
 MERGE
-
 MyISAM表的集合，作为一个表使用。也称为MRG_MyISAM。请参见15.3节，“MERGE存储引擎”。
 
 MyISAM
-
 二进制轻便式存储引擎，此引擎是MySQL所用的默认存储引擎。请参见15.1节，“MyISAM存储引擎”。
 
 NDBCLUSTER
-
 成簇表，容错表，以存储器为基础的表。也称为NDB。请参见第17章：MySQL簇。
 
 
@@ -367,20 +346,6 @@ CREATE TABLE `mapping_session` (
   `created` datetime NOT NULL,
   PRIMARY KEY (`mapping_session_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=392 DEFAULT CHARSET=latin1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

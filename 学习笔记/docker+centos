@@ -43,6 +43,7 @@ docker pull ubuntu:16.04
 
 docker pull cloudera/quickstart 
 docker pull sath89/oracle-12c
+docker pull bofm/oracle12c
 
 
 
@@ -267,6 +268,8 @@ docker exec -it redis redis-cli
 
 #启动oracle
 docker run --name oracle -p 18080:8080 -p 1521:1521 -d sath89/oracle-12c
+docker run -d --shm-size 1GB --name oracle_database -p 1521:1521 -v /data bofm/oracle12c
+
 #默认配置
 #hostname: localhost
 #port: 1521

@@ -1,0 +1,202 @@
+
+
+docker pull solr:alpine
+docker pull httpd:alpine
+docker pull node:alpine
+docker pull haproxy:alpine
+docker pull memcached:alpine
+
+docker pull google/cadvisor  docker 监控
+docker pull consul
+docker pull storm
+docker pull rocket.chat
+docker pull redmine
+docker pull idoop/zentao
+docker pull sebp/elk
+docker pull mysql:5.6
+docker pull apache/nutch
+docker pull robertoandrade/jitsi-meet
+docker pull stilliard/pure-ftpd
+docker pull probablyfine/flume
+docker pull wordpress  cms建站平台 php 
+docker pull wurstmeister/kafka
+docker pull garethflowers/svn-server
+docker pull eroadltd/jmeter
+docker pull cassandra
+ 
+
+#私有仓库需要越狱Google创建账号
+#启动镜像私有仓库，默认存储路径为 /opt/data/registry
+docker run -d -p 5000:5000 registry 
+
+docker login
+
+#标记镜像
+docker tag
+#将标记的镜像上传到私有仓库
+docker push
+
+#下载镜像
+docker pull 
+
+#根据以下命令，编写项目启动文件
+
+
+
+#使用守护进程-d 80端口映射 nginx 镜像的80端口,挂载配置文件
+docker run --name nginx -p 80:80 -v $PWD/www:/www -v $PWD/conf/nginx.conf:/etc/nginx/nginx.conf -v $PWD/logs:/wwwlogs  -d nginx
+#将主机中当前目录下的test挂载到容器的/usr/local/tomcat/webapps/test，  --privileged=true 给予权限
+docker run --privileged=true --name tomcat -p 8080:8080 -v $PWD/test:/usr/local/tomcat/webapps/test -d tomcat  
+
+
+#安装jenkins
+docker pull jenkins
+#jenkins要求文件所属用户为1000
+mkdir jenkins
+chown -R 1000:1000 jenkins/
+#启动
+docker run --privileged=true --name jenkins -p 8081:8080 -p 50000:50000  -v $PWD/jenkins:/var/jenkins_home -d jenkins
+
+#访问地址
+http://192.168.1.10:8081/
+
+cat jenkins/secrets
+
+
+#镜像资源地址
+https://hub.docker.com/ 
+
+
+#安装svn （svnsever）
+mkdir svn
+docker run \
+    --name svn-server \
+    -d \
+    --privileged=true  -v $PWD/svn:/var/opt/svn \
+    -p 8082:3690 \
+    garethflowers/svn-server
+
+#使用svnadmin创建仓库
+docker exec -it svn-server svnadmin create repos
+
+修改 repos/conf下的配置文件
+
+vi svnserve.conf配置如下：
+
+[general]
+anon-access = none　　　　#使非授权用户无法访问
+auth-access = write　　　　#使授权用户有写权限
+password-db = passwd　　#指明密码文件路径
+authz-db = authz　　　　　#访问控制文件
+
+配置用户： vi passwd 配置说明如下：
+
+[users]
+user1 = 123　　　　#用户名 = 密码
+user2 = 123　　　　#用户名 = 密码
+
+配置权限：vi authz 常用配置说明如下：
+
+[group]
+group1 = user1,user2　　#组中用户与passwd中对应
+
+[repo:/]
+user1 = rw　　　　　 #单用户
+@group1 = rw　　　　#@表示组
+*=r　　　　　　　　　 #表示所有用户
+
+仓库下目录配置
+[repo:/folder1]　　　　#仓库下的folder1目录，权限配置与上面相同
+
+
+
+#启动docker监控，
+mkdir -p /var/run /var/lib/docker /dev/disk 
+
+mount -o remount,rw '/cadvisor/sys/fs/cgroup'
+sudo ln -s /sys/fs/cgroup/cpu,cpuacct /sys/fs/cgroup/cpuacct,cpu
+
+docker run \
+  --privileged=true \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:rw \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  --publish=10001:8080 \
+  --detach=true \
+  --name=cadvisor \
+  google/cadvisor:latest
+
+
+  --volume=/sys:/sys:ro \
+
+ 
+
+#启动elk
+#需要先修改主机的配置
+vi /etc/sysctl.conf 
+
+vm.max_map_count=655360
+
+sysctl -p
+
+#5601 (Kibana web interface).
+#9200 (Elasticsearch JSON interface).
+#5044 (Logstash
+docker run --name elk -p 5601:5601 -p 9200:9200 -p 9300:9300 -p 5044:5044 -d sebp/elk
+ 
+历史总结
+echo '870705' | sudo -S bin/mysqld_safe --skip-grant-tables &
+
+
+
+
+
+
+#rocketchat 以 mongo 为数据库进行添加
+docker run -d --name mongo -p 27017:27017 mongo --auth
+docker run --name rocketchat -p 3000:3000 --env ROOT_URL=http://192.168.195.101 --env MONGO_URL=mongodb://192.168.195.101/mydb -d rocket.chat
+#设置管理员和登录或注册地址
+http://192.168.195.101:3000
+
+
+
+
+#启动cassandra
+docker run --name cassandra1 -p 9042:9042 -d cassandra
+
+#连接方式 docker run --name some-app --link cassandra1:cassandra -d app-that-uses-cassandra
+
+
+#集群
+#docker run --name cassandra2 -d -e CASSANDRA_SEEDS="$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' cassandra1)" cassandra
+docker run --name cassandra2 -d --link cassandra1:cassandra cassandra
+
+#使用cql连接Cassandra
+docker run -it --link cassandra2:cassandra --rm cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR"'
+docker run -it --link cassandra2:cassandra --rm cassandra cqlsh cassandra
+
+
+
+CREATE TABLE if not exists mydb.test1001 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1002 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1003 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1004 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1005 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1006 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1007 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1008 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1009 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1011 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1012 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1013 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1014 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1015 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1016 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1017 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1018 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+CREATE TABLE if not exists mydb.test1019 (a text,b int,c text,d int,PRIMARY KEY (a, b));
+
+
+
+docker run -p "25:25" -p "143:143" -p "9999:9999" -p "110:110" linagora/james-jpa-sample:3.0.1
+

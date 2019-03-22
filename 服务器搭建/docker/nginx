@@ -1,0 +1,65 @@
+docker pull nginx
+
+
+#创建nginx目录
+mkdir -p ~/nginx/www ~/nginx/logs ~/nginx/conf
+vi nginx.conf
+#nginx启动
+cd
+#-p 80:80：将容器的80端口映射到主机的80端口
+#--name mynginx：将容器命名为mynginx
+#-v $PWD/www:/www：将主机中当前目录下的www挂载到容器的/www
+#-v $PWD/conf/nginx.conf:/etc/nginx/nginx.conf：将主机中当前目录下的nginx.conf挂载到容器的/etc/nginx/nginx.conf
+#-v $PWD/logs:/wwwlogs：将主机中当前目录下的logs挂载到容器的/wwwlogs
+docker run -p 80:80 --name mynginx -v $PWD/www:/www -v $PWD/conf/nginx.conf:/etc/nginx/nginx.conf -v $PWD/logs:/wwwlogs  -d nginx  
+
+
+
+
+
+docker pull nginx:alpine
+
+
+
+#启动nginx
+#后台 http://localhost/
+
+rm -rf ~/nginx
+mkdir -p ~/nginx/conf80
+
+cd ~/nginx
+
+
+docker run --privileged=true --name nginx80  -p 80:80 -d  nginx:alpine
+
+docker cp nginx80:/etc/nginx/conf.d $PWD/conf80/conf.d
+docker cp nginx80:/etc/nginx/nginx.conf $PWD/conf80/nginx.conf
+
+docker stop nginx80
+docker rm nginx80
+
+docker run --privileged=true --name nginx80 \
+  -v $PWD/conf80/conf.d:/etc/nginx/conf.d:ro \
+  -v $PWD/conf80/nginx.conf:/etc/nginx/nginx.conf:ro \
+  -p 80:80 -p 38000:38000 -d  nginx:alpine
+
+
+vi ~/nginx/conf80/conf.d
+
+
+upstream tomcat_oa{
+        server 192.168.22.106:8081;
+        server 192.168.22.106:8082;
+        server 192.168.22.106:8083;
+    }
+
+#proxy_pass的结尾是/会取代匹配值，结尾不是/只会取代ip和端口
+server{
+    location /oa/ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://tomcat_oa/;
+    }   
+}
+
+docker restart nginx80
