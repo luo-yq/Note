@@ -1,0 +1,56 @@
+centos在国内发展较快，所谓的性能问题应会逐渐被解决。
+
+1. 安装docker
+#检查版本 要求64位，内核>3.10
+uname -r
+
+使用root或sudo执行
+#更新yum资源
+yum -y update
+#两种安装方式
+yum -y install docker-io
+#curl -fsSL https://get.docker.com/ | sh
+
+vi /etc/sysconfig/docker
+# /etc/sysconfig/docker
+
+# Modify these options if you want to change the way the docker daemon runs
+
+OPTIONS='--selinux-enabled=false  --log-driver=journald --signature-verification=false'
+if [ -z "${DOCKER_CERT_PATH}" ]; then
+    DOCKER_CERT_PATH=/etc/docker
+fi
+
+:wq 
+
+
+#启动docker
+service docker start
+#测试docker
+docker run hello-world
+
+
+#添加镜像加速
+#网易加速器：http://hub-mirror.c.163.com
+#官方中国加速器(只含一些公有镜像)：https://registry.docker-cn.com
+#ustc的镜像：https://docker.mirrors.ustc.edu.cn
+
+
+vi /etc/docker/daemon.json
+
+{
+  "registry-mirrors": ["http://hub-mirror.c.163.com"]
+}
+
+
+
+/var/lib/docker/volumes  数据文件目录
+
+docker stats 容器名
+
+
+
+docker update -m 2048m <name>
+
+
+
