@@ -29,8 +29,14 @@ mkdir -p ~/nginx/conf80
 
 cd ~/nginx
 
-
 docker run --privileged=true --name nginx80  -p 80:80 -d  nginx:alpine
+
+
+
+docker cp nginx80:/etc/nginx/conf.d E:/nginx/config/
+docker cp E:/nginx/config/conf.d  nginx80:/etc/nginx/
+
+
 
 docker cp nginx80:/etc/nginx/conf.d $PWD/conf80/conf.d
 docker cp nginx80:/etc/nginx/nginx.conf $PWD/conf80/nginx.conf
