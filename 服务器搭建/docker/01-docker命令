@@ -1,13 +1,4 @@
-#下载一个镜像
-docker pull registry:2
 
-#启动registry
-docker run -d -p 5000:5000 --restart=always --name registry -v /opt/registry:/var/lib/registry registry:2
-
-#打标记
-docker tag centos 192.168.116.148:5000/centos
-#上传
-docker push 192.168.116.148:5000/centos
 
 #查找镜像
 docker search 镜像名
@@ -16,13 +7,13 @@ cd /opt
 mkdir downloads
 
 #将镜像文件保存到指定文件
-docker save -o /opt/downloads/zookeeper-image.tar zookeeper:3.4.11  
-docker save -o /opt/downloads/ubuntu-image.tar ubuntu:16.04 
-docker save -o /opt/downloads/centos-image.tar centos:7
-docker save -o /opt/downloads/redis-image.tar redis  
-docker save -o /opt/downloads/nginx-image.tar nginx  
-docker save -o /opt/downloads/mongo-image.tar mongo  
-docker save -o /opt/downloads/mysql-image.tar mysql:5.6 
+docker save -o ~/docker/zookeeper-image.tar zookeeper:3.4.11  
+docker save -o ~/docker/ubuntu-image.tar ubuntu:16.04 
+docker save -o ~/docker/centos-image.tar centos:7
+docker save -o ~/docker/redis-image.tar redis  
+docker save -o ~/docker/nginx-image.tar nginx  
+docker save -o ~/docker/mongo-image.tar mongo  
+docker save -o ~/docker/mysql-image.tar mysql:5.6 
 
 #上传镜像到私服中共其他用户使用
 

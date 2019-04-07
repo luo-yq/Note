@@ -4,3 +4,10 @@ docker pull mongo
 #启动mongo
 
 docker run -d --name mongo -p 27017:27017 mongo --auth
+
+#打标记
+docker tag mongo pallasli/mongo
+#上传
+docker push pallasli/mongo
+
+docker run -d --name mongo -p 27017:27017 pallasli/mongo --auth

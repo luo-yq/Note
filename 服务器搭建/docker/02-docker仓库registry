@@ -1,2 +1,11 @@
 docker pull registry:2
-docker run -d -p 5000:5000 --restart=always --name registry -v /opt/registry:/var/lib/registry registry:2
+mkdir -p ~/docker/registry
+docker run -d -p 5000:5000 --restart=always --name registry -v ~/docker/registry:/var/lib/registry/docker/registry registry:2
+
+
+#打标记
+docker tag centos 127.0.0.1:5000/centos
+#上传
+docker push 127.0.0.1:5000/centos
+
+

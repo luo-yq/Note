@@ -1,9 +1,19 @@
 docker pull mysql:5.6
 
+docker run --name mysql -m 16GB -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -d mysql:5.6
 
-#启动mysql
-mkdir -p ~/mysql/data ~/mysql/logs ~/mysql/conf
-cd ~/mysql
-docker run --name mysql -m 16GB -p 3306:3306 -v $PWD/conf:/etc/mysql/conf.d -v $PWD/logs:/logs -v $PWD/data:/var/lib/mysql \
-  -e MYSQL_ROOT_PASSWORD=123456 -d mysql:5.6
+mkdir -p /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql
+mkdir -p /Users/pallasli/GitHub/platform/docker/mysql/data
+docker cp mysql:/etc/mysql/conf.d /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql
+
+#打标记
+docker tag mysql:5.6 pallasli/mysql
+#上传
+docker push pallasli/mysql
+
+
+docker run --name mysql -m 16GB -p 3306:3306 \
+  -v /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql:/etc/mysql \
+  -v /Users/pallasli/GitHub/platform/root/mysql/data:/var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD=123456 -d pallasli/mysql
 
