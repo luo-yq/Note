@@ -1,0 +1,25 @@
+docker pull kurento/kurento-media-server
+docker tag kurento/kurento-media-server pallasli/kms
+docker push pallasli/kms
+docker rmi kurento/kurento-media-server
+docker pull pallasli/kms
+
+E:
+cd GItHub/platform/docker
+mkdir kms
+cd kms
+mkdir tmp
+
+docker run -d --name kms -p 8888:8888 -v /e/GItHub/platform/docker/kms/tmp:/tmp pallasli/kms
+
+
+内网用户A-------公网S-----------内网用户B
+需要打洞服务器
+
+
+
+kurento安装需要ubuntu，需要https支持。
+保存文件到http服务器。
+通过url访问视频。
+
+

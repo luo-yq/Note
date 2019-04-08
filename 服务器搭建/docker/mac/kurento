@@ -1,13 +1,27 @@
 
-docker push kurento/kurento-media-server
+docker pull kurento/kurento-media-server
 docker run -d --name kms -p 8888:8888 -v /tmp/kms:/tmp kurento/kurento-media-server
 
+
+#windows
+E:
+mkdir -p GItHub/platform/docker/kms/tmp 
+#打标记
+docker tag kurento/kurento-media-server pallasli/kms
+#上传
+docker push pallasli/kms
+
+docker run -d --name kms -p 8888:8888 -v E:/GItHub/platform/docker/kms/tmp:/tmp kurento/kurento-media-server
+
+#linux
 
 #打标记
 docker tag kurento/kurento-media-server pallasli/kms
 #上传
 docker push pallasli/kms
+
 docker run -d --name kms -p 8888:8888 -v /Users/pallasli/GitHub/platform/docker/kms/tmp:/tmp kurento/kurento-media-server
+
 
 
 内网用户A-------公网S-----------内网用户B

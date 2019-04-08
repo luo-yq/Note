@@ -1,0 +1,12 @@
+docker pull webcenter/activemq 
+docker tag webcenter/activemq pallasli/activemq
+docker push pallasli/activemq
+docker rmi webcenter/activemq 
+
+docker stop activemq
+docker rm activemq
+
+
+docker pull pallasli/activemq 
+
+docker run -d --name activemq -p 61616:61616 -p 8161:8161 pallasli/activemq

@@ -1,0 +1,51 @@
+
+docker pull oracleinanutshell/oracle-xe-11g
+docker tag oracleinanutshell/oracle-xe-11g pallasli/oracle
+docker push pallasli/oracle
+docker rmi oracleinanutshell/oracle-xe-11g
+
+
+Docker Compose
+version: '3'
+
+services: 
+  oracle-db:
+    image: oracleinanutshell/oracle-xe-11g:latest
+    ports:
+      - 1521:1521
+      - 5500:5500
+
+
+快速开始
+运行1521端口打开：
+docker run --name oracle -d -p 1521:1521 pallasli/oracle
+
+如果要远程连接数据库，请运行此命令：
+docker run --name oracle -d -p 1521:1521 -e ORACLE_ALLOW_REMOTE=true pallasli/oracle
+
+出于性能问题，您可能希望禁用磁盘异步IO：
+docker run --name oracle -d -p 1521:1521 -e ORACLE_DISABLE_ASYNCH_IO=true pallasli/oracle
+
+
+默认情况下，密码验证被禁用（密码永不过期）
+#ALTER PROFILE DEFAULT LIMIT PASSWORD_LIFE_TIME UNLIMITED;
+使用以下设置连接数据库：
+hostname: localhost
+port: 1521
+sid: xe
+username: system
+password: oracle
+SYS和SYSTEM的密码
+
+
+find -name oracle 可以找到安装的oracle位置
+
+进入oracle：su oracle 
+
+以操作系统权限认证的oracle sys管理员登陆：sqlplus / as sysdba
+
+create user oauth identified by oauth;
+#grant create session to oauth
+grant connect,resource,dba to oauth;//connect，resource，dba
+
+alter user SYSTEM account unlock

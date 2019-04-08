@@ -1,0 +1,22 @@
+docker pull mysql:5.6
+docker tag mysql:5.6 pallasli/mysql
+docker push pallasli/mysql
+docker rmi mysql:5.6
+
+E:
+cd GItHub/platform/docker
+mkdir mysql
+cd mysql
+mkdir etc
+mkdir data
+cd etc
+mkdir mysql
+docker cp mysql:/etc/mysql/conf.d E:/GItHub/platform/docker/mysql/etc/mysql
+
+docker pull pallasli/mysql
+
+docker run --name mysql -m 16GB -p 3306:3306 ^
+  -v /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql:/etc/mysql ^
+  -v /Users/pallasli/GitHub/platform/root/mysql/data:/var/lib/mysql ^
+  -e MYSQL_ROOT_PASSWORD=123456 -d pallasli/mysql
+

@@ -1,0 +1,46 @@
+zabbix
+
+zabbix有三个服务，server，web和client
+
+docker pull zabbix/zabbix-server-mysql
+docker pull zabbix/zabbix-web-apache-mysql
+docker pull zabbix/zabbix-agent
+
+#docker run --name some-zabbix-server-mysql  -p 10051:10051 --net=host -e DB_SERVER_HOST="数据库ip" -e DB_SERVER_PORT=数据库端口 -e MYSQL_USER="数据库用户名" -e MYSQL_PASSWORD="数据库密码" -d zabbix/zabbix-server-mysql
+#docker run --name some-zabbix-web-apache-mysql -p 8088:80  -e DB_SERVER_HOST="数据库ip" -e DB_SERVER_PORT=数据库端口 -e MYSQL_USER="数据库用户名" -e MYSQL_PASSWORD="数据库密码" -e ZBX_SERVER_HOST="zabbix服务器IP" -e TZ="Asia/Shanghai" -d zabbix/zabbix-web-apache-mysql
+#docker run --name some-zabbix-agent -p 10050:10050 -e ZBX_HOSTNAME="hostname" -e ZBX_SERVER_HOST="zabbix服务器IP" -e ZBX_SERVER_PORT=10051 -d zabbix/zabbix-agent
+
+
+
+
+#桥接中使用  --net=host
+docker run --name zabbix-server --hostname zabbix-server  -p 10051:10051  -e DB_SERVER_HOST="192.168.1.7" -e DB_SERVER_PORT=3306 -e MYSQL_USER="root" -e MYSQL_PASSWORD="123456" -d zabbix/zabbix-server-mysql
+
+docker run --name zabbix-web --hostname zabbix-web -p 8088:80  -e DB_SERVER_HOST="192.168.1.7" -e DB_SERVER_PORT=3306 -e MYSQL_USER="root" -e MYSQL_PASSWORD="123456" -e ZBX_SERVER_HOST="192.168.1.7" -e TZ="Asia/Shanghai" -d zabbix/zabbix-web-apache-mysql
+
+docker run --name zabbix-agent -p 10050:10050 -e ZBX_HOSTNAME="zabbix-server" -e ZBX_SERVER_HOST="192.168.1.7" -e ZBX_SERVER_PORT=10051 -d zabbix/zabbix-agent
+
+
+
+
+
+
+version: '2'
+services:
+  zabbix-server:
+    image: zabbix/zabbix-3.0:3.0.0
+    container_name: zabbix-server
+    network_mode: "bridge"
+    restart: always
+    ports:
+      - "8888:80"
+      - "10051:10051"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - ZS_DBHost=192.168.1.100
+      - ZS_DBUser=zabbix
+      - ZS_DBPassword=zabbix
+
+
+

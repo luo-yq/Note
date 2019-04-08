@@ -1,0 +1,36 @@
+docker pull cassandra
+docker tag cassandra pallasli/cassandra
+docker push pallasli/cassandra
+docker rmi cassandra
+
+docker network create --subnet=172.18.0.0/16 mynetwork
+
+#启动cassandra
+#docker run  --network mynetwork -p 9042:9042 --ip 172.18.0.10  --name cassandra1 -d pallasli/cassandra
+docker run -p 9042:9042   --name cassandra1 -d pallasli/cassandra
+
+#连接方式 docker run --name some-app --link cassandra1:cassandra -d app-that-uses-cassandra
+
+
+#集群
+#$ docker run --name some-cassandra2 -d -e CASSANDRA_SEEDS="$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' some-cassandra)" pallasli/cassandra:tag
+#使用docker inspect 获取ip
+docker run --name cassandra2 -d -e CASSANDRA_SEEDS="$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' cassandra1)" pallasli/cassandra
+#或使用link代替
+docker run --name cassandra2 -d --link cassandra1:cassandra pallasli/cassandra
+
+
+#使用cql连接Cassandra
+docker run -it --link cassandra2:cassandra --rm cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR"'
+docker run -it --link cassandra2:cassandra --rm cassandra cqlsh cassandra
+
+
+
+
+
+
+
+cqlsh
+
+CREATE KEYSPACE IF NOT EXISTS demo1 WITH REPLICATION = {'class':'SimpleStrategy','replication_factor':1};
+

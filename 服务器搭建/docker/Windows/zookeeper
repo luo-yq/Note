@@ -1,0 +1,8 @@
+docker pull zookeeper:3.4.11  
+docker tag zookeeper:3.4.11 pallasli/zookeeper
+docker push pallasli/zookeeper
+docker rmi zookeeper:3.4.11
+
+
+docker run --privileged=true -d --name zookeeper --publish 2181:2181  -d pallasli/zookeeper
+

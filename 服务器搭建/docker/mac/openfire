@@ -1,4 +1,7 @@
 docker pull gizmotronic/openfire:4.2.3 
+docker tag gizmotronic/openfire:4.2.3  pallasli/openfire
+docker push pallasli/openfire
+docker rmi gizmotronic/openfire:4.2.3 
 
 #openfire
 docker run --name openfire -d --restart=always \

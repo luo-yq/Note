@@ -1,0 +1,26 @@
+ 
+docker pull tomcat:8-alpine
+docker tag tomcat:8-alpine pallasli/tomcat
+docker push pallasli/tomcat
+docker rmi tomcat:8-alpine
+
+
+#启动Tomcat
+
+#windows 
+E:
+cd GItHub/platform/docker
+mkdir tomcat  
+cd tomcat
+mkdir webapps  
+docker run --name tomcat-8081 --privileged=true -v /e/GItHub/platform/docker/tomcat/webapps:/usr/local/tomcat/webapps -p 8081:8080 -d pallasli/tomcat   
+docker run --name tomcat-8082 --privileged=true -v /e/GItHub/platform/docker/tomcat/webapps:/usr/local/tomcat/webapps -p 8082:8080 -d pallasli/tomcat 
+docker run --name tomcat-8083 --privileged=true -v /e/GItHub/platform/docker/tomcat/webapps:/usr/local/tomcat/webapps -p 8083:8080 -d pallasli/tomcat   
+
+#linux
+mkdir ~/tomcat/webapps  
+cd ~/tomcat 
+docker run --name tomcat-oa --privileged=true -v $PWD/webapps:/usr/local/tomcat/webapps -p 10001:8080 -d pallasli/tomcat   
+docker run --name tomcat8082 --privileged=true -v $PWD/webapps:/usr/local/tomcat/webapps -p 8082:8080 -d pallasli/tomcat 
+docker run --name tomcat8083 --privileged=true -v $PWD/webapps:/usr/local/tomcat/webapps -p 8083:8080 -d pallasli/tomcat     
+

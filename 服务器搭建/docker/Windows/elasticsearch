@@ -1,0 +1,6 @@
+docker pull elasticsearch:2.3.5
+docker tag elasticsearch:2.3.5 pallasli/elasticsearch
+docker push pallasli/elasticsearch
+docker rmi elasticsearch:2.3.5
+
+docker run -d -p 9200:9200 --name="es" pallasli/elasticsearch

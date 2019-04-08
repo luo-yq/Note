@@ -1,0 +1,460 @@
+postgres
+
+重要配置
+
+--cpu-shares=1024   1核cpu为1024，100% ， 2核cpu为2048，200%  .......
+
+docker pull postgres:alpine
+docker tag postgres:alpine pallasli/postgres
+docker push pallasli/postgres
+docker rmi postgres:alpine
+
+
+
+docker run --name postgres --hostname postgres -m 8G -p 5432:5432 --net=host -e POSTGRES_PASSWORD=123456 -d pallasli/postgres
+
+
+docker run --name postgres2 --hostname postgres2 -m 8G -p 5433:5432 -e POSTGRES_PASSWORD=123456 -d pallasli/postgres
+
+
+docker run --name postgres --cpu-shares=1024 --hostname postgres  -m 8G -p 5432:5432 -e POSTGRES_PASSWORD=123456 -d pallasli/postgres
+ 
+
+docker run --name postgres2 --hostname postgres2 -m 8G -p 5433:5432 -e POSTGRES_PASSWORD=123456 -d pallasli/postgres
+
+
+
+docker exec -it postgres sh
+
+#测试
+#初始化pgbench
+pgbench -i -s 10 --foreign-keys --unlogged-tables -U postgres postgres
+
+
+pgbench -M prepared -r -c 10 -j 2 -T 30 -U postgres postgres
+
+# -c 连接数  -j 线程数为c的约数  -T 测试时间  -U 用户 数据库  （还有其他参数如 -C 是使用短连接，效率低下）
+# 通过改变-c参数可找到客户数的瓶颈  
+pgbench -M extended --aggregate-interval 2 -l  -c 2 -j 2 -T 10 -U postgres postgres
+
+
+
+
+
+#备份
+pg_dump -h host -U postgres databasename > C:\databasename.bak
+
+pg_dump -U postgres postgres > postgres.bak
+
+#恢复数据
+psql -h localhost -U postgres -d databasename <  C:\databasename.bak(测试没有成功)
+
+psql -U postgres postgres2 < postgres.bak
+
+
+------缓存占用大是否影响性能------------------------------------------------------------------------------------------------
+
+考虑分10个表处理，为减轻服务器压力，必须保证，预计单表最大数据量时吞吐量在 10w/10s ；
+
+20个客户机， 每次5000条，分10张表，主键+5个索引：    单表10w 条后吞吐量已下降到10w，20w条后下降到1w以内，
+
+20个客户机， 每次5000条，分10张表，主键+3个索引：    单表50w 条后吞吐量已下降到10w，100w条后下降到5w以内
+
+20个客户机， 每次5000条，分10张表，主键+2个索引：    单表100w 条后吞吐量已下降到20w，150w条后下降到13w，170w条后吞吐量已下降到10w
+
+20个客户机， 每次5000条，分10张表，主键+1个索引：    单表300w 条后吞吐量已下降到20w，500w条后下降到16w，700w条后吞吐量已下降到12w，7000w条后依然保持
+												？？2000w条后吞吐量已下降到12w
+
+20个客户机， 每次5000条，分10张表，仅主键（序列）：   无压力
+
+
+---------------------------------------------------------------------------------------------------------
+按分库处理，单库吞吐量应在，10w/10s/库数
+
+
+
+20个客户机， 每次5000条，分10张表，+5个索引：    单表20w 条后吞吐量已下降到10w，40w条后下降到1w以内，
+
+20个客户机， 每次5000条，分10张表，+3个索引：    单表50w 条后吞吐量已下降到10w，100w条后下降到5w以内
+
+20个客户机， 每次5000条，分10张表，+2个索引：    单表100w 条后吞吐量已下降到20w，150w条后下降到13w，170w条后吞吐量已下降到10w
+
+20个客户机， 每次5000条，分10张表，+1个索引：    单表300w 条后吞吐量已下降到20w，0w条后下降到10w，170w条后吞吐量已下降到10w
+
+
+
+
+
+
+#主机
+
+su postgres
+
+vi ~/data/pg_hba.conf
+host    replication     replica     172.17.0.3/16                 md5
+
+psql
+CREATE ROLE replica login replication encrypted password 'replica';
+
+vi ~/data/postgresql.conf
+
+wal_level = hot_standby  # 这个是设置主为wal的主机
+
+max_wal_senders = 32 # 这个设置了可以最多有几个流复制连接，差不多有几个从，就设置几个
+wal_keep_segments = 256 ＃ 设置流复制保留的最多的xlog数目
+wal_sender_timeout = 60s ＃ 设置流复制主机发送数据的超时时间
+
+max_connections = 100 # 这个设置要注意下，从库的max_connections必须要大于主库的
+
+#从机
+
+mkdir -p /data/pgsql/data2
+pg_basebackup -F p --progress -D /data/pgsql/data2 -h 172.17.0.2 -p 5432 -U replica --password
+
+cp /usr/local/share/postgresql/recovery.conf.sample /data/pgsql/data2/recovery.conf
+vi /data/pgsql/data2/recovery.conf
+
+
+standby_mode = on  # 这个说明这台机器为从库
+primary_conninfo = 'host=10.12.12.10 port=5432 user=replica password=replica'  # 这个说明这台机器对应主库的信息
+
+recovery_target_timeline = 'latest' # 这个说明这个流复制同步到最新的数据
+
+
+vi    /data/pgsql/data2/postgresql.conf
+
+max_connections = 1000 ＃ 一般查多于写的应用从库的最大连接数要比较大
+
+hot_standby = on  ＃ 说明这台机器不仅仅是用于数据归档，也用于数据查询
+max_standby_streaming_delay = 30s # 数据流备份的最大延迟时间
+wal_receiver_status_interval = 1s  # 多久向主报告一次从的状态，当然从每次数据复制都会向主报告状态，这里只是设置最长的间隔时间
+hot_standby_feedback = on # 如果有错误的数据复制，是否向主进行反馈
+
+
+
+
+服务器端压力测试结果，增加内存对插入数据影响不大，主要是服务器的线程数与客户机数对插入数据的吞吐量有影响，服务器内存对查询性能有影响，
+16G内存应当已满足性能需要
+
+虚拟机CPU型号名称：Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+
+测试结论，合理的线程数搭配客户机的方式是： 线程数 <= 客户机 <=  线程数 * 4
+
+未优化情况下
+8线程，服务器插入数据的最大吞吐量可达1.2w左右
+16线程，服务器插入数据的最大吞吐量可达2w左右
+
+
+建议的配置是： 16线程，16G内存，16客户机，每批次1000，服务器端吞吐量1.8W，批量吞吐量 16w。
+
+
+8线程  16G 内存   8个客户机    每秒吞吐量 1w  cpu 55%
+8线程  16G 内存   12个客户机   每秒吞吐量 1.2w  cpu 65%
+8线程  16G 内存   16个客户机   每秒吞吐量 1.2w  cpu 75%
+8线程  16G 内存   32个客户机   每秒吞吐量 1.2w  cpu 80%
+
+16线程 16G 内存   16个客户机   每秒吞吐量 1.8w   cpu  60%
+16线程 16G 内存   32个客户机   每秒吞吐量 2w   cpu  60%
+16线程 16G 内存   64个客户机   每秒吞吐量 1.9w   cpu  70%
+
+
+顶级postgresql高手，优化后 E7 系列 144 线程  95G 内存  吞吐量 140w  
+
+
+java 客户端批量插入,仅主键索引情况下,每条数据5列
+
+8线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 8w   cpu  80%
+8线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 8w   cpu  80% 
+
+16线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 16w   cpu  70%
+16线程 16G 内存   16个客户机  每批次5000  每秒吞吐量 16w   cpu  75%
+16线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 18w   cpu  80% 
+
+主键+新建2个索引=3个索引列
+每秒吞吐量减少为  3W
+
+主键+新建4个索引=5个索引列
+每秒吞吐量减少为  2W
+
+有索引时，cpu使用率急剧下降，仅20~30%
+
+
+
+
+java 客户端批量插入,仅主键索引情况下,每条数据20列 
+
+16线程 16G 内存   16个客户机  每批次1000  每秒吞吐量 4.5w   cpu  60%
+16线程 16G 内存   16个客户机  每批次10000  每秒吞吐量 5w   cpu  60% 
+
+16线程 16G 内存   32个客户机  20列  5个索引  每批次1000  每秒吞吐量 2w-4w  
+16线程 16G 内存   16个客户机  20列  5个索引  每批次1000  每秒吞吐量 1.6-3w  
+
+
+主键+新建1个索引=2个索引列
+每秒吞吐量减少为  3.9W
+
+
+主键+新建2个索引=3个索引列
+每秒吞吐量减少为  2.5W
+
+主键+新建4个索引=5个索引列
+每秒吞吐量减少为  1.6W——3.5w
+
+有索引时，cpu使用率急剧下降，仅20~30%
+
+
+
+
+
+mysql 不做优化效率慢一半
+
+
+
+
+root/bril2018@192.168.66.253
+
+
+postgres:   
+2g 2j 2client  1000
+
+
+8g 8j 8client 7000
+
+32g 8j 8client 7000
+32g 8j 16client 14000
+32g 8j 32client 13000
+32g 8j 64client 8000
+ 
+
+
+48g 8j 8client 10000
+48g 8j 16client 14000
+48g 8j 32client 13000
+48g 8j 64client 8000
+
+测试过程中，有间歇性的阻塞，吞吐量甚至会减半
+
+性能优化
+
+方案1： 关闭事务，减少提交事务的时间
+
+方案2： 使用一条copy取代批量insert
+
+cd usr/local/share/postgresql/
+cp postgresql.conf.sample postgresql.conf
+vi postgresql.conf
+
+shared_buffers 应尽可能大，通常设为RAM的10%，不要超过40%
+进程的最大共享内存设为  kernel.shmmax = postgres shared_buffers + 32MB
+
+work_mem 排序功能影响结果集拆分，应尽可能大，一般设为RAM的2%~4%，   注意  RAM>最大线程数*每个线程的排序数*work_mem
+max_connections 最大线程数
+
+effective_cache_size   索引扫描需要的内存 ， 一般设为（ RAM - postgres 运行内存 ）* 25%
+
+maintenance_work_mem  创建索引时，需要，设的大一点可以提高建表速度   如：8g 内存 给 512M，
+
+
+FSYNC vs ASYNC   sync=no 关闭 fsync 的话， 性能会提升 15% 到 25% ， 但系统崩溃时可能丢掉几条数据
+
+
+wal_buffers
+WAL 的储存大小。default 是 64 kb。 实验证明， 设定这个值在 256 kb 到 1 MB 之间会提升效能。
+
+
+增加checkpoint_segments 或者 checkpoint_timeout 可以有一定的效能提升。
+checkpoint_segments： 最多的wal log数量，到达后会激发 checkpoint，通常设置定为30
+checkpoint_timeout： 一般设置15-20分钟，常的可以设定1天也没关系
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+postgresql10.4 主从
+
+一、环境基本信息
+
+IP：172.18.0.2（主）port 5432
+    172.18.0.3（备）port 5433
+
+
+docker network create --subnet=172.18.0.0/16 mynetwork
+docker run --network mynetwork -p 5432:5432 --ip 172.18.0.2 --name postgres -v /data/docker/postgres_data:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+这样就安装好了postgresql的容器
+/data/docker/postgres_data这个为数据库pgdata容器外目录
+cd /data/docker/postgres_data
+到数据库pg_data
+二、主库配置
+2.1修改pg_hba.conf文件，添加认证
+host replication repuser 172.18.0.3/32 trust
+
+2.2修改postgresql.conf文件，以下是128G内存的配置
+
+listen_addresses = '*'			
+port = 5432				
+max_connections = 1000			
+tcp_keepalives_idle = 7200		
+tcp_keepalives_interval = 75		
+tcp_keepalives_count = 9		
+shared_buffers = 32GB			
+work_mem = 128MB				
+maintenance_work_mem = 4GB		
+autovacuum_work_mem = 1GB		
+dynamic_shared_memory_type = posix	
+bgwriter_lru_maxpages = 1000		
+bgwriter_lru_multiplier = 10.0		
+effective_io_concurrency = 2		
+max_worker_processes = 40		
+max_parallel_workers_per_gather = 20	
+max_parallel_workers = 40		
+wal_level = replica			
+fsync = on				
+synchronous_commit = off		
+wal_buffers = 1GB			
+checkpoint_timeout = 30min		
+max_wal_size = 64GB
+min_wal_size = 16GB
+checkpoint_completion_target = 0.9	
+archive_mode = on		
+archive_command = '/bin/date >/dev/null'		
+max_wal_senders = 10		
+wal_keep_segments = 512
+hot_standby = on
+max_standby_archive_delay = 700s
+max_standby_streaming_delay = 700s		
+effective_cache_size = 96GB
+log_destination = 'stderr'		
+logging_collector = on		
+log_directory = 'log'			
+log_filename = 'postgresql-%Y%m%d_%H%M%S.log'	
+log_rotation_age = 1d			
+log_rotation_size = 100MB		
+log_min_duration_statement = 5s		
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_error_verbosity = verbose		
+log_line_prefix = '%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h '		
+log_lock_waits = on			
+log_statement = 'ddl'			
+log_temp_files = 0			
+log_timezone = 'PRC'
+log_autovacuum_min_duration = 0	
+autovacuum_max_workers = 8		
+autovacuum_naptime = 10min		
+datestyle = 'iso, ymd'
+timezone = 'PRC'
+lc_messages = 'zh_CN.UTF-8'			
+lc_monetary = 'zh_CN.UTF-8'			
+lc_numeric = 'zh_CN.UTF-8'			
+lc_time = 'zh_CN.UTF-8'				
+default_text_search_config = 'pg_catalog.simple'
+
+
+
+
+2.3创建repuser用户（进容器psql内部或者工具navicat执行）
+CREATE USER repuser
+REPLICATION
+LOGIN
+CONNECTION LIMIT 2
+ENCRYPTED PASSWORD '123456';
+
+一般我们也可到172.18.0.3备库验证，
+psql -h 172.18.0.2 -p 5432 -U repuser -d postgres -W （我这里不验证因为备库是基于主库的镜像快照创建现在不能验证）
+修改完所有配置重新启动容器。
+三、主库容器备份到备库并恢复
+3.1主库上备份容器
+备份前做基础备份：
+docker exec -it postgresdb /bin/bash进入容器
+postgres=# select pg_start_backup('bakup');创建基础备份
+
+退出，在开始主库容器备份
+
+docker commit -p imageID postgres_backup
+
+docker save -o /data/docker/postgres_backup.tar postgres_backup
+
+3.2迁移
+scp postgres_backup.tar root@172.18.0.3:/tmp
+
+3.3备库恢复
+docker load -i postgres_backup.tar
+
+3.4备库容器启动
+在66备库基于 postgres_backup 镜像启动容器
+
+ docker run --network mynetwork -p 5433:5432 --ip 172.18.0.3 --name postgres_backup -v /data/docker/postgres_data_backup:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres:alpine
+
+
+docker run --network mynetwork -p 5433:5432 --ip 172.18.0.3  --name postgres_backup -v /data/docker/postgres_data_backup:/var/lib/postgresql/data/ -e POSTGRES_PASSWORD=123456 -d postgres_backup
+
+rm -rf /var/lib/postgresql/data/*
+pg_basebackup -D /var/lib/postgresql/data -h172.18.0.2 -p5432 -Urepuser -X stream -v --checkpoint=fast -r 50M
+
+
+四、备库配置
+/data/docker/postgres_data_backup
+修改postgresql.conf
+hot_standby = on
+增加recovery.conf配置如下：
+standby_mode = 'on'
+primary_conninfo = 'user=repuser password=123456 host=172.18.0.2 port=5432'
+recovery_target_timeline = 'latest'
+重启备库
+
+主库上操作
+结束基础备份：
+postgres=# select pg_stop_backup();
+日志切换：
+postgres=# select pg_switch_wal();
+ 
+五、验证
+主库上查看发送进程：
+[root@65 postgres_data]# ps -ef |grep postgres
+systemd+ 3033 3018 0 Sep26 ? 00:00:00 postgres
+systemd+ 3079 3033 0 Sep26 ? 00:00:03 postgres: checkpointer process
+systemd+ 3080 3033 0 Sep26 ? 00:00:00 postgres: writer process
+systemd+ 3081 3033 0 Sep26 ? 00:00:00 postgres: wal writer process
+systemd+ 3082 3033 0 Sep26 ? 00:00:00 postgres: autovacuum launcher process
+systemd+ 3083 3033 0 Sep26 ? 00:00:00 postgres: stats collector process
+systemd+ 15863 3033 0 09:46 ? 00:00:00 postgres: wal sender process repuser 172.16.36.66(46164) streaming 0/E000EB8
+systemd+ 16559 3033 0 09:50 ? 00:00:00 postgres: postgres postgres 172.19.14.202(55561) idle
+root 18672 7318 0 09:53 pts/0 00:00:00 grep —color=auto postgres
+systemd+ 30123 30108 0 Sep22 ? 00:00:04 postgres
+systemd+ 30212 30123 0 Sep22 ? 00:00:00 postgres: checkpointer process
+systemd+ 30213 30123 0 Sep22 ? 00:00:02 postgres: writer process
+systemd+ 30214 30123 0 Sep22 ? 00:00:02 postgres: wal writer process
+systemd+ 30215 30123 0 Sep22 ? 00:00:02 postgres: autovacuum launcher process
+systemd+ 30216 30123 0 Sep22 ? 00:00:06 postgres: stats collector process
+备库上查看接收进程：
+[root@66 postgres_data]# ps -ef |grep postgres
+systemd+ 33596 33581 0 09:46 ? 00:00:00 postgres
+systemd+ 33647 33596 0 09:46 ? 00:00:00 postgres: startup process recovering 00000001000000000000000E
+systemd+ 33648 33596 0 09:46 ? 00:00:00 postgres: checkpointer process
+systemd+ 33649 33596 0 09:46 ? 00:00:00 postgres: writer process
+systemd+ 33650 33596 0 09:46 ? 00:00:00 postgres: wal receiver process streaming 0/E000EB8
+systemd+ 33807 33596 0 09:49 ? 00:00:00 postgres: stats collector process
+systemd+ 33903 33596 0 09:51 ? 00:00:00 postgres: postgres postgres 172.19.14.202(55568) idle
+root 33972 30806 0 09:52 pts/0 00:00:00 grep —color=auto postgres
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+docker pull openzipkin/zipkin
+docker tag openzipkin/zipkin pallasli/zipkin
+docker push pallasli/zipkin
+docker rmi openzipkin/zipkin
+
+docker run --name zipkin -d -p 9411:9411 pallasli/zipkin

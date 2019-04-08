@@ -1,0 +1,6 @@
+docker pull mongo
+docker tag mongo pallasli/mongo
+docker push pallasli/mongo
+
+docker pull pallasli/mongo
+docker run -d --name mongo -p 27017:27017 pallasli/mongo --auth

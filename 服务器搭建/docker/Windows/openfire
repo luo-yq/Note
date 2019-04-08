@@ -1,0 +1,22 @@
+docker pull gizmotronic/openfire:4.2.3 
+docker tag gizmotronic/openfire:4.2.3  pallasli/openfire
+docker push pallasli/openfire
+docker rmi gizmotronic/openfire:4.2.3 
+
+#openfire
+docker run --name openfire -d --restart=always ^
+  --publish 19090:9090 --publish 19091:9091 --publish 5222:5222 --publish 7777:7777 ^
+  --volume /srv/docker/openfire:/var/lib/openfire ^
+  pallasli/openfire
+#日志查看
+docker exec -it openfire tail -f /var/log/openfire/info.log
+#java虚拟机处理:
+docker run -name openfire -d \
+  [DOCKER_OPTIONS] \
+  gizmotronic/openfire:4.2.3 \
+  -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode
+#SELinux 处理:
+mkdir -p /srv/docker/openfire
+chcon -Rt svirt_sandbox_file_t /srv/docker/openfire
+#设置
+http://192.168.195.101:9090

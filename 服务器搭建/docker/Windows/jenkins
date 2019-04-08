@@ -1,0 +1,12 @@
+docker pull jenkins:alpine
+docker tag jenkins:alpine pallasli/jenkins
+docker push pallasli/jenkins
+docker rmi jenkins:alpine
+
+E:
+cd GItHub/platform/docker
+mkdir jenkins
+docker run -d --name jenkins -p 50001:8080 -p 50000:50000 -v /e/GItHub/platform/docker/jenkins:/var/jenkins_home pallasli/jenkins
+
+
+http://localhost:50001/

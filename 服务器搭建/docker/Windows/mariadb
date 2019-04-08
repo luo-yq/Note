@@ -1,0 +1,20 @@
+docker pull mariadb
+docker tag mariadb pallasli/mariadb
+docker push pallasli/mariadb
+docker rmi mariadb
+
+
+E:
+cd GItHub/platform/docker
+mkdir mariadb
+cd mariadb
+mkdir dbdata
+
+docker run  --privileged --name=mariadb -d --restart=always ^
+-e TIMEZONE=Asis/Shanghai ^
+-e MYSQL_ROOT_PASSWORD=123456 ^
+-e SERVER_ID=1 ^
+-v /e/GItHub/platform/docker/mariadb/dbdata:/var/lib/mysql  ^
+-p 3307:3306  pallasli/mariadb ^
+--character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci 
+

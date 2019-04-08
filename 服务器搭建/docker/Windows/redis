@@ -1,20 +1,25 @@
 docker pull redis:alpine
+docker tag redis:alpine pallasli/redis
+docker push pallasli/redis
+docker rmi redis:alpine
+
 docker run --name redis -p 6379:6379  -d redis:alpine redis-server --appendonly yes
 
-mkdir -p /Users/pallasli/GitHub/platform/docker/redis/data
+E:
+cd GItHub/platform/docker
+mkdir redis
+cd redis
+mkdir data
 
+docker stop redis
+docker rm redis
 
-#打标记
-docker tag redis pallasli/redis
-#上传
-docker push pallasli/redis
+docker pull pallasli/redis
 
+docker run --name redis -p 6379:6379 ^
+  -v /e/GItHub/platform/docker/redis/data:/data ^
+  -d pallasli/redis redis-server --appendonly yes
 
-
-docker pull pallali/redis
-docker run --name redis -p 6379:6379 /
-  -v /Users/pallasli/GitHub/platform/docker/redis/data:/data /
-  -d pallasli/redis redis-server
 docker exec -it redis redis-cli
 
 

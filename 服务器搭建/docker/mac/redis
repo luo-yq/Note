@@ -1,0 +1,30 @@
+docker pull redis:alpine
+docker tag redis:alpine pallasli/redis
+docker push pallasli/redis
+docker rmi redis:alpine
+
+docker pull pallasli/redis
+
+mkdir -p /Users/pallasli/GitHub/platform/docker/redis/data
+
+docker stop redis
+docker rm redis
+
+docker run --name redis -p 6379:6379 \
+  -v /Users/pallasli/GitHub/platform/docker/redis/data:/data \
+  -d pallasli/redis redis-server --appendonly yes
+
+docker exec -it redis redis-cli
+
+
+
+
+Redis有2种持久化的方式，一种是Snapshot(RDB)，就是保存某一时刻的数据在磁盘；另外一种是append-only file(AOF)，就是以追加的方式记录所有写操作的命令到磁盘文件里面。
+- snapshot在下一次触发前如果服务器crash了，在上次snapshot之后修改的数据会丢失，而AOF是记录所有的写操作，在数据完整性来说，AOF比snapshot要好
+- snapshot持久化的文件rdb一般比aof要小，所以在恢复的时候snapshot会快一点，而且节省硬件资源
+- 如果服务器在写aof的时候故障导致aof文件损坏，可以使用自带的工具redis-check-aof --fix修复，而snapshot文件rdb损坏是无法修复的
+所以如果你可以容忍数据丢失的话，可以使用snapshot方式，而且也是比AOF要节省资源，否则的话就使用AOF方式，或者同时使用2种方式（重启的时候会优先使用AOF）。
+
+
+
+

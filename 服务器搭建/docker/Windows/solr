@@ -1,0 +1,13 @@
+docker pull solr:7.4.0
+docker tag solr:7.4.0 pallasli/solr
+docker push pallasli/solr
+docker rmi solr:7.4.0
+
+docker run --name solr -d -p 8983:8983 -t pallasli/solr
+
+docker exec -it --user=solr solr bin/solr create_core -c collection1
+
+docker cp solr:/opt/solr/ E:/GItHub/platform/docker/solr/
+
+
+

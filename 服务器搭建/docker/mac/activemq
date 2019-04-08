@@ -1,0 +1,11 @@
+docker pull webcenter/activemq 
+
+#打标记
+docker tag webcenter/activemq pallasli/activemq
+#上传
+docker push pallasli/activemq
+
+docker stop activemq
+docker rm activemq
+
+docker run -d --name activemq -p 61616:61616 -p 8161:8161 pallasli/activemq

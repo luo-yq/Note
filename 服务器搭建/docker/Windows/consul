@@ -1,0 +1,530 @@
+docker pull consul
+docker tag consul pallasli/consul
+docker push pallasli/consul
+docker rmi consul
+
+
+docker run -d --name=consul -e CONSUL_BIND_INTERFACE=eth0 -v 8300:8300 -v 8301:8301 -v 8302:8302 -v 8500:8500 -v 8560:8600 pallasli/consul
+
+
+
+
+
+
+
+docker run -d -e CONSUL_BIND_INTERFACE=eth0 consul agent -dev -join=172.17.0.2
+... server 2 starts
+docker run -d -e CONSUL_BIND_INTERFACE=eth0 consul agent -dev -join=172.17.0.2
+... server 3 starts
+
+docker exec -t dev-consul consul members
+
+docker run -d --net=host -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -bind=<external ip> -retry-join=<root agent ip>
+
+
+
+
+docker run -d --name consulserver1 --net=host -e'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' pallasli/consul ^
+agent -server -bind=10.10.10.79 -bootstrap-expect=1  -client 0.0.0.0 -ui
+
+
+
+
+
+docker run -d --name consulserver1 --net=host -e'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul ^
+agent-server -bind=0.0.0.0 -bootstrap-expect=1  -client 0.0.0.0 –ui
+
+–net=host docker参数, 使得docker容器越过了netnamespace的隔离，免去手动指定端口映射的步骤
+-server consul支持以server或client的模式运行, server是服务发现模块的核心, client主要用于转发请求
+-advertise 将本机私有IP传递到consul
+-bootstrap-expect 指定consul将等待几个节点连通，成为一个完整的集群
+-retry-join 指定要加入的consul节点地址，失败会重试, 可多次指定不同的地址
+-client consul绑定在哪个client地址上，这个地址提供HTTP、DNS、RPC等服务，默认是127.0.0.1
+-bind 该地址用来在集群内部的通讯，集群内的所有节点到地址都必须是可达的，默认是0.0.0.0
+-allow_stale 设置为true, 表明可以从consul集群的任一server节点获取dns信息, false则表明每次请求都会经过consul server leader
+--name DOCKER容器的名称
+-client 0.0.0.0 表示任何地址可以访问。
+-ui  提供图形化的界面。
+
+
+
+
+
+
+
+
+
+安装虚拟机
+安装VirtualBox
+作为实验性项目，使用VirutalBox可以快速构建你想要的物理环境，而且docker和virtualbox搭配的很好，使用docker-machine可以非常简单的管理所有虚拟机。
+开始
+好了，万事具备。现在我们开始创建虚拟机。
+使用docker工具包自带的 docker-machine工具，可以帮你快速创建一个docker宿主机。
+在这个架构中，我们一共只需要创建3台宿主机
+docker-machine命令后面会用的比较频繁，所以我们改个短点的名字。
+这里我用zsh，bash类似。
+$ vi ~/.zshrc
+#增加
+alias dm="docker-machine”
+
+依次创建3台虚拟机
+docker-machine create -d "virtualbox” node1
+docker-machine create -d "virtualbox” node2
+docker-machine create -d "virtualbox" node3
+
+
+$ dm create -d "virtualbox” node1
+$ dm create -d "virtualbox” node2
+$ dm create -d "virtualbox" node3
+
+
+ip是自动分配的，不出意外的话，会得到下面对应的ip（如果真出意外了，就改改ip吧）。
+宿主机 node1: 192.169.99.100
+宿主机 node2: 192.169.99.101
+宿主机 node3: 192.169.99.102
+$ dm ls
+NAME    ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+node1   -        virtualbox   Running   tcp://192.168.99.100:2376           v17.06.0-ce
+node2   -        virtualbox   Running   tcp://192.168.99.101:2376           v17.06.0-ce
+node3   -        virtualbox   Running   tcp://192.168.99.102:2376           v17.06.0-ce
+
+第一台宿主机配置
+宿主机node1
+我们新开一个终端
+$ dm ssh node1
+这个命令可以快速登入node1宿主机
+$ sudo vi /etc/docker/daemon.json
+
+{
+  "experimental" : true,
+  "registry-mirrors" : [
+    "https://45599kaw.mirror.aliyuncs.com"
+  ]
+}
+
+虽然可以架设regsiter私服，但是使用起来的麻烦程度，远远超过重复下载带来的代价。所以不用纠结了，就这么整，非常简单。
+改完之后，重启docker
+$ sudo /etc/init.d/docker restart
+
+执行命令后有提示错误，不用理会。
+配置consul-server
+启动第一台 consul-server，非常简单，一条命令搞定，这就是docker的魅力。
+$ docker run -h node1  --name consul -d -v /data:/data --restart=always\
+    -p   8300:8300 \
+    -p   8301:8301 \
+    -p   8301:8301/udp \
+    -p   8302:8302 \
+    -p   8302:8302/udp \
+    -p   8400:8400 \
+    -p   8500:8500 \
+progrium/consul -server \
+-bootstrap-expect 3 \
+-advertise 192.168.99.100
+
+下面来解释下各个参数
+-h 节点名字
+--name 容器（container）名称，后期用来方便启动关闭，看日志等，这个一定要写
+-d 后台运行
+-v /data:/data 使用宿主机的/data目录映射到容器内部的/data,用于保存consul的注册信息，要不docker 一重启，数据是不保留的。
+--restart=always  这个可以活得长一点
+下面几个参数都是consul集群用的，非集群模式可以不使用。
+-p   8300:8300 
+-p   8301:8301 
+-p   8301:8301/udp 
+-p   8302:8302 
+-p   8302:8302/udp \
+progrium/consul 镜像名称，本地没有就自动从公共docker库下载
+后面的都是consul的参数：
+-server \  以服务节点启动
+-bootstrap-expect 3 \ 预期的启动节点数3，最少是3，要不达不到cluster的效果
+-advertise 192.168.99.100  告诉集群，我的ip是什么，就是注册集群用的
+执行完毕后 ，使用docker ps看下，是否运行正常。docker logs就不用看了，里面各种警告和错误，其实那都是假象。
+但是consul cluster你必须明白，只有3个consul-server节点都启动正常了，整个集群才能正常启动。
+打开  http://192.168.99.100:8500/
+但是你看不到下面的consul标签，因为集群还没有都起来。
+
+
+
+
+
+
+
+
+配置下一台consul-server
+开启一个新的终端
+$ dm ssh node2  #进入node2宿主机
+
+增加daemon.json，重启docker，不再赘述。
+$ docker run -h node2 --name consul -d -v /data:/data   --restart=always\
+    -p   8300:8300 \
+    -p   8301:8301/udp \
+    -p   8302:8302 \
+    -p   8302:8302/udp \
+    -p   8400:8400 \
+    -p   8500:8500 \
+progrium/consul -server \
+-advertise 192.168.99.101 \
+-join  192.168.99.100
+
+这里多了一个参数
+-join  192.168.99.100 代表的是加入node1建立好的consul-server
+好，已经加入了，但是集群还是没有完备。
+用同样的方法配置 最后一台
+新开终端进入node3
+$ docker run -h node3 --name consul -d -v /data:/data   --restart=always\
+    -p   8300:8300 \
+    -p   8301:8301/udp \
+    -p   8302:8302 \
+    -p   8302:8302/udp \
+    -p   8400:8400 \
+    -p   8500:8500 \
+progrium/consul -server \
+-advertise 192.168.99.102 \
+-join  192.168.99.100
+
+consul配置完毕
+检查是否成功
+没出意外的话，就看到下面的界面
+http://192.168.99.100:8500/
+
+
+
+
+
+
+
+
+但是我有预感，意外的可能性比较大。如果不成功，可以留言，这里面细节比较多。。。
+开始启动应用
+这里拿最简单的nginx服务作为演示，情境无关。
+启动nginx
+进入3个节点
+执行
+$ docker run -d -p 80:80 --name nginx nginx
+在node1，node2,node3中， 分别执行以下命令
+$ curl -X PUT -d '{"id": "nginx","name": "nginx","address": "192.168.99.100","port": 80,"checks": [{"http": "http://192.168.99.100/","interval": "5s"}]}' http://127.0.0.1:8500/v1/agent/service/register
+$ curl -X PUT -d '{"id": "nginx","name": "nginx","address": "192.168.99.101","port": 80,"checks": [{"http": "http://192.168.99.101/","interval": "5s"}]}' http://127.0.0.1:8500/v1/agent/service/register
+$ curl -X PUT -d '{"id": "nginx","name": "nginx","address": "192.168.99.102","port": 80,"checks": [{"http": "http://192.168.99.102/","interval": "5s"}]}' http://127.0.0.1:8500/v1/agent/service/register
+好了，我们启动了3个nginx，并将它们都注册到了consul.
+
+
+
+
+
+
+
+健康检查
+获取状态
+http 命令工具 httpie，可以自行安装，替代curl，可以高亮格式化返回的json
+$ http http://192.168.99.100:8500/v1/health/checks/nginx
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Sun, 30 Jul 2017 11:41:59 GMT
+Transfer-Encoding: chunked
+X-Consul-Index: 20
+X-Consul-Knownleader: true
+X-Consul-Lastcontact: 0
+[    
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node1",
+        "Notes": "",
+        "Output": "HTTP GET http://192.168.99.100/: 200 OK Output: <!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\n    body {\n        width: 35em;\n        margin: 0 auto;\n        font-family: Tahoma, Verdana, Arial, sans-serif;\n    }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, the nginx web server is successfully installed and\nworking. Further configuration is required.</p>\n\n<p>For online documentation and support please refer to\n<a href=\"http://nginx.org/\">nginx.org</a>.<br/>\nCommercial support is available at\n<a href=\"http://nginx.com/\">nginx.com</a>.</p>\n\n<p><em>Thank you for using nginx.</em></p>\n</body>\n</html>\n",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "passing"
+    },
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node2",
+        "Notes": "",
+        "Output": "HTTP GET http://192.168.99.101/: 200 OK Output: <!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\n    body {\n        width: 35em;\n        margin: 0 auto;\n        font-family: Tahoma, Verdana, Arial, sans-serif;\n    }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, the nginx web server is successfully installed and\nworking. Further configuration is required.</p>\n\n<p>For online documentation and support please refer to\n<a href=\"http://nginx.org/\">nginx.org</a>.<br/>\nCommercial support is available at\n<a href=\"http://nginx.com/\">nginx.com</a>.</p>\n\n<p><em>Thank you for using nginx.</em></p>\n</body>\n</html>\n",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "passing"
+    },
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node3",
+        "Notes": "",
+        "Output": "HTTP GET http://192.168.99.102/: 200 OK Output: <!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\n    body {\n        width: 35em;\n        margin: 0 auto;\n        font-family: Tahoma, Verdana, Arial, sans-serif;\n    }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, the nginx web server is successfully installed and\nworking. Further configuration is required.</p>\n\n<p>For online documentation and support please refer to\n<a href=\"http://nginx.org/\">nginx.org</a>.<br/>\nCommercial support is available at\n<a href=\"http://nginx.com/\">nginx.com</a>.</p>\n\n<p><em>Thank you for using nginx.</em></p>\n</body>\n</html>\n",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "passing"
+    }
+]
+
+可以看到3个nginx的服务节点都是passing状态，这时候你可以选择一个使用了。
+制造一些事故
+进入node3
+$ docker kill nginx
+
+
+
+
+
+
+
+进入node2
+$ docker kill consul
+
+
+
+
+
+
+
+再次检查
+$ http http://192.168.99.100:8500/v1/health/checks/nginx
+[
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node1",
+        "Notes": "",
+        "Output": "HTTP GET http://192.168.99.100/: 200 OK Output: <!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\n    body {\n        width: 35em;\n        margin: 0 auto;\n        font-family: Tahoma, Verdana, Arial, sans-serif;\n    }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, the nginx web server is successfully installed and\nworking. Further configuration is required.</p>\n\n<p>For online documentation and support please refer to\n<a href=\"http://nginx.org/\">nginx.org</a>.<br/>\nCommercial support is available at\n<a href=\"http://nginx.com/\">nginx.com</a>.</p>\n\n<p><em>Thank you for using nginx.</em></p>\n</body>\n</html>\n",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "passing"
+    },
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node2",
+        "Notes": "",
+        "Output": "HTTP GET http://192.168.99.101/: 200 OK Output: <!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\n    body {\n        width: 35em;\n        margin: 0 auto;\n        font-family: Tahoma, Verdana, Arial, sans-serif;\n    }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, the nginx web server is successfully installed and\nworking. Further configuration is required.</p>\n\n<p>For online documentation and support please refer to\n<a href=\"http://nginx.org/\">nginx.org</a>.<br/>\nCommercial support is available at\n<a href=\"http://nginx.com/\">nginx.com</a>.</p>\n\n<p><em>Thank you for using nginx.</em></p>\n</body>\n</html>\n",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "passing"
+    },
+    {
+        "CheckID": "service:nginx",
+        "Name": "Service 'nginx' check",
+        "Node": "node3",
+        "Notes": "",
+        "Output": "Get http://192.168.99.102/: dial tcp 192.168.99.102:80: connection refused",
+        "ServiceID": "nginx",
+        "ServiceName": "nginx",
+        "Status": "critical"
+    }
+]
+
+可以看到，当consul服务挂掉一个的时候，并不影响nginx服务的健康状况。其中有一个nginx已经处于critical状态。这样我们就有足够的信息不选择不健康的节点。
+总结
+好了，终于写完了。总的来说，这个已经算是极简的架构了。当然，docker的生命周期远不止这些，比如ci，发布上线，灰度发布等。docker远没有传说中那么简单，美妙。docker有很多的好处，但是需要DevOPS做很多的工作。
+在实践过程中，我发现有一个或许是更优的架构。那就是seneca的方案，使用事件相应作为微服务的提供方式，这样就避免了服务发现这件事，完全不需要注册服务，选择服务这么麻烦。也不用为服务发现服务搭建一个集群确保其高可用。
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 支持的标签和相应的Dockerfile链接
+1.4.4，latest（0.X / Dockerfile）
+快速参考
+从哪里获得帮助：
+Docker社区论坛，Docker社区Slack或Stack Overflow
+
+提交问题的地方：https：
+//github.com/hashicorp/docker-consul/issues
+
+维护：
+HashiCorp
+
+支持的体系结构：（详细信息）
+amd64，arm32v6，arm64v8，i386
+
+已发布的图像工件详细信息：
+repo-info repo的repos/consul/目录（历史记录）
+（图像元数据，传输大小等）
+
+图像更新：
+官方图像PR与标签library/consul
+官方图像repo的library/consul文件（历史）
+
+此描述的来源：
+docs repo的consul/目录（历史）
+
+支持的Docker版本：
+最新版本（尽力降至1.6）
+
+领事
+Consul是一种分布式，高可用性和多数据中心感知工具，用于服务发现，配置和编排。Consul可以大规模快速部署，配置和维护面向服务的体系结构。有关更多信息，请参阅：
+
+领事文件
+GitHub上的领事
+商标
+
+领事和Docker
+Consul有几个移动部件，因此我们首先简要介绍Consul的架构，然后详细介绍Consul如何与Docker交互。有关所有这些概念的更多详细信息，请参阅Consul Architecture指南。
+
+Consul集群中的每个主机都运行Consul代理，这是一个可以在客户端或服务器模式下启动的长时间运行的守护程序。每个群集在服务器模式下至少有一个代理，通常为3或5以实现高可用性。服务器代理参与共识协议，维护集群状态的集中视图，并响应来自集群中其他代理的查询。客户端模式中的其余代理参与八卦协议以发现其他代理并检查其是否有故障，并将有关群集的查询转发给服务器代理。
+
+在给定主机上运行的应用程序仅使用其HTTP API或DNS接口与其本地Consul代理进行通信。主机上的服务也向本地Consul代理注册，该代理将信息与Consul服务器同步。使用Consul执行最基本的基于DNS的服务发现，应用程序查询foo.service.consul并获取提供服务“foo”的所有主机的随机洗牌子集。这允许应用程序在没有任何中间代理的情况下定位服务并平衡负载。多个HTTP API也可用于与Consul的服务发现功能进行更深入集成的应用程序，以及其他功能，如键/值存储。
+
+在Docker中运行Consul时，这些概念也适用。通常，您将在每个主机上运行一个Consul代理程序容器，与Docker守护程序一起运行。您还需要将某些代理配置为服务器（基本HA设置至少为3）。Consul应始终--net=host在Docker中运行，因为Consul的共识和八卦协议对延迟和数据包丢失很敏感，因此与其他网络类型相关的额外层通常是不受欢迎的，也是不必要的。我们将在下面详细讨论。
+
+我们在这里没有介绍Consul的多数据中心功能，但只要--net=host使用，Docker就不应该有特殊的考虑因素了。
+
+使用容器
+我们选择Alpine作为轻量级基础，具有相当小的表面积以解决安全问题，但具有足够的开发，交互式调试功能，以及在容器中Consul下运行的有用的健康，监视和执行脚本。从Consul 0.7开始，图像也包括在内，curl因为它常用于健康检查。
+
+Consul总是在dumb-init下运行，它处理收割僵尸进程并将信号转发到容器中运行的所有进程。我们还使用gosu作为非root“consul”用户运行Consul以提高安全性。这些二进制文件都是由HashiCorp构建的，并使用我们的GPG密钥签名，因此您可以验证用于构建给定基本映像的已签名包。
+
+运行不带参数的Consul容器将为您提供处于开发模式的Consul服务器。提供的入口点脚本还将查找Consul子命令，并consul作为正确的用户和该子命令运行。例如，您可以执行docker run consul members，它将consul members在容器内运行命令。入口点还添加了一些特殊的配置选项，如下面的部分所述，在运行agent子命令时。任何其他命令exec在容器内得到-ed dumb-init。
+
+容器暴露VOLUME /consul/data，这是Consul将其持久状态的路径。在开发模式下运行时，不会以任何方式使用它。对于客户端代理，这将存储有关群集的一些信息以及客户端的运行状况检查，以防重新启动容器。对于服务器代理，它存储客户端信息以及与一致性算法相关的快照和数据以及Consul的键/值存储和目录等其他状态。对于服务器，非常希望在重新启动容器时保持此卷的数据以从中断方案中恢复。如果这是绑定挂载，则在容器启动时所有权将更改为consul用户。
+
+容器具有设置的Consul配置目录/consul/config，代理将通过绑定卷或通过组合新映像和添加文件来加载放置在此处的任何配置文件。或者，可以通过环境变量传递配置JSON来添加配置CONSUL_LOCAL_CONFIG。如果这是绑定挂载，则在容器启动时所有权将更改为consul用户。
+
+由于Consul几乎总是--net=host在Docker中运行，因此在配置Consul的IP地址时需要注意。Consul具有其集群地址的概念以及其客户端地址。群集地址是其他Consul代理可以联系给定代理的地址。客户端地址是主机上的其他进程联系Consul以发出HTTP或DNS请求的地址。您通常需要告诉Consul启动时其群集地址是什么，以便它绑定到正确的接口并向其他Consul代理通告可行的接口。您将在下面的示例中将此视为-bind=<external ip>Consul 的参数。
+
+入口点还包括一个小实用程序，用于查找客户端或按接口名称绑定地址。要使用它，请将CONSUL_CLIENT_INTERFACE和/或CONSUL_BIND_INTERFACE环境变量设置为您希望Consul使用的接口的名称，-client=<interface ip>并且-bind=<interface ip>将计算和/或参数，并在启动时传递给Consul。
+
+负责发展的领事
+$ docker run -d --name=dev-consul -e CONSUL_BIND_INTERFACE=eth0 consul
+这将运行一个完全内存的Consul服务器代理，其默认桥接网络并且主机上不显示任何服务，这对于开发很有用，但不应在生产中使用。例如，如果该服务器在内部地址172.17.0.2上运行，则可以通过启动另外两个实例并告诉它们加入第一个节点来运行三节点集群以进行开发。
+
+$ docker run -d -e CONSUL_BIND_INTERFACE=eth0 consul agent -dev -join=172.17.0.2
+... server 2 starts
+$ docker run -d -e CONSUL_BIND_INTERFACE=eth0 consul agent -dev -join=172.17.0.2
+... server 3 starts
+然后，我们可以通过在第一个容器中运行Consul CLI命令来查询集群中的所有成员：
+
+$ docker exec -t dev-consul consul members
+Node          Address          Status  Type    Build  Protocol  DC
+579db72c1ae1  172.17.0.3:8301  alive   server  0.6.3  2         dc1
+93fe2309ef19  172.17.0.4:8301  alive   server  0.6.3  2         dc1
+c9caabfd4c2a  172.17.0.2:8301  alive   server  0.6.3  2         dc1
+请记住，Consul在此模式下不使用数据卷 - 一旦容器停止，您的所有状态都将被清除，因此请不要将此模式用于生产。使用开发服务器在桥接网络上完全运行对于在单个机器上测试Consul的多个实例非常有用，由于端口冲突，这通常很难做到。
+
+开发模式还在端口8500上启动Consul的Web UI版本。通过-ui在命令行上向Consul 提供选项，可以将其添加到其他Consul配置中。Web资产捆绑在容器中的Consul二进制文件中。
+
+在客户端模式下运行Consul Agent
+$  docker run -d --net=host -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -bind=<external ip> -retry-join=<root agent ip>
+==> Starting Consul agent...
+==> Starting Consul agent RPC...
+==> Consul agent running!
+         Node name: 'linode'
+        Datacenter: 'dc1'
+            Server: false (bootstrap: false)
+       Client Addr: 127.0.0.1 (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+      Cluster Addr: <external ip> (LAN: 8301, WAN: 8302)
+    Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+             Atlas: <disabled>
+...
+这将运行Consul客户端代理，共享主机的网络并将外部IP地址通告给群集的其余部分。请注意，代理默认将其客户端接口绑定到127.0.0.1，这是主机的环回接口。如果主机上的其他容器也使用--net=host，这将是一个很好的配置，它还会将代理暴露给直接在容器外部的主机上运行的进程，例如HashiCorp的Nomad。
+
+该-retry-join参数指定群集中用于在启动时加入的另一个代理的外部IP。有几种方法来控制代理如何加入集群，请参见代理配置指南的详细信息-join，-retry-join以及-atlas-join选择。
+
+另请注意，我们已leave_on_terminate使用CONSUL_LOCAL_CONFIG环境变量进行设置。建议客户使用，并将true在Consul 0.7及更高版本中默认使用，因此不再需要这样做。
+
+在启动时，代理将从中读取配置JSON文件/consul/config。数据将保留在/consul/data卷中。
+
+以下是外部IP为66.175.220.234的主机上的一些示例查询：
+
+$ curl http://localhost:8500/v1/health/service/consul?pretty
+[
+    {
+        "Node": {
+            "Node": "linode",
+            "Address": "66.175.220.234",
+...
+$ dig @localhost -p 8600 consul.service.consul
+; <<>> DiG 9.9.5-3ubuntu0.7-Ubuntu <<>> @localhost -p 8600 consul.service.consul
+; (2 servers found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 61616
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+;; WARNING: recursion requested but not available
+
+;; QUESTION SECTION:
+;consul.service.consul.         IN      A
+
+;; ANSWER SECTION:
+consul.service.consul.  0       IN      A       66.175.220.234
+...
+如果要通过其他网络（例如桥接网络）将Consul接口公开给其他容器，请使用-clientConsul选项：
+
+docker run -d --net=host consul agent -bind=<external ip> -client=<bridge ip> -retry-join=<root agent ip>
+==> Starting Consul agent...
+==> Starting Consul agent RPC...
+==> Consul agent running!
+         Node name: 'linode'
+        Datacenter: 'dc1'
+            Server: false (bootstrap: false)
+       Client Addr: <bridge ip> (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+      Cluster Addr: <external ip> (LAN: 8301, WAN: 8302)
+    Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+             Atlas: <disabled>
+...
+使用此配置，Consul的客户端接口将绑定到网桥IP，并可供该网络上的其他容器使用，但不能在主机网络上使用。请注意，我们仍将群集地址保留在主机网络上以提高性能。Consul还将接受-client=0.0.0.0绑定到所有接口的选项。
+
+在服务器模式下运行Consul Agent
+$ docker run -d --net=host -e 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul agent -server -bind=<external ip> -retry-join=<root agent ip> -bootstrap-expect=<number of server agents>
+这将运行共享主机网络的Consul服务器代理。我们上面介绍的客户端代理的所有网络注意事项和行为也适用于服务器代理。单个服务器本身将无法形成仲裁，并且将等待其他服务器加入。
+
+与客户端代理一样，该-retry-join参数指定群集中用于在启动时加入的其他代理的外部IP。有几种方法来控制代理如何加入集群，请参见代理配置指南的详细信息-join，-retry-join以及-atlas-join选择。服务器代理还使用一个-bootstrap-expect选项，该选项指定在首次引导群集之前要监视的服务器代理程序数。这提供了一种使用新群集进行有序启动的简便方法。有关和选项的更多详细信息，请参阅代理配置指南。-bootstrap-bootstrap-expect
+
+另请注意，我们已skip_leave_on_interrupt使用CONSUL_LOCAL_CONFIG环境变量进行设置。建议用于服务器，默认为trueConsul 0.7及更高版本，因此不再需要这样做。
+
+在启动时，代理将从中读取配置JSON文件/consul/config。数据将保留在/consul/data卷中。
+
+引导群集并实现仲裁后，必须小心保持最小数量的服务器正常运行，以避免群集中断状态。共识指南中的部署表概述了不同配置所需的服务器数量。还有一个添加/删除服务器指南，用于描述该过程，该过程也与Docker配置相关。在停电恢复指南有步骤来执行，如果服务器永久丢失。通常，最好一次重新启动或更换一台服务器，确保服务器在进入下一台服务器之前是健康的。
+
+在端口53上公开Consul的DNS服务器
+默认情况下，Consul的DNS服务器在端口8600上公开。由于使用类似设施进行配置很麻烦resolv.conf，您可能希望在端口53上公开DNS.Consul 0.7及更高版本通过设置setcap在Consul二进制文件上运行的环境变量来支持此功能。允许它绑定到特权端口。请注意，并非所有Docker存储后端都支持此功能（特别是AUFS）。
+
+这是一个例子：
+
+$ docker run -d --net=host -e 'CONSUL_ALLOW_PRIVILEGED_PORTS=' consul -dns-port=53 -recursor=8.8.8.8
+此示例还包括一个recursor配置，该配置使用Google的DNS服务器进行非Consul查找。您可能希望根据特定的DNS配置进行调整。如果您将Consul的客户端接口绑定到主机的环回地址，那么您应该能够resolv.conf通过将“127.0.0.1”作为主DNS服务器来配置主机以将DNS请求路由到Consul。这会将Consul的DNS暴露给主机上运行的所有应用程序，但由于Docker的内置DNS服务器，您不能直接从容器内部指向这个; 如果您尝试执行此操作，Docker将发出错误消息。您必须将Consul配置为侦听可从其他容器中访问的非本地主机地址。
+
+将Consul的客户端接口绑定到网桥或其他网络后，您可以使用其他容器中的--dns选项，以便他们使用Consul的DNS服务器，映射到端口53.这是一个示例：
+
+$ docker run -d --net=host -e 'CONSUL_ALLOW_PRIVILEGED_PORTS=' consul agent -dns-port=53 -recursor=8.8.8.8 -bind=<bridge ip>
+现在启动另一个容器，并使用主机的桥接地址将其指向Consul的DNS：
+
+$ docker run -i --dns=<bridge ip> -t ubuntu sh -c "apt-get update && apt-get install -y dnsutils && dig consul.service.consul"
+...
+;; ANSWER SECTION:
+consul.service.consul.  0       IN      A       66.175.220.234
+...
+在上面的示例中，将桥接地址添加到主机的/etc/resolv.conf文件应将其公开给所有容器，而不使用该--dns选项运行。
+
+使用容器进行服务发现
+您可以使用几种方法来注册使用Consul在容器中运行的服务。对于手动配置，您的容器可以使用本地代理的API来注册和注销自己，有关详细信息，请参阅代理API。另一个策略是为每个主机类型创建一个派生的Consul容器，其中包含Consul在启动时解析的JSON配置文件，有关详细信息，请参阅服务。这两种方法都相当麻烦，如果容器死亡或启动了其他容器，配置的服务可能会失去同步。
+
+如果您在HashiCorp的Nomad调度程序下运行容器，它将获得Consul的一流支持。Nomad代理在Consul代理旁边的每个主机上运行。在给定主机上安排作业时，Nomad代理会自动负责将Consul代理与服务信息同步。这非常容易管理，甚至在Docker容器外部运行的主机上的服务也可以由Nomad管理并在Consul中注册。您可以在Docker Driver指南中找到有关在Nomad下运行Docker的更多信息。
+
+其他开源选项包括Glider Labs的Registrator和Joyent的ContainerPilot。Registrator通过在每个主机上与Consul代理一起运行Registrator实例来工作。Registrator监视Docker守护程序以获取容器停止和启动事件，并使用容器名称和公开端口作为服务信息处理与Consul的服务注册。ContainerPilot使用在容器内运行的工具来管理服务注册，以便在启动时向Consul注册服务，在运行时管理Consul TTL运行状况检查，以及在容器停止时取消注册服务。
+
+在Docker容器中运行运行状况检查
+Consul能够在容器内执行健康检查。如果Docker守护程序暴露给Consul代理并且DOCKER_HOST设置了环境变量，则可以使用Docker容器ID配置检查以执行。有关详细信息，请参阅运行状况检查指南。
+
+执照
+查看此映像中包含的软件的许可证信息。
+
+与所有Docker映像一样，这些映像可能还包含其他许可证（例如来自基本分发版的Bash等，以及所包含的主要软件的任何直接或间接依赖关系）。
+
+这是能够自动检测一些额外的许可信息可能中找到的repo-info版本库的consul/目录。
+
+对于任何预先构建的图像使用，图像用户有责任确保对此图像的任何使用都符合其中包含的所有软件的任何相关许可。
