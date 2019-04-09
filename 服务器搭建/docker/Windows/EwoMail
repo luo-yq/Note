@@ -38,7 +38,7 @@ docker run  -d -h mail.pallasli.cn --restart=always ^
   -v `pwd`/ssl/dkim/:/ewomail/dkim/ ^
   --name ewomail pallasli/ewomail
 
-邮箱管理后台http://localhost:8686
+邮箱管理后台http://localhost:8686  账号 admin 密码 ewomail123
 Rainloop 管理端 http://localhost:8787/?admin
 Rainloop 用户端 http://localhost:8787
  
