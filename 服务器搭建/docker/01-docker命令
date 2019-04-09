@@ -1,3 +1,10 @@
+Docker系列(四)Docker 网络模式及配置
+
+--hostname ：指定hostname;
+--net : 指定网络模式
+--ip：指定IP
+--add-host ：指定往/etc/hosts添加的host
+
 
 
 #查找镜像

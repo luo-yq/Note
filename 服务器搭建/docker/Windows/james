@@ -1,0 +1,78 @@
+docker pull linagora/james-jpa-sample
+docker tag linagora/james-jpa-sample pallasli/james
+docker push pallasli/james
+docker rmi linagora/james-jpa-sample
+
+
+docker run -p "11125:25" -p "11143:143" -p "18000:8000" -d --name james pallasli/james
+
+E:
+cd GItHub/platform/docker
+mkdir james
+cd james
+mkdir conf
+docker cp james:/root/conf E:/GItHub/platform/docker/james
+
+
+docker run -p "11125:25" -p "11143:143" -p "18000:8000" -d --name james -v /e/GItHub/platform/docker/james/conf:/root/conf pallasli/james
+
+#在/var/lib/docker下面找到domainlist.xml
+
+修改domainlist.xml
+<domainlist>
+    <domainnames>
+        <domainname>xxx.com</domainname>
+    </domainnames>
+    <autodetect>false</autodetect>
+    <autodetectIP>false</autodetectIP>
+    <defaultDomain>xxx.com</defaultDomain>
+</domainlist>
+
+修改dnsservice.xml
+<dnsservice>
+  <servers>
+    <server>8.8.8.8</server>
+    <server>xxx.com</server><!--这里增加本机域名-->
+  </servers>
+  <autodiscover>false</autodiscover>
+  <authoritative>false</authoritative>
+  <maxcachesize>50000</maxcachesize>
+</dnsservice>
+
+修改smtpserver.xml
+    <smtpserver enabled="true">
+        ......
+        <authRequired>true</authRequired>
+        <authorizedAddresses>192.168.0.0/24,127.0.0.0/8</authorizedAddresses>
+        ......
+    </smtpserver>
+
+#启动服务
+
+$ docker start james
+
+#查看服务是否正常启动了
+
+$ docker ps
+CONTAINER ID        IMAGE                             COMMAND             CREATED             STATUS              PORTS                                                                                    NAMES
+c9dd7c95e038        linagora/james-jpa-sample:3.1.0   "./startup.sh"      43 hours ago        Up 7 minutes        0.0.0.0:25->25/tcp, 110/tcp, 465/tcp, 587/tcp, 993/tcp, 0.0.0.0:143->143/tcp, 8000/tcp   james
+
+
+#查看domain配置是否正确
+
+$ docker exec james java -jar /root/james-cli.jar listdomains
+xxx.com
+ListDomains command executed sucessfully in 435 ms.
+
+#如果没有xxx.com，可以使用下面命令添加domain
+
+$ docker exec james java -jar /root/james-cli.jar adddomain xxx.com
+
+#如果有多余的domain，可以使用下面命令删除
+
+$ docker exec james java -jar /root/james-cli.jar removedomain baidu.com
+
+4.添加用户
+
+$ docker exec james java -jar /root/james-cli.jar adduser admin@xxxx.com password
+

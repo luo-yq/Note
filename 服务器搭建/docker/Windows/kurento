@@ -10,7 +10,7 @@ mkdir kms
 cd kms
 mkdir tmp
 
-docker run -d --name kms -p 8888:8888 -v /e/GItHub/platform/docker/kms/tmp:/tmp pallasli/kms
+docker run --privileged=true -d --name kms -p 8888:8888 -v /e/GItHub/platform/docker/kms/tmp:/tmp pallasli/kms
 
 
 内网用户A-------公网S-----------内网用户B
