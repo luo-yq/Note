@@ -1,0 +1,35 @@
+https://my.rdc.aliyun.com/welcome
+
+	<server>
+        <id>rdc-releases</id>
+        <username>7zGenx</username>
+        <password>vHPLvA8n3u</password>
+    </server>
+    <server>
+        <id>rdc-snapshots</id>
+        <username>7zGenx</username>
+        <password>vHPLvA8n3u</password>
+    </server>
+
+
+
+	<repository>
+        <id>rdc-releases</id>
+        <url>https://repo.rdc.aliyun.com/repository/70382-release-kVelv7/</url>
+    </repository>
+    <repository>
+        <id>rdc-snapshots</id>
+        <url>https://repo.rdc.aliyun.com/repository/70382-snapshot-SfDbcN/</url>
+    </repository>    
+
+
+    <distributionManagement>
+        <repository>
+            <id>rdc-releases</id>
+            <url>https://repo.rdc.aliyun.com/repository/70382-release-kVelv7/</url>
+        </repository>
+        <snapshotRepository>
+            <id>rdc-snapshots</id>
+            <url>https://repo.rdc.aliyun.com/repository/70382-snapshot-SfDbcN/</url>
+        </snapshotRepository>
+    </distributionManagement>
