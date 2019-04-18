@@ -3,10 +3,34 @@ docker tag webcenter/activemq pallasli/activemq
 docker push pallasli/activemq
 docker rmi webcenter/activemq 
 
+docker run -d --name activemq -p 61616:61616 -p 8161:8161 pallasli/activemq
+
+E:
+cd GItHub/platform/docker
+mkdir activemq
+cd activemq
+mkdir conf
+docker cp activemq:/opt/activemq/conf/activemq.xml E:/GItHub/platform/docker/activemq/conf/
+
 docker stop activemq
 docker rm activemq
+
+修改activemq.xml的broker
+<!-- 添加访问ActiveMQ的账号密码 -->  
+<plugins>  
+    <simpleAuthenticationPlugin>  
+        <users>  
+            <authenticationUser username="zhangsan" password="123" groups="users,admins"/>  
+        </users>  
+    </simpleAuthenticationPlugin>  
+</plugins>  
 
 
 docker pull pallasli/activemq 
 
-docker run -d --name activemq -p 61616:61616 -p 8161:8161 pallasli/activemq
+docker run -d --name activemq -p 61616:61616 -p 8161:8161 -v /e/GItHub/platform/docker/activemq/conf/activemq.xml:/opt/activemq/conf/activemq.xml pallasli/activemq
+
+http://localhost:8161
+用户名：admin 密码：admin
+
+

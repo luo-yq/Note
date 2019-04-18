@@ -3,7 +3,7 @@ docker tag nginx:alpine pallasli/nginx
 docker push pallasli/nginx
 docker rmi nginx:alpine
 
-docker run --privileged=true --name nginx  -p 80:80 -d  nginx:alpine
+docker run --privileged=true --name nginx  -p 80:80 -d nginx:alpine
 
 E:
 cd GItHub/platform/docker
@@ -20,11 +20,11 @@ docker rm nginx
 
 docker pull pallasli/nginx
 
-docker run --name nginx ^
+docker run --name nginx ^ 
 -v /e/GItHub/platform/docker/nginx/etc/nginx/conf.d:/etc/nginx/conf.d ^
 -v /e/GItHub/platform/docker/nginx/etc/nginx/nginx.conf:/etc/nginx/nginx.conf ^
 -v /e/GItHub/platform/docker/nginx/html:/usr/share/nginx/html ^
--p 80:80 -d  pallasli/nginx
+-p 80:80 -d --restart=always pallasli/nginx
  
 vi ~/nginx/conf80/conf.d
 

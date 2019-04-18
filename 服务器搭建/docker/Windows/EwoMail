@@ -3,7 +3,7 @@ docker tag bestwu/ewomail pallasli/ewomail
 docker push pallasli/ewomail
 docker rmi bestwu/ewomail
 
-docker run  -d -h mail.pallasli.cn --restart=always ^
+docker run  -d -h mail.pallasli.cn ^
   -p 8787:80 ^
   -p 8686:8080 ^
   --name ewomail pallasli/ewomail
@@ -19,7 +19,7 @@ mkdir ssl
 docker cp ewomail:/etc/ssl E:/GItHub/platform/docker/ewomail
 docker cp ewomail:/ewomail/mail E:/GItHub/platform/docker/ewomail
 
-docker run  -d -h mail.pallasli.cn --restart=always ^
+docker run  -d -h mail.pallasli.cn ^
   -p 25:25 ^
   -p 109:109 ^
   -p 110:110 ^

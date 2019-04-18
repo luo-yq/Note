@@ -23,3 +23,9 @@ kurento安装需要ubuntu，需要https支持。
 通过url访问视频。
 
 
+交换双方的SDP
+String webrtcSdpAnswer = webRtcEp.processOffer(webrtcSdpOffer);
+sendMessage(session, webrtcSdpAnswer);
+
+进行穿透处理
+webRtcEp.gatherCandidates();  

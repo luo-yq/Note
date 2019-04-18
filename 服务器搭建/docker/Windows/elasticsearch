@@ -1,6 +1,17 @@
-docker pull elasticsearch:2.3.5
-docker tag elasticsearch:2.3.5 pallasli/elasticsearch
+docker pull elasticsearch:5-alpine
+docker tag elasticsearch:5-alpine pallasli/elasticsearch
 docker push pallasli/elasticsearch
-docker rmi elasticsearch:2.3.5
+docker rmi elasticsearch:5-alpine
 
-docker run -d -p 9200:9200 --name="es" pallasli/elasticsearch
+docker run -d -p 9200:9200 -p 9300:9300 --name="es" pallasli/elasticsearch
+
+docker exec -it es bash
+/usr/share/elasticsearch/bin/plugin install mobz/elasticsearch-head
+
+http://127.0.0.1:9200/_plugin/head/
+
+
+
+cd /usr/local/
+
+git clone git://github.com/mobz/elasticsearch-head.git

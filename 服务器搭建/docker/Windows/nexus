@@ -1,0 +1,7 @@
+docker pull sonatype/nexus3 
+docker tag sonatype/nexus3 pallasli/nexus3
+docker push sonatype/nexus3
+docker rmi sonatype/nexus3
+
+docker run -d --restart=always -p 19091:8081 -e NEXUS_CONTEXT=nexus --name nexus pallasli/nexus3
+http://localhost:19091/  用户名 admin 密码 admin123

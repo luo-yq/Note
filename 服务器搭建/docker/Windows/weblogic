@@ -4,14 +4,10 @@ docker push pallasli/weblogic12
 docker rmi ismaleiva90/weblogic12
 
 
-docker run -d -p 49163:7001 -p 49164:7002 -p 49165:5556 --name weblogic ismaleiva90/weblogic12:latest
-http://localhost:49163/console
+docker run -d -p 7001:7001 -p 7002:7002 -p 5556:5556 --name weblogic pallasli/weblogic12
+http://localhost:7001/console
 /u01/oracle/weblogic/user_projects/domains/base_domain/servers/AdminServer/security/boot.properties，修改其中的用户名与密码（用明文，第一次启动服务器时明文将被加密），要和上面命令
 中的用户名密码一致。
 用户名：  weblogic
 密码：    welcome1
-
-
-docker run --name weblogic12c -it -p 7099:7001 radudobrinescu/wls12c:5.0 
-docker run  -d -p 7099:7001 --name weblogic12c radudobrinescu/wls12c:5.0 
 
