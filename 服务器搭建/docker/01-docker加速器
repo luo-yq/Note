@@ -44,3 +44,20 @@ Docker Toolbox
 （不推荐使用 docker toolbox，建议使用新的 docker for mac 及 docker for windows 以在这两种平台运行 docker ）
 请确认你的 Docker Toolbox 已经启动，并执行下列命令（请将 加速地址 替换为在加速器页面获取的专属地址）
 docker-machine ssh defaultsudo sed -i "s|EXTRA_ARGS='|EXTRA_ARGS='--registry-mirror=加速地址 |g" /var/lib/boot2docker/profileexitdocker-machine restart default
+
+
+
+1.修改或创建daemon.json文件：vi /etc/docker/daemon.json
+ 
+将以下配置写入到文件中，保存并退出（不会操作的百度下vi命令吧）：
+ 
+{
+ 
+"registry-mirrors": ["http://hub-mirror.c.163.com"]
+ 
+}
+
+
+例如：CentOS7
+将如下内容加入到Docker配置文件/etc/sysconfig/docker，然后重启docker。
+OPTIONS=--registry-mirror=http://f1361db2.m.daocloud.io

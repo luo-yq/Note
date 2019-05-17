@@ -34,3 +34,83 @@ kurento安装需要ubuntu，需要https支持。
 通过url访问视频。
 
 
+
+
+
+https://github.com/konoui/kurento-coturn-docker.git
+
+（可以给个star，毕竟帮忙解决问题了），克隆好了执行以下操作：
+cd /kurento-coturn-docker/coturn/
+//使用dockerfile,记住加点
+sudo docker build --tag coturn .
+//后台运行coturn
+
+docker tag coturn pallasli/coturn
+docker push pallasli/coturn
+
+sudo docker run -d --name coturn -p 3478:3478 -p 3478:3478/udp pallasli/coturn
+
+#进入镜像
+ docker exec -it kms /bin/bash
+ #安装vim
+ apt-get update
+ apt-get install vim
+ #进入配置文件夹
+ cd /etc/kurento/modules/kurento/
+ #编辑配置文件
+ vim WebRtcEndpoint.conf.ini
+
+stunServerAddress=you_url
+stunServerPort=you_port
+turnURL=kurento:kurento@you_url?transport=tcp
+
+
+
+docker pull kurento/kurento-media-server
+
+docker run -d --name kms -p 8888:8888 -v /root/server/webapps:/tmp kurento镜像
+docker run -d --name coturn -p 3478:3478 -p 3478:3478/udp coturn镜像
+
+
+var iceservers={
+ "iceServers":[
+ {
+   urls:"stun:139.198.123.138:3478"
+ },
+ {
+ urls:["turn:139.198.123.138:3478"]
+ username:"kurento",
+ credential: "kurento"
+ }
+ ]
+ }
+
+再修改底下的options变量：
+const options = {
+ localVideo: uiLocalVideo,
+ remoteVideo: uiRemoteVideo,
+ mediaConstraints: { audio: true, video: true },
+ onicecandidate: (candidate) => sendMessage({
+ id: 'ADD_ICE_CANDIDATE',
+ candidate: candidate,
+ }),
+ configuration: iceservers //修改在这里，增加了一个configuration的key
+ }；
+​```
+希望有同样目的的同志能够看到这篇博文，不然肯定被折磨的死去活来。kurento团队源码中很多坑没有说明就是为了用了他们项目的人能够出钱去购买他们的技术支持，不能中老外的圈套。
+
+作者：许瑞锐
+链接：https://www.jianshu.com/p/762a4587346d
+来源：简书
+简书著作权归作者所有，任何形式的转载都请联系作者获得授权并注明出处。
+
+
+
+
+
+
+
+
+
+
+
