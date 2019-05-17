@@ -18,7 +18,7 @@ docker pull pallasli/redis
 
 docker run --name redis -p 6379:6379 ^
   -v /e/GItHub/platform/docker/redis/data:/data ^
-  -d pallasli/redis redis-server --appendonly yes
+  -d --restart=always pallasli/redis redis-server --appendonly yes
 
 docker exec -it redis redis-cli
 
