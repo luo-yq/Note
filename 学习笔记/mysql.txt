@@ -16,6 +16,8 @@ long_query_time=2
 log-slow-queries= /usr/local/mysql/log/slowquery.log
 
 CREATE DATABASE IF NOT EXISTS oauth2 DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS crm DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS webDesigner DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 
 
 ddl数据定义语言

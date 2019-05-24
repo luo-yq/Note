@@ -7,8 +7,13 @@ mkdir -p /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql
 mkdir -p /Users/pallasli/GitHub/platform/docker/mysql/data
 docker cp mysql:/etc/mysql/conf.d /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql
 
+
 docker run --name mysql -m 16GB -p 3306:3306 \
   -v /Users/pallasli/GitHub/platform/docker/mysql/etc/mysql:/etc/mysql \
   -v /Users/pallasli/GitHub/platform/root/mysql/data:/var/lib/mysql \
-  -e MYSQL_ROOT_PASSWORD=123456 -d pallasli/mysql
+  -e MYSQL_ROOT_PASSWORD=123456 -d pallasli/mysql \
+  --character-set-server=utf8mb4 \
+  --collation-server=utf8mb4_unicode_ci
 
+docker exec -it mysql sh;
+SET NAMES 'utf8mb4';

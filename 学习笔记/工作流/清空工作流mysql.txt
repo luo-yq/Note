@@ -27,7 +27,7 @@ delete from t_document_basics;
 delete from t_document_history;
 delete from t_document_opinion;
 commit;
-SET FOREIGN_KEY_CHECKS = 1;   
+SET FOREIGN_KEY_CHECKS = 1;
 
 
 -- #按业务清理流程(清理时需注意模糊匹配是否会影响其他流程，如果影响该用精确匹配)
