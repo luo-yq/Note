@@ -12,6 +12,8 @@ mkdir tmp
 
 docker run --privileged=true -d --name kms -p 8888:8888 -v /e/GItHub/platform/docker/kms/tmp:/tmp pallasli/kms
 
+docker run --privileged=true -d --name kms -p 8888:8888 -v /root/tmp:/tmp kurento/kurento-media-server
+
 
 内网用户A-------公网S-----------内网用户B
 需要打洞服务器
@@ -23,9 +25,3 @@ kurento安装需要ubuntu，需要https支持。
 通过url访问视频。
 
 
-交换双方的SDP
-String webrtcSdpAnswer = webRtcEp.processOffer(webrtcSdpOffer);
-sendMessage(session, webrtcSdpAnswer);
-
-进行穿透处理
-webRtcEp.gatherCandidates();  
